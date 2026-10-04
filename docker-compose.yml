@@ -1,0 +1,72 @@
+x-app: &app
+  build: .
+  env_file: .env
+  restart: unless-stopped
+  volumes: [files:/data/files]
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+    migrate: {condition: service_completed_successfully}
+services:
+  postgres:
+    image: postgres:16-bookworm
+    env_file: .env
+    restart: unless-stopped
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  migrate:
+    build: .
+    env_file: .env
+    restart: 'no'
+    command: [alembic, upgrade, head]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *app
+    ports: ['127.0.0.1:8000:8000']
+    command: [uvicorn, app.api.main:app, --host, 0.0.0.0, --port, '8000']
+    healthcheck:
+      test: [CMD, python, -m, app.ops.healthcheck, api]
+      interval: 20s
+      timeout: 8s
+      retries: 3
+  bot:
+    <<: *app
+    command: [python, -m, app.bot.main]
+    healthcheck:
+      test: [CMD, python, -m, app.ops.healthcheck, bot]
+      interval: 20s
+      timeout: 8s
+      retries: 3
+  worker:
+    <<: *app
+    command: [arq, app.workers.main.WorkerSettings]
+    healthcheck:
+      test: [CMD, python, -m, app.ops.healthcheck, worker]
+      interval: 20s
+      timeout: 8s
+      retries: 3
+  monitor:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    command: [python, -m, app.ops.monitor]
+    volumes: [files:/data/files]
+volumes:
+  pgdata:
+  redisdata:
+  files:
