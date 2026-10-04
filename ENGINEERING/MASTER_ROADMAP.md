@@ -12,7 +12,8 @@ This roadmap is not a production release approval.
 - FACT: Target is n923760-rgb/telegram-services-platform on main; the owner authorized initial publication.
 - FACT: Integration access now succeeds; initial source import preserves the repository initialization commit.
 - BLOCKED: Docker/VPS execution is unavailable in this environment.
-- PENDING: Inspect hosted CI for the exact imported source; the Actions run is the authoritative result.
+- FACT: Initial hosted run passed 83 tests, lint/format, migration and schema-drift checks.
+- FAIL: Final Compose check lacked its service .env file; a bounded CI-only correction is under review.
 - NOT RUN: Authenticated Telegram/AI journeys.
 
 ## Architecture and state owners
@@ -38,7 +39,7 @@ Details: [validation](../docs/VALIDATION.md),
 
 ## Findings and release blockers
 
-1. PENDING hosted CI verification for the imported source; check the actual run before claiming success.
+1. Complete hosted verification of the Compose environment-file correction before CI qualification.
 2. BLOCKED Docker build/start/recovery prevents container deployment qualification.
 3. NOT RUN real Telegram/provider journeys leave delivery and Arabic OCR quality unqualified.
 4. UNKNOWN current provider rates/billing need operator configuration and reconciliation.
@@ -66,9 +67,11 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 
 ## Exact immediate next round
 
-Inspect the hosted workflow for the imported commit and record its actual result.
+Review the tested Compose CI correction and its hosted workflow; merge only with explicit owner authority.
 Then identify an available Docker staging environment and inspect it before runtime work.
 Do not reopen completed phases without a confirmed finding or invent hosted/runtime evidence.
 
 Publication history: [initial permission rejection](REPORTS/2026-10-04-publication.md) and
 [authorized import](REPORTS/2026-10-04-import.md).
+
+Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).

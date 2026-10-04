@@ -8,6 +8,7 @@ Never retain customer content, tokens, private .env files or raw provider respon
 | Revised application snapshot retained in commit a54876dc7580f0a13ec82bd53d21872db0c720b5 | docs/VALIDATION.md: 83 tests, real PostgreSQL/Redis, migrations/drift, restore, HTTP readiness, lint/format | Application changes were tested before that commit; docs changes do not establish Docker or external-service evidence |
 | Governance reference | docs/GOVERNANCE.md pins 641e4f9e45da109257ba1f38752b94604c2e4531 | Reference SHA, not bot source SHA |
 | Read-only adoption baseline | ../REPORTS/2026-10-04-governance-baseline.md | Remote identity UNKNOWN; hosted PR/CI NOT RUN |
+| Initial remote import e055d2b98d6aaaed5111f25203c34ba7d3e4caaa | GitHub Actions run 37206089325: 83 passed, 1 dependency warning; lint/format/migrations/drift passed | Workflow overall failed only at Compose validation due to missing .env; see the CI correction report |
 
 For later rounds record task ID, source, commands, outcomes, affected files and sanitized
 artifacts. Historical summaries do not imply raw logs were retained.
