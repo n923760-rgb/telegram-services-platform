@@ -110,4 +110,4 @@ Revised phase 1 passed 51 tests; revised phase 2 passed 58 plus schema drift.
 Revised phase 3 passed 72 tests; Arabic PDF visual inspection passed.
 Revised phase 4 passed 83 tests, migrations, lint, restore and live HTTP readiness.
 Require credentials for live Telegram/AI and Docker/VPS deployment verification.
-Publish the initial source to verified origin/main; inspect hosted CI; keep live tests pending.
+Publish source; pass 83 hosted tests; review the bounded Compose CI fix; keep live tests pending.

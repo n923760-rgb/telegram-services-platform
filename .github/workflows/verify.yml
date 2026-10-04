@@ -49,4 +49,7 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run pytest -q
       - run: uv run alembic check
-      - run: docker compose --env-file .env.example config --quiet
+      - name: Validate Compose with example configuration
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env.example config --quiet
