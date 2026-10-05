@@ -15,6 +15,23 @@ This roadmap is not a production release approval.
 - FACT: Initial hosted run passed 83 tests, lint/format, migration and schema-drift checks.
 - FAIL: Final Compose check lacked its service .env file; a bounded CI-only correction is under review.
 - NOT RUN: Authenticated Telegram/AI journeys.
+- FACT: File-retention safety fix applied (gate purge on durable deletion; protect referenced
+  files from age expiry). Regression tests authored but NOT RUN in this environment; see
+  [report](REPORTS/2026-10-04-file-retention-safety.md).
+- FACT: Approved bounded fixes applied (private-chat gate, HTTPS-only AI endpoints, truthful
+  draft-cancel text, per-admin support delivery with reusable ticket ids, retryable intake
+  I/O errors, user cost-cap label, stale-plugin enablement). Regression tests authored but
+  NOT RUN in this environment; see [report](REPORTS/2026-10-04-bounded-fixes.md).
+- FACT: Second bounded-fix round applied (scoped draft cancel, idempotent /resume prompt recovery,
+  per-owner upload quota, OCR new-request wording, safe ops/parse errors). Notifier dedup verified
+  intentional (dedup by type per README). Regression tests authored but NOT RUN here; see
+  [report](REPORTS/2026-10-04-full-review.md).
+- FACT: Third bounded-fix round applied (correct `fund` import, confirm-state prompt handler,
+  strengthened confirmation-recovery regression tests). Regression tests authored but NOT RUN here.
+- FACT: Finalization round applied (explicit update-not-applied recovery notice for multiple images,
+  truthful storage-quota wording, dedicated stale-button guidance, confirm-state instruction, quota
+  defaults in .env.example/README, lock-filename correction). Regression tests authored but NOT RUN
+  here; see [report](REPORTS/2026-10-05-finalization.md).
 
 ## Architecture and state owners
 
@@ -67,7 +84,11 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 
 ## Exact immediate next round
 
-Review the tested Compose CI correction and its hosted workflow; merge only with explicit owner authority.
+Verify the file-retention safety change and its regression tests on a disposable migrated
+PostgreSQL/Redis setup before merge; verify the bounded-fix regression tests (including the
+second-round draft-recovery and upload-quota tests and the finalization-round recovery-notice,
+stale-button and confirm-state tests) and review the tested Compose CI correction
+and its hosted workflow; merge only with explicit owner authority.
 Then identify an available Docker staging environment and inspect it before runtime work.
 Do not reopen completed phases without a confirmed finding or invent hosted/runtime evidence.
 

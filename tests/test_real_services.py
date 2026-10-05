@@ -100,7 +100,7 @@ async def test_real_ocr_unreadable_releases_and_notifies(tmp_path, monkeypatch):
         assert (await db.get(Order, oid)).status == "failed"
         assert (await balance(db, 1)).available == 1000
         assert (await balance(db, 1)).reserved == 0
-    assert delivery.errors[0][2] == "image_unclear" and len(delivery.errors) == 1
+    assert delivery.errors[0][2] == "ocr_unclear" and len(delivery.errors) == 1
     assert not delivery.files
 
 

@@ -38,6 +38,7 @@ async def evaluate(slug, notifier=None):
                             Order.error_key.not_in(
                                 [
                                     "image_unclear",
+                                    "ocr_unclear",
                                     "input_invalid",
                                     "needs_information",
                                     "cost_cap",

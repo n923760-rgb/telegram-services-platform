@@ -39,7 +39,9 @@ def create_router():
             else:
                 await set_service(args[1], enabled=command == "/enable")
             await message.answer(tr("admin_done"))
-        except (ValueError, IndexError, ServiceError, WalletError):
+        except ServiceError as error:
+            await message.answer(tr(error.key))
+        except (ValueError, IndexError, WalletError):
             await message.answer(tr("admin_usage"))
 
     @router.callback_query(F.data == "menu:support")
@@ -54,30 +56,51 @@ def create_router():
         if not message.text or len(message.text) > 3000:
             await message.answer(tr("input_invalid"))
             return
+        data = await state.get_data()
+        stored = data.get("ticket_id")
+        ticket_id = None
+        if stored:
+            try:
+                ticket_id = UUID(stored)
+            except (ValueError, TypeError, AttributeError):
+                ticket_id = None
         async with sessions.begin() as db:
-            order_id = await db.scalar(
-                select(Order.id)
-                .where(Order.user_id == message.from_user.id)
-                .order_by(Order.created_at.desc())
-                .limit(1)
-            )
-            ticket = SupportTicket(user_id=message.from_user.id, order_id=order_id)
-            db.add(ticket)
-            await db.flush()
-            ticket_id = ticket.id
+            ticket = await db.get(SupportTicket, ticket_id) if ticket_id else None
+            if ticket is None or ticket.user_id != message.from_user.id:
+                order_id = await db.scalar(
+                    select(Order.id)
+                    .where(Order.user_id == message.from_user.id)
+                    .order_by(Order.created_at.desc())
+                    .limit(1)
+                )
+                ticket = SupportTicket(user_id=message.from_user.id, order_id=order_id)
+                db.add(ticket)
+                await db.flush()
+                ticket_id = ticket.id
+            else:
+                order_id = ticket.order_id
+        await state.update_data(ticket_id=str(ticket_id))
+        delivered = 0
         for admin in config().admin_ids:
-            await message.bot.send_message(
-                admin,
-                tr(
-                    "support_context",
-                    ticket=ticket_id,
-                    order_id=order_id or tr("none"),
-                    user_id=message.from_user.id,
-                ),
-            )
-            await message.bot.copy_message(admin, message.chat.id, message.message_id)
-        await state.clear()
-        await message.answer(tr("support_sent"))
+            try:
+                await message.bot.send_message(
+                    admin,
+                    tr(
+                        "support_context",
+                        ticket=ticket_id,
+                        order_id=order_id or tr("none"),
+                        user_id=message.from_user.id,
+                    ),
+                )
+                await message.bot.copy_message(admin, message.chat.id, message.message_id)
+                delivered += 1
+            except Exception:
+                continue
+        if delivered:
+            await state.clear()
+            await message.answer(tr("support_sent"))
+        else:
+            await message.answer(tr("support_failed"))
 
     @router.message(Command("reply"))
     async def reply(message: Message):
@@ -92,9 +115,14 @@ def create_router():
                 ticket = await db.get(SupportTicket, UUID(ticket_id))
             if not ticket:
                 raise ValueError
-            await message.bot.send_message(ticket.user_id, tr("support_reply", content=content))
-            await message.answer(tr("admin_done"))
         except (ValueError, IndexError):
             await message.answer(tr("admin_usage"))
+            return
+        try:
+            await message.bot.send_message(ticket.user_id, tr("support_reply", content=content))
+        except Exception:
+            await message.answer(tr("support_reply_failed"))
+            return
+        await message.answer(tr("admin_done"))
 
     return router

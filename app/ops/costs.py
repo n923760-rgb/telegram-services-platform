@@ -29,13 +29,13 @@ async def locked_budget(db, key):
 
 async def check_admission(db, user_id):
     global_key, user_key = keys(user_id)
-    for key, limit_name in [
-        (global_key, "MAX_DAILY_COST_SAR"),
-        (user_key, "MAX_COST_PER_USER_PER_DAY"),
+    for key, limit_name, error_key in [
+        (global_key, "MAX_DAILY_COST_SAR", "cost_cap"),
+        (user_key, "MAX_COST_PER_USER_PER_DAY", "user_cost_cap"),
     ]:
         budget = await locked_budget(db, key)
         if budget.spent + budget.reserved >= await decimal_setting(db, limit_name):
-            raise ServiceError("cost_cap")
+            raise ServiceError(error_key)
 
 
 @transaction_retry

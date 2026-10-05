@@ -19,5 +19,5 @@ async def test_image_service_unreadable(tmp_path):
             extract=AsyncMock(return_value=Extracted(readable=False, confidence=0, text=""))
         ),
     )
-    with pytest.raises(ServiceError, match="image_unclear"):
+    with pytest.raises(ServiceError, match="ocr_unclear"):
         await service.run({"images": [image.key]})

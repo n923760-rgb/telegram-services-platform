@@ -30,7 +30,10 @@ async def set_service(slug, enabled=None, price=None):
         if enabled:
             from app.services.registry import registry
 
-            if registry.types[slug].requires_ai:
+            plugin = registry.types.get(slug)
+            if plugin is None:
+                raise ServiceError("unavailable")
+            if plugin.requires_ai:
                 from app.providers.runtime import provider
 
                 try:

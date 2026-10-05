@@ -41,6 +41,8 @@ class Config(BaseSettings):
     report_minute: int = 0
     file_ttl_hours: int = 24
     max_file_bytes: int = 10485760
+    storage_quota_bytes: int = 52428800
+    storage_quota_files: int = 100
     storage_root: Path = Path("data/files")
 
     @model_validator(mode="after")
@@ -62,6 +64,8 @@ class Config(BaseSettings):
                 self.failure_alert_count,
                 self.circuit_window,
                 self.circuit_min_samples,
+                self.storage_quota_bytes,
+                self.storage_quota_files,
             )
             < 1
         ):
@@ -97,6 +101,8 @@ class Config(BaseSettings):
             or endpoint.password
         ):
             raise ValueError("invalid AI endpoint")
+        if self.ai_enabled and endpoint.scheme != "https":
+            raise ValueError("AI activation requires an HTTPS endpoint")
         if not 0 <= self.report_hour <= 23 or not 0 <= self.report_minute <= 59:
             raise ValueError("invalid report time")
         return self
