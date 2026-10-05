@@ -1,10 +1,41 @@
+from contextlib import suppress
+
 from aiogram import BaseMiddleware
+from aiogram.types import CallbackQuery
 
 from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import User
 
 RATE_LUA = """local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n"""
+
+
+class PrivateChatGate(BaseMiddleware):
+    """Reject group/unknown-chat updates before any customer routing or FSM state mutation.
+
+    Callback queries without a reachable message cannot be verified as a private chat, so they
+    are answered with an alert and dropped instead of being routed into a customer flow.
+    """
+
+    async def __call__(self, handler, event, data):
+        if isinstance(event, CallbackQuery):
+            message = event.message
+            private = (
+                message is not None
+                and getattr(message, "chat", None) is not None
+                and message.chat.type == "private"
+            )
+            if not private:
+                with suppress(Exception):
+                    await event.answer(tr("private_only"), show_alert=True)
+                return
+        else:
+            chat = getattr(event, "chat", None)
+            if chat is None or chat.type != "private":
+                with suppress(Exception):
+                    await event.answer(tr("private_only"))
+                return
+        return await handler(event, data)
 
 
 class Guard(BaseMiddleware):

@@ -42,7 +42,7 @@ class ImageToText(BaseService):
         images = [self.runtime.storage.read(key) for key in values.images]
         extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=images)
         if not extracted.readable or extracted.confidence < 0.7 or not extracted.text.strip():
-            raise ServiceError("image_unclear")
+            raise ServiceError("ocr_unclear")
         text = extracted.text.strip()
         if values.language != "none":
             translated = await self.runtime.ai.extract(

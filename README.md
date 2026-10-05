@@ -114,6 +114,7 @@ reconciliation. See [operations](docs/OPERATIONS.md). No credentials are require
 | `CIRCUIT_WINDOW`, `CIRCUIT_MIN_SAMPLES`, `CIRCUIT_FAILURE_THRESHOLD` | Last 10 terminal jobs, minimum 5, failure ratio at least 0.6. |
 | `REPORT_HOUR`, `REPORT_MINUTE` | Daily report at 23:00 Asia/Riyadh. |
 | `FILE_TTL_HOURS`, `MAX_FILE_BYTES` | 24-hour TTL and 10 MiB input/result limit. |
+| `STORAGE_QUOTA_BYTES`, `STORAGE_QUOTA_FILES` | Per-owner upload quota: 52,428,800 bytes and 100 files by default. |
 
 Operational settings rows store `{"value": ...}` and override environment defaults where used by the
 settings helper. `PROVIDER_BALANCE_SAR` can record an operator-observed provider balance when no balance

@@ -19,7 +19,13 @@ def provider():
 
 
 def storage():
-    return LocalStorage(config().storage_root, config().max_file_bytes)
+    cfg = config()
+    return LocalStorage(
+        cfg.storage_root,
+        cfg.max_file_bytes,
+        quota_bytes=cfg.storage_quota_bytes,
+        quota_files=cfg.storage_quota_files,
+    )
 
 
 def runtime_for(job_id, user_id, *, needs_ai=True):

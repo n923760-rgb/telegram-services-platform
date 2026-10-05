@@ -81,7 +81,7 @@ async def test_actual_dispatcher_dynamic_echo_conversation():
     await callback("service:echo")
     assert transport.messages[-1].text == tr("input_text")
     await message("/cancel")
-    assert transport.messages[-1].text == tr("cancelled")
+    assert transport.messages[-1].text == tr("draft_cancelled")
     await callback("service:echo")
     await message("نص العميل")
     confirmation = transport.messages[-1].reply_markup.inline_keyboard[0][0].callback_data

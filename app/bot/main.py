@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisEventIsolation, RedisStorage
 
 from app.bot.handlers import create_router as services_router
-from app.bot.middleware import Guard
+from app.bot.middleware import Guard, PrivateChatGate
 from app.bot.ops_handlers import create_router as operations_router
 from app.core.db import sessions
 from app.core.logging import configure_logging
@@ -22,6 +22,8 @@ def create_dispatcher(storage=None, guard=True):
         RedisEventIsolation(redis=storage.redis) if isinstance(storage, RedisStorage) else None
     )
     dp = Dispatcher(storage=storage, events_isolation=isolation)
+    dp.message.outer_middleware(PrivateChatGate())
+    dp.callback_query.outer_middleware(PrivateChatGate())
     if guard:
         dp.message.outer_middleware(Guard(storage.redis))
         dp.callback_query.outer_middleware(Guard(storage.redis))
