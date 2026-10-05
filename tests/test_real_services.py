@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 from docx import Document as Word
 from openpyxl import load_workbook
+from pptx import Presentation
 
 from app.core.db import sessions
 from app.core.models import Job, Order, Service
@@ -314,3 +315,36 @@ async def test_database_abort_after_generation_reuses_saved_result(tmp_path, mon
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
     assert provider.calls == 1 and len(delivery.files) == 1
+
+
+async def test_real_pptx_output(tmp_path, monkeypatch):
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pptx",
+        ['{"deck":{"slides":[{"title":"عنوان","bullets":["نقطة أساسية"]}]}}'],
+        tmp_path,
+        monkeypatch,
+    )
+    oid = await submit(1, "text_to_pptx", {"text": "المعلومات"}, price, "pptx")
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await balance(db, 1)).available == 1000 - price
+    assert provider.calls == 1
+    presentation = Presentation(BytesIO(delivery.files[0][1]))
+    assert any(
+        shape.has_text_frame and "نقطة أساسية" in shape.text
+        for shape in presentation.slides[0].shapes
+    )
+
+
+async def test_pptx_missing_information_releases_reservation(tmp_path, monkeypatch):
+    _, _, _, ctx, price = await setup(
+        "text_to_pptx", ['{"missing_information":true}'], tmp_path, monkeypatch
+    )
+    oid = await submit(1, "text_to_pptx", {"text": "غير مكتمل"}, price, "pptx-missing")
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.error_key == "needs_information"
+        assert (await balance(db, 1)).reserved == 0
+        assert (await balance(db, 1)).available == 1000
