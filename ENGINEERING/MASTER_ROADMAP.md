@@ -32,6 +32,7 @@ This roadmap is not a production release approval.
   truthful storage-quota wording, dedicated stale-button guidance, confirm-state instruction, quota
   defaults in .env.example/README, lock-filename correction). Regression tests authored but NOT RUN
   here; see [report](REPORTS/2026-10-05-finalization.md).
+- FACT: Office Expert Quality v1 was re-scoped from a mistaken new `office_expert` plugin into a shared-builder quality upgrade (Word/Excel/PPTX/PDF): content-based RTL/LTR, mixed Arabic/English handling, professional typography/layout, preserved formula-injection protection, adaptive Excel direction, PPTX title slide, and PDF font fallback with page footers; the plugin's i18n/docs/tests were reverted. Builder tests authored but NOT RUN in this environment; the plugin directory deletion is BLOCKED here (pending `rm -rf app/services/office_expert`); see [report](REPORTS/2026-10-06-office-expert-quality.md).
 
 ## Architecture and state owners
 

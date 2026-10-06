@@ -4,66 +4,140 @@ from xml.sax.saxutils import escape
 
 import arabic_reshaper
 from bidi.algorithm import get_display
-from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
+from app.builders.direction import is_rtl
 from app.builders.schema import Document
 from app.builders.word import safe_text
 
-FONT_PATH = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+_FONT_FILES = {
+    "DejaVu": (
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/usr/share/fonts/dejavu/DejaVuSans.ttf"),
+    ),
+    "DejaVu-Bold": (
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+        Path("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"),
+    ),
+}
+
+
+def _first_font(candidates):
+    for path in candidates:
+        if path.is_file():
+            return str(path)
+    return None
+
+
+def _register_fonts():
+    if "DejaVu" in pdfmetrics.getRegisteredFontNames():
+        return
+    regular = _first_font(_FONT_FILES["DejaVu"])
+    if regular is None:
+        raise RuntimeError("No DejaVu Sans TTF available for PDF rendering")
+    pdfmetrics.registerFont(TTFont("DejaVu", regular))
+    bold = _first_font(_FONT_FILES["DejaVu-Bold"]) or regular
+    pdfmetrics.registerFont(TTFont("DejaVu-Bold", bold))
 
 
 def display(text):
     return escape(get_display(arabic_reshaper.reshape(safe_text(text))))
 
 
+def _wrap(text, font, size, width):
+    lines = []
+    current = ""
+    for word in safe_text(text).split():
+        candidate = (current + " " + word).strip()
+        rendered = get_display(arabic_reshaper.reshape(candidate))
+        if current and pdfmetrics.stringWidth(rendered, font, size) > width:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+def _footer(canvas, doc):
+    canvas.saveState()
+    canvas.setFont("DejaVu", 8)
+    canvas.setFillColorRGB(0.4, 0.4, 0.4)
+    canvas.drawCentredString(A4[0] / 2, 24, str(doc.page))
+    canvas.restoreState()
+
+
 def build(data: Document) -> bytes:
     data = Document.model_validate(data)
-    if "Arabic" not in pdfmetrics.getRegisteredFontNames():
-        pdfmetrics.registerFont(TTFont("Arabic", str(FONT_PATH)))
+    _register_fonts()
     buffer = BytesIO()
     doc = SimpleDocTemplate(
-        buffer, pagesize=A4, rightMargin=42, leftMargin=42, topMargin=42, bottomMargin=42
+        buffer,
+        pagesize=A4,
+        rightMargin=42,
+        leftMargin=42,
+        topMargin=48,
+        bottomMargin=48,
+        title=safe_text(data.title),
     )
-    normal = ParagraphStyle(
-        "Arabic", fontName="Arabic", fontSize=11, leading=19, alignment=TA_RIGHT, wordWrap="CJK"
+    title_rtl = ParagraphStyle(
+        "TitleRTL",
+        fontName="DejaVu-Bold",
+        fontSize=18,
+        leading=26,
+        alignment=TA_RIGHT,
+        wordWrap="CJK",
+        spaceAfter=12,
     )
-    heading = ParagraphStyle("Heading", parent=normal, fontSize=15, leading=24, spaceAfter=10)
+    title_ltr = ParagraphStyle("TitleLTR", parent=title_rtl, alignment=TA_LEFT)
+    heading_rtl = ParagraphStyle(
+        "HeadingRTL",
+        fontName="DejaVu-Bold",
+        fontSize=14,
+        leading=20,
+        alignment=TA_RIGHT,
+        wordWrap="CJK",
+        spaceBefore=8,
+        spaceAfter=6,
+    )
+    heading_ltr = ParagraphStyle("HeadingLTR", parent=heading_rtl, alignment=TA_LEFT)
+    normal_rtl = ParagraphStyle(
+        "NormalRTL",
+        fontName="DejaVu",
+        fontSize=11,
+        leading=18,
+        alignment=TA_RIGHT,
+        wordWrap="CJK",
+        spaceAfter=6,
+    )
+    normal_ltr = ParagraphStyle("NormalLTR", parent=normal_rtl, alignment=TA_LEFT)
 
-    def wrapped(text, size):
-        width = A4[0] - 104
-        lines = []
-        current = ""
-        for word in safe_text(text).split():
-            candidate = (current + " " + word).strip()
-            rendered = get_display(arabic_reshaper.reshape(candidate))
-            if current and pdfmetrics.stringWidth(rendered, "Arabic", size) > width:
-                lines.append(current)
-                current = word
-            else:
-                current = candidate
-        if current:
-            lines.append(current)
-        return lines or [""]
-
+    width = A4[0] - 84
     story = []
-    for line in wrapped(data.title, 15):
-        story.append(Paragraph(display(line), heading))
+    for line in _wrap(data.title, "DejaVu-Bold", 18, width):
+        story.append(Paragraph(display(line), title_rtl if is_rtl(line) else title_ltr))
+    story.append(Spacer(1, 4))
+
     for section in data.sections:
         if section.heading:
-            for line in wrapped(section.heading, 15):
-                story.append(Paragraph(display(line), heading))
+            for line in _wrap(section.heading, "DejaVu-Bold", 14, width):
+                story.append(Paragraph(display(line), heading_rtl if is_rtl(line) else heading_ltr))
         for text in section.paragraphs:
-            for logical in text.splitlines() or [""]:
-                for line in wrapped(logical, 11):
-                    story.append(Paragraph(display(line), normal))
+            for logical in safe_text(text).splitlines() or [""]:
+                for line in _wrap(logical, "DejaVu", 11, width):
+                    story.append(
+                        Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr)
+                    )
             story.append(Spacer(1, 8))
         for bullet in section.bullets:
-            for line in wrapped("• " + bullet, 11):
-                story.append(Paragraph(display(line), normal))
-    doc.build(story)
+            for line in _wrap("• " + bullet, "DejaVu", 11, width):
+                story.append(Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr))
+
+    doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return buffer.getvalue()
