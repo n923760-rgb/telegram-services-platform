@@ -348,3 +348,35 @@ async def test_pptx_missing_information_releases_reservation(tmp_path, monkeypat
         assert order.error_key == "needs_information"
         assert (await balance(db, 1)).reserved == 0
         assert (await balance(db, 1)).available == 1000
+
+
+async def test_real_pdf_output(tmp_path, monkeypatch):
+    import pdfplumber
+
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pdf",
+        ['{"document":{"title":"تقرير","sections":[{"paragraphs":["بيانات 123"]}]}}'],
+        tmp_path,
+        monkeypatch,
+    )
+    oid = await submit(1, "text_to_pdf", {"text": "المعلومات"}, price, "pdf")
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await balance(db, 1)).available == 1000 - price
+    assert provider.calls == 1
+    with pdfplumber.open(BytesIO(delivery.files[0][1])) as doc:
+        assert "123" in "".join(page.extract_text() or "" for page in doc.pages)
+
+
+async def test_pdf_missing_information_releases_reservation(tmp_path, monkeypatch):
+    _, _, _, ctx, price = await setup(
+        "text_to_pdf", ['{"missing_information":true}'], tmp_path, monkeypatch
+    )
+    oid = await submit(1, "text_to_pdf", {"text": "غير مكتمل"}, price, "pdf-missing")
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.error_key == "needs_information"
+        assert (await balance(db, 1)).reserved == 0
+        assert (await balance(db, 1)).available == 1000

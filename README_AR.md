@@ -4,7 +4,7 @@
 تُولّد من تعريف الخدمة؛ لا تحتاج إلى إضافة اسمها إلى كود البوت أو المحفظة أو العامل.
 
 الخدمات الحالية: استخراج النص من الصور مع ترجمة اختيارية، وتحويل النص إلى Word أو Excel،
-وإنشاء عروض PowerPoint احترافية. توجد خدمة echo للاختبار، ومكوّنات مشتركة لبناء Word وExcel وPowerPoint وPDF.
+وإنشاء عروض PowerPoint احترافية، وإنشاء مستندات PDF قابلة للطباعة. توجد خدمة echo للاختبار، ومكوّنات مشتركة لبناء Word وExcel وPowerPoint وPDF.
 
 ## التشغيل الأول باستخدام Docker
 
@@ -35,6 +35,7 @@ curl --fail http://127.0.0.1:8000/health
 /enable image_to_text
 /enable text_to_office
 /enable text_to_pptx
+/enable text_to_pdf
 /setprice text_to_office 5
 ```
 

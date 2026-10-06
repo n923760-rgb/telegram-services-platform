@@ -202,10 +202,11 @@ def test_file_validation_rejects_forged_pdf_and_accepts_real_pdf_wav():
     assert validate_file(wav.getvalue(), "audio/wav", 10000) == wav.getvalue()
 
 
-async def test_ai_service_enable_requires_valid_provider_configuration():
+async def test_ai_service_enable_requires_valid_provider_configuration(monkeypatch):
     from app.core.models import Service
     from app.ops.admin import set_service
 
+    monkeypatch.setattr(config(), "ai_enabled", False)
     with pytest.raises(ServiceError, match="provider_config"):
         await set_service("image_to_text", enabled=True)
     async with sessions() as db:
