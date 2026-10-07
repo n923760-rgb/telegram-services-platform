@@ -1,5 +1,14 @@
 # Validation record
 
+## Current hosted qualification — 2026-10-07
+
+UX reviewed head f498413 passed 152 tests in [workflow 37575252712](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37575252712); post-merge main workflow 37575645208 passed.
+PDF-to-Word reviewed head a0cce87 passed 171 tests in [workflow 37576254914](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37576254914), including lint/format, migrations, schema drift and Compose configuration. PRs #7 and #5 are merged.
+
+These checks use real disposable PostgreSQL/Redis with mocked AI and Telegram transport. The local PDF smoke used a real parsed PDF and reopened DOCX. They do not establish live-provider output quality, real-account delivery, container image deployment or paid-launch approval. Use TELEGRAM_ACCEPTANCE.md for the next staging round; see ENGINEERING/EVIDENCE/README.md for exact sources and workflow links.
+
+## Historical foundation snapshot — 2026-10-04
+
 All four implementation phases and their revised specification completed on 2026-10-04 with Python 3.12.14,
 PostgreSQL 16.15 and Redis 7.0.15. Each phase used an isolated migrated database.
 
