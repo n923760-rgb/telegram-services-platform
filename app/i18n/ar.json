@@ -3,6 +3,9 @@
   "services": "✨ الخدمات",
   "balance": "💰 رصيدي",
   "support": "💬 تواصل مع الدعم",
+  "language": "🌐 اللغة",
+  "choose_language": "اختر لغة المحادثة:",
+  "language_set": "تم تغيير لغة المحادثة.",
   "sar": "ريال",
   "choose_service": "اختر الخدمة المناسبة:",
   "no_services": "لا توجد خدمات متاحة حاليًا. حاول مرة أخرى لاحقًا.",
@@ -118,7 +121,7 @@
   "pdf_to_word_name": "تحويل PDF إلى Word",
   "pdf_to_word_description": "تحويل محتوى PDF النصي إلى مستند Word احترافي قابل للتحرير",
   "pdf_to_word_file": "أرسل ملف PDF النصي المطلوب تحويله إلى Word.",
-  "pdf_to_word_preview": "تم تجهيز مستند Word: {title}\\nصفحات المصدر: {pages}",
-  "pdf_text_unreadable": "لا يحتوي ملف PDF على نص قابل للاستخراج. ملفات PDF المصورة ستدعم في خدمة OCR مخصصة.",
+  "pdf_to_word_preview": "تم تجهيز مستند Word: {title}\nصفحات المصدر: {pages}",
+  "pdf_text_unreadable": "يتضمن ملف PDF صفحات مصوّرة أو محتوى بلا نص قابل للاستخراج. أرسل نسخة نصية كاملة للتحويل دون فقد المحتوى.",
   "pdf_text_too_long": "محتوى PDF أكبر من الحد الآمن لهذه الخدمة. قسّم الملف وأعد المحاولة."
 }

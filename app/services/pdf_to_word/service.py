@@ -18,7 +18,9 @@ class PdfToWord(BaseService):
     price_sar = Decimal("5.00")
     requires_ai = True
     enabled_by_default = False
-    input_schema = InputSchema(fields=[InputField(name="pdf", kind="file", prompt_key="pdf_to_word_file")])
+    input_schema = InputSchema(
+        fields=[InputField(name="pdf", kind="file", prompt_key="pdf_to_word_file")]
+    )
 
     async def run(self, inputs):
         values = Inputs.model_validate(inputs)
@@ -27,20 +29,35 @@ class PdfToWord(BaseService):
             reader = PdfReader(BytesIO(data), strict=True)
             if reader.is_encrypted or not 1 <= len(reader.pages) <= 200:
                 raise ValueError
-            pages = [(page.extract_text() or "").strip() for page in reader.pages]
+            pages = []
+            text_length = 0
+            for index, page in enumerate(reader.pages, 1):
+                page_text = (page.extract_text() or "").strip()
+                if not page_text:
+                    # Do not silently omit a scanned/drawn page from a mixed PDF.
+                    # Truly empty pages with no content stream may be skipped.
+                    if page.get_contents() is not None:
+                        raise ServiceError("pdf_text_unreadable")
+                    continue
+                part = f"[Page {index}]\n{page_text}"
+                text_length += len(part) + (2 if pages else 0)
+                if text_length > 50000:
+                    raise ServiceError("pdf_text_too_long")
+                pages.append(part)
+        except ServiceError:
+            raise
         except Exception:
             raise ServiceError("file_invalid") from None
-        text = "\n\n".join(f"[Page {i}]\n{page}" for i, page in enumerate(pages, 1) if page)
-        if len(text.strip()) < 20:
+        text = "\n\n".join(pages)
+        if not pages:
             raise ServiceError("pdf_text_unreadable")
-        if len(text) > 50000:
-            raise ServiceError("pdf_text_too_long")
         plan = await self.runtime.ai.extract(WordPlan, text, PDF_TO_WORD)
         if plan.missing_information or plan.document is None:
             raise ServiceError("needs_information")
         content = word.build(plan.document)
         artifact = self.runtime.storage.save(
-            "result.docx", content,
+            "result.docx",
+            content,
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
         preview = tr("pdf_to_word_preview", title=plan.document.title, pages=len(reader.pages))

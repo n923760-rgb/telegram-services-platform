@@ -4,7 +4,7 @@
 Build an Arabic-first service platform with independent, deterministic plugins.
 Use Python 3.12, FastAPI, aiogram 3, PostgreSQL, SQLAlchemy 2 async, Alembic,
 Redis, ARQ, Pydantic v2, ruff, pytest and typed Office/PDF builders.
-Keep echo for verification and expose only the two authorized real services.
+Keep echo for verification; retain approved OCR/Office/PDF plugins disabled by default.
 Treat SAR balances as administrator-issued test credit; require a separate Stars
 payment design before selling digital services inside Telegram.
 
@@ -52,7 +52,7 @@ Validate file content, paths, ownership and decoded image limits.
 Delete files after terminal work; recover pending deletion and expire abandoned files.
 Purge customer content on schedule while preserving minimal financial audit data.
 Change schemas only through Alembic; never create_all in production.
-Keep payment gateways, dashboards, extra services, agent loops and n8n out of scope.
+Keep payment gateways, dashboards, unapproved services, agent loops and n8n out of scope.
 
 ## Add a service
 1. Create app/services/<slug>/ with __init__.py, schema.py, prompt.py, service.py
@@ -106,11 +106,10 @@ Stop the affected action on stale source, missing authority, unsafe scope or una
 Keep local build evidence separate from hosted CI and real Telegram/provider qualification.
 
 ## Current phase
-Revised phase 1 passed 51 tests; phase 2 passed 58 plus schema drift; phase 3 passed 72 tests; Arabic PDF visual
-inspection passed; phase 4 passed 83 tests, migrations, lint, restore and live HTTP readiness.
-Require credentials for live Telegram/AI and Docker/VPS deployment verification. Publish source; pass 83 hosted tests; review the bounded Compose CI fix; keep live tests pending.
-Applied approved bounded fixes (private-chat gate, HTTPS AI endpoint, truthful draft-cancel text, per-admin support delivery, retryable intake I/O, cost-cap label, stale-plugin enablement).
-Applied second bounded-fix round (scoped draft cancel, idempotent /resume prompt recovery, per-owner upload quota, OCR new-request wording, safe ops/parse errors); see ENGINEERING/REPORTS/2026-10-04-full-review.md.
-Applied third bounded-fix round (correct `fund` import, confirm-state prompt handler, strengthened confirmation-recovery regression tests). Regression tests for all rounds authored but NOT RUN here (system pytest absent; venv invocation sandbox denied).
-Applied finalization round (explicit update-not-applied recovery notice for multiple images, truthful storage-quota wording, dedicated stale-button guidance, confirm-state instruction, quota defaults in .env.example/README, lock-filename correction); see ENGINEERING/REPORTS/2026-10-05-finalization.md.
-Applied test-only correction: tests/test_draft_recovery.py::test_new_image_after_failed_more_files_is_not_applied now imports `config` and monkeypatches `ai_enabled=True` (same pattern as tests/test_real_services.py:44) because image_to_text requires_ai=True and engine.submit raises provider_config when ai_enabled defaults False; added an explicit `order is not None` assertion before the existing input/counter assertions. Execution BLOCKED here (system pytest absent; venv invocation policy denied); no cache is claimed as a passing run.
+Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
+Live main includes text-to-PowerPoint/PDF, shared Office quality and bilingual UX (PR #7).
+UX qualification passed 152 hosted tests; its post-merge main workflow passed.
+PR #5 PDF-to-Word is under bounded review: discovery/formatting, text extraction safety and financial/delivery regressions.
+Require green checks on its reviewed head before merge. Keep original page-layout/OCR reconstruction out of this text-based conversion.
+Use docs/TELEGRAM_ACCEPTANCE.md for real staging journeys; live Telegram/AI and deployment remain NOT RUN here.
+Treat SAR balances as test credits and configure secrets only on the operating machine.

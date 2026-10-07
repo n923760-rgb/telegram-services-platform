@@ -19,7 +19,8 @@ selling services; the implementation does not silently add a different payment s
 | `image_to_text` | Disabled | SAR 3 | Up to five images, Arabic/English OCR, optional Arabic/English translation and style; long output includes TXT and DOCX. |
 | `text_to_office` | Disabled | SAR 5 | Text to editable Word or Excel; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
-| `text_to_pdf` | Disabled | SAR 5 | Text to a professional, printable PDF document; asks for structure approval only when the validated plan is ambiguous. |\n| `pdf_to_word` | Disabled | SAR 5 | Text-based PDF to professional editable Word; rejects scanned/encrypted/oversized input safely. |
+| `text_to_pdf` | Disabled | SAR 5 | Text to a professional, printable PDF document; asks for structure approval only when the validated plan is ambiguous. |
+| `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
 
 Word, Excel, PowerPoint and PDF builders are shared infrastructure. Blank, unreadable or empty OCR
 is rejected and credit released.

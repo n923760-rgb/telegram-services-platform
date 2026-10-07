@@ -3,6 +3,9 @@
   "services": "✨ Services",
   "balance": "💰 My balance",
   "support": "💬 Contact support",
+  "language": "🌐 Language",
+  "choose_language": "Choose your chat language:",
+  "language_set": "Chat language changed.",
   "sar": "SAR",
   "choose_service": "Choose a service:",
   "no_services": "No services are available right now. Please try again later.",
@@ -118,7 +121,7 @@
   "pdf_to_word_name": "PDF to Word",
   "pdf_to_word_description": "Convert a text-based PDF into a professional editable Word document",
   "pdf_to_word_file": "Send the text-based PDF you want converted to Word.",
-  "pdf_to_word_preview": "Word document prepared: {title}\\nSource pages: {pages}",
-  "pdf_text_unreadable": "This PDF has no extractable text. Scanned PDFs will be supported by a dedicated OCR workflow.",
+  "pdf_to_word_preview": "Word document prepared: {title}\nSource pages: {pages}",
+  "pdf_text_unreadable": "This PDF includes scanned or non-extractable content. Send a fully text-based copy to avoid losing content.",
   "pdf_text_too_long": "The PDF text exceeds this service's safe limit. Split the file and try again."
 }
