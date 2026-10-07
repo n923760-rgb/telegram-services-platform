@@ -33,6 +33,10 @@ This roadmap is not a production release approval.
   defaults in .env.example/README, lock-filename correction). Regression tests authored but NOT RUN
   here; see [report](REPORTS/2026-10-05-finalization.md).
 - FACT: Office Expert Quality v1 was re-scoped from a mistaken new `office_expert` plugin into a shared-builder quality upgrade (Word/Excel/PPTX/PDF): content-based RTL/LTR, mixed Arabic/English handling, professional typography/layout, preserved formula-injection protection, adaptive Excel direction, PPTX title slide, and PDF font fallback with page footers; the plugin's i18n/docs/tests were reverted. Builder tests authored but NOT RUN in this environment; the plugin directory deletion is BLOCKED here (pending `rm -rf app/services/office_expert`); see [report](REPORTS/2026-10-06-office-expert-quality.md).
+- FACT: Telegram Services UX v1 implemented (bilingual Arabic/English customer UX via the existing
+  `User.language` column; localized menus, prompts, confirmations, support flow and delivery envelopes;
+  runtime language switch via /lang and the main menu). Tests authored; execution NOT RUN in this
+  environment. See REPORTS/2026-10-07-ux-v1.md.
 
 ## Architecture and state owners
 

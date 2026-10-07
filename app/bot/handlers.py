@@ -10,6 +10,7 @@ from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import Order, Service
 from app.core.settings import config
+from app.core.users import set_language
 from app.orders.engine import register, submit
 from app.services.base import InputSchema, ServiceError, active_field, get_input, set_input
 from app.wallet.ledger import WalletError, apply, balance, halalas, sar
@@ -25,23 +26,24 @@ def create_router():
             ]
         )
 
-    def menu():
+    def menu(lang="ar"):
         return buttons(
             [
-                (tr("services"), "menu:services"),
-                (tr("balance"), "menu:balance"),
-                (tr("support"), "menu:support"),
+                (tr("services", lang), "menu:services"),
+                (tr("balance", lang), "menu:balance"),
+                (tr("support", lang), "menu:support"),
+                (tr("language", lang), "menu:language"),
             ]
         )
 
     @router.message(CommandStart())
-    async def start(message: Message, state: FSMContext):
+    async def start(message: Message, state: FSMContext, lang: str = "ar"):
         await register(message.from_user.id)
         await state.clear()
-        await message.answer(tr("welcome"), reply_markup=menu())
+        await message.answer(tr("welcome", lang), reply_markup=menu(lang))
 
     @router.callback_query(F.data == "menu:services")
-    async def services(callback: CallbackQuery, state: FSMContext):
+    async def services(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await state.clear()
         async with sessions() as db:
             rows = (
@@ -51,33 +53,66 @@ def create_router():
             ).all()
         await callback.answer()
         if not rows:
-            await callback.message.answer(tr("no_services"))
+            await callback.message.answer(tr("no_services", lang))
             return
         await callback.message.answer(
-            tr("choose_service"),
+            tr("choose_service", lang),
             reply_markup=buttons(
                 [
-                    (f"{s.name_ar} — {sar(s.price_halala)} {tr('sar')}", f"service:{s.slug}")
+                    (
+                        f"{s.name_ar if lang == 'ar' else s.name_en} — "
+                        f"{sar(s.price_halala)} {tr('sar', lang)}",
+                        f"service:{s.slug}",
+                    )
                     for s in rows
                 ]
             ),
         )
 
     @router.callback_query(F.data == "menu:balance")
-    async def my_balance(callback: CallbackQuery):
+    async def my_balance(callback: CallbackQuery, lang: str = "ar"):
         async with sessions() as db:
             funds = await balance(db, callback.from_user.id)
         await callback.answer()
         await callback.message.answer(
-            tr("balance_details", available=sar(funds.available), reserved=sar(funds.reserved))
+            tr(
+                "balance_details",
+                lang,
+                available=sar(funds.available),
+                reserved=sar(funds.reserved),
+            )
         )
 
-    async def ask(message, state):
+    @router.callback_query(F.data == "menu:language")
+    async def language_menu(callback: CallbackQuery, lang: str = "ar"):
+        await callback.answer()
+        await callback.message.answer(
+            tr("choose_language", lang),
+            reply_markup=buttons(
+                [
+                    (tr("arabic", lang), "lang:ar"),
+                    (tr("english", lang), "lang:en"),
+                ]
+            ),
+        )
+
+    @router.message(Command("lang"))
+    async def language_command(message: Message, lang: str = "ar"):
+        await message.answer(
+            tr("choose_language", lang),
+            reply_markup=buttons(
+                [
+                    (tr("arabic", lang), "lang:ar"),
+                    (tr("english", lang), "lang:en"),
+                ]
+            ),
+        )
+
+    async def ask(message, state, lang="ar"):
         """Render the next prompt, confirmation or multiple-file prompt.
 
         A ``pending_prompt`` marker is persisted before the outbound send and cleared only
-        after it succeeds, so a transport failure leaves the draft recoverable: the next
-        applicable update or ``/resume`` re-renders without consuming a retried input twice.
+        after it succeeds, so a transport failure leaves the draft recoverable.
         """
         data = await state.get_data()
         fields = InputSchema.model_validate(data["schema"]).conversation()
@@ -91,11 +126,11 @@ def create_router():
         if index >= len(fields):
             await state.set_state("confirm")
             await message.answer(
-                tr("confirm_price", amount=sar(data["price"])),
+                tr("confirm_price", lang, amount=sar(data["price"])),
                 reply_markup=buttons(
                     [
-                        (tr("confirm"), f"confirm:{data['key']}"),
-                        (tr("cancel"), f"cancel:{data['key']}"),
+                        (tr("confirm", lang), f"confirm:{data['key']}"),
+                        (tr("cancel", lang), f"cancel:{data['key']}"),
                     ]
                 ),
             )
@@ -104,44 +139,37 @@ def create_router():
             values = get_input(data["inputs"], field.name)
             if field.multiple and isinstance(values, list) and 0 < len(values) < field.max_items:
                 await message.answer(
-                    tr("more_files"),
-                    reply_markup=buttons([(tr("done_files"), f"done:{data['key']}:{index}")]),
+                    tr("more_files", lang),
+                    reply_markup=buttons([(tr("done_files", lang), f"done:{data['key']}:{index}")]),
                 )
             else:
                 items = [
-                    (tr(k), f"choice:{data['key']}:{index}:{i}")
+                    (tr(k, lang), f"choice:{data['key']}:{index}:{i}")
                     for i, k in enumerate(field.choice_keys)
                 ]
                 if not field.required:
-                    items.append((tr("skip_field"), f"skip:{data['key']}:{index}"))
+                    items.append((tr("skip_field", lang), f"skip:{data['key']}:{index}"))
                 markup = buttons(items) if items else None
-                await message.answer(tr(field.prompt_key), reply_markup=markup)
+                await message.answer(tr(field.prompt_key, lang), reply_markup=markup)
         data["pending_prompt"] = False
         await state.set_data(data)
 
-    async def _resume_if_pending(message, state) -> bool:
-        """Re-render the pending prompt, if any, instead of consuming the update as input.
-
-        The triggering update is never consumed; an explicit localized notice explains that it
-        was not applied (resend it if it was new input, otherwise use the re-rendered controls).
-        If the re-render send itself fails, ``ask`` leaves ``pending_prompt`` set so the draft
-        stays recoverable on the next applicable update or ``/resume``.
-        """
+    async def _resume_if_pending(message, state, lang="ar") -> bool:
         data = await state.get_data()
         if data.get("pending_prompt") and data.get("key") and "schema" in data:
-            await message.answer(tr("update_not_applied"))
-            await ask(message, state)
+            await message.answer(tr("update_not_applied", lang))
+            await ask(message, state, lang)
             return True
         return False
 
     @router.callback_query(F.data.startswith("service:"))
-    async def choose(callback: CallbackQuery, state: FSMContext):
+    async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await register(callback.from_user.id)
         async with sessions() as db:
             service = await db.get(Service, callback.data.split(":", 1)[1])
         await callback.answer()
         if not service or not service.enabled:
-            await callback.message.answer(tr("unavailable"))
+            await callback.message.answer(tr("unavailable", lang))
             return
         await state.set_state("collect")
         await state.set_data(
@@ -155,28 +183,36 @@ def create_router():
                 "key": uuid4().hex,
             }
         )
-        await ask(callback.message, state)
+        await ask(callback.message, state, lang)
+
+    @router.callback_query(F.data.startswith("lang:"))
+    async def language_choose(callback: CallbackQuery):
+        new_lang = callback.data.split(":", 1)[1]
+        if new_lang not in {"ar", "en"}:
+            await callback.answer(tr("invalid_request"), show_alert=True)
+            return
+        await set_language(callback.from_user.id, new_lang)
+        await callback.answer()
+        await callback.message.answer(tr("language_set", new_lang), reply_markup=menu(new_lang))
 
     @router.callback_query(StateFilter("collect", "confirm"), F.data.startswith("cancel:"))
-    async def cancel(callback: CallbackQuery, state: FSMContext):
+    async def cancel(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
         if not data.get("key") or callback.data != f"cancel:{data['key']}":
-            # Legacy or stale draft buttons never clear state or touch the wallet.
-            await callback.answer(tr("stale_button"), show_alert=True)
+            await callback.answer(tr("stale_button", lang), show_alert=True)
             return
         await state.clear()
         await callback.answer()
-        # Scope the now-stale draft buttons so a later tap cannot resume the abandoned draft.
         try:
             await callback.message.edit_reply_markup()
         except Exception:
             pass
-        await callback.message.answer(tr("draft_cancelled"), reply_markup=menu())
+        await callback.message.answer(tr("draft_cancelled", lang), reply_markup=menu(lang))
 
     @router.callback_query(StateFilter("collect"), F.data.startswith("skip:"))
-    async def skip_field(callback: CallbackQuery, state: FSMContext):
+    async def skip_field(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
-        if await _resume_if_pending(callback.message, state):
+        if await _resume_if_pending(callback.message, state, lang):
             await callback.answer()
             return
         await callback.answer()
@@ -184,23 +220,23 @@ def create_router():
             _, key, index = callback.data.split(":")
             stale = key != data["key"] or int(index) != data["index"]
         except (ValueError, IndexError):
-            await callback.message.answer(tr("invalid_request"))
+            await callback.message.answer(tr("invalid_request", lang))
             return
         if stale:
-            await callback.message.answer(tr("stale_button"))
+            await callback.message.answer(tr("stale_button", lang))
             return
         field = InputSchema.model_validate(data["schema"]).conversation()[data["index"]]
         if field.required or get_input(data["inputs"], field.name) is not None:
-            await callback.message.answer(tr("invalid_request"))
+            await callback.message.answer(tr("invalid_request", lang))
             return
         data["index"] += 1
         await state.set_data(data)
-        await ask(callback.message, state)
+        await ask(callback.message, state, lang)
 
     @router.callback_query(StateFilter("collect"), F.data.startswith("choice:"))
-    async def choice(callback: CallbackQuery, state: FSMContext):
+    async def choice(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
-        if await _resume_if_pending(callback.message, state):
+        if await _resume_if_pending(callback.message, state, lang):
             await callback.answer()
             return
         try:
@@ -208,29 +244,29 @@ def create_router():
             selected_index = int(selected)
             stale = key != data["key"] or int(index) != data["index"]
         except (ValueError, IndexError):
-            await callback.answer(tr("invalid_request"), show_alert=True)
+            await callback.answer(tr("invalid_request", lang), show_alert=True)
             return
         if stale:
-            await callback.answer(tr("stale_button"), show_alert=True)
+            await callback.answer(tr("stale_button", lang), show_alert=True)
             return
         field = InputSchema.model_validate(data["schema"]).conversation()[data["index"]]
         if not 0 <= selected_index < len(field.choices):
-            await callback.answer(tr("invalid_request"), show_alert=True)
+            await callback.answer(tr("invalid_request", lang), show_alert=True)
             return
         value = field.choices[selected_index]
         await callback.answer()
-        await collect_value(callback.message, state, data, field.name, value)
+        await collect_value(callback.message, state, data, field.name, value, lang)
 
-    async def collect_value(message, state, data, name, value):
+    async def collect_value(message, state, data, name, value, lang):
         set_input(data["inputs"], name, value)
         data["index"] += 1
         await state.set_data(data)
-        await ask(message, state)
+        await ask(message, state, lang)
 
     @router.message(Command("addbalance", "balance", "stats"))
-    async def admin(message: Message):
+    async def admin(message: Message, lang: str = "ar"):
         if message.from_user.id not in config().admin_ids:
-            await message.answer(tr("not_allowed"))
+            await message.answer(tr("not_allowed", lang))
             return
         args = (message.text or "").split()
         try:
@@ -246,13 +282,14 @@ def create_router():
                         amount,
                         f"admin:{message.chat.id}:{message.message_id}",
                     )
-                await message.answer(tr("credited", amount=sar(amount), user_id=user_id))
+                await message.answer(tr("credited", lang, amount=sar(amount), user_id=user_id))
             elif command == "/balance":
                 async with sessions() as db:
                     funds = await balance(db, int(args[1]))
                 await message.answer(
                     tr(
                         "balance_details",
+                        lang,
                         available=sar(funds.available),
                         reserved=sar(funds.reserved),
                     )
@@ -260,19 +297,19 @@ def create_router():
             else:
                 async with sessions() as db:
                     count = await db.scalar(select(func.count(Order.id)))
-                await message.answer(tr("stats", orders=count))
+                await message.answer(tr("stats", lang, orders=count))
         except (ValueError, IndexError, WalletError):
-            await message.answer(tr("admin_usage"))
+            await message.answer(tr("admin_usage", lang))
 
     @router.callback_query(StateFilter("confirm"), F.data.startswith("confirm:"))
-    async def confirm(callback: CallbackQuery, state: FSMContext):
+    async def confirm(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
-        if await _resume_if_pending(callback.message, state):
+        if await _resume_if_pending(callback.message, state, lang):
             await callback.answer()
             return
         await callback.answer()
         if callback.data != f"confirm:{data['key']}":
-            await callback.message.answer(tr("stale_button"))
+            await callback.message.answer(tr("stale_button", lang))
             return
         try:
             order_id = await submit(
@@ -284,14 +321,15 @@ def create_router():
                 data["version"],
             )
             await state.clear()
-            # Remove the stale confirmation keyboard now that the order is submitted.
             try:
                 await callback.message.edit_reply_markup()
             except Exception:
                 pass
-            await callback.message.answer(tr("queued", order_id=order_id), reply_markup=menu())
+            await callback.message.answer(
+                tr("queued", lang, order_id=order_id), reply_markup=menu(lang)
+            )
         except (ServiceError, WalletError) as error:
-            await callback.message.answer(tr(error.key))
+            await callback.message.answer(tr(error.key, lang))
             if error.key == "cost_cap":
                 from app.ops.notifier import Notifier
                 from app.providers.notifier import TelegramAdminChannel
@@ -301,13 +339,13 @@ def create_router():
                 )
 
     @router.message(StateFilter("collect"), ~F.text.startswith("/"))
-    async def collect(message: Message, state: FSMContext):
+    async def collect(message: Message, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
-        if await _resume_if_pending(message, state):
+        if await _resume_if_pending(message, state, lang):
             return
         field = InputSchema.model_validate(data["schema"]).conversation()[data["index"]]
         if field.choices:
-            await message.answer(tr("choose_option"))
+            await message.answer(tr("choose_option", lang))
             return
         if field.kind in {"image", "file", "audio"}:
             from app.files.telegram import receive
@@ -315,12 +353,12 @@ def create_router():
             try:
                 value = await receive(message, field.kind, message.from_user.id)
             except ServiceError as error:
-                await message.answer(tr(error.key))
+                await message.answer(tr(error.key, lang))
                 return
         else:
             value = (message.text or "").strip()
             if not value or len(value) > field.max_length:
-                await message.answer(tr("input_invalid"))
+                await message.answer(tr("input_invalid", lang))
                 return
         if field.multiple:
             values = get_input(data["inputs"], field.name) or []
@@ -328,61 +366,60 @@ def create_router():
             set_input(data["inputs"], field.name, values)
             await state.set_data(data)
             if len(values) < field.max_items:
-                await ask(message, state)
+                await ask(message, state, lang)
                 return
             value = values
-        await collect_value(message, state, data, field.name, value)
+        await collect_value(message, state, data, field.name, value, lang)
 
     @router.message(StateFilter("confirm"), ~F.text.startswith("/"))
-    async def confirm_prompt(message: Message, state: FSMContext):
-        # Only re-render a pending confirmation; never consume the text or auto-submit.
-        if await _resume_if_pending(message, state):
+    async def confirm_prompt(message: Message, state: FSMContext, lang: str = "ar"):
+        if await _resume_if_pending(message, state, lang):
             return
-        await message.answer(tr("confirm_unchanged"))
+        await message.answer(tr("confirm_unchanged", lang))
 
     @router.message(Command("cancel"))
-    async def cancel_command(message: Message, state: FSMContext):
+    async def cancel_command(message: Message, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
         if not data.get("key"):
-            await message.answer(tr("no_active_draft"))
+            await message.answer(tr("no_active_draft", lang))
             return
         await state.clear()
-        await message.answer(tr("draft_cancelled"), reply_markup=menu())
+        await message.answer(tr("draft_cancelled", lang), reply_markup=menu(lang))
 
     @router.message(Command("resume"))
-    async def resume_command(message: Message, state: FSMContext):
+    async def resume_command(message: Message, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
         if not data.get("key") or "schema" not in data:
-            await message.answer(tr("resume_none"))
+            await message.answer(tr("resume_none", lang))
             return
-        await ask(message, state)
+        await ask(message, state, lang)
 
     @router.callback_query(StateFilter("collect"), F.data.startswith("done:"))
-    async def done_files(callback: CallbackQuery, state: FSMContext):
+    async def done_files(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         data = await state.get_data()
-        if await _resume_if_pending(callback.message, state):
+        if await _resume_if_pending(callback.message, state, lang):
             await callback.answer()
             return
         try:
             _, key, index = callback.data.split(":")
             stale = key != data["key"] or int(index) != data["index"]
         except (ValueError, IndexError):
-            await callback.answer(tr("invalid_request"), show_alert=True)
+            await callback.answer(tr("invalid_request", lang), show_alert=True)
             return
         if stale:
-            await callback.answer(tr("stale_button"), show_alert=True)
+            await callback.answer(tr("stale_button", lang), show_alert=True)
             return
         field = InputSchema.model_validate(data["schema"]).conversation()[data["index"]]
         values = get_input(data["inputs"], field.name) or []
         if not field.multiple or not values:
             await callback.answer()
-            await callback.message.answer(tr("input_invalid"))
+            await callback.message.answer(tr("input_invalid", lang))
             return
         await callback.answer()
-        await collect_value(callback.message, state, data, field.name, values)
+        await collect_value(callback.message, state, data, field.name, values, lang)
 
     @router.callback_query(F.data.startswith("approve:") | F.data.startswith("reject:"))
-    async def structure_confirmation(callback: CallbackQuery):
+    async def structure_confirmation(callback: CallbackQuery, lang: str = "ar"):
         from uuid import UUID
 
         from app.orders.engine import confirm_structure
@@ -395,15 +432,17 @@ def create_router():
                 callback.data.startswith("approve:"),
             )
             await callback.message.answer(
-                tr("admin_done") if callback.data.startswith("approve:") else tr("cancelled")
+                tr("admin_done", lang)
+                if callback.data.startswith("approve:")
+                else tr("cancelled", lang)
             )
         except (ValueError, ServiceError) as error:
             await callback.message.answer(
-                tr(error.key if isinstance(error, ServiceError) else "invalid_request")
+                tr(error.key if isinstance(error, ServiceError) else "invalid_request", lang)
             )
 
     @router.callback_query()
-    async def expired_callback(callback: CallbackQuery):
-        await callback.answer(tr("stale_button"), show_alert=True)
+    async def expired_callback(callback: CallbackQuery, lang: str = "ar"):
+        await callback.answer(tr("stale_button", lang), show_alert=True)
 
     return router
