@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery
 from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import User
+from app.core.users import get_language
 
 RATE_LUA = """local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n"""
 
@@ -38,6 +39,16 @@ class PrivateChatGate(BaseMiddleware):
         return await handler(event, data)
 
 
+class UserContext(BaseMiddleware):
+    """Resolve the user's stored UI language once per update and expose it as ``lang``."""
+
+    async def __call__(self, handler, event, data):
+        user = getattr(event, "from_user", None)
+        user_id = getattr(user, "id", None) if user is not None else None
+        data["lang"] = await get_language(user_id) if user_id else "ar"
+        return await handler(event, data)
+
+
 class Guard(BaseMiddleware):
     def __init__(self, redis):
         self.redis = redis
@@ -54,9 +65,10 @@ class Guard(BaseMiddleware):
         except Exception:
             allowed = False
         if not allowed:
+            lang = data.get("lang", "ar")
             if hasattr(event, "message"):
-                await event.answer(tr("rate_limited"), show_alert=True)
+                await event.answer(tr("rate_limited", lang), show_alert=True)
             else:
-                await event.answer(tr("rate_limited"))
+                await event.answer(tr("rate_limited", lang))
             return
         return await handler(event, data)

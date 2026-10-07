@@ -10,6 +10,7 @@ from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import Order, SupportTicket
 from app.core.settings import config
+from app.core.users import get_language
 from app.ops.admin import ban, refund, set_service
 from app.ops.reports import report
 from app.services.base import ServiceError
@@ -20,9 +21,9 @@ def create_router():
     router = Router()
 
     @router.message(Command("disable", "enable", "setprice", "refund", "ban", "report"))
-    async def admin_ops(message: Message):
+    async def admin_ops(message: Message, lang: str = "ar"):
         if message.from_user.id not in config().admin_ids:
-            await message.answer(tr("not_allowed"))
+            await message.answer(tr("not_allowed", lang))
             return
         args = (message.text or "").split()
         command = args[0].split("@")[0]
@@ -38,23 +39,23 @@ def create_router():
                 await set_service(args[1], price=halalas(args[2]))
             else:
                 await set_service(args[1], enabled=command == "/enable")
-            await message.answer(tr("admin_done"))
+            await message.answer(tr("admin_done", lang))
         except ServiceError as error:
-            await message.answer(tr(error.key))
+            await message.answer(tr(error.key, lang))
         except (ValueError, IndexError, WalletError):
-            await message.answer(tr("admin_usage"))
+            await message.answer(tr("admin_usage", lang))
 
     @router.callback_query(F.data == "menu:support")
-    async def support(callback: CallbackQuery, state: FSMContext):
+    async def support(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await state.clear()
         await state.set_state("support")
         await callback.answer()
-        await callback.message.answer(tr("support_prompt"))
+        await callback.message.answer(tr("support_prompt", lang))
 
     @router.message(StateFilter("support"), ~F.text.startswith("/"))
-    async def support_message(message: Message, state: FSMContext):
+    async def support_message(message: Message, state: FSMContext, lang: str = "ar"):
         if not message.text or len(message.text) > 3000:
-            await message.answer(tr("input_invalid"))
+            await message.answer(tr("input_invalid", lang))
             return
         data = await state.get_data()
         stored = data.get("ticket_id")
@@ -98,14 +99,14 @@ def create_router():
                 continue
         if delivered:
             await state.clear()
-            await message.answer(tr("support_sent"))
+            await message.answer(tr("support_sent", lang))
         else:
-            await message.answer(tr("support_failed"))
+            await message.answer(tr("support_failed", lang))
 
     @router.message(Command("reply"))
-    async def reply(message: Message):
+    async def reply(message: Message, lang: str = "ar"):
         if message.from_user.id not in config().admin_ids:
-            await message.answer(tr("not_allowed"))
+            await message.answer(tr("not_allowed", lang))
             return
         try:
             _, ticket_id, content = (message.text or "").split(maxsplit=2)
@@ -116,13 +117,16 @@ def create_router():
             if not ticket:
                 raise ValueError
         except (ValueError, IndexError):
-            await message.answer(tr("admin_usage"))
+            await message.answer(tr("admin_usage", lang))
             return
         try:
-            await message.bot.send_message(ticket.user_id, tr("support_reply", content=content))
+            customer_lang = await get_language(ticket.user_id)
+            await message.bot.send_message(
+                ticket.user_id, tr("support_reply", customer_lang, content=content)
+            )
         except Exception:
-            await message.answer(tr("support_reply_failed"))
+            await message.answer(tr("support_reply_failed", lang))
             return
-        await message.answer(tr("admin_done"))
+        await message.answer(tr("admin_done", lang))
 
     return router

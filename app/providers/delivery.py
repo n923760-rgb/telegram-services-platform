@@ -4,6 +4,7 @@ from aiogram import Bot
 from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 
 from app.core.i18n import tr
+from app.core.users import get_language
 from app.services.base import Result
 
 
@@ -19,10 +20,16 @@ class TelegramDelivery(Delivery):
     def __init__(self, bot: Bot, storage=None):
         self.bot, self.storage = bot, storage
 
+    async def _lang(self, user_id):
+        return await get_language(user_id)
+
     async def send(self, user_id, order_id, result):
-        await self.bot.send_message(user_id, tr("result_header", order_id=order_id))
+        lang = await self._lang(user_id)
+        await self.bot.send_message(user_id, tr("result_header", lang, order_id=order_id))
         if result.preview:
-            await self.bot.send_message(user_id, tr("structure_preview", preview=result.preview))
+            await self.bot.send_message(
+                user_id, tr("structure_preview", lang, preview=result.preview)
+            )
         part = ""
         units = 0
         for character in result.text:
@@ -45,23 +52,27 @@ class TelegramDelivery(Delivery):
         return "telegram:accepted"
 
     async def error(self, user_id, order_id, key):
-        await self.bot.send_message(user_id, tr("order_failed", order_id=order_id, reason=tr(key)))
+        lang = await self._lang(user_id)
+        await self.bot.send_message(
+            user_id, tr("order_failed", lang, order_id=order_id, reason=tr(key, lang))
+        )
 
     async def confirmation(self, user_id, order_id, preview):
+        lang = await self._lang(user_id)
         markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=tr("approve_structure"), callback_data=f"approve:{order_id}"
+                        text=tr("approve_structure", lang), callback_data=f"approve:{order_id}"
                     ),
                     InlineKeyboardButton(
-                        text=tr("cancel_order"), callback_data=f"reject:{order_id}"
+                        text=tr("cancel_order", lang), callback_data=f"reject:{order_id}"
                     ),
                 ]
             ]
         )
         await self.bot.send_message(
             user_id,
-            tr("confirmation_waiting", order_id=order_id, preview=preview),
+            tr("confirmation_waiting", lang, order_id=order_id, preview=preview),
             reply_markup=markup,
         )
