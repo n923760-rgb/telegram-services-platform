@@ -12,13 +12,14 @@ Reconciled with live GitHub on 2026-10-07. This roadmap is not a production rele
 - PASS: Reviewed UX head f498413 passed 152 tests, lint, format, migrations, schema drift
   and Compose configuration in workflow 37575252712. Post-merge main workflow
   37575645208 also completed successfully.
-- FACT: PR #5 remains open for PDF-to-Word. Its original workflow failed at formatting;
-  no application test result is claimed for that original run. This review fixes discovery,
-  incremental extraction limits, rejection of non-extractable pages and literal newline errors.
-- PASS: Local PDF-to-Word smoke exercised registry discovery, real PDF parsing, editable DOCX
-  content and encrypted/mixed/blank rejection without AI calls. Lint/format/diff checks passed.
-- PENDING: Hosted qualification of the updated PR #5; unit and order/wallet/delivery regression
-  tests are authored, including reservation release and cached delivery retry.
+- FACT: PR #5 is merged at a3aaf573238a497659bfa3137073185bf10b7340. PDF-to-Word
+  is discovered, disabled by default, and rejects encrypted, unreadable, mixed and oversized
+  input before an AI call. Original page-layout/image/table reconstruction is outside scope.
+- PASS: Reviewed PDF-to-Word head a0cce87 passed 171 tests, lint/format, migrations,
+  schema drift and Compose configuration in workflow 37576254914. Nineteen focused cases
+  cover extraction, ownership/limits, credit release and cached delivery recovery.
+- PASS: Local smoke used actual PDF parsing and DOCX reopening. Hosted integration evidence
+  is retained in EVIDENCE/README.md separately from real-provider qualification.
 - NOT RUN here: Container runtime and authenticated Telegram/provider journeys; no access to
   the operator's server or private configuration is available in this workspace.
 - FACT: No production deployment or service enablement was performed in this review.
@@ -48,9 +49,9 @@ Details: [validation](../docs/VALIDATION.md),
 
 ## Findings and release blockers
 
-1. PENDING qualification of updated PDF-to-Word PR #5 against the latest main.
+1. NOT RUN: Real source-bound Telegram/provider acceptance on a dedicated staging account.
 2. NOT RUN here: Docker build/start/recovery and server-specific deployment qualification.
-3. NOT RUN real Telegram/provider journeys leave delivery and Arabic OCR quality unqualified.
+3. NOT RUN: Representative Arabic/English PDF extraction and live provider output quality.
 4. UNKNOWN current provider rates/billing need operator configuration and reconciliation.
 5. FACT SAR wallet credits are test credits; Telegram digital sales need a separate Stars design.
 6. FACT external delivery is at least once; send/commit crashes can duplicate output.
@@ -71,17 +72,16 @@ Details: [validation](../docs/VALIDATION.md),
 ## Owner decisions and deferred work
 
 Identify staging and configure secrets privately; retain remote/hosted evidence separately from deployment.
-Keep payment gateways, dashboards, extra services, agent loops and n8n out of current scope.
+Keep payment gateways, dashboards, unapproved extra services, agent loops and n8n out of current scope.
 Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 
 ## Exact immediate next round
 
-Inspect hosted checks for updated PR #5 and fix confirmed failures before merge. The owner
-has authorized continued implementation and merge of the reviewed work in this continuation.
-After merge, verify the post-merge main workflow and record attributable results.
-Then run the [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md) on an available staging
+Verify the latest main workflow before using that source for runtime qualification.
+Run the [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md) on an available staging
 server with a dedicated test account and operator-configured secrets. Use echo first, then
 Office/PDF and clear/unclear OCR; inspect reservations, capture/release and file cleanup.
+The operator must identify the installation and deployment method before runtime changes.
 Keep real-provider quality and billing evidence separate from mocked integration checks.
 Do not reopen completed phases without a confirmed finding or invent runtime evidence.
 

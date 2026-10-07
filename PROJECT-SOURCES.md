@@ -8,7 +8,7 @@ Use this resource map for navigation. Reverify live Git state before work.
 | Canonical source | origin/main after initial import; verify remote HEAD before subsequent work |
 | Remote project repository | https://github.com/n923760-rgb/telegram-services-platform; origin configured |
 | Official remote branch | main; verify live HEAD through GitHub before further mutations |
-| Local baseline branch | master; use bounded task branches for implementation |
+| Working branches | Use bounded task branches/worktrees; do not infer the current branch from historical reports |
 | Authority | AGENTS.md |
 | Reference and adaptations | docs/GOVERNANCE.md |
 | Single roadmap | ENGINEERING/MASTER_ROADMAP.md |
@@ -17,7 +17,8 @@ Use this resource map for navigation. Reverify live Git state before work.
 | Setup and service-extension contract | README.md and README_AR.md |
 | Operations and restore | docs/OPERATIONS.md |
 | Validation and environment limits | docs/VALIDATION.md |
-| CI definition | .github/workflows/verify.yml; hosted execution pending |
+| Real staging acceptance | docs/TELEGRAM_ACCEPTANCE.md; live Telegram/provider execution pending |
+| CI definition | .github/workflows/verify.yml; attributable hosted results in ENGINEERING/EVIDENCE/README.md |
 | Runtime definitions | docker-compose.yml and compose.test.yml |
 | Private configuration | scripts/configure.py and .env.example; real .env stays untracked |
 | Dependencies | uv.lock and requirements.lock |

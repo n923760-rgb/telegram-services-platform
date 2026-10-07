@@ -109,7 +109,7 @@ Keep local build evidence separate from hosted CI and real Telegram/provider qua
 Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
 Live main includes text-to-PowerPoint/PDF, shared Office quality and bilingual UX (PR #7).
 UX qualification passed 152 hosted tests; its post-merge main workflow passed.
-PR #5 PDF-to-Word is under bounded review: discovery/formatting, text extraction safety and financial/delivery regressions.
-Require green checks on its reviewed head before merge. Keep original page-layout/OCR reconstruction out of this text-based conversion.
+PR #5 PDF-to-Word is merged; its reviewed head passed 171 hosted tests, migrations/drift, lint/format and Compose checks.
+Keep original page-layout/OCR reconstruction out of this text-based conversion; require representative real-provider acceptance before enabling it.
 Use docs/TELEGRAM_ACCEPTANCE.md for real staging journeys; live Telegram/AI and deployment remain NOT RUN here.
 Treat SAR balances as test credits and configure secrets only on the operating machine.

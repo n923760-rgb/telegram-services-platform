@@ -191,6 +191,8 @@ circuit breakers, retry recovery, generic bot input, ambiguity approval, OCR/tra
 Office files are reopened and inspected; Arabic PDF layout was rendered and visually inspected.
 Live Telegram, live AI quality/billing and Docker/VPS deployment need credentials and deployment validation.
 
+Use the [Telegram acceptance guide](docs/TELEGRAM_ACCEPTANCE.md) to qualify a dedicated staging account against its recorded source SHA.
+
 Read [AGENTS.md](AGENTS.md) for engineering rules and [operations](docs/OPERATIONS.md) for daily pg_dump,
 retention, restore and off-server copying. Files are deleted after terminal delivery/failure, with a durable cleanup sweep for early cancellations and TTL
 cleanup for interrupted work; expired database content is purged while financial audit rows remain.
