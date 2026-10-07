@@ -4,7 +4,7 @@ from aiogram import Bot
 from aiogram.client.session.base import BaseSession
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import AnswerCallbackQuery, SendMessage
-from aiogram.types import CallbackQuery, Chat, Message, Update, User
+from aiogram.types import CallbackQuery, Chat, InlineKeyboardMarkup, Message, Update, User
 from sqlalchemy import select
 
 from app.bot.main import create_dispatcher
@@ -31,7 +31,9 @@ class Session(BaseSession):
                 date=datetime.now(UTC),
                 chat=Chat(id=int(method.chat_id), type="private"),
                 text=method.text,
-                reply_markup=method.reply_markup,
+                reply_markup=method.reply_markup
+                if isinstance(method.reply_markup, InlineKeyboardMarkup)
+                else None,
             )
             self.messages.append(message)
             return message
@@ -79,7 +81,7 @@ async def test_actual_dispatcher_dynamic_echo_conversation():
     await callback("menu:services")
     assert transport.messages[-1].reply_markup.inline_keyboard[0][0].callback_data == "service:echo"
     await callback("service:echo")
-    assert transport.messages[-1].text == tr("input_text")
+    assert transport.messages[-1].text.endswith(tr("input_text"))
     await message("/cancel")
     assert transport.messages[-1].text == tr("draft_cancelled")
     await callback("service:echo")

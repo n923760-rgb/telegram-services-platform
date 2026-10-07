@@ -40,3 +40,10 @@ PR #7 merged at a8f70f7; PR #5 merged at a3aaf573238a497659bfa3137073185bf10b734
 Inspect current main's workflow separately; branch-head evidence must not be treated as an
 uninspected post-merge result. Production deployment and authenticated Telegram/provider
 journeys remain NOT RUN here. Runtime qualification follows docs/TELEGRAM_ACCEPTANCE.md.
+
+## Customer navigation continuation — 2026-10-07
+
+Baseline main 5225b4d passed [workflow 37576790402](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37576790402).
+Task changes and local lint/format/203-test collection are recorded in
+[the task report](../REPORTS/2026-10-07-customer-navigation.md). Hosted task checks are PENDING;
+collection is not an integration pass. Real Telegram/provider and deployment remain NOT RUN.

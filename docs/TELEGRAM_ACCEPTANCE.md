@@ -38,6 +38,11 @@ The placeholder is the dedicated customer's numeric Telegram ID. This is test cr
 | PDF to Word | Upload a fully text-based sample PDF | DOCX is editable and preserves extracted facts; original layout, images and tables are outside this service |
 | Rejected PDF | Upload a blank, encrypted or mixed text/scanned sample | No output file; clear failure; no net credit charge; reserved returns to zero |
 | OCR | Try clear Arabic/English images, then an unreadable image | Clear text matches source; unreadable input fails honestly and releases reservation |
+| Bottom navigation | Use Services, My orders, Credit, Help and Home during intake | Navigation is not saved as content; draft remains resumable; keyboard has two columns |
+| Language during intake | Enter the first field, switch language, then resume | Entered content is preserved; current question and persistent keyboard use the selected language |
+| Support during intake | Open support, send a synthetic question, return to draft | Existing draft and prompt index survive; navigation labels are not forwarded to support |
+| Order history | Submit two test orders; open My orders and refresh details | Only own orders appear, newest first; current status, original price and Saudi timestamp are correct |
+| Confirmation via history | Open a waiting-for-approval order in My orders; approve or reject | Existing order resumes or releases its reservation once; repeated controls cannot settle twice |
 | Cancel | Cancel a draft before confirmation | No order charge; old confirmation buttons cannot submit it |
 | Confirmation replay | Tap an old confirmation again after completion | No second financial charge; old control is rejected safely |
 

@@ -8,7 +8,7 @@ from aiogram import Bot
 from aiogram.client.session.base import BaseSession
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import AnswerCallbackQuery, SendMessage
-from aiogram.types import CallbackQuery, Chat, Message, Update
+from aiogram.types import CallbackQuery, Chat, InlineKeyboardMarkup, Message, Update
 from aiogram.types import User as TelegramUser
 
 from app.bot.main import create_dispatcher
@@ -41,7 +41,9 @@ class Session(BaseSession):
                 date=datetime.now(UTC),
                 chat=Chat(id=int(method.chat_id), type="private"),
                 text=method.text,
-                reply_markup=method.reply_markup,
+                reply_markup=method.reply_markup
+                if isinstance(method.reply_markup, InlineKeyboardMarkup)
+                else None,
             )
             self.messages.append(message)
             return message

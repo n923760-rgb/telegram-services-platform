@@ -26,6 +26,17 @@ Reconciled with live GitHub on 2026-10-07. This roadmap is not a production rele
 - Historical environment limitations in dated reports remain historical evidence, not the
   current hosted test result. See REPORTS/2026-10-07-pdf-to-word-review.md.
 
+## Customer experience continuation — 2026-10-07
+
+- FACT: Task branch adds persistent two-column navigation, owner-scoped paginated order
+  history, localized state/time details, prompt steps and scoped cancellation.
+- FACT: Menu/support/home navigation preserves drafts; language changes redraw the current
+  question. Existing service-selection, payment and settlement contracts remain in place.
+- PASS: Locked local install, lint/format/diff and collection of 203 tests (32 new cases).
+- PENDING: Hosted task-head integration, migrations/drift and Compose configuration.
+- NOT RUN: Authenticated Telegram/provider and deployment qualification.
+- Evidence: [customer-navigation report](REPORTS/2026-10-07-customer-navigation.md).
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution

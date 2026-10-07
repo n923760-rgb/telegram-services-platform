@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 
+from app.bot.ui import MenuButton, buttons, leave_support, menu, section_controls
 from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import Order, SupportTicket
@@ -13,6 +14,7 @@ from app.core.settings import config
 from app.core.users import get_language
 from app.ops.admin import ban, refund, set_service
 from app.ops.reports import report
+from app.orders.engine import register
 from app.services.base import ServiceError
 from app.wallet.ledger import WalletError, halalas
 
@@ -45,12 +47,24 @@ def create_router():
         except (ValueError, IndexError, WalletError):
             await message.answer(tr("admin_usage", lang))
 
+    async def enter_support(message, state, user_id, lang):
+        await register(user_id)
+        if await state.get_state() != "support":
+            await state.update_data(support_return_state=await state.get_state())
+            await state.set_state("support")
+        await message.answer(
+            tr("support_prompt", lang), reply_markup=buttons(await section_controls(state, lang))
+        )
+
     @router.callback_query(F.data == "menu:support")
     async def support(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
-        await state.clear()
-        await state.set_state("support")
         await callback.answer()
-        await callback.message.answer(tr("support_prompt", lang))
+        await enter_support(callback.message, state, callback.from_user.id, lang)
+
+    @router.message(Command("support"))
+    @router.message(MenuButton("support"))
+    async def support_command(message: Message, state: FSMContext, lang: str = "ar"):
+        await enter_support(message, state, message.from_user.id, lang)
 
     @router.message(StateFilter("support"), ~F.text.startswith("/"))
     async def support_message(message: Message, state: FSMContext, lang: str = "ar"):
@@ -98,8 +112,8 @@ def create_router():
             except Exception:
                 continue
         if delivered:
-            await state.clear()
-            await message.answer(tr("support_sent", lang))
+            await leave_support(state)
+            await message.answer(tr("support_sent", lang), reply_markup=menu(lang))
         else:
             await message.answer(tr("support_failed", lang))
 
