@@ -186,10 +186,10 @@ def create_router():
         await ask(callback.message, state, lang)
 
     @router.callback_query(F.data.startswith("lang:"))
-    async def language_choose(callback: CallbackQuery):
+    async def language_choose(callback: CallbackQuery, lang: str = "ar"):
         new_lang = callback.data.split(":", 1)[1]
         if new_lang not in {"ar", "en"}:
-            await callback.answer(tr("invalid_request"), show_alert=True)
+            await callback.answer(tr("invalid_request", lang), show_alert=True)
             return
         await set_language(callback.from_user.id, new_lang)
         await callback.answer()

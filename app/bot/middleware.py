@@ -65,9 +65,10 @@ class Guard(BaseMiddleware):
         except Exception:
             allowed = False
         if not allowed:
+            lang = data.get("lang", "ar")
             if hasattr(event, "message"):
-                await event.answer(tr("rate_limited"), show_alert=True)
+                await event.answer(tr("rate_limited", lang), show_alert=True)
             else:
-                await event.answer(tr("rate_limited"))
+                await event.answer(tr("rate_limited", lang))
             return
         return await handler(event, data)

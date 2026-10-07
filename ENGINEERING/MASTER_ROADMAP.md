@@ -37,6 +37,11 @@ This roadmap is not a production release approval.
   `User.language` column; localized menus, prompts, confirmations, support flow and delivery envelopes;
   runtime language switch via /lang and the main menu). Tests authored; execution NOT RUN in this
   environment. See REPORTS/2026-10-07-ux-v1.md.
+- FACT: Continuation review verified live main at `58a6714`, merged PRs #4/#6 and successful
+  main workflow 37530003688. UX v1 is in PR #7 (not merged). Review corrected untranslated
+  guard/invalid-language notices and expanded UX coverage to nine cases. Local lint, format
+  and diff checks PASS; hosted verification for the follow-up is pending. See
+  [continuation review](REPORTS/2026-10-07-ux-review.md).
 
 ## Architecture and state owners
 
