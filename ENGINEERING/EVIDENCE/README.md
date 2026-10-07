@@ -45,5 +45,7 @@ journeys remain NOT RUN here. Runtime qualification follows docs/TELEGRAM_ACCEPT
 
 Baseline main 5225b4d passed [workflow 37576790402](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37576790402).
 Task changes and local lint/format/203-test collection are recorded in
-[the task report](../REPORTS/2026-10-07-customer-navigation.md). Hosted task checks are PENDING;
-collection is not an integration pass. Real Telegram/provider and deployment remain NOT RUN.
+[the task report](../REPORTS/2026-10-07-customer-navigation.md). Source d3d10b04d2bdac1a5ce17a87f17cf1d4e50930e4
+passed [workflow 37659108407](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37659108407): 203 tests (one dependency warning),
+lint/format, migrations/drift and Compose configuration. The final evidence update changes
+documentation only, preserving that tested application/test tree; inspect final-head CI separately. Real Telegram/provider and deployment remain NOT RUN.

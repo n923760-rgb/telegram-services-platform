@@ -36,7 +36,11 @@ continuation JSON, storage paths or expired artifact-download capability is expo
 - PASS: uv run pytest --collect-only -q: 203 tests collected, including 32 new cases.
 - NOT RUN locally: PostgreSQL/Redis integration and Alembic. Local runtime lacks these
   servers and PostgreSQL package installation was unavailable in this restricted environment.
-- PENDING: Hosted PR workflow; inspect the final head's actual results before approval.
+- PASS: [hosted workflow 37659108407](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37659108407) for source
+  d3d10b04d2bdac1a5ce17a87f17cf1d4e50930e4: 203 tests passed (one dependency warning),
+  lint/format, Alembic migrations, schema drift and Compose configuration.
+- FACT: The final evidence update changes documentation only; the application/test tree
+  remains identical to this tested source. Inspect its final-head workflow separately.
 - NOT RUN: Real Telegram/provider journeys and production deployment; no server access or
   credentials were used. Follow docs/TELEGRAM_ACCEPTANCE.md after hosted checks.
 
