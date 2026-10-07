@@ -20,6 +20,7 @@ selling services; the implementation does not silently add a different payment s
 | `text_to_office` | Disabled | SAR 5 | Text to editable Word or Excel; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pdf` | Disabled | SAR 5 | Text to a professional, printable PDF document; asks for structure approval only when the validated plan is ambiguous. |
+| `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
 
 Word, Excel, PowerPoint and PDF builders are shared infrastructure. Blank, unreadable or empty OCR
 is rejected and credit released.
@@ -89,7 +90,7 @@ Amounts accept at most two decimal places; ledger balance is the sum of entries.
 The concrete adapter implements an OpenAI-compatible chat-completions endpoint with structured JSON
 and image inputs. Set `AI_ENABLED=true`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, and positive current
 `AI_INPUT_USD_PER_MILLION` / `AI_OUTPUT_USD_PER_MILLION` rates. Verify the model supports the request
-format. Restart processes, then `/enable image_to_text`, `/enable text_to_office`, `/enable text_to_pptx` and `/enable text_to_pdf`.
+format. Restart processes, then `/enable image_to_text`, `/enable text_to_office`, `/enable text_to_pptx`, `/enable text_to_pdf` and `/enable pdf_to_word`.
 Changing a provider requires a provider implementation/factory change, not service or bot changes.
 Transcription is an interface placeholder; no audio service is implemented.
 

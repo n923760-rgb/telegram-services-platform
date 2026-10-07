@@ -1,47 +1,29 @@
 # Master engineering roadmap
 
-Reconcile this single roadmap after live-source verification. Documentation round: 2026-10-04.
-This roadmap is not a production release approval.
+Reconciled with live GitHub on 2026-10-07. This roadmap is not a production release approval.
 
 ## Current verified state
 
-- FACT: Local implementation covers the four authorized phases and revised specification.
-- FACT: The application suite passed 83 tests before this documentation-only adaptation.
-- FACT: Alembic head 0010, lint, format, dump/restore and HTTP readiness passed locally.
-- FACT: Root AGENTS.md preserves project policy and adapts the reviewed engineering reference.
-- FACT: Target is n923760-rgb/telegram-services-platform on main; the owner authorized initial publication.
-- FACT: Integration access now succeeds; initial source import preserves the repository initialization commit.
-- BLOCKED: Docker/VPS execution is unavailable in this environment.
-- FACT: Initial hosted run passed 83 tests, lint/format, migration and schema-drift checks.
-- FAIL: Final Compose check lacked its service .env file; a bounded CI-only correction is under review.
-- NOT RUN: Authenticated Telegram/AI journeys.
-- FACT: File-retention safety fix applied (gate purge on durable deletion; protect referenced
-  files from age expiry). Regression tests authored but NOT RUN in this environment; see
-  [report](REPORTS/2026-10-04-file-retention-safety.md).
-- FACT: Approved bounded fixes applied (private-chat gate, HTTPS-only AI endpoints, truthful
-  draft-cancel text, per-admin support delivery with reusable ticket ids, retryable intake
-  I/O errors, user cost-cap label, stale-plugin enablement). Regression tests authored but
-  NOT RUN in this environment; see [report](REPORTS/2026-10-04-bounded-fixes.md).
-- FACT: Second bounded-fix round applied (scoped draft cancel, idempotent /resume prompt recovery,
-  per-owner upload quota, OCR new-request wording, safe ops/parse errors). Notifier dedup verified
-  intentional (dedup by type per README). Regression tests authored but NOT RUN here; see
-  [report](REPORTS/2026-10-04-full-review.md).
-- FACT: Third bounded-fix round applied (correct `fund` import, confirm-state prompt handler,
-  strengthened confirmation-recovery regression tests). Regression tests authored but NOT RUN here.
-- FACT: Finalization round applied (explicit update-not-applied recovery notice for multiple images,
-  truthful storage-quota wording, dedicated stale-button guidance, confirm-state instruction, quota
-  defaults in .env.example/README, lock-filename correction). Regression tests authored but NOT RUN
-  here; see [report](REPORTS/2026-10-05-finalization.md).
-- FACT: Office Expert Quality v1 was re-scoped from a mistaken new `office_expert` plugin into a shared-builder quality upgrade (Word/Excel/PPTX/PDF): content-based RTL/LTR, mixed Arabic/English handling, professional typography/layout, preserved formula-injection protection, adaptive Excel direction, PPTX title slide, and PDF font fallback with page footers; the plugin's i18n/docs/tests were reverted. Builder tests authored but NOT RUN in this environment; the plugin directory deletion is BLOCKED here (pending `rm -rf app/services/office_expert`); see [report](REPORTS/2026-10-06-office-expert-quality.md).
-- FACT: Telegram Services UX v1 implemented (bilingual Arabic/English customer UX via the existing
-  `User.language` column; localized menus, prompts, confirmations, support flow and delivery envelopes;
-  runtime language switch via /lang and the main menu). Tests authored; execution NOT RUN in this
-  environment. See REPORTS/2026-10-07-ux-v1.md.
-- FACT: Continuation review verified live main at `58a6714`, merged PRs #4/#6 and successful
-  main workflow 37530003688. UX v1 is in PR #7 (not merged). Review corrected untranslated
-  guard/invalid-language notices and expanded UX coverage to nine cases. Local lint, format
-  and diff checks PASS; hosted verification for the follow-up is pending. See
-  [continuation review](REPORTS/2026-10-07-ux-review.md).
+- FACT: Source of truth is n923760-rgb/telegram-services-platform, official branch main.
+- FACT: PRs #1–#4 and #6 are merged: Compose CI setup, recovery/retention safeguards,
+  text-to-PowerPoint, text-to-PDF and shared Office builder quality.
+- FACT: PR #7 is merged at a8f70f7eb58d457dfefb4e378c5085e6fc9d3092:
+  persistent Arabic/English menus, intake, support and delivery notices.
+- PASS: Reviewed UX head f498413 passed 152 tests, lint, format, migrations, schema drift
+  and Compose configuration in workflow 37575252712. Post-merge main workflow
+  37575645208 also completed successfully.
+- FACT: PR #5 remains open for PDF-to-Word. Its original workflow failed at formatting;
+  no application test result is claimed for that original run. This review fixes discovery,
+  incremental extraction limits, rejection of non-extractable pages and literal newline errors.
+- PASS: Local PDF-to-Word smoke exercised registry discovery, real PDF parsing, editable DOCX
+  content and encrypted/mixed/blank rejection without AI calls. Lint/format/diff checks passed.
+- PENDING: Hosted qualification of the updated PR #5; unit and order/wallet/delivery regression
+  tests are authored, including reservation release and cached delivery retry.
+- NOT RUN here: Container runtime and authenticated Telegram/provider journeys; no access to
+  the operator's server or private configuration is available in this workspace.
+- FACT: No production deployment or service enablement was performed in this review.
+- Historical environment limitations in dated reports remain historical evidence, not the
+  current hosted test result. See REPORTS/2026-10-07-pdf-to-word-review.md.
 
 ## Architecture and state owners
 
@@ -66,8 +48,8 @@ Details: [validation](../docs/VALIDATION.md),
 
 ## Findings and release blockers
 
-1. Complete hosted verification of the Compose environment-file correction before CI qualification.
-2. BLOCKED Docker build/start/recovery prevents container deployment qualification.
+1. PENDING qualification of updated PDF-to-Word PR #5 against the latest main.
+2. NOT RUN here: Docker build/start/recovery and server-specific deployment qualification.
 3. NOT RUN real Telegram/provider journeys leave delivery and Arabic OCR quality unqualified.
 4. UNKNOWN current provider rates/billing need operator configuration and reconciliation.
 5. FACT SAR wallet credits are test credits; Telegram digital sales need a separate Stars design.
@@ -94,13 +76,14 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 
 ## Exact immediate next round
 
-Verify the file-retention safety change and its regression tests on a disposable migrated
-PostgreSQL/Redis setup before merge; verify the bounded-fix regression tests (including the
-second-round draft-recovery and upload-quota tests and the finalization-round recovery-notice,
-stale-button and confirm-state tests) and review the tested Compose CI correction
-and its hosted workflow; merge only with explicit owner authority.
-Then identify an available Docker staging environment and inspect it before runtime work.
-Do not reopen completed phases without a confirmed finding or invent hosted/runtime evidence.
+Inspect hosted checks for updated PR #5 and fix confirmed failures before merge. The owner
+has authorized continued implementation and merge of the reviewed work in this continuation.
+After merge, verify the post-merge main workflow and record attributable results.
+Then run the [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md) on an available staging
+server with a dedicated test account and operator-configured secrets. Use echo first, then
+Office/PDF and clear/unclear OCR; inspect reservations, capture/release and file cleanup.
+Keep real-provider quality and billing evidence separate from mocked integration checks.
+Do not reopen completed phases without a confirmed finding or invent runtime evidence.
 
 Publication history: [initial permission rejection](REPORTS/2026-10-04-publication.md) and
 [authorized import](REPORTS/2026-10-04-import.md).

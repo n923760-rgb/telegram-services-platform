@@ -117,5 +117,11 @@
   "alert_circuit_open": "circuit open",
   "alert_consecutive_failures": "consecutive failures",
   "skip_field": "Skip this field",
-  "service_changed": "The service was updated. This order was cancelled without a charge; please select the service again."
+  "service_changed": "The service was updated. This order was cancelled without a charge; please select the service again.",
+  "pdf_to_word_name": "PDF to Word",
+  "pdf_to_word_description": "Convert a text-based PDF into a professional editable Word document",
+  "pdf_to_word_file": "Send the text-based PDF you want converted to Word.",
+  "pdf_to_word_preview": "Word document prepared: {title}\nSource pages: {pages}",
+  "pdf_text_unreadable": "This PDF includes scanned or non-extractable content. Send a fully text-based copy to avoid losing content.",
+  "pdf_text_too_long": "The PDF text exceeds this service's safe limit. Split the file and try again."
 }
