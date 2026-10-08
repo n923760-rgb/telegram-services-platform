@@ -1,4 +1,5 @@
 import re
+from copy import deepcopy
 from io import BytesIO
 
 from docx import Document as Word
@@ -7,6 +8,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
+from docx.text.run import Run
 
 from app.builders.direction import is_rtl
 from app.builders.schema import Document
@@ -14,6 +16,7 @@ from app.builders.word_schema import WordDocument, WordTable
 
 BODY_FONT = "DejaVu Sans"
 DARK = RGBColor(0, 0, 0)
+DATE_TOKEN = re.compile(r"(?<!\d)(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})(?!\d)")
 
 
 def safe_text(value):
@@ -21,6 +24,17 @@ def safe_text(value):
 
 
 def _direction(paragraph, rtl):
+    # Isolate dates in LTR runs rather than forcing their separators into Arabic
+    # ordering. Preserve the exact characters and existing formatting properties.
+    if rtl:
+        for run in list(paragraph.runs):
+            if DATE_TOKEN.search(run.text):
+                for text in DATE_TOKEN.split(run.text):
+                    if text:
+                        element = deepcopy(run._r)
+                        run._r.addprevious(element)
+                        Run(element, paragraph).text = text
+                paragraph._p.remove(run._r)
     paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT if rtl else WD_ALIGN_PARAGRAPH.LEFT
     ppr = paragraph._p.get_or_add_pPr()
     bidi = ppr.find(qn("w:bidi"))
@@ -43,7 +57,7 @@ def _direction(paragraph, rtl):
         if rtl_el is None:
             rtl_el = OxmlElement("w:rtl")
             rpr.append(rtl_el)
-        rtl_el.set(qn("w:val"), "1" if rtl else "0")
+        rtl_el.set(qn("w:val"), "1" if rtl and not DATE_TOKEN.fullmatch(run.text) else "0")
 
 
 def _heading(doc, text, level):
@@ -113,6 +127,16 @@ def _table(doc, data: WordTable):
     section = doc.sections[0]
     available = section.page_width - section.left_margin - section.right_margin
     widths = [int(available * weight / sum(weights)) for weight in weights]
+    if any(DATE_TOKEN.search(cell) for row in data.rows for cell in row):
+        minimums = [
+            Cm(2.7) if any(DATE_TOKEN.search(row[i]) for row in data.rows) else Cm(1)
+            for i in range(len(data.columns))
+        ]
+        remaining = available - sum(minimums)
+        widths = [
+            int(minimum + remaining * weight / sum(weights))
+            for minimum, weight in zip(minimums, weights, strict=True)
+        ]
     for column, width in zip(table.columns, widths, strict=True):
         column.width = width
     header = OxmlElement("w:tblHeader")
@@ -159,7 +183,7 @@ def _page_number_footer(document):
     run._r.append(end)
 
 
-def build(data: Document, *, include_title: bool = True) -> bytes:
+def build(data: Document, *, include_title: bool = True, format_dates: bool = False) -> bytes:
     data = WordDocument.model_validate(data.model_dump() if isinstance(data, Document) else data)
     doc = Word()
     title_properties = doc.styles["Title"].element.get_or_add_pPr()
@@ -194,6 +218,24 @@ def build(data: Document, *, include_title: bool = True) -> bytes:
         for table in part.tables:
             _table(doc, table)
 
+    if format_dates:
+        paragraphs = [
+            *doc.paragraphs,
+            *(
+                p
+                for table in doc.tables
+                for row in table.rows
+                for cell in row.cells
+                for p in cell.paragraphs
+            ),
+        ]
+        for paragraph in paragraphs:
+            if paragraph._p.pPr.find(qn("w:bidi")).get(qn("w:val")) == "1":
+                for run in paragraph.runs:
+                    if DATE_TOKEN.fullmatch(run.text):
+                        # Strong LTR boundaries are portable to Word and LibreOffice.
+                        # Only professional mode adds these invisible formatting marks.
+                        run.text = "\u200e" + run.text + "\u200e"
     _page_number_footer(doc)
     buffer = BytesIO()
     doc.save(buffer)

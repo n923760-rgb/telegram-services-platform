@@ -127,6 +127,26 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: New server deployment and source-bound professional Word acceptance. The latest
   screenshot shows the PR #13 prompt, not a newly reviewed output document.
 
+## Word date layout qualification — 2026-10-08
+
+- FACT: Reviewed the owner's actual three-order report against the supplied test source.
+  Names, IDs 00123–00125, amounts, dates, customer notes and required actions are retained;
+  no total or third-order delivery deadline was invented. The report is one editable page.
+- FAIL: ISO dates display in reversed order within Arabic prose; the narrow receipt-date
+  column wraps each date onto two lines. Logical source date strings themselves are intact.
+- FIX: Isolate date text runs and use invisible LTR boundary marks only in professional
+  Word mode; literal/default builders add no characters. Date-bearing table columns gain
+  a 2.7 cm minimum width within existing page margins. No date conversion/calculation.
+- PASS: Local structural/date-fidelity tests and 57 service tests; visually confirmed the
+  same report content with correct displayed dates and single-line date cells. All four
+  pages of a 55-row date fixture were inspected: repeated headers, intact dates and IDs,
+  no clipped rows, and no blank terminal page.
+- FACT: No dependency, migration, contract version, price or financial-policy change.
+  PR #14 main workflow 37809651597 was cancelled during setup, not a passed main check;
+  its reviewed identical application head passed 276 tests in workflow 37809263650.
+- NOT RUN: New server deployment, Microsoft Word/iPhone rendering and broad provider
+  quality qualification. This one real output is evidence for this sample only.
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution
