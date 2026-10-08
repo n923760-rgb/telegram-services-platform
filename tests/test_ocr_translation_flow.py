@@ -23,10 +23,13 @@ def extracted(text=SOURCE):
 
 async def create_order(store, price, language="en"):
     image = store.save(1, "input.jpg", b"synthetic test image", "image/jpeg")
+    inputs = {"images": [image.key], "language": language}
+    if language != "none":
+        inputs["style"] = "formal"
     return await submit(
         1,
         "image_to_text",
-        {"images": [image.key], "language": language, "style": "formal"},
+        inputs,
         price,
         "numeric-translation",
     )
@@ -78,7 +81,9 @@ async def test_ocr_numeric_failure_after_one_repair_releases_and_notifies_once(
 async def test_ocr_long_translation_cached_delivery_retains_editable_numeric_output(
     tmp_path, monkeypatch
 ):
-    source, translated = (SOURCE + "\n") * 50, (GOOD + "\n") * 50
+    records = 60
+    source, translated = (SOURCE + "\n") * records, (GOOD + "\n") * records
+    assert len(translated.strip()) > 3500
     store, provider, delivery, ctx, price = await setup(
         "image_to_text",
         [extracted(source), json.dumps({"text": translated})],
@@ -111,7 +116,7 @@ async def test_ocr_long_translation_cached_delivery_retains_editable_numeric_out
     assert files["result.txt"].decode() == translated.strip()
     document = Document(BytesIO(files["result.docx"]))
     body = "\n".join(p.text for p in document.paragraphs[1:])
-    assert body.count("00123") == 50 and body.count("125.50") == 50
+    assert body.count("00123") == records and body.count("125.50") == records
     document.paragraphs[1].runs[0].text = "Updated editable text 00123"
     saved = BytesIO()
     document.save(saved)

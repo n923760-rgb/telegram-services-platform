@@ -49,3 +49,14 @@ Conservative literal tokenization can reject otherwise equivalent formatting/loc
 including punctuation adjacent to numbers. Such normalization is intentionally not supported.
 No newly rendered document or paid-launch qualification is claimed in this code round.
 Use [output quality gates](../../docs/OUTPUT_QUALITY.md) for remaining acceptance.
+
+## Hosted fixture correction
+
+FAIL: Initial head `350307d` workflow `37832221571` reported 380 passed and three failures.
+Two new fixtures were incorrect: the 50-record translation was only 3,449 characters after
+trimming (below the >3,500 file-delivery threshold), and the no-translation order supplied an
+inactive style field. An existing cancellation test hard-coded version 2, which now matches
+the actual plugin instead of simulating a version change. No application failure was found.
+Correct fixtures to 60 records with an explicit threshold assertion, omit the inactive style,
+and derive a distinct next version from the current plugin. Rerun the full final-head workflow;
+do not treat the initial run as passing evidence. No application/governance rule was weakened.
