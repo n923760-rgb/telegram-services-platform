@@ -46,6 +46,51 @@ async def test_legacy_service_snapshots_upgrade_without_cancelling_unchanged_ord
         assert (funds.available, funds.reserved) == (900, 0)
 
 
+async def test_office_version_three_upgrade_preserves_admin_settings_and_releases_old_job(
+    monkeypatch,
+):
+    from app.core.settings import config
+
+    monkeypatch.setattr(config(), "ai_enabled", True)
+    await fund()
+    async with sessions.begin() as db:
+        row = await db.get(Service, "text_to_office")
+        old = deepcopy(row.input_schema)
+        mode = next(f for f in old["fields"] if f["name"] == "mode")
+        mode.update(
+            prompt_key="document_mode",
+            choices=["direct", "smart"],
+            choice_keys=["document_direct", "document_smart"],
+        )
+        row.enabled, row.price_halala = True, 777
+    oid = await submit(
+        1,
+        "text_to_office",
+        {"target": "word", "text": "unchanged", "mode": "direct", "title": None},
+        777,
+        "old-office",
+    )
+    # Reproduce persisted pre-upgrade snapshots after creating a real reservation/job.
+    async with sessions.begin() as db:
+        row = await db.get(Service, "text_to_office")
+        row.version, row.input_schema = "3", old
+        order = await db.get(Order, oid)
+        order.service_version, order.input_schema_snapshot = "3", old
+    async with sessions.begin() as db:
+        await registry.sync(db)
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        row = await db.get(Service, "text_to_office")
+        assert row.version == "4" and row.enabled and row.price_halala == 777
+        assert row.input_schema == registry.types["text_to_office"].input_schema.model_dump()
+        assert (await db.get(Service, "text_to_pdf")).version == "3"
+    await execute_job({"delivery": Delivery()}, str(await job_for(oid)))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "cancelled"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+
+
 @pytest.mark.parametrize(
     "change", [{"single_line": True}, {"skip_key": "document_no_title"}, {"unknown": False}]
 )
