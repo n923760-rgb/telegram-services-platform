@@ -77,6 +77,21 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: Updated server deployment, Telegram optional-title acceptance and financial audit.
 - Excel specialization remains a separate next slice.
 
+## Legacy snapshot startup repair — 2026-10-08
+
+- OPERATOR-REPORTED FAIL: Main f325f75 runs API and migrations, but bot/worker repeatedly
+  fail `registry.sync` with the unchanged-version input-contract guard. Worker teardown
+  additionally raises `KeyError: bot` because startup failed before constructing the bot.
+- FACT: Adding default `skip_key` and `single_line` to InputField changes every serialized
+  plugin schema; fresh-database CI did not exercise pre-upgrade stored snapshots.
+- FIX: Compare contracts after removing only these two explicit no-op defaults recursively.
+  Preserve every other/unknown difference and the version-bump guard; sync retains admin
+  settings and stores the current schema. Worker teardown closes only a constructed bot.
+- CHECKS: Add legacy-snapshot upgrade, repeated sync, unchanged queued-order settlement,
+  actual/unknown contract-change rejection and failed-startup teardown regression tests.
+- NOT RUN: Repaired server deployment and Telegram acceptance. No DB/ledger rewrite,
+  dependency, migration, service version or price change is required.
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution

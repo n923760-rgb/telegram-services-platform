@@ -1,6 +1,7 @@
 import importlib
 import pkgutil
 import re
+from copy import deepcopy
 
 from sqlalchemy import select
 
@@ -8,6 +9,26 @@ import app.services
 from app.core.models import Service
 from app.services.base import BaseService
 from app.wallet.ledger import halalas
+
+
+def _input_contract(schema):
+    """Ignore only the no-op defaults added to InputField in the title upgrade.
+
+    Preserve unknown keys and every other difference so real changes still need a bump.
+    Copy rather than mutate the DB snapshot or a plugin's schema.
+    """
+    result = deepcopy(schema)
+
+    def normalize(fields):
+        for field in fields:
+            if field.get("skip_key") == "skip_field":
+                field.pop("skip_key")
+            if field.get("single_line") is False:
+                field.pop("single_line")
+            normalize(field.get("fields", []))
+
+    normalize(result.get("fields", []))
+    return result
 
 
 class Registry:
@@ -44,13 +65,23 @@ class Registry:
             for field in cls.input_schema.conversation():
                 if any(
                     key not in CATALOGS["ar"] or key not in CATALOGS["en"]
-                    for key in [field.prompt_key, *field.choice_keys]
+                    for key in [
+                        field.prompt_key,
+                        *field.choice_keys,
+                        *([field.skip_key] if not field.required else []),
+                    ]
                 ):
                     raise ValueError("missing service i18n")
             current = await db.get(Service, slug)
             schema = cls.input_schema.model_dump()
-            if current and current.version == cls.version and current.input_schema != schema:
-                raise ValueError("Bump the plugin version before changing its input contract")
+            if (
+                current
+                and current.version == cls.version
+                and _input_contract(current.input_schema) != _input_contract(schema)
+            ):
+                raise ValueError(
+                    f"Bump the plugin version before changing its input contract: {slug}"
+                )
             metadata = dict(
                 version=cls.version,
                 name_ar=cls.name_ar,
