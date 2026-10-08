@@ -43,6 +43,67 @@ def test_six_column_word_table_stays_inside_page_margins():
     assert [c.text for c in doc.tables[0].rows[1].cells] == table.rows[0]
 
 
+def test_dates_in_arabic_prose_headings_and_cells_keep_exact_text_and_ltr_runs():
+    text = "الفترة من 2026-10-01 إلى 2026/10/07 والتسليم 02-10-2026"
+    data = WordDocument(
+        title=text,
+        sections=[
+            WordSection(
+                heading=text,
+                paragraphs=[text],
+                bullets=[text],
+                tables=[WordTable(columns=["الحالة"], rows=[[text]])],
+            )
+        ],
+    )
+    doc = Word(BytesIO(word.build(data)))
+    for paragraph in [*doc.paragraphs, doc.tables[0].cell(1, 0).paragraphs[0]]:
+        assert paragraph.text == text
+        assert paragraph._p.pPr.find(qn("w:bidi")).get(qn("w:val")) == "1"
+        dates = [r for r in paragraph.runs if word.DATE_TOKEN.fullmatch(r.text)]
+        assert [r.text for r in dates] == ["2026-10-01", "2026/10/07", "02-10-2026"]
+        assert all(r._r.rPr.find(qn("w:rtl")).get(qn("w:val")) == "0" for r in dates)
+    assert all(r.bold for r in doc.paragraphs[0].runs)
+
+
+def test_date_column_has_readable_minimum_width_without_expanding_table():
+    table = WordTable(
+        columns=list("ABCDEF"),
+        rows=[
+            [
+                "00123",
+                "أحمد القحطاني",
+                "إعداد تقرير Word",
+                "2026-10-01",
+                "125.50 ريال",
+                "مكتمل — تاريخ التسليم: 2026-10-02",
+            ]
+        ],
+    )
+    data = WordDocument(title="تقرير", sections=[WordSection(tables=[table])])
+    doc = Word(BytesIO(word.build(data)))
+    native = doc.tables[0]
+    assert native.columns[3].width >= Cm(2.7) - 635
+    available = (
+        doc.sections[0].page_width - doc.sections[0].left_margin - doc.sections[0].right_margin
+    )
+    assert abs(sum(c.width for c in native.columns) - available) <= 3810
+    assert [c.text for c in native.rows[1].cells] == table.rows[0]
+
+
+def test_professional_date_marks_preserve_values_and_literal_mode_adds_none():
+    text = "الفترة من 2026-10-01 إلى 2026-10-07\n  الطلب 00123 بمبلغ 125.50 ريال  "
+    data = Document(title="تقرير", sections=[Section(paragraphs=[text])])
+    literal = Word(BytesIO(word.build(data, include_title=False)))
+    assert literal.paragraphs[0].text == text
+    professional = Word(BytesIO(word.build(data, format_dates=True)))
+    paragraph = professional.paragraphs[1]
+    assert paragraph.text.replace("\u200e", "") == text
+    assert "\u200e2026-10-01\u200e" in paragraph.text
+    assert "\u200e2026-10-07\u200e" in paragraph.text
+    assert "00123" in paragraph.text and "125.50" in paragraph.text
+
+
 def test_direction_detects_arabic_english_and_mixed():
     assert is_rtl("تقرير سنوي") is True
     assert is_rtl("Annual Report") is False
