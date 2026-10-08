@@ -105,6 +105,8 @@
   "done_files": "Done uploading",
   "more_files": "File received. Send another or tap Done.",
   "excel_preview": "Columns: {columns}\nRows: {rows}",
+  "excel_data_notes": "Review: {missing} blank cells and {repeated} repeated rows retained from the source.",
+  "excel_usage": "Values are editable. Use the table header arrows to sort and filter, and add records below the table. No automatic calculations or totals were added.",
   "paragraphs": "Paragraphs",
   "ambiguous_preview": "Please confirm this interpretation:\n{question}\n{preview}",
   "structure_preview": "Structure preview:\n{preview}",
