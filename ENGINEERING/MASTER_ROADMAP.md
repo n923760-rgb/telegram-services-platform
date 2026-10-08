@@ -167,15 +167,30 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 ## PowerPoint quality round — 2026-10-08
 
 - FACT: PR #16 is merged as `ac14b10`; main workflow `37822366757` passed 308 tests.
-- IMPLEMENTED ON TASK BRANCH: Native editable text/tables, readable bounded layouts, normal
+- MERGED PR #17: Native editable text/tables, readable bounded layouts, normal
   content on dense first/single slides and schema-level density checks using existing one-repair
   handling. Service contract version 2 retains administrator-owned price and enablement.
 - PASS: Local lint/format and 35 focused builder/plugin/governance tests; 332 tests collected.
 - FAIL / UNKNOWN: Artifact Tool import/render produced all three synthetic slides without
   clipping, but reversed Arabic word order and ignored the table RTL column flag. This renderer
   does not qualify Arabic output. Native PowerPoint behavior remains UNKNOWN, not a passing gate.
-- NOT RUN: Hosted full-suite checks, live-provider fidelity and Microsoft PowerPoint edit/render
-  acceptance. See [PowerPoint quality report](REPORTS/2026-10-08-pptx-quality.md).
+- PASS: Head `d94cbe5` workflow `37826017821` and merged main `76613b9` workflow
+  `37827248529` passed 332 tests, lint/format, migrations/drift and Compose validation.
+- NOT RUN: Live-provider fidelity and Microsoft PowerPoint edit/render acceptance.
+  See [PowerPoint quality report](REPORTS/2026-10-08-pptx-quality.md) and PR #17's final CI evidence.
+
+## PDF date rendering round — 2026-10-08
+
+- FAIL: Poppler rendering confirms the existing PDF builder displays source `2026-10-08`
+  as `08-10-2026` inside Arabic text, including headings. This is a rendering error.
+- FIX ON TASK BRANCH: Protect matched numeric date order only during bidi shaping, and use
+  the same shaped text for width measurement. Dates remain literal, with no parsing,
+  conversion, calendar inference or added formatting controls in delivered text.
+- PASS: 29 focused local builder/PDF-plugin/governance tests, lint/format. Inspect every page
+  of the corrected one-page mixed fixture and four-page 80-record fixture with Poppler.
+- NOT RUN: Hosted full suite, live-provider source fidelity, new server/iPhone viewer acceptance.
+  See [PDF date report](REPORTS/2026-10-08-pdf-dates.md). No contract, version, dependency,
+  payment, database or runtime changes are included in this rendering fix.
 
 ## Architecture and state owners
 
@@ -229,7 +244,7 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
-Complete the owner-authorized PowerPoint code round and inspect its source-bound hosted checks.
+Complete the PDF date rendering fix and inspect its source-bound hosted checks.
 Qualify professional Word, Excel and PowerPoint against supplied source and native Office;
 keep literal Word/PDF checks distinct. The all-service quality request supersedes the earlier
 Excel/PowerPoint deferral. Continue PDF/OCR fidelity rounds within their approved contracts.

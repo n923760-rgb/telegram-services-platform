@@ -13,7 +13,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 from app.builders.direction import is_rtl
 from app.builders.schema import Document
-from app.builders.word import safe_text
+from app.builders.word import DATE_TOKEN, safe_text
 
 _FONT_FILES = {
     "DejaVu": (
@@ -45,8 +45,16 @@ def _register_fonts():
     pdfmetrics.registerFont(TTFont("DejaVu-Bold", bold))
 
 
+def _visual(text):
+    # Numeric date tokens have a source-defined order, including Arabic-Indic
+    # digits. A temporary LTR override protects that order during bidi shaping;
+    # get_display consumes the override, so no added controls enter the PDF text.
+    protected = DATE_TOKEN.sub(lambda match: "\u202d" + match[0] + "\u202c", safe_text(text))
+    return get_display(arabic_reshaper.reshape(protected))
+
+
 def display(text):
-    return escape(get_display(arabic_reshaper.reshape(safe_text(text))))
+    return escape(_visual(text))
 
 
 def _wrap(text, font, size, width):
@@ -54,7 +62,7 @@ def _wrap(text, font, size, width):
     current = ""
     for word in safe_text(text).split():
         candidate = (current + " " + word).strip()
-        rendered = get_display(arabic_reshaper.reshape(candidate))
+        rendered = _visual(candidate)
         if current and pdfmetrics.stringWidth(rendered, font, size) > width:
             lines.append(current)
             current = word
