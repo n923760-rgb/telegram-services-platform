@@ -56,8 +56,11 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
   replaces repeated parsing, and a duplicate import was removed.
 - PASS: Local service tests and Word/PDF render inspection; final counts and limits in
   [the direct-document report](REPORTS/2026-10-08-direct-documents.md).
-- NOT RUN: New direct-mode server deployment/Telegram acceptance; publish and inspect hosted
-  full-suite checks before deciding the merge. This section is task evidence, not merge proof.
+- PASS: Application/test source 798f023 passed [workflow 37771104090](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37771104090):
+  240 tests, lint/format, migrations/drift and Compose configuration. Final evidence-only
+  update CI must be inspected separately before merging PR #10.
+- NOT RUN: New direct-mode server deployment/Telegram acceptance. This section is task
+  evidence, not post-merge proof.
 
 ## Architecture and state owners
 

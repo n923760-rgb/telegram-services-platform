@@ -45,6 +45,15 @@
   and regression-tested. Word/LibreOffice differences are not a substitute for real client testing.
 - NOT RUN locally: Full DB/Redis integration execution and Alembic drift; these services/Docker
   are unavailable in this workspace. Hosted CI must supply those checks before merge.
+- PASS hosted: Application/test source 798f0234a6a895f05f310149bd7d784679826d04 passed
+  [workflow 37771104090](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37771104090):
+  240 tests, lint/format, migrations/drift and Compose configuration. The one warning is the
+  existing ARQ Redis.close deprecation, not a test failure.
+- Initial workflow 37770872511 on 8c37e76 had 239 passes and one new-test failure: an ORM object
+  was stale after the registry's Core upsert. The test now refreshes that object from the DB;
+  production registry behavior was not changed to satisfy the test.
+- The subsequent evidence update changes documentation only; inspect its final-head CI
+  separately. PR #10 is the review record; these are branch checks, not post-merge proof.
 - NOT RUN: New direct-mode deployment and authenticated Telegram acceptance; no server access.
 - Coverage added: no provider construction/API usage, zero CostHold/CostUsage records,
   exact-once settlement, safe validation before reserve, release on rendering/delivery failure,

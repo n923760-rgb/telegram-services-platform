@@ -55,5 +55,8 @@ documentation only, preserving that tested application/test tree; inspect final-
 Baseline main faab75a (PR #9) passed [main workflow 37727678417](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37727678417).
 The [direct-document report](../REPORTS/2026-10-08-direct-documents.md) records 37 local
 service tests, 240-test collection, pure builder/architecture checks and actual render QA.
-Full DB/Redis execution must be attributed to the published task workflow before merging.
+Application/test head 798f023 passed [workflow 37771104090](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37771104090):
+240 tests, lint/format, migrations/drift and Compose configuration. The preceding run's single
+test-identity-map failure and correction are recorded in the report. Final documentation-only
+head checks must be inspected separately before merging PR #10.
 Operator-provided baseline runtime observations are separate from new direct-mode qualification.
