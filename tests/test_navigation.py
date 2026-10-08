@@ -140,8 +140,10 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
     await message(text)
     if slug == "text_to_office":
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    assert transport.messages[-1].text.endswith(tr("document_mode", lang))
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    prompt = "word_mode" if slug == "text_to_office" else "document_mode"
+    assert transport.messages[-1].text.endswith(tr(prompt, lang))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + (":1" if slug == "text_to_office" else ":0"))
     assert transport.messages[-1].text.endswith(tr("document_title", lang))
     await message("عنوان العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
@@ -150,7 +152,7 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
         order = await db.scalar(select(Order))
         assert order.inputs["text"] == text
         assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
-        assert order.service_version == "3"
+        assert order.service_version == ("4" if slug == "text_to_office" else "3")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
@@ -168,7 +170,8 @@ async def test_optional_title_rejects_multiline_then_skips_without_losing_body(f
     await message(text)
     if slug == "text_to_office":
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + (":1" if slug == "text_to_office" else ":0"))
     markup = transport.messages[-1].reply_markup
     skip = button_by_prefix(markup, "skip:")
     assert any(
@@ -198,7 +201,7 @@ async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
     await message("نص العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(choice.rsplit(":", 1)[0] + ":1")
+    await callback(choice)
     assert await state.get_state() == "confirm"
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     assert transport.messages[-1].text == tr("provider_config")

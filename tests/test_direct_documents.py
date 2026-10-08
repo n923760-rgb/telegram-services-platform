@@ -57,8 +57,9 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title:
         inputs.pop("title")
-    oid = await submit(1, slug, inputs, price, "direct", expected_version="3")
-    assert await submit(1, slug, inputs, price, "direct", expected_version="3") == oid
+    version = "4" if slug == "text_to_office" else "3"
+    oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
+    assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
         assert (await balance(db, 1)).reserved == price
     delivery = Delivery(LocalStorage(tmp_path))

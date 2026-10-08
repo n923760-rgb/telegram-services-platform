@@ -9,6 +9,38 @@ from pptx import Presentation
 from app.builders import excel, pdf, pptx, word
 from app.builders.direction import has_arabic, is_rtl
 from app.builders.schema import Deck, Document, Section, Slide, Table
+from app.builders.word_schema import WordDocument, WordSection, WordTable
+
+
+def test_word_tables_are_editable_bounded_and_have_no_terminal_spacer():
+    table = WordTable(columns=["Reference", "Description"], rows=[["00123", "Text"]])
+    data = WordDocument(title="Brief", sections=[WordSection(tables=[table, table])])
+    doc = Word(BytesIO(word.build(data, include_title=False)))
+    assert len(doc.tables) == 2
+    assert doc.element.body[-2].tag == qn("w:tbl")
+    assert len(doc.paragraphs) == 1  # Only the separator between the two tables.
+    available = (
+        doc.sections[0].page_width - doc.sections[0].left_margin - doc.sections[0].right_margin
+    )
+    for native in doc.tables:
+        assert native.cell(1, 0).text == "00123"
+        assert abs(sum(c.width for c in native.columns) - available) <= 1270
+        assert native.rows[0]._tr.trPr.find(qn("w:tblHeader")) is not None
+        assert all(row._tr.trPr.find(qn("w:cantSplit")) is not None for row in native.rows)
+        assert native.autofit is False
+
+
+def test_six_column_word_table_stays_inside_page_margins():
+    table = WordTable(
+        columns=list("ABCDEF"), rows=[["00123", "2026-10-08", "125.50", "", "نص", "X"]]
+    )
+    data = WordDocument(title="Table", sections=[WordSection(tables=[table])])
+    doc = Word(BytesIO(word.build(data)))
+    available = (
+        doc.sections[0].page_width - doc.sections[0].left_margin - doc.sections[0].right_margin
+    )
+    assert abs(sum(c.width for c in doc.tables[0].columns) - available) <= 3810
+    assert [c.text for c in doc.tables[0].rows[1].cells] == table.rows[0]
 
 
 def test_direction_detects_arabic_english_and_mixed():

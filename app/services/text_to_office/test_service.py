@@ -12,6 +12,108 @@ from app.services.text_to_office.schema import WordPlan
 from app.services.text_to_office.service import TextToOffice
 
 
+async def test_professional_word_uses_structured_plan_and_native_table(tmp_path):
+    from app.services.text_to_office.prompt import WORD
+
+    plan = WordPlan.model_validate(
+        {
+            "document": {
+                "title": "مذكرة الطلب",
+                "sections": [
+                    {
+                        "heading": "تفاصيل الطلب",
+                        "tables": [
+                            {
+                                "columns": ["البيان", "القيمة"],
+                                "rows": [["رقم الطلب", "00123"], ["المبلغ", "125.50 ريال"]],
+                            }
+                        ],
+                    },
+                    {"heading": "English note", "paragraphs": ["Acceptance 123"]},
+                ],
+            }
+        }
+    )
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    ai = SimpleNamespace(extract=AsyncMock(return_value=plan))
+    service = TextToOffice()
+    service.runtime = SimpleNamespace(storage=store, ai=ai)
+    inputs = {
+        "text": "رقم الطلب 00123 والمبلغ 125.50 ريال. Acceptance 123",
+        "target": "word",
+        "mode": "smart",
+    }
+    assert service.needs_ai(inputs)
+    result = await service.run(inputs)
+    ai.extract.assert_awaited_once_with(WordPlan, inputs["text"], WORD)
+    doc = Document(BytesIO(store.read(result.artifacts[0].key)))
+    assert doc.paragraphs[0].text == "مذكرة الطلب"
+    assert len(doc.tables) == 1
+    assert [[c.text for c in row.cells] for row in doc.tables[0].rows] == [
+        ["البيان", "القيمة"],
+        ["رقم الطلب", "00123"],
+        ["المبلغ", "125.50 ريال"],
+    ]
+    assert doc.tables[0]._tbl.tblPr.find(qn("w:bidiVisual")) is not None
+    assert "w:tblHeader" in doc.tables[0].rows[0]._tr.xml
+    assert "w:tblBorders" in doc.tables[0]._tbl.xml
+    assert not result.needs_confirmation
+
+
+@pytest.mark.parametrize(
+    "table",
+    [
+        {"columns": ["A", "B"], "rows": [["one"]]},
+        {"columns": ["A", "A"], "rows": [["one", "two"]]},
+        {"columns": [str(i) for i in range(7)], "rows": [["x"] * 7]},
+        {"columns": ["A"], "rows": [["x" * 241]]},
+        {"columns": ["A"], "rows": [["x"]] * 101},
+        {"columns": ["A"], "rows": [["bad\x00"]]},
+    ],
+)
+def test_professional_word_rejects_invalid_table_plans(table):
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        WordPlan.model_validate(
+            {
+                "document": {
+                    "title": "Title",
+                    "sections": [{"tables": [table]}],
+                }
+            }
+        )
+
+
+def test_professional_word_table_only_plan_and_literal_markup_are_safe():
+    from app.builders import word
+
+    plan = WordPlan.model_validate(
+        {
+            "document": {
+                "title": "Data",
+                "sections": [
+                    {
+                        "tables": [
+                            {
+                                "columns": ["Source", "Identifier"],
+                                "rows": [
+                                    ['=HYPERLINK("https://invalid")', "00123"],
+                                    ["<tag>", "125.50"],
+                                ],
+                            }
+                        ]
+                    }
+                ],
+            }
+        }
+    )
+    doc = Document(BytesIO(word.build(plan.document)))
+    assert doc.tables[0].cell(1, 0).text.startswith("=HYPERLINK")
+    assert doc.tables[0].cell(2, 0).text == "<tag>"
+    assert not any("hyperlink" in rel.reltype for rel in doc.part.rels.values())
+
+
 async def test_word_service_builds_editable_file(tmp_path):
     plan = WordPlan.model_validate(
         {"document": {"title": "عنوان", "sections": [{"paragraphs": ["نص"]}]}}

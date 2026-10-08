@@ -2,7 +2,8 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
-from app.builders.schema import Document, StrictModel, Table
+from app.builders.schema import StrictModel, Table
+from app.builders.word_schema import WordDocument
 from app.services.documents import DocumentInputs
 
 
@@ -20,7 +21,7 @@ class WordPlan(StrictModel):
     ambiguous: bool = False
     missing_information: bool = False
     question: str = Field(default="", max_length=1000)
-    document: Document | None = None
+    document: WordDocument | None = None
 
     @model_validator(mode="after")
     def valid(self):

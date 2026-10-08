@@ -92,6 +92,24 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: Repaired server deployment and Telegram acceptance. No DB/ledger rewrite,
   dependency, migration, service version or price change is required.
 
+## Professional Word continuation — 2026-10-08
+
+- OPERATOR-REPORTED: PR #12 deployment at 949e040 is healthy; migrations exited 0 and
+  `/health` returned `{"status":"ok"}`. Untitled literal Word preserves the sample but
+  the owner rejects mere text transfer as the professional service experience.
+- FACT: This task adds a clearly labeled first-choice professional Word route: concise
+  AI-proposed title, task-appropriate sections/lists and bounded editable native tables.
+  Literal transfer remains explicit, title optional and without provider calls.
+- FACT: Word/Excel contract becomes version 4; PDF stays 3. No dependency, migration,
+  price, financial policy or new service changes. Existing generic lifecycle stays intact.
+- PASS: 47 local service tests; Arabic/English single-page and 55-row five-page builder
+  samples visually inspected with repeated headers, legible cells and page numbers.
+  Samples use explicit plans, not a real AI provider; they do not prove factual fidelity.
+- CHECKS: Hosted suite must verify rich-table delivery/capture, bounded repair/failure
+  release, literal/Excel regressions and version-3 snapshot upgrade retaining admin settings.
+- NOT RUN: New server deployment and live professional Word/source-fidelity acceptance.
+  Excel quality improvements remain a later independent task.
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution

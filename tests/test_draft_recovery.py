@@ -152,9 +152,9 @@ async def test_failed_choice_prompt_recovers():
     assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
     # Selecting a target advances to the explicit document-mode question.
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    assert transport.messages[-1].text.endswith(tr("document_mode"))
-    direct = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(direct.rsplit(":", 1)[0] + ":1")  # smart mode needs no manual title
+    assert transport.messages[-1].text.endswith(tr("word_mode"))
+    professional = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(professional)  # professional mode needs no manual title
     assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()
     await bot.session.close()

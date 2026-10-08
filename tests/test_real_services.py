@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 from io import BytesIO
 from types import SimpleNamespace
@@ -133,6 +134,95 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
     assert any(p.text == "بيانات مؤكدة" for p in Word(BytesIO(delivery.files[0][1])).paragraphs)
     assert load_workbook(BytesIO(delivery.files[1][1])).active["B2"].value == 12
     assert provider.calls == 2
+
+
+@pytest.mark.parametrize("invalid_first", [False, True])
+async def test_professional_word_table_delivery_and_single_capture(
+    tmp_path, monkeypatch, invalid_first
+):
+    plan = {
+        "document": {
+            "title": "مذكرة الطلب",
+            "sections": [
+                {
+                    "heading": "بيانات الطلب",
+                    "paragraphs": ["بيانات للمراجعة."],
+                    "tables": [
+                        {
+                            "columns": ["البيان", "القيمة"],
+                            "rows": [
+                                ["رقم الطلب", "00123"],
+                                ["المبلغ", "125.50 ريال"],
+                                ["التاريخ", "2026-10-08"],
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+    responses = [json.dumps(plan)]
+    if invalid_first:
+        invalid = json.loads(responses[0])
+        invalid["document"]["sections"][0]["tables"][0]["rows"][0] = ["ragged"]
+        responses.insert(0, json.dumps(invalid))
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_office", responses, tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1,
+        "text_to_office",
+        {
+            "text": "مذكرة: الطلب 00123، المبلغ 125.50 ريال، التاريخ 2026-10-08.",
+            "target": "word",
+            "mode": "smart",
+        },
+        price,
+        "professional-word",
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price, 0)
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".004") * len(responses)
+    assert provider.calls == len(responses) and len(delivery.files) == 1
+    doc = Word(BytesIO(delivery.files[0][1]))
+    assert doc.paragraphs[0].text == "مذكرة الطلب"
+    assert [[c.text for c in r.cells] for r in doc.tables[0].rows][1:] == plan["document"][
+        "sections"
+    ][0]["tables"][0]["rows"]
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+async def test_invalid_word_table_after_one_repair_releases_credit(tmp_path, monkeypatch):
+    invalid = json.dumps(
+        {
+            "document": {
+                "title": "Bad table",
+                "sections": [{"tables": [{"columns": ["A", "B"], "rows": [["00123"]]}]}],
+            }
+        }
+    )
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_office", [invalid, invalid], tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1,
+        "text_to_office",
+        {"text": "00123", "target": "word", "mode": "smart"},
+        price,
+        "invalid-table",
+    )
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == "failed" and order.error_key == "provider_invalid"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+    assert provider.calls == 2 and not delivery.files
 
 
 async def test_ambiguity_confirm_resumes_without_second_ai_charge(tmp_path, monkeypatch):

@@ -17,7 +17,7 @@ selling services; the implementation does not silently add a different payment s
 | --- | --- | --- | --- |
 | `echo` | Enabled | SAR 1 | Proves collection → confirmation → reservation → worker → delivery → capture. |
 | `image_to_text` | Disabled | SAR 3 | Up to five images, Arabic/English OCR, optional Arabic/English translation and style; long output includes TXT and DOCX. |
-| `text_to_office` | Disabled | SAR 5 | Explicit direct Word conversion without AI, or existing AI-organized Word/Excel; asks for approval when the AI plan is ambiguous. |
+| `text_to_office` | Disabled | SAR 5 | Professional Word preparation with AI-organized sections and editable tables, literal Word without AI, or AI-organized Excel; asks for approval only for material ambiguity. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pdf` | Disabled | SAR 5 | Explicit direct conversion without AI, or existing AI-organized printable PDF; asks for approval when the AI plan is ambiguous. |
 | `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
@@ -31,7 +31,14 @@ enter a short single-line title or choose No title to omit the visible heading.
 Word preserves body whitespace and lines (CRLF/CR normalize to LF); PDF preserves words, numbers
 and blank lines but normalizes display whitespace and reflows text. This is not original-layout
 reconstruction. The service price is unchanged for both modes. Excel remains AI-only.
-Word/Excel and PDF are version 3: stale drafts must restart, incompatible unprepared jobs release
+Professional Word is the first explicit choice: AI proposes a concise title and task-appropriate
+sections, paragraphs, lists and tables; code renders a consistent editable document. It does not
+ask for a title. Short notes stay short. Native tables have repeated headers, adaptive column widths
+and RTL/LTR support, bounded to 6 columns, 100 rows/table, 240 characters/cell and 10 tables/document.
+Prompt rules prohibit invented facts and preserve identifiers/dates/amounts; schema validation
+does not prove factual fidelity, so representative live-provider output still needs inspection.
+No images, charts, original-layout reconstruction or custom branding is promised.
+Word/Excel is version 4 and PDF remains version 3: stale drafts must restart, incompatible unprepared jobs release
 credit, and already prepared results remain eligible for cached delivery.
 
 `app/bot` handles Telegram; `app/api` handles HTTP; `app/core` holds configuration, DB and i18n.

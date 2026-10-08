@@ -8,7 +8,7 @@ from app.services.text_to_office.schema import ExcelPlan, Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "3"
+    version = "4"
     slug = "text_to_office"
     name_ar = tr("office_name")
     name_en = tr("office_name", "en")
@@ -27,9 +27,9 @@ class TextToOffice(BaseService):
             ),
             InputField(
                 name="mode",
-                prompt_key="document_mode",
-                choices=["direct", "smart"],
-                choice_keys=["document_direct", "document_smart"],
+                prompt_key="word_mode",
+                choices=["smart", "direct"],
+                choice_keys=["word_professional", "word_literal"],
                 when={"target": ["word"]},
             ),
             InputField(
@@ -53,7 +53,7 @@ class TextToOffice(BaseService):
         schema = WordPlan if values.target == "word" else ExcelPlan
         continuation = inputs.get("__continuation")
         plan = (
-            WordPlan(document=values.document())
+            WordPlan(document=values.document().model_dump())
             if values.mode == "direct"
             else schema.model_validate(continuation)
             if continuation
@@ -71,11 +71,12 @@ class TextToOffice(BaseService):
             )
         elif values.target == "word":
             preview = tr(
-                "word_preview",
+                "word_professional_preview",
                 title=plan.document.title,
                 headings="، ".join(
                     s.heading or tr("paragraphs") for s in plan.document.sections[:5]
                 ),
+                tables=sum(len(s.tables) for s in plan.document.sections),
             )
         else:
             preview = tr(
