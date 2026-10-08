@@ -63,7 +63,7 @@ async def test_failed_text_prompt_recovers_without_duplicate_answer():
     with pytest.raises(SimulatedSendFailure):
         await callback("service:echo")  # the input_text question fails to reach the user
     await message("نص العميل")  # re-renders the pending question instead of consuming it
-    assert transport.messages[-1].text == tr("input_text")
+    assert transport.messages[-1].text.endswith(tr("input_text"))
     await message("نص العميل")  # now it is accepted as the answer
     assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
@@ -144,7 +144,7 @@ async def test_failed_choice_prompt_recovers():
     await message("/start")
     await callback("menu:services")
     await callback("service:text_to_office")
-    assert transport.messages[-1].text == tr("office_text")
+    assert transport.messages[-1].text.endswith(tr("office_text"))
     transport.fail_next_sends = 1
     with pytest.raises(SimulatedSendFailure):
         await message("المحتوى")  # the target choice question fails
@@ -170,12 +170,12 @@ async def test_failed_more_files_prompt_recovers(monkeypatch):
     await message("/start")
     await callback("menu:services")
     await callback("service:image_to_text")
-    assert transport.messages[-1].text == tr("ocr_images")
+    assert transport.messages[-1].text.endswith(tr("ocr_images"))
     transport.fail_next_sends = 1
     with pytest.raises(SimulatedSendFailure):
         await message("fake-image")  # the more_files prompt fails after the first upload is saved
     await message("fake-image-retry")  # re-renders the more_files prompt instead of a second file
-    assert transport.messages[-1].text == tr("more_files")
+    assert transport.messages[-1].text.endswith(tr("more_files"))
     assert button_by_prefix(transport.messages[-1].reply_markup, "done:")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "done:"))
     assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
@@ -200,7 +200,7 @@ async def test_resume_rerenders_current_prompt():
     await callback("menu:services")
     await callback("service:echo")
     await message("/resume")  # idempotent re-render of the current question
-    assert transport.messages[-1].text == tr("input_text")
+    assert transport.messages[-1].text.endswith(tr("input_text"))
     await dp.storage.close()
     await bot.session.close()
 
@@ -226,13 +226,13 @@ async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
     await message("/start")
     await callback("menu:services")
     await callback("service:image_to_text")
-    assert transport.messages[-1].text == tr("ocr_images")
+    assert transport.messages[-1].text.endswith(tr("ocr_images"))
     transport.fail_next_sends = 1
     with pytest.raises(SimulatedSendFailure):
         await message("image-A")  # A saved; the more_files acknowledgement fails
     await message("image-B")  # B arrives while A's acknowledgement is still pending
     assert transport.messages[-2].text == tr("update_not_applied")
-    assert transport.messages[-1].text == tr("more_files")
+    assert transport.messages[-1].text.endswith(tr("more_files"))
     # Complete the draft: only A was accepted, B was never received.
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "done:"))
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
@@ -257,11 +257,11 @@ async def test_stale_cancel_preserves_draft_and_resume_restores():
     # Start a newer draft; the old cancel button is now stale.
     await callback("menu:services")
     await callback("service:echo")
-    assert transport.messages[-1].text == tr("input_text")
+    assert transport.messages[-1].text.endswith(tr("input_text"))
     await callback(stale_cancel)
     assert transport.callback_answers[-1].text == tr("stale_button")
     # The newer draft survived; /resume re-renders its current prompt.
     await message("/resume")
-    assert transport.messages[-1].text == tr("input_text")
+    assert transport.messages[-1].text.endswith(tr("input_text"))
     await dp.storage.close()
     await bot.session.close()

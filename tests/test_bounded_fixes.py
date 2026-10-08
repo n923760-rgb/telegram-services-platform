@@ -15,7 +15,7 @@ from aiogram.client.session.base import BaseSession
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import AnswerCallbackQuery, CopyMessage, EditMessageReplyMarkup, SendMessage
-from aiogram.types import CallbackQuery, Chat, Message, Update
+from aiogram.types import CallbackQuery, Chat, InlineKeyboardMarkup, Message, Update
 from aiogram.types import User as TelegramUser
 from pydantic import SecretStr, ValidationError
 from sqlalchemy import func, select
@@ -42,6 +42,7 @@ class Recorder(BaseSession):
         self.copies = []
         self.callback_answers = []
         self.reply_markup_edits = []
+        self.sent_methods = []
         self.fail_chats = set(fail_chats)
 
     async def close(self):
@@ -55,6 +56,7 @@ class Recorder(BaseSession):
             self.reply_markup_edits.append(method)
             return True
         if isinstance(method, SendMessage):
+            self.sent_methods.append(method)
             if method.chat_id in self.fail_chats:
                 raise TelegramForbiddenError(method=method, message="blocked by user")
             message = Message(
@@ -62,7 +64,9 @@ class Recorder(BaseSession):
                 date=datetime.now(UTC),
                 chat=Chat(id=int(method.chat_id), type="private"),
                 text=method.text,
-                reply_markup=method.reply_markup,
+                reply_markup=method.reply_markup
+                if isinstance(method.reply_markup, InlineKeyboardMarkup)
+                else None,
             )
             self.messages.append(message)
             return message
