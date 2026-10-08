@@ -74,7 +74,7 @@ async def execute_job(ctx, job_id: str):
             if ctx.get("runtime_factory")
             else ctx.get("runtime")
             or runtime_for(
-                job.id, user_id, needs_ai=not cached and registry.types[slug].requires_ai
+                job.id, user_id, needs_ai=not cached and registry.types[slug].needs_ai(inputs)
             )
         )
         result = (

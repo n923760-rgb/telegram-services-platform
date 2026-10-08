@@ -58,7 +58,7 @@ Keep payment gateways, dashboards, unapproved services, agent loops and n8n out 
 1. Create app/services/<slug>/ with __init__.py, schema.py, prompt.py, service.py
    and test_service.py.
 2. Implement BaseService; define version, localized names/description, Decimal price,
-   requires_ai/default gate and a bounded input_schema.
+   requires_ai/default gate and a bounded input_schema; mixed modes override pure needs_ai(inputs).
 3. Expose SERVICE; rely on discovery, never edit bot/core service lists.
 4. Use job-scoped abstract AI and owner-bound storage, validated models and builders.
 5. Add Arabic/English prompt, choice and safe-error keys to both catalogs.
@@ -107,9 +107,10 @@ Keep local build evidence separate from hosted CI and real Telegram/provider qua
 
 ## Current phase
 Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
-Live main includes text-to-PowerPoint/PDF, shared Office quality and bilingual UX (PR #7).
-UX qualification passed 152 hosted tests; its post-merge main workflow passed.
-PR #5 PDF-to-Word is merged; its reviewed head passed 171 hosted tests, migrations/drift, lint/format and Compose checks.
+Baseline main includes PR #9 customer navigation/history; its post-merge workflow passed 203 tests.
+Direct Word/PDF task reuses builders with explicit modes; no new dependencies or payment changes.
+Keep AI-only gates and verify mixed-mode admission/runtime decisions before merging.
+PR #5 PDF-to-Word is merged and remains disabled by default.
 Keep original page-layout/OCR reconstruction out of this text-based conversion; require representative real-provider acceptance before enabling it.
-Use docs/TELEGRAM_ACCEPTANCE.md for real staging journeys; live Telegram/AI and deployment remain NOT RUN here.
+Use docs/TELEGRAM_ACCEPTANCE.md; distinguish operator-reported runtime evidence from checks run here.
 Treat SAR balances as test credits and configure secrets only on the operating machine.

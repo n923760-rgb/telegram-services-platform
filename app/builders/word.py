@@ -11,7 +11,6 @@ from app.builders.direction import is_rtl
 from app.builders.schema import Document
 
 BODY_FONT = "DejaVu Sans"
-ACCENT = RGBColor(0x17, 0x6B, 0x55)
 DARK = RGBColor(0x20, 0x20, 0x20)
 
 
@@ -25,8 +24,11 @@ def _direction(paragraph, rtl):
     bidi = ppr.find(qn("w:bidi"))
     if bidi is None:
         bidi = OxmlElement("w:bidi")
-        ppr.append(bidi)
+        ppr.insert_element_before(bidi, "w:spacing", "w:ind", "w:jc", "w:sectPr")
     bidi.set(qn("w:val"), "1" if rtl else "0")
+    # Logical leading-edge alignment (Office 2010+) avoids RTL mirroring differences
+    # between Word and LibreOffice. start is right for RTL and left for LTR.
+    ppr.find(qn("w:jc")).set(qn("w:val"), "start")
     for run in paragraph.runs:
         run.font.name = BODY_FONT
         rpr = run._element.get_or_add_rPr()
@@ -49,7 +51,7 @@ def _heading(doc, text, level):
     run.bold = True
     run.font.name = BODY_FONT
     run.font.size = Pt(22 if level == 0 else 14)
-    run.font.color.rgb = ACCENT if level == 0 else DARK
+    run.font.color.rgb = DARK
     paragraph.paragraph_format.space_before = Pt(0 if level == 0 else 14)
     paragraph.paragraph_format.space_after = Pt(14 if level == 0 else 6)
     paragraph.paragraph_format.keep_with_next = True
@@ -89,6 +91,9 @@ def _page_number_footer(document):
 def build(data: Document) -> bytes:
     data = Document.model_validate(data)
     doc = Word()
+    title_properties = doc.styles["Title"].element.get_or_add_pPr()
+    for border in list(title_properties.findall(qn("w:pBdr"))):
+        title_properties.remove(border)
     normal = doc.styles["Normal"]
     normal.font.name = BODY_FONT
     normal.font.size = Pt(11)

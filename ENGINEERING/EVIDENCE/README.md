@@ -49,3 +49,11 @@ Task changes and local lint/format/203-test collection are recorded in
 passed [workflow 37659108407](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37659108407): 203 tests (one dependency warning),
 lint/format, migrations/drift and Compose configuration. The final evidence update changes
 documentation only, preserving that tested application/test tree; inspect final-head CI separately. Real Telegram/provider and deployment remain NOT RUN.
+
+## Direct documents — 2026-10-08
+
+Baseline main faab75a (PR #9) passed [main workflow 37727678417](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37727678417).
+The [direct-document report](../REPORTS/2026-10-08-direct-documents.md) records 37 local
+service tests, 240-test collection, pure builder/architecture checks and actual render QA.
+Full DB/Redis execution must be attributed to the published task workflow before merging.
+Operator-provided baseline runtime observations are separate from new direct-mode qualification.

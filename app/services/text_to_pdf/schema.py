@@ -1,10 +1,11 @@
 from pydantic import Field, model_validator
 
 from app.builders.schema import Document, StrictModel
+from app.services.documents import DocumentInputs
 
 
-class Inputs(StrictModel):
-    text: str = Field(min_length=1, max_length=12000)
+class Inputs(DocumentInputs):
+    pass
 
 
 class PdfPlan(StrictModel):

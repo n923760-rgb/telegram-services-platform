@@ -130,6 +130,9 @@ def build(data: Document) -> bytes:
                 story.append(Paragraph(display(line), heading_rtl if is_rtl(line) else heading_ltr))
         for text in section.paragraphs:
             for logical in safe_text(text).splitlines() or [""]:
+                if not logical.strip():
+                    story.append(Spacer(1, 18))
+                    continue
                 for line in _wrap(logical, "DejaVu", 11, width):
                     story.append(
                         Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr)
@@ -139,5 +142,8 @@ def build(data: Document) -> bytes:
             for line in _wrap("• " + bullet, "DejaVu", 11, width):
                 story.append(Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr))
 
+    # A terminal spacer can overflow an otherwise full page and create a blank page.
+    while story and isinstance(story[-1], Spacer):
+        story.pop()
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return buffer.getvalue()

@@ -169,5 +169,13 @@ class BaseService:
     requires_ai = False
     runtime: Any = None
 
+    @classmethod
+    def needs_ai(cls, inputs: dict) -> bool:
+        """Pure admission/runtime decision; mixed plugins override for validated inputs.
+
+        requires_ai remains the unconditional provider gate for administrator enablement.
+        """
+        return cls.requires_ai
+
     async def run(self, inputs: dict) -> Result:
         raise NotImplementedError

@@ -1,6 +1,6 @@
 # Master engineering roadmap
 
-Reconciled with live GitHub on 2026-10-07. This roadmap is not a production release approval.
+Reconciled with live GitHub on 2026-10-08. This roadmap is not a production release approval.
 
 ## Current verified state
 
@@ -38,6 +38,26 @@ Reconciled with live GitHub on 2026-10-07. This roadmap is not a production rele
   update changes documentation only; inspect its final-head workflow separately.
 - NOT RUN: Authenticated Telegram/provider and deployment qualification.
 - Evidence: [customer-navigation report](REPORTS/2026-10-07-customer-navigation.md).
+
+## Direct document continuation — 2026-10-08
+
+- FACT: Baseline main faab75a includes merged PR #9; post-merge workflow 37727678417 passed
+  203 tests, lint/format, migrations/drift and Compose configuration.
+- OPERATOR-REPORTED: Compose build succeeded, services healthy and migrations exited 0;
+  the operator's `/health` response was HTTP 200 on 2026-10-08. No SSH access is available here.
+- OPERATOR-REPORTED: Telegram screenshots show echo delivery, completed order history,
+  persistent navigation and zero reserved credit. Real Office/PDF output quality and full
+  before/after financial audit remain unqualified.
+- FACT: Current task adds explicit direct Word/PDF modes without AI, a shared bounded input
+  contract and pure per-request AI gating. Existing smart behavior, prices, ledger, general
+  cost admission limits and cached-delivery rules are preserved. Plugin contracts become version 2.
+- FACT: No dependency, database schema, new service, agent loop or workflow was added;
+  no unused-code deletion was justified in this bounded inspection. Shared input validation
+  replaces repeated parsing, and a duplicate import was removed.
+- PASS: Local service tests and Word/PDF render inspection; final counts and limits in
+  [the direct-document report](REPORTS/2026-10-08-direct-documents.md).
+- NOT RUN: New direct-mode server deployment/Telegram acceptance; publish and inspect hosted
+  full-suite checks before deciding the merge. This section is task evidence, not merge proof.
 
 ## Architecture and state owners
 
@@ -91,6 +111,8 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
+Complete the bounded direct-document task and its hosted checks; qualify direct Word/PDF
+using the updated acceptance guide before extending direct modes to Excel or PowerPoint.
 Run the [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md) on an available staging
 server with a dedicated test account and operator-configured secrets. Use echo first, then
 Office/PDF and clear/unclear OCR; inspect reservations, capture/release and file cleanup.

@@ -296,8 +296,8 @@ def create_router():
                 await message.answer(tr(error.key, lang))
                 return
         else:
-            value = (message.text or "").strip()
-            if not value or len(value) > field.max_length:
+            value = message.text or ""
+            if not value.strip() or len(value) > field.max_length:
                 await message.answer(tr("input_invalid", lang))
                 return
         if field.multiple:

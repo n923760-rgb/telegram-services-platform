@@ -32,6 +32,9 @@ The placeholder is the dedicated customer's numeric Telegram ID. This is test cr
 | Echo | Select echo, enter `Acceptance 123`, confirm | Exact text returned; available decreases by the displayed price; reserved returns to zero |
 | English UI | Use `/lang`, select English, reopen services/balance | Preference persists after `/start`; menus, prompts and delivery envelope are English |
 | Word | Select text-to-office → Word; provide a short report with names, dates and numbers | Opens as editable DOCX; supplied facts and text are preserved |
+| Direct Word | Text-to-office → Word → direct; enter a customer title; use Arabic/English text, blank lines and leading-zero numbers | Opens as DOCX; exact body and line order preserved, apart from normalized line endings; no provider/cost-usage records |
+| Direct PDF | Text-to-pdf → direct; enter a customer title using the same sample | Arabic/English readable, words/numbers and blank lines preserved; display whitespace/reflow may differ; no provider/cost-usage records |
+| Disabled provider | In staging only, use disabled/paused AI with an enabled mixed service | Direct Word/PDF work; AI organization and Excel reject before credit reservation; never change production credentials to test this |
 | Excel | Select text-to-office → Excel; provide a small table | Opens as XLSX; headers and numeric cells are correct; customer formulas remain safe text |
 | PowerPoint | Select text-to-pptx; provide a short presentation brief | Opens as editable PPTX; readable slides preserve the provided facts |
 | PDF | Select text-to-pdf; provide an Arabic/English report | Opens as PDF; inspect Arabic shaping, mixed text, page breaks and font coverage |
@@ -45,6 +48,9 @@ The placeholder is the dedicated customer's numeric Telegram ID. This is test cr
 | Confirmation via history | Open a waiting-for-approval order in My orders; approve or reject | Existing order resumes or releases its reservation once; repeated controls cannot settle twice |
 | Cancel | Cancel a draft before confirmation | No order charge; old confirmation buttons cannot submit it |
 | Confirmation replay | Tap an old confirmation again after completion | No second financial charge; old control is rejected safely |
+
+For Word/PDF smart journeys, explicitly choose AI organization. Both modes keep the displayed
+service price. Direct mode is not a free-service switch. Restart old version-1 drafts after upgrading.
 
 Inspect each balance using `/balance TEST_USER_ID`. No successful case may capture before
 required delivery; no failed case may leave an ordinary customer reservation stranded.

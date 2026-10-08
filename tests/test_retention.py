@@ -137,7 +137,7 @@ async def test_aged_prepared_artifact_survives_expiry(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "نص", "target": "word"},
+        {"text": "نص", "target": "word", "mode": "smart"},
         await _price("text_to_office"),
         "artifact",
     )
@@ -229,7 +229,7 @@ async def test_malformed_artifact_result_fails_closed(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "نص", "target": "word"},
+        {"text": "نص", "target": "word", "mode": "smart"},
         await _price("text_to_office"),
         "malformed-result",
     )

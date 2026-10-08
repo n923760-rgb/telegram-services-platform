@@ -117,7 +117,15 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
     )
     for target in ("word", "excel"):
         oid = await submit(
-            1, "text_to_office", {"text": "المعلومات", "target": target}, price, target
+            1,
+            "text_to_office",
+            {
+                "text": "المعلومات",
+                "target": target,
+                **({"mode": "smart"} if target == "word" else {}),
+            },
+            price,
+            target,
         )
         await execute_job(ctx, str(await job_for(oid)))
         async with sessions() as db:
@@ -136,7 +144,9 @@ async def test_ambiguity_confirm_resumes_without_second_ai_charge(tmp_path, monk
         tmp_path,
         monkeypatch,
     )
-    oid = await submit(1, "text_to_office", {"text": "نص", "target": "word"}, price, "ambiguous")
+    oid = await submit(
+        1, "text_to_office", {"text": "نص", "target": "word", "mode": "smart"}, price, "ambiguous"
+    )
     jid = await job_for(oid)
     await execute_job(ctx, str(jid))
     await deliver_confirmations(ctx)
@@ -174,7 +184,13 @@ async def test_ambiguity_cancel_releases(tmp_path, monkeypatch):
 
 async def test_real_service_invalid_json_releases_credit(tmp_path, monkeypatch):
     _, provider, _, ctx, price = await setup("text_to_office", ["{}", "{}"], tmp_path, monkeypatch)
-    oid = await submit(1, "text_to_office", {"text": "نص", "target": "word"}, price, "invalid-json")
+    oid = await submit(
+        1,
+        "text_to_office",
+        {"text": "نص", "target": "word", "mode": "smart"},
+        price,
+        "invalid-json",
+    )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "failed"
@@ -218,7 +234,11 @@ async def test_missing_information_releases_reservation(tmp_path, monkeypatch):
         monkeypatch,
     )
     oid = await submit(
-        1, "text_to_office", {"text": "غير مكتمل", "target": "word"}, price, "missing-info"
+        1,
+        "text_to_office",
+        {"text": "غير مكتمل", "target": "word", "mode": "smart"},
+        price,
+        "missing-info",
     )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
@@ -242,7 +262,9 @@ async def test_ambiguity_expiry_releases_reservation(tmp_path, monkeypatch):
         monkeypatch,
     )
     monkeypatch.setattr(config(), "storage_root", tmp_path)
-    oid = await submit(1, "text_to_office", {"text": "محتوى", "target": "word"}, price, "expired")
+    oid = await submit(
+        1, "text_to_office", {"text": "محتوى", "target": "word", "mode": "smart"}, price, "expired"
+    )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions.begin() as db:
         (await db.get(Order, oid)).updated_at = datetime.now(UTC) - timedelta(minutes=31)
@@ -289,7 +311,11 @@ async def test_database_abort_after_generation_reuses_saved_result(tmp_path, mon
         monkeypatch,
     )
     oid = await submit(
-        1, "text_to_office", {"text": "بيانات", "target": "word"}, price, "db-abort-output"
+        1,
+        "text_to_office",
+        {"text": "بيانات", "target": "word", "mode": "smart"},
+        price,
+        "db-abort-output",
     )
     jid = await job_for(oid)
     original = runner.lock_order
@@ -359,7 +385,7 @@ async def test_real_pdf_output(tmp_path, monkeypatch):
         tmp_path,
         monkeypatch,
     )
-    oid = await submit(1, "text_to_pdf", {"text": "المعلومات"}, price, "pdf")
+    oid = await submit(1, "text_to_pdf", {"text": "المعلومات", "mode": "smart"}, price, "pdf")
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
@@ -373,7 +399,9 @@ async def test_pdf_missing_information_releases_reservation(tmp_path, monkeypatc
     _, _, _, ctx, price = await setup(
         "text_to_pdf", ['{"missing_information":true}'], tmp_path, monkeypatch
     )
-    oid = await submit(1, "text_to_pdf", {"text": "غير مكتمل"}, price, "pdf-missing")
+    oid = await submit(
+        1, "text_to_pdf", {"text": "غير مكتمل", "mode": "smart"}, price, "pdf-missing"
+    )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         order = await db.get(Order, oid)

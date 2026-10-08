@@ -70,9 +70,8 @@ async def submit(
         from app.ops.settings import setting
 
         await check_admission(db, user_id)
-        if registry.types[slug].requires_ai:
+        if registry.types[slug].needs_ai(inputs):
             from app.core.settings import config
-            from app.ops.settings import setting
 
             if not config().ai_enabled or await setting(db, "PROVIDER_PAUSED", default=False):
                 raise ServiceError("provider_config")
