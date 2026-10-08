@@ -136,27 +136,31 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
     await set_service(slug, enabled=True)
     await message("/start")
     await callback(f"service:{slug}")
-    text = "  نص جاهز 00123\n\nEnglish & <tag>  "
+    text = (
+        "بدون تعديل النص\n" if slug == "text_to_office" else ""
+    ) + "  نص جاهز 00123\n\nEnglish & <tag>  "
     await message(text)
     if slug == "text_to_office":
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    prompt = "word_mode" if slug == "text_to_office" else "document_mode"
-    assert transport.messages[-1].text.endswith(tr(prompt, lang))
-    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(choice.rsplit(":", 1)[0] + (":1" if slug == "text_to_office" else ":0"))
-    assert transport.messages[-1].text.endswith(tr("document_title", lang))
-    await message("عنوان العميل")
+    if slug == "text_to_pdf":
+        assert transport.messages[-1].text.endswith(tr("document_mode", lang))
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+        assert transport.messages[-1].text.endswith(tr("document_title", lang))
+        await message("عنوان العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     assert await state.get_state() is None
     async with sessions() as db:
         order = await db.scalar(select(Order))
         assert order.inputs["text"] == text
-        assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
-        assert order.service_version == ("4" if slug == "text_to_office" else "3")
+        if slug == "text_to_pdf":
+            assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
+        else:
+            assert set(order.inputs) == {"text", "target"}
+        assert order.service_version == ("5" if slug == "text_to_office" else "3")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
-@pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
+@pytest.mark.parametrize("slug", ["text_to_pdf"])
 async def test_optional_title_rejects_multiline_then_skips_without_losing_body(flow, lang, slug):
     from app.ops.admin import set_service
 
@@ -200,8 +204,6 @@ async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
     await callback("service:text_to_office")
     await message("نص العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(choice)
     assert await state.get_state() == "confirm"
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     assert transport.messages[-1].text == tr("provider_config")

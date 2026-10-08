@@ -198,12 +198,49 @@ def test_smart_defaults_and_approved_continuations_do_not_recall_provider():
     )
 
 
+@pytest.mark.parametrize(
+    "directive",
+    ["بدون تعديل النص", "بدون تعديل النص:", "Keep text unchanged", " keep TEXT unchanged: "],
+)
+async def test_first_line_literal_directive_preserves_body_without_ai(tmp_path, directive):
+    service = TextToOffice()
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    service.runtime = SimpleNamespace(storage=store, ai=None)
+    body = "  نص 00123\n\nEnglish 125.50  "
+    inputs = {"target": "word", "text": directive + "\r\n" + body}
+    service.input_schema.validate_inputs(inputs)
+    assert not service.needs_ai(inputs)
+    result = await service.run(inputs)
+    doc = Document(BytesIO(store.read(result.artifacts[0].key)))
+    assert "\n".join(p.text for p in doc.paragraphs) == body
+    assert set(inputs) == {"text", "target"}
+
+
+@pytest.mark.parametrize(
+    "text", ["نص ثم بدون تعديل النص", "مذكرة\nبدون تعديل النص\nمحتوى", "بدون تعديل النصوص\nمحتوى"]
+)
+def test_embedded_or_partial_literal_phrase_does_not_change_mode(text):
+    assert TextToOffice.needs_ai({"target": "word", "text": text})
+    assert TextToOffice.needs_ai({"target": "excel", "text": "بدون تعديل النص\n" + text})
+
+
+@pytest.mark.parametrize("text", ["بدون تعديل النص", "Keep text unchanged\n\t "])
+def test_empty_literal_body_is_rejected_before_reservation(text):
+    with pytest.raises(ServiceError, match="input_invalid"):
+        TextToOffice.needs_ai({"target": "word", "text": text})
+
+
+def test_office_intake_only_asks_content_and_format():
+    assert [field.name for field in TextToOffice.input_schema.conversation()] == ["text", "target"]
+    assert TextToOffice.needs_ai({"target": "word", "text": "نص"})
+
+
 async def test_direct_word_without_title_preserves_body_once(tmp_path):
     service = TextToOffice()
     store = OwnedStorage(LocalStorage(tmp_path), 1)
     service.runtime = SimpleNamespace(storage=store, ai=None)
     text = "  نص 00123\n\nEnglish 125.50  "
-    inputs = {"text": text, "target": "word", "mode": "direct"}
+    inputs = {"text": "بدون تعديل النص\n" + text, "target": "word"}
     TextToOffice.input_schema.validate_inputs(inputs)
     assert not service.needs_ai(inputs)
     result = await service.run(inputs)

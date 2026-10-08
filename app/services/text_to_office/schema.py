@@ -10,6 +10,21 @@ from app.services.documents import DocumentInputs
 class Inputs(DocumentInputs):
     target: Literal["word", "excel"]
 
+    @classmethod
+    def parse(cls, inputs):
+        values = dict(inputs)
+        # A documented first-line directive, never a phrase search inside customer prose.
+        if values.get("target") == "word" and "mode" not in values:
+            text = values.get("text")
+            if isinstance(text, str):
+                first, _, body = text.replace("\r\n", "\n").replace("\r", "\n").partition("\n")
+                if first.strip().removesuffix(":").strip().casefold() in {
+                    "بدون تعديل النص",
+                    "keep text unchanged",
+                }:
+                    values.update(text=body, mode="direct")
+        return super().parse(values)
+
     @model_validator(mode="after")
     def supported_mode(self):
         if self.target == "excel" and self.mode != "smart":

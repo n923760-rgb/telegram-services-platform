@@ -40,6 +40,11 @@ async def prepare(tmp_path, monkeypatch, slug):
 
 
 def direct_inputs(slug):
+    if slug == "text_to_office":
+        return {
+            "text": "بدون تعديل النص\n  محتوى 00123\n\nEnglish <tag> & data 456  ",
+            "target": "word",
+        }
     return {
         "text": "  محتوى 00123\n\nEnglish <tag> & data 456  ",
         "mode": "direct",
@@ -48,16 +53,17 @@ def direct_inputs(slug):
     }
 
 
-@pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
-@pytest.mark.parametrize("with_title", [True, False])
+@pytest.mark.parametrize(
+    "slug,with_title", [("text_to_office", False), ("text_to_pdf", True), ("text_to_pdf", False)]
+)
 async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     tmp_path, monkeypatch, slug, with_title
 ):
     price = await prepare(tmp_path, monkeypatch, slug)
     inputs = direct_inputs(slug)
-    if not with_title:
+    if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "4" if slug == "text_to_office" else "3"
+    version = "5" if slug == "text_to_office" else "3"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -78,8 +84,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     assert not list(tmp_path.glob("[0-9]*/*/*"))
     if slug == "text_to_office":
         doc = Document(BytesIO(delivery.files[0][1]))
-        body = doc.paragraphs[1:] if with_title else doc.paragraphs
-        assert "\n".join(p.text for p in body) == inputs["text"]
+        assert "\n".join(p.text for p in doc.paragraphs) == inputs["text"].partition("\n")[2]
 
 
 @pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
@@ -87,7 +92,7 @@ async def test_smart_mode_still_blocked_before_reserve_without_ai(tmp_path, monk
     price = await prepare(tmp_path, monkeypatch, slug)
     inputs = {
         "text": "المحتوى",
-        "mode": "smart",
+        **({"mode": "smart"} if slug == "text_to_pdf" else {}),
         **({"target": "word"} if slug == "text_to_office" else {}),
     }
     with pytest.raises(ServiceError, match="provider_config"):
@@ -113,7 +118,7 @@ async def test_direct_terminal_failure_releases_credit(tmp_path, monkeypatch, sl
     oid = await submit(1, slug, direct_inputs(slug), price, "failure")
     delivery = Delivery(LocalStorage(tmp_path))
 
-    def fail_build(*args):
+    def fail_build(*args, **kwargs):
         raise ServiceError("service_failed")
 
     async def fail_send(*args):

@@ -8,7 +8,7 @@ from app.services.text_to_office.schema import ExcelPlan, Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "4"
+    version = "5"
     slug = "text_to_office"
     name_ar = tr("office_name")
     name_en = tr("office_name", "en")
@@ -24,22 +24,6 @@ class TextToOffice(BaseService):
                 prompt_key="office_target",
                 choices=["word", "excel"],
                 choice_keys=["word", "excel"],
-            ),
-            InputField(
-                name="mode",
-                prompt_key="word_mode",
-                choices=["smart", "direct"],
-                choice_keys=["word_professional", "word_literal"],
-                when={"target": ["word"]},
-            ),
-            InputField(
-                name="title",
-                prompt_key="document_title",
-                max_length=200,
-                required=False,
-                skip_key="document_no_title",
-                single_line=True,
-                when={"target": ["word"], "mode": ["direct"]},
             ),
         ]
     )

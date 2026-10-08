@@ -112,6 +112,21 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: New server deployment and live professional Word/source-fidelity acceptance.
   Excel quality improvements remain a later independent task.
 
+## Automatic Word intake — 2026-10-08
+
+- OWNER DECISION: Professional Word should be automatic; remove the additional mode/title
+  questions. Preserve literal text on explicit request without searching phrases inside prose.
+- FACT: Office version 5 asks only content and format. Exact Arabic/English first-line
+  directive selects literal rendering without provider calls; only the directive is removed.
+  The remaining body retains whitespace/lines/identifiers. Empty body fails before reservation.
+- FACT: No bot/core branch, dependency, migration, rendering, price or financial-policy change.
+  PDF retains version 3 and its existing explicit modes/optional title. Removed unused mode labels.
+- PASS: 57 local service tests, lint/format/diff; 276 tests collected. Full hosted CI must pass
+  before merge, including generic intake, default-provider gating, literal settlement/recovery,
+  rich Word delivery and old version-3/4 snapshots retaining admin settings.
+- NOT RUN: New server deployment and source-bound professional Word acceptance. The latest
+  screenshot shows the PR #13 prompt, not a newly reviewed output document.
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution

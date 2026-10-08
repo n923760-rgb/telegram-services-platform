@@ -150,11 +150,8 @@ async def test_failed_choice_prompt_recovers():
         await message("المحتوى")  # the target choice question fails
     await message("المحتوى")  # re-renders the choice question instead of consuming again
     assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    # Selecting a target advances to the explicit document-mode question.
+    # Selecting Word advances straight to purchase confirmation.
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    assert transport.messages[-1].text.endswith(tr("word_mode"))
-    professional = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(professional)  # professional mode needs no manual title
     assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()
     await bot.session.close()
