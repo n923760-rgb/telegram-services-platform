@@ -181,6 +181,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         )
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
+        await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
         assert row.version == "2" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
