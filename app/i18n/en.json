@@ -97,6 +97,7 @@
   "pptx_description": "A professional editable slide deck from your request",
   "pptx_text": "Send the content and describe the desired presentation.",
   "pptx_preview": "Slides: {slides}\nFirst slide: {title}",
+  "pptx_tables_preview": "Editable tables: {tables}",
   "pdf_name": "Create a PDF document",
   "pdf_description": "A professional printable PDF document from your request",
   "pdf_text": "Send the text to convert to PDF. Next choose direct conversion without rewriting, or AI organization.",

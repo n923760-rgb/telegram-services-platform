@@ -102,16 +102,60 @@ class Table(StrictModel):
         return self
 
 
+class SlideTable(StrictModel):
+    columns: list[str] = Field(min_length=1, max_length=4)
+    rows: list[list[str]] = Field(min_length=1, max_length=6)
+
+    @model_validator(mode="after")
+    def bounded(self):
+        if len(set(self.columns)) != len(self.columns) or any(
+            not c.strip() or len(c) > 50 for c in self.columns
+        ):
+            raise ValueError("invalid slide table headers")
+        if any(len(row) != len(self.columns) for row in self.rows):
+            raise ValueError("ragged slide table")
+        if any(len(cell) > 80 for row in self.rows for cell in row):
+            raise ValueError("slide table cell too long")
+        return self
+
+
 class Slide(StrictModel):
     title: str = Field(min_length=1, max_length=150)
-    bullets: list[str] = Field(min_length=1, max_length=6)
+    bullets: list[str] = Field(default_factory=list, max_length=6)
+    table: SlideTable | None = None
 
     @model_validator(mode="after")
     def limit(self):
         if any(len(b) > 180 for b in self.bullets):
             raise ValueError("slide overflow risk")
+        if bool(self.bullets) == (self.table is not None) or any(
+            not b.strip() for b in self.bullets
+        ):
+            raise ValueError("slide requires either nonempty bullets or a table")
         return self
 
 
 class Deck(StrictModel):
     slides: list[Slide] = Field(min_length=1, max_length=30)
+
+    @model_validator(mode="after")
+    def readable(self):
+        from app.builders.pptx_layout import plan_slide
+
+        if len(self.model_dump_json()) > 100000:
+            raise ValueError("deck too large")
+        for index, slide in enumerate(self.slides):
+            texts = [slide.title, *slide.bullets]
+            if slide.table is not None:
+                texts.extend(slide.table.columns)
+                texts.extend(cell for row in slide.table.rows for cell in row)
+            if any(
+                (ord(c) < 32 and c not in "\t\n")
+                or 0xD800 <= ord(c) <= 0xDFFF
+                or ord(c) in {0xFFFE, 0xFFFF}
+                for text in texts
+                for c in text
+            ):
+                raise ValueError("invalid slide text")
+            plan_slide(slide, cover_candidate=index == 0 and len(self.slides) > 1)
+        return self

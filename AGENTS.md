@@ -107,9 +107,9 @@ Keep local build evidence separate from hosted CI and real Telegram/provider qua
 
 ## Current phase
 Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
-Baseline main includes PR #9 customer navigation/history; its post-merge workflow passed 203 tests.
-Direct Word/PDF task reuses builders with explicit modes; no new dependencies or payment changes.
-Keep AI-only gates and verify mixed-mode admission/runtime decisions before merging.
+Baseline main ac14b10 includes professional Word and native Excel; its workflow passed 308 tests.
+Current bounded round improves native PowerPoint layouts, editable tables and density rejection.
+Keep Office/provider visual acceptance separate from schema, font metrics and mocked lifecycle tests.
 PR #5 PDF-to-Word is merged and remains disabled by default.
 Keep original page-layout/OCR reconstruction out of this text-based conversion; require representative real-provider acceptance before enabling it.
 Use docs/TELEGRAM_ACCEPTANCE.md; distinguish operator-reported runtime evidence from checks run here.

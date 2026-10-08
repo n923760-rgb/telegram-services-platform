@@ -26,6 +26,24 @@ async def test_pptx_service_builds_editable_file(tmp_path):
     )
 
 
+async def test_pptx_service_builds_native_table_with_count_and_preserved_ids(tmp_path):
+    from tests.test_pptx_quality import sample_plan
+
+    plan = DeckPlan.model_validate({"deck": sample_plan()})
+    service = TextToPptx()
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    service.runtime = SimpleNamespace(
+        storage=store, ai=SimpleNamespace(extract=AsyncMock(return_value=plan))
+    )
+    result = await service.run({"text": "البيانات الأصلية"})
+    prs = Presentation(BytesIO(store.read(result.artifacts[0].key)))
+    assert len(prs.slides) == 3 and not result.needs_confirmation
+    native = next(s.table for s in prs.slides[2].shapes if s.has_table)
+    assert native.cell(1, 0).text == "00123" and native.cell(1, 2).text == "125.50"
+    assert "الجداول القابلة للتعديل: 1" in result.preview
+    service.runtime.ai.extract.assert_awaited_once()
+
+
 async def test_pptx_service_missing_information_releases(tmp_path):
     plan = DeckPlan.model_validate({"missing_information": True})
     service = TextToPptx()
