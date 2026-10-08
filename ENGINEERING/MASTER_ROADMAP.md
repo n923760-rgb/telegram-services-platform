@@ -164,6 +164,19 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
   [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md). Evidence and local limits:
   [Excel quality report](REPORTS/2026-10-08-excel-quality.md).
 
+## PowerPoint quality round — 2026-10-08
+
+- FACT: PR #16 is merged as `ac14b10`; main workflow `37822366757` passed 308 tests.
+- IMPLEMENTED ON TASK BRANCH: Native editable text/tables, readable bounded layouts, normal
+  content on dense first/single slides and schema-level density checks using existing one-repair
+  handling. Service contract version 2 retains administrator-owned price and enablement.
+- PASS: Local lint/format and 35 focused builder/plugin/governance tests; 332 tests collected.
+- FAIL / UNKNOWN: Artifact Tool import/render produced all three synthetic slides without
+  clipping, but reversed Arabic word order and ignored the table RTL column flag. This renderer
+  does not qualify Arabic output. Native PowerPoint behavior remains UNKNOWN, not a passing gate.
+- NOT RUN: Hosted full-suite checks, live-provider fidelity and Microsoft PowerPoint edit/render
+  acceptance. See [PowerPoint quality report](REPORTS/2026-10-08-pptx-quality.md).
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution
@@ -216,9 +229,10 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
-Qualify professional Word against its supplied source using the updated acceptance guide;
-keep literal Word/PDF checks distinct. Defer Excel quality and PowerPoint expansion until
-the owner accepts the real professional Word output.
+Complete the owner-authorized PowerPoint code round and inspect its source-bound hosted checks.
+Qualify professional Word, Excel and PowerPoint against supplied source and native Office;
+keep literal Word/PDF checks distinct. The all-service quality request supersedes the earlier
+Excel/PowerPoint deferral. Continue PDF/OCR fidelity rounds within their approved contracts.
 Run the [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md) on an available staging
 server with a dedicated test account and operator-configured secrets. Use echo first, then
 Office/PDF and clear/unclear OCR; inspect reservations, capture/release and file cleanup.

@@ -8,6 +8,7 @@ from app.services.text_to_pptx.schema import DeckPlan, Inputs
 
 
 class TextToPptx(BaseService):
+    version = "2"
     slug = "text_to_pptx"
     name_ar = tr("pptx_name")
     name_en = tr("pptx_name", "en")
@@ -33,6 +34,9 @@ class TextToPptx(BaseService):
             slides=len(plan.deck.slides),
             title=plan.deck.slides[0].title,
         )
+        tables = sum(slide.table is not None for slide in plan.deck.slides)
+        if tables:
+            preview += "\n" + tr("pptx_tables_preview", tables=tables)
         preview = preview[:1400]
         if plan.ambiguous and not continuation:
             return Result(
