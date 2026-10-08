@@ -71,7 +71,7 @@ async def test_direct_word_works_without_ai_object_and_normalizes_line_endings(t
     "inputs",
     [
         {"text": "text", "target": "excel", "mode": "direct", "title": "Title"},
-        {"text": "text", "target": "word", "mode": "direct"},
+        {"text": "text", "target": "word", "mode": "direct", "title": "first\nsecond"},
         {"text": "text", "target": "word", "mode": "unknown"},
         {"text": "text", "target": "word", "mode": "smart", "title": "Title"},
         {"text": "\t\n ", "target": "word", "mode": "direct", "title": "Title"},
@@ -94,3 +94,18 @@ def test_smart_defaults_and_approved_continuations_do_not_recall_provider():
         )
         is False
     )
+
+
+async def test_direct_word_without_title_preserves_body_once(tmp_path):
+    service = TextToOffice()
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    service.runtime = SimpleNamespace(storage=store, ai=None)
+    text = "  نص 00123\n\nEnglish 125.50  "
+    inputs = {"text": text, "target": "word", "mode": "direct"}
+    TextToOffice.input_schema.validate_inputs(inputs)
+    assert not service.needs_ai(inputs)
+    result = await service.run(inputs)
+    doc = Document(BytesIO(store.read(result.artifacts[0].key)))
+    assert "\n".join(p.text for p in doc.paragraphs) == text
+    assert all(p.style.name != "Title" for p in doc.paragraphs)
+    assert "Document" not in result.preview

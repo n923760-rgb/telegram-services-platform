@@ -8,7 +8,7 @@ from app.services.text_to_office.schema import ExcelPlan, Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "2"
+    version = "3"
     slug = "text_to_office"
     name_ar = tr("office_name")
     name_en = tr("office_name", "en")
@@ -36,6 +36,9 @@ class TextToOffice(BaseService):
                 name="title",
                 prompt_key="document_title",
                 max_length=200,
+                required=False,
+                skip_key="document_no_title",
+                single_line=True,
                 when={"target": ["word"], "mode": ["direct"]},
             ),
         ]
@@ -61,7 +64,11 @@ class TextToOffice(BaseService):
         if plan.missing_information:
             raise ServiceError("needs_information")
         if values.mode == "direct":
-            preview = tr("document_direct_preview", title=plan.document.title)
+            preview = (
+                tr("document_direct_preview", title=values.title)
+                if values.title
+                else tr("document_direct_no_title_preview")
+            )
         elif values.target == "word":
             preview = tr(
                 "word_preview",
@@ -84,7 +91,11 @@ class TextToOffice(BaseService):
                 continuation=plan.model_dump(mode="json"),
             )
         if values.target == "word":
-            content = word.build(plan.document)
+            content = (
+                word.build(plan.document, include_title=False)
+                if values.mode == "direct" and values.title is None
+                else word.build(plan.document)
+            )
             name = "result.docx"
             mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         else:

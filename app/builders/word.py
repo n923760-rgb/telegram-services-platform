@@ -88,7 +88,7 @@ def _page_number_footer(document):
     run._r.append(end)
 
 
-def build(data: Document) -> bytes:
+def build(data: Document, *, include_title: bool = True) -> bytes:
     data = Document.model_validate(data)
     doc = Word()
     title_properties = doc.styles["Title"].element.get_or_add_pPr()
@@ -108,7 +108,8 @@ def build(data: Document) -> bytes:
     section.left_margin = Cm(2.5)
     section.right_margin = Cm(2.5)
 
-    _heading(doc, data.title, 0)
+    if include_title:
+        _heading(doc, data.title, 0)
     for part in data.sections:
         if part.heading:
             _heading(doc, part.heading, 1)

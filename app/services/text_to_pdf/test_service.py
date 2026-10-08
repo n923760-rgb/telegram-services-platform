@@ -86,9 +86,23 @@ async def test_direct_pdf_preserves_content_without_ai(tmp_path, text):
             assert len(doc.pages) > 1
 
 
-def test_pdf_schema_requires_explicit_mode_and_direct_title():
+def test_pdf_schema_requires_explicit_mode_with_optional_direct_title():
     with pytest.raises(ServiceError, match="input_invalid"):
         TextToPdf.input_schema.validate_inputs({"text": "text"})
-    with pytest.raises(ServiceError, match="input_invalid"):
-        TextToPdf.input_schema.validate_inputs({"text": "text", "mode": "direct"})
+    TextToPdf.input_schema.validate_inputs({"text": "text", "mode": "direct"})
     TextToPdf.input_schema.validate_inputs({"text": "text", "mode": "smart"})
+
+
+async def test_direct_pdf_without_title_renders_body_once(tmp_path):
+    service = TextToPdf()
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    service.runtime = SimpleNamespace(storage=store, ai=None)
+    inputs = {"text": "نص 00123\n\nEnglish 125.50", "mode": "direct"}
+    assert not service.needs_ai(inputs)
+    result = await service.run(inputs)
+    with pdfplumber.open(BytesIO(store.read(result.artifacts[0].key))) as doc:
+        assert len(doc.pages) == 1
+        text = doc.pages[0].extract_text()
+        assert text.count("00123") == 1 and text.count("125.50") == 1
+        assert "Document" not in text
+    assert "Document" not in result.preview

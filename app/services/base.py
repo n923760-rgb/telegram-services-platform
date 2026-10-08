@@ -10,6 +10,8 @@ class InputField(BaseModel):
     kind: Literal["text", "image", "file", "audio", "form"] = "text"  # text/image/file/audio/form
     prompt_key: str
     required: bool = True
+    skip_key: str = "skip_field"
+    single_line: bool = False
     choices: list[str] = []
     choice_keys: list[str] = []
     max_length: int = Field(default=12000, ge=1, le=12000)
@@ -105,6 +107,8 @@ class InputSchema(BaseModel):
                     raise ServiceError("input_invalid")
                 if field.choices and item not in field.choices:
                     raise ServiceError("input_invalid")
+                if field.single_line and any(c in item for c in "\r\n\u2028\u2029"):
+                    raise ServiceError("input_single_line")
 
 
 def get_input(inputs, name):

@@ -73,7 +73,7 @@ def _footer(canvas, doc):
     canvas.restoreState()
 
 
-def build(data: Document) -> bytes:
+def build(data: Document, *, include_title: bool = True) -> bytes:
     data = Document.model_validate(data)
     _register_fonts()
     buffer = BytesIO()
@@ -120,9 +120,10 @@ def build(data: Document) -> bytes:
 
     width = A4[0] - 84
     story = []
-    for line in _wrap(data.title, "DejaVu-Bold", 18, width):
-        story.append(Paragraph(display(line), title_rtl if is_rtl(line) else title_ltr))
-    story.append(Spacer(1, 4))
+    if include_title:
+        for line in _wrap(data.title, "DejaVu-Bold", 18, width):
+            story.append(Paragraph(display(line), title_rtl if is_rtl(line) else title_ltr))
+        story.append(Spacer(1, 4))
 
     for section in data.sections:
         if section.heading:

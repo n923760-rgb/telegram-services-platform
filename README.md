@@ -26,11 +26,12 @@ Word, Excel, PowerPoint and PDF builders are shared infrastructure. Blank, unrea
 is rejected and credit released.
 OCR accuracy still depends on the selected model and the image; model confidence is not a guarantee.
 
-Direct Word/PDF use customer text plus a customer-supplied title, without AI or intent guessing.
+Direct Word/PDF preserve customer text without AI or intent guessing. Titles are optional:
+enter a short single-line title or choose No title to omit the visible heading.
 Word preserves body whitespace and lines (CRLF/CR normalize to LF); PDF preserves words, numbers
 and blank lines but normalizes display whitespace and reflows text. This is not original-layout
 reconstruction. The service price is unchanged for both modes. Excel remains AI-only.
-Word/Excel and PDF are version 2: stale drafts must restart, incompatible unprepared jobs release
+Word/Excel and PDF are version 3: stale drafts must restart, incompatible unprepared jobs release
 credit, and already prepared results remain eligible for cached delivery.
 
 `app/bot` handles Telegram; `app/api` handles HTTP; `app/core` holds configuration, DB and i18n.

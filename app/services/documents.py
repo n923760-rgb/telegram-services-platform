@@ -31,12 +31,12 @@ class DocumentInputs(StrictModel):
     @field_validator("title", mode="before")
     @classmethod
     def printable_title(cls, value):
+        if isinstance(value, str) and any(c in value for c in "\r\n\u2028\u2029"):
+            raise ValueError("title must be a single line")
         return cls.printable_text(value) if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def explicit_title(self):
-        if self.mode == "direct" and not self.title:
-            raise ValueError("direct conversion requires a customer title")
         if self.mode == "smart" and self.title is not None:
             raise ValueError("title belongs to direct mode")
         if self.mode == "direct" and self.text.count("\n") >= 10000:
@@ -46,7 +46,8 @@ class DocumentInputs(StrictModel):
     def document(self):
         lines = self.text.split("\n")
         return Document(
-            title=self.title,
+            # Keep the strict AI document contract; builders hide this metadata-only fallback.
+            title=self.title or "Document",
             sections=[Section(paragraphs=lines[i : i + 100]) for i in range(0, len(lines), 100)],
         )
 

@@ -49,11 +49,16 @@ def direct_inputs(slug):
 
 
 @pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
-async def test_direct_order_no_provider_no_cost_exactly_once_capture(tmp_path, monkeypatch, slug):
+@pytest.mark.parametrize("with_title", [True, False])
+async def test_direct_order_no_provider_no_cost_exactly_once_capture(
+    tmp_path, monkeypatch, slug, with_title
+):
     price = await prepare(tmp_path, monkeypatch, slug)
     inputs = direct_inputs(slug)
-    oid = await submit(1, slug, inputs, price, "direct", expected_version="2")
-    assert await submit(1, slug, inputs, price, "direct", expected_version="2") == oid
+    if not with_title:
+        inputs.pop("title")
+    oid = await submit(1, slug, inputs, price, "direct", expected_version="3")
+    assert await submit(1, slug, inputs, price, "direct", expected_version="3") == oid
     async with sessions() as db:
         assert (await balance(db, 1)).reserved == price
     delivery = Delivery(LocalStorage(tmp_path))
@@ -72,7 +77,8 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(tmp_path, m
     assert not list(tmp_path.glob("[0-9]*/*/*"))
     if slug == "text_to_office":
         doc = Document(BytesIO(delivery.files[0][1]))
-        assert "\n".join(p.text for p in doc.paragraphs[1:]) == inputs["text"]
+        body = doc.paragraphs[1:] if with_title else doc.paragraphs
+        assert "\n".join(p.text for p in body) == inputs["text"]
 
 
 @pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
@@ -182,7 +188,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
         await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
-        assert row.version == "2" and row.enabled and row.price_halala == 700
+        assert row.version == "3" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
     )

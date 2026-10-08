@@ -8,7 +8,7 @@ from app.services.text_to_pdf.schema import Inputs, PdfPlan
 
 
 class TextToPdf(BaseService):
-    version = "2"
+    version = "3"
     slug = "text_to_pdf"
     name_ar = tr("pdf_name")
     name_en = tr("pdf_name", "en")
@@ -26,7 +26,13 @@ class TextToPdf(BaseService):
                 choice_keys=["document_direct", "document_smart"],
             ),
             InputField(
-                name="title", prompt_key="document_title", max_length=200, when={"mode": ["direct"]}
+                name="title",
+                prompt_key="document_title",
+                max_length=200,
+                required=False,
+                skip_key="document_no_title",
+                single_line=True,
+                when={"mode": ["direct"]},
             ),
         ]
     )
@@ -48,7 +54,11 @@ class TextToPdf(BaseService):
         if plan.missing_information:
             raise ServiceError("needs_information")
         preview = (
-            tr("document_direct_preview", title=plan.document.title)
+            (
+                tr("document_direct_preview", title=values.title)
+                if values.title
+                else tr("document_direct_no_title_preview")
+            )
             if values.mode == "direct"
             else tr(
                 "pdf_preview",
@@ -63,7 +73,11 @@ class TextToPdf(BaseService):
                 needs_confirmation=True,
                 continuation=plan.model_dump(mode="json"),
             )
-        content = pdf.build(plan.document)
+        content = (
+            pdf.build(plan.document, include_title=False)
+            if values.mode == "direct" and values.title is None
+            else pdf.build(plan.document)
+        )
         artifact = self.runtime.storage.save("result.pdf", content, "application/pdf")
         return Result(preview=preview, artifacts=[artifact])
 

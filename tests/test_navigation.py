@@ -150,7 +150,40 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
         order = await db.scalar(select(Order))
         assert order.inputs["text"] == text
         assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
-        assert order.service_version == "2"
+        assert order.service_version == "3"
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
+async def test_optional_title_rejects_multiline_then_skips_without_losing_body(flow, lang, slug):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    await set_service(slug, enabled=True)
+    await message("/start")
+    await callback(f"service:{slug}")
+    text = "نص 00123\n\nEnglish 125.50"
+    await message(text)
+    if slug == "text_to_office":
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    markup = transport.messages[-1].reply_markup
+    skip = button_by_prefix(markup, "skip:")
+    assert any(
+        b.text == tr("document_no_title", lang) for row in markup.inline_keyboard for b in row
+    )
+    draft = await state.get_data()
+    await message(text)
+    assert transport.messages[-1].text == tr("input_single_line", lang)
+    assert await state.get_data() == draft
+    await callback(skip)
+    assert await state.get_state() == "confirm"
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
+    async with sessions() as db:
+        order = await db.scalar(select(Order))
+        assert order.inputs["text"] == text and "title" not in order.inputs
         assert (await balance(db, 1)).reserved == order.price_halala
 
 

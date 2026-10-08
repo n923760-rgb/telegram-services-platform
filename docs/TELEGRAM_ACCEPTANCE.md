@@ -32,8 +32,8 @@ The placeholder is the dedicated customer's numeric Telegram ID. This is test cr
 | Echo | Select echo, enter `Acceptance 123`, confirm | Exact text returned; available decreases by the displayed price; reserved returns to zero |
 | English UI | Use `/lang`, select English, reopen services/balance | Preference persists after `/start`; menus, prompts and delivery envelope are English |
 | Word | Select text-to-office → Word; provide a short report with names, dates and numbers | Opens as editable DOCX; supplied facts and text are preserved |
-| Direct Word | Text-to-office → Word → direct; enter a customer title; use Arabic/English text, blank lines and leading-zero numbers | Opens as DOCX; exact body and line order preserved, apart from normalized line endings; no provider/cost-usage records |
-| Direct PDF | Text-to-pdf → direct; enter a customer title using the same sample | Arabic/English readable, words/numbers and blank lines preserved; display whitespace/reflow may differ; no provider/cost-usage records |
+| Direct Word | Text-to-office → Word → direct; test a short title and No title; try a multiline title before skipping | Opens as DOCX; exact body and line order preserved, apart from normalized line endings; no title duplication or provider/cost-usage records; multiline title stays at the same step |
+| Direct PDF | Text-to-pdf → direct; test a short title and No title using the same sample | Arabic/English readable, words/numbers and blank lines preserved; display whitespace/reflow may differ; heading absent when skipped; no provider/cost-usage records |
 | Disabled provider | In staging only, use disabled/paused AI with an enabled mixed service | Direct Word/PDF work; AI organization and Excel reject before credit reservation; never change production credentials to test this |
 | Excel | Select text-to-office → Excel; provide a small table | Opens as XLSX; headers and numeric cells are correct; customer formulas remain safe text |
 | PowerPoint | Select text-to-pptx; provide a short presentation brief | Opens as editable PPTX; readable slides preserve the provided facts |
