@@ -3,11 +3,17 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from app.builders.schema import Document, StrictModel, Table
+from app.services.documents import DocumentInputs
 
 
-class Inputs(StrictModel):
-    text: str = Field(min_length=1, max_length=12000)
+class Inputs(DocumentInputs):
     target: Literal["word", "excel"]
+
+    @model_validator(mode="after")
+    def supported_mode(self):
+        if self.target == "excel" and self.mode != "smart":
+            raise ValueError("direct Excel is not supported")
+        return self
 
 
 class WordPlan(StrictModel):

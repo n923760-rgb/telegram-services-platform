@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from docx import Document as Word
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
 from docx.shared import Cm
 from openpyxl import load_workbook
 from pptx import Presentation
@@ -29,14 +29,16 @@ def test_word_builds_rtl_and_ltr_with_professional_layout():
         ],
     )
     doc = Word(BytesIO(word.build(data)))
-    by_text = {paragraph.text: paragraph.alignment for paragraph in doc.paragraphs}
+    by_text = {paragraph.text: paragraph._p.get_or_add_pPr() for paragraph in doc.paragraphs}
     assert "English content only." in by_text
     assert "محتوى عربي." in by_text
     assert "نقطة عربية" in by_text
-    assert by_text["Overview"] == WD_ALIGN_PARAGRAPH.LEFT
-    assert by_text["الملخص"] == WD_ALIGN_PARAGRAPH.RIGHT
+    for text, rtl in [("Overview", "0"), ("الملخص", "1")]:
+        assert by_text[text].find(qn("w:jc")).get(qn("w:val")) == "start"
+        assert by_text[text].find(qn("w:bidi")).get(qn("w:val")) == rtl
     assert abs(doc.sections[0].top_margin - Cm(2.2)) <= 635
     assert "PAGE" in doc.sections[0].footer.paragraphs[0]._p.xml
+    assert "w:pBdr" not in doc.styles["Title"].element.xml
 
 
 def test_excel_preserves_protection_and_adaptive_direction():
@@ -82,3 +84,20 @@ def test_pdf_mixed_content_and_page_numbers():
         assert len(doc.pages) >= 2
         text = "".join(page.extract_text() or "" for page in doc.pages)
         assert "123" in text
+
+
+def test_pdf_does_not_add_blank_page_for_terminal_spacing():
+    import pdfplumber
+
+    text = "\n".join(
+        f"السطر {i:02d}: محتوى عربي للمراجعة مع بيانات ثابتة 00123 وتاريخ 2026/10/08."
+        if i % 2
+        else f"Line {i:02d}: English content with unchanged facts 00123 and date 2026/10/08."
+        for i in range(1, 46)
+    )
+    data = Document(
+        title="مراجعة مستند متعدد الصفحات", sections=[Section(paragraphs=text.split("\n"))]
+    )
+    with pdfplumber.open(BytesIO(pdf.build(data))) as doc:
+        assert len(doc.pages) == 2
+        assert "45" in (doc.pages[-1].extract_text() or "")

@@ -125,6 +125,55 @@ async def test_language_switch_resends_current_question_without_losing_inputs(fl
     assert transport.sent_methods[-2].reply_markup.keyboard[0][0].text == tr("services", "en")
 
 
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
+async def test_direct_document_intake_is_explicit_and_preserves_customer_text(flow, lang, slug):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    await set_service(slug, enabled=True)
+    await message("/start")
+    await callback(f"service:{slug}")
+    text = "  نص جاهز 00123\n\nEnglish & <tag>  "
+    await message(text)
+    if slug == "text_to_office":
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    assert transport.messages[-1].text.endswith(tr("document_mode", lang))
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    assert transport.messages[-1].text.endswith(tr("document_title", lang))
+    await message("عنوان العميل")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
+    assert await state.get_state() is None
+    async with sessions() as db:
+        order = await db.scalar(select(Order))
+        assert order.inputs["text"] == text
+        assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
+        assert order.service_version == "2"
+        assert (await balance(db, 1)).reserved == order.price_halala
+
+
+async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await fund()
+    await set_service("text_to_office", enabled=True)
+    await message("/start")
+    await callback("service:text_to_office")
+    await message("نص العميل")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + ":1")
+    assert await state.get_state() == "confirm"
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
+    assert transport.messages[-1].text == tr("provider_config")
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        assert (await balance(db, 1)).reserved == 0
+
+
 async def test_navigation_preserves_pending_prompt_recovery(flow):
     transport, message, callback, state = flow
     await message("/start")

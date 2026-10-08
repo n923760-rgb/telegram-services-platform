@@ -8,12 +8,13 @@ from app.services.text_to_office.schema import ExcelPlan, Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
+    version = "2"
     slug = "text_to_office"
     name_ar = tr("office_name")
     name_en = tr("office_name", "en")
     description_ar = tr("office_description")
     price_sar = Decimal("5.00")
-    requires_ai = True
+    requires_ai = False  # Direct Word can be enabled without a provider.
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
@@ -24,16 +25,34 @@ class TextToOffice(BaseService):
                 choices=["word", "excel"],
                 choice_keys=["word", "excel"],
             ),
+            InputField(
+                name="mode",
+                prompt_key="document_mode",
+                choices=["direct", "smart"],
+                choice_keys=["document_direct", "document_smart"],
+                when={"target": ["word"]},
+            ),
+            InputField(
+                name="title",
+                prompt_key="document_title",
+                max_length=200,
+                when={"target": ["word"], "mode": ["direct"]},
+            ),
         ]
     )
 
+    @classmethod
+    def needs_ai(cls, inputs):
+        return Inputs.parse(inputs).mode != "direct" and not inputs.get("__continuation")
+
     async def run(self, inputs):
-        clean = {k: v for k, v in inputs.items() if not k.startswith("__")}
-        values = Inputs.model_validate(clean)
+        values = Inputs.parse(inputs)
         schema = WordPlan if values.target == "word" else ExcelPlan
         continuation = inputs.get("__continuation")
         plan = (
-            schema.model_validate(continuation)
+            WordPlan(document=values.document())
+            if values.mode == "direct"
+            else schema.model_validate(continuation)
             if continuation
             else await self.runtime.ai.extract(
                 schema, values.text, WORD if values.target == "word" else EXCEL
@@ -41,7 +60,9 @@ class TextToOffice(BaseService):
         )
         if plan.missing_information:
             raise ServiceError("needs_information")
-        if values.target == "word":
+        if values.mode == "direct":
+            preview = tr("document_direct_preview", title=plan.document.title)
+        elif values.target == "word":
             preview = tr(
                 "word_preview",
                 title=plan.document.title,

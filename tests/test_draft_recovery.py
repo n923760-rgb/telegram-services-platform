@@ -150,8 +150,11 @@ async def test_failed_choice_prompt_recovers():
         await message("المحتوى")  # the target choice question fails
     await message("المحتوى")  # re-renders the choice question instead of consuming again
     assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    # Selecting a target advances cleanly (single choice consumed) to confirmation.
+    # Selecting a target advances to the explicit document-mode question.
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    assert transport.messages[-1].text.endswith(tr("document_mode"))
+    direct = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(direct.rsplit(":", 1)[0] + ":1")  # smart mode needs no manual title
     assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()
     await bot.session.close()

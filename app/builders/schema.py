@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -5,6 +7,7 @@ from pydantic import (
     StrictBool,
     StrictFloat,
     StrictInt,
+    StringConstraints,
     model_validator,
 )
 
@@ -15,7 +18,9 @@ class StrictModel(BaseModel):
 
 class Section(StrictModel):
     heading: str = Field(default="", max_length=500)
-    paragraphs: list[str] = Field(default_factory=list, max_length=100)
+    paragraphs: list[Annotated[str, StringConstraints(strip_whitespace=False)]] = Field(
+        default_factory=list, max_length=100
+    )
     bullets: list[str] = Field(default_factory=list, max_length=100)
 
     @model_validator(mode="after")

@@ -17,14 +17,21 @@ selling services; the implementation does not silently add a different payment s
 | --- | --- | --- | --- |
 | `echo` | Enabled | SAR 1 | Proves collection → confirmation → reservation → worker → delivery → capture. |
 | `image_to_text` | Disabled | SAR 3 | Up to five images, Arabic/English OCR, optional Arabic/English translation and style; long output includes TXT and DOCX. |
-| `text_to_office` | Disabled | SAR 5 | Text to editable Word or Excel; asks for structure approval only when the validated plan is ambiguous. |
+| `text_to_office` | Disabled | SAR 5 | Explicit direct Word conversion without AI, or existing AI-organized Word/Excel; asks for approval when the AI plan is ambiguous. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
-| `text_to_pdf` | Disabled | SAR 5 | Text to a professional, printable PDF document; asks for structure approval only when the validated plan is ambiguous. |
+| `text_to_pdf` | Disabled | SAR 5 | Explicit direct conversion without AI, or existing AI-organized printable PDF; asks for approval when the AI plan is ambiguous. |
 | `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
 
 Word, Excel, PowerPoint and PDF builders are shared infrastructure. Blank, unreadable or empty OCR
 is rejected and credit released.
 OCR accuracy still depends on the selected model and the image; model confidence is not a guarantee.
+
+Direct Word/PDF use customer text plus a customer-supplied title, without AI or intent guessing.
+Word preserves body whitespace and lines (CRLF/CR normalize to LF); PDF preserves words, numbers
+and blank lines but normalizes display whitespace and reflows text. This is not original-layout
+reconstruction. The service price is unchanged for both modes. Excel remains AI-only.
+Word/Excel and PDF are version 2: stale drafts must restart, incompatible unprepared jobs release
+credit, and already prepared results remain eligible for cached delivery.
 
 `app/bot` handles Telegram; `app/api` handles HTTP; `app/core` holds configuration, DB and i18n.
 `app/wallet` records signed integer-halalas entries; `app/orders` holds purchase state.
@@ -94,6 +101,12 @@ format. Restart processes, then `/enable image_to_text`, `/enable text_to_office
 Changing a provider requires a provider implementation/factory change, not service or bot changes.
 Transcription is an interface placeholder; no audio service is implemented.
 
+`/enable text_to_office` and `/enable text_to_pdf` also work with `AI_ENABLED=false` for direct
+conversion. AI organization/Excel still fail admission before credit reservation when AI is disabled
+or the provider is paused. Mixed plugins use `needs_ai(inputs)` for a pure, validated per-request
+decision; `requires_ai` remains the unconditional admin enablement gate for AI-only plugins.
+Existing platform-wide admission limits remain unchanged, even for direct requests.
+
 Costs use provider-returned tokens multiplied by configured rates and `USD_TO_SAR`; this is not a
 provider invoice. In-flight conservative holds protect daily budgets. Size/price bounds must cover
 your chosen provider, including image token accounting. Unknown costs remain held for operator billing
@@ -154,7 +167,8 @@ to polling. `/health/live` is liveness, `/health` checks DB and Redis. `/webhook
 
 1. Create `app/services/<slug>/` with `__init__.py`, `schema.py`, `prompt.py`, `service.py`, `test_service.py`.
 2. Subclass `BaseService`; declare slug, version, Arabic/English names, Arabic description, Decimal `price_sar`,
-   `requires_ai` if appropriate, default gate, and `InputSchema` fields.
+   `requires_ai` for AI-only plugins, default gate, and `InputSchema` fields. Mixed plugins must
+   override `needs_ai(inputs)` without network/DB calls and test every mode's provider gate.
 3. Expose `SERVICE = YourService`. Folder discovery registers it automatically.
 4. Use text/image/file/audio/form fields, choices, conditional `when`, and multiple file inputs as needed.
    Use validated input/output models, `runtime.ai.extract(...)` and typed builders.
