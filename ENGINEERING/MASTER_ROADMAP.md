@@ -147,6 +147,23 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: New server deployment, Microsoft Word/iPhone rendering and broad provider
   quality qualification. This one real output is evidence for this sample only.
 
+## All-service output quality request — 2026-10-08
+
+- OWNER REQUEST: Professional, native-editable Office outputs across the approved services.
+  This supersedes the earlier deferral of Excel/PowerPoint inspection, not payment/deployment gates.
+- FACT: Baseline main `25529b5` retains the recent Word/date improvements; main workflow
+  `37813772656` passed. Operator reports `/health` ok, without a current source-bound output sample.
+- IMPLEMENTED ON TASK BRANCH: First bounded slice upgrades Excel to a native table with visible
+  title, typed formats, source missing/duplicate observations, safer precision/header handling
+  and read/edit/save/reopen plus lifecycle regression tests. Legacy plans remain supported.
+- NOT RUN: Live-provider, visual renderer and Microsoft Excel acceptance for this new slice.
+- NEXT SLICES: PowerPoint readability/overflow and richer native layouts; PDF-to-Word reconstruction
+  within approved scope; service-specific OCR/PDF fidelity qualification. Do not advertise
+  unimplemented charts, original-layout reconstruction or guaranteed AI fidelity.
+- Use [output quality gates](../docs/OUTPUT_QUALITY.md) for every service; preserve the existing
+  [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md). Evidence and local limits:
+  [Excel quality report](REPORTS/2026-10-08-excel-quality.md).
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution

@@ -131,7 +131,7 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
         async with sessions() as db:
             assert (await db.get(Order, oid)).status == "completed"
     assert any(p.text == "بيانات مؤكدة" for p in Word(BytesIO(delivery.files[0][1])).paragraphs)
-    assert load_workbook(BytesIO(delivery.files[1][1])).active["B2"].value == 12
+    assert load_workbook(BytesIO(delivery.files[1][1])).active["B4"].value == 12
     assert provider.calls == 2
 
 

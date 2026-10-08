@@ -142,11 +142,12 @@ def test_excel_preserves_protection_and_adaptive_direction():
     )
     sheet = load_workbook(BytesIO(excel.build(table))).active
     assert sheet.sheet_view.rightToLeft is True
-    assert sheet["B2"].value == 12
-    assert sheet["A3"].data_type == "s" and sheet["A3"].value.startswith("'")
-    assert sheet["B3"].value == "00123"
-    assert sheet.freeze_panes == "A2"
-    assert sheet.auto_filter.ref == sheet.dimensions
+    assert sheet["B4"].value == 12
+    assert sheet["A5"].data_type == "s" and sheet["A5"].value.startswith("'")
+    assert sheet["B5"].value == "00123"
+    assert sheet.freeze_panes == "A4"
+    assert sheet.auto_filter.ref == "A3:B5"
+    assert sheet.tables["Records"].ref == "A3:B5"
 
     english = Table(title="Data", columns=["Name", "Value"], rows=[["Item", 1]])
     assert load_workbook(BytesIO(excel.build(english))).active.sheet_view.rightToLeft is False

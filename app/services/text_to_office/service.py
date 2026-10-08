@@ -68,6 +68,12 @@ class TextToOffice(BaseService):
                 columns="، ".join(plan.table.columns[:8]),
                 rows=len(plan.table.rows),
             )
+            missing = sum(cell is None for row in plan.table.rows for cell in row)
+            unique = {tuple((type(cell).__name__, cell) for cell in row) for row in plan.table.rows}
+            repeated = len(plan.table.rows) - len(unique)
+            if missing or repeated:
+                preview += "\n" + tr("excel_data_notes", missing=missing, repeated=repeated)
+            preview += "\n" + tr("excel_usage")
         preview = preview[:1400]
         if plan.ambiguous and not continuation:
             return Result(

@@ -41,6 +41,12 @@ and RTL/LTR support, bounded to 6 columns, 100 rows/table, 240 characters/cell a
 Prompt rules prohibit invented facts and preserve identifiers/dates/amounts; schema validation
 does not prove factual fidelity, so representative live-provider output still needs inspection.
 No images, charts, original-layout reconstruction or custom branding is promised.
+Excel uses a native sortable/filterable `Records` table with a separate visible title, typed
+cells when unambiguous, frozen headers and print setup. IDs retain leading zeros; missing values
+remain blank and duplicate rows are retained, with review counts in the preview. No automatic
+totals, formulas, charts or multi-dataset workbook are generated. See
+[customer output quality gates](docs/OUTPUT_QUALITY.md); a successful export does not establish
+live-provider fidelity, visual quality or Microsoft Office compatibility for every request.
 Word/Excel is version 5 and PDF remains version 3: stale drafts must restart, incompatible unprepared jobs release
 credit, and already prepared results remain eligible for cached delivery.
 

@@ -1,4 +1,6 @@
-from typing import Annotated
+from datetime import date
+from decimal import Decimal
+from typing import Annotated, Literal
 
 from pydantic import (
     BaseModel,
@@ -46,25 +48,57 @@ class Document(StrictModel):
 Cell = str | StrictInt | StrictFloat | StrictBool | None
 
 
+class ColumnFormat(StrictModel):
+    # Meaning, not executable Excel format strings supplied by the model.
+    kind: Literal["text", "number", "date", "percent", "boolean"]
+
+
 class Table(StrictModel):
     title: str = Field(min_length=1, max_length=200)
     columns: list[str] = Field(min_length=1, max_length=50)
     rows: list[list[Cell]] = Field(min_length=1, max_length=1000)
+    column_formats: list[ColumnFormat] = Field(default_factory=list, max_length=50)
 
     @model_validator(mode="after")
     def rectangular(self):
-        if len(set(self.columns)) != len(self.columns) or any(not c.strip() for c in self.columns):
+        if len(set(self.columns)) != len(self.columns) or any(
+            not c.strip() or len(c) > 200 for c in self.columns
+        ):
             raise ValueError("invalid columns")
         if any(len(row) != len(self.columns) for row in self.rows):
             raise ValueError("ragged table")
+        if self.column_formats and len(self.column_formats) != len(self.columns):
+            raise ValueError("column formats must match columns")
         if len(self.model_dump_json()) > 200000:
             raise ValueError("table too large")
         for row in self.rows:
-            for cell in row:
+            for index, cell in enumerate(row):
                 if isinstance(cell, str) and len(cell) > 4000:
                     raise ValueError("cell too long")
                 if isinstance(cell, float) and not __import__("math").isfinite(cell):
                     raise ValueError("invalid number")
+                if type(cell) in (int, float) and abs(cell) >= 10**15:
+                    raise ValueError("Excel numeric precision exceeded; preserve as text")
+                if (
+                    isinstance(cell, float)
+                    and len(Decimal(str(cell)).normalize().as_tuple().digits) > 15
+                ):
+                    raise ValueError("Excel numeric precision exceeded; preserve as text")
+                if not self.column_formats or cell is None:
+                    continue
+                kind = self.column_formats[index].kind
+                if kind == "text" and not isinstance(cell, str):
+                    raise ValueError("text column requires strings")
+                if kind in ("number", "percent") and type(cell) not in (int, float):
+                    raise ValueError("numeric column requires numbers")
+                if kind == "boolean" and not isinstance(cell, bool):
+                    raise ValueError("boolean column requires booleans")
+                if kind == "date":
+                    if not isinstance(cell, str) or len(cell) != 10:
+                        raise ValueError("date column requires Gregorian ISO dates")
+                    parsed = date.fromisoformat(cell)
+                    if parsed.isoformat() != cell or parsed.year < 1900:
+                        raise ValueError("date outside supported Excel range")
         return self
 
 

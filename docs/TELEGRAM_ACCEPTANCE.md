@@ -36,7 +36,7 @@ The placeholder is the dedicated customer's numeric Telegram ID. This is test cr
 | Literal Word | Put `بدون تعديل النص` or `Keep text unchanged` on the first line, followed by the body; select Word and confirm | Only directive omitted; exact body/blank lines/leading zeros preserved, apart from normalized line endings; no generated title or provider/cost-usage records. Embedded/partial phrases do not switch modes; empty body rejected before reservation |
 | Direct PDF | Text-to-pdf → direct; test a short title and No title using the same sample | Arabic/English readable, words/numbers and blank lines preserved; display whitespace/reflow may differ; heading absent when skipped; no provider/cost-usage records |
 | Disabled provider | In staging only, use disabled/paused AI with an enabled mixed service | Direct Word/PDF work; AI organization and Excel reject before credit reservation; never change production credentials to test this |
-| Excel | Select text-to-office → Excel; provide a small table | Opens as XLSX; headers and numeric cells are correct; customer formulas remain safe text |
+| Excel | Select text-to-office → Excel; provide Arabic/English records with 00123, 0, 125.50, an explicit Gregorian date/percentage, missing and duplicate data | Native editable `Records` table; visible title, numeric/date/percentage types where unambiguous, source rows/notes intact. Blank is not zero; duplicate rows retained; title/header/customer formulas remain safe text. Edit/save/reopen in Excel; inspect print layout and compare every record with source |
 | PowerPoint | Select text-to-pptx; provide a short presentation brief | Opens as editable PPTX; readable slides preserve the provided facts |
 | PDF | Select text-to-pdf; provide an Arabic/English report | Opens as PDF; inspect Arabic shaping, mixed text, page breaks and font coverage |
 | PDF to Word | Upload a fully text-based sample PDF | DOCX is editable and preserves extracted facts; original layout, images and tables are outside this service |
@@ -57,6 +57,10 @@ Inspect each balance using `/balance TEST_USER_ID`. No successful case may captu
 required delivery; no failed case may leave an ordinary customer reservation stranded.
 For a provider call of unknown cost, operational budget reconciliation is separate from the
 customer's released reservation.
+
+Apply [service-specific output quality gates](OUTPUT_QUALITY.md). Office editability is required
+for DOCX/XLSX/PPTX; PDF is fixed-layout. A basic bullet deck or extracted-text DOCX must not be
+advertised as supporting unimplemented charts, original layout or table reconstruction.
 
 ## Recovery and evidence
 

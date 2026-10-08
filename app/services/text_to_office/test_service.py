@@ -12,6 +12,59 @@ from app.services.text_to_office.schema import WordPlan
 from app.services.text_to_office.service import TextToOffice
 
 
+async def test_professional_excel_has_native_table_typed_cells_and_source_review_notes(tmp_path):
+    from openpyxl import load_workbook
+
+    from app.services.text_to_office.prompt import EXCEL
+    from app.services.text_to_office.schema import ExcelPlan
+
+    plan = ExcelPlan.model_validate(
+        {
+            "table": {
+                "title": "الطلبات",
+                "columns": ["الرقم", "المبلغ", "التاريخ"],
+                "column_formats": [{"kind": kind} for kind in ("text", "number", "date")],
+                "rows": [
+                    ["00123", 125.5, "2026-10-08"],
+                    ["00123", 125.5, "2026-10-08"],
+                    ["00124", 0, None],
+                ],
+            }
+        }
+    )
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    ai = SimpleNamespace(extract=AsyncMock(return_value=plan))
+    service = TextToOffice()
+    service.runtime = SimpleNamespace(storage=store, ai=ai)
+    inputs = {"text": "الطلبات مؤكدة", "target": "excel"}
+    result = await service.run(inputs)
+    ai.extract.assert_awaited_once_with(ExcelPlan, inputs["text"], EXCEL)
+    assert "1 خلية فارغة" in result.preview and "1 صف مكرر" in result.preview
+    sheet = load_workbook(BytesIO(store.read(result.artifacts[0].key))).active
+    assert sheet.tables["Records"].ref == "A3:C6" and sheet["A4"].value == "00123"
+    assert sheet["B6"].value == 0 and sheet["C6"].value is None
+    assert not result.needs_confirmation
+
+
+async def test_excel_confirmed_legacy_plan_does_not_require_another_provider_call(tmp_path):
+    from openpyxl import load_workbook
+
+    from app.services.text_to_office.schema import ExcelPlan
+
+    plan = ExcelPlan.model_validate(
+        {"table": {"title": "Data", "columns": ["ID"], "rows": [["00123"]]}}
+    )
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    ai = SimpleNamespace(extract=AsyncMock())
+    service = TextToOffice()
+    service.runtime = SimpleNamespace(storage=store, ai=ai)
+    result = await service.run(
+        {"text": "Data", "target": "excel", "__continuation": plan.model_dump(mode="json")}
+    )
+    ai.extract.assert_not_awaited()
+    assert load_workbook(BytesIO(store.read(result.artifacts[0].key))).active["A4"].value == "00123"
+
+
 async def test_professional_word_uses_structured_plan_and_native_table(tmp_path):
     from app.services.text_to_office.prompt import WORD
 
