@@ -41,6 +41,10 @@
   sanitized-header collision, large table/long note, old continuation without another AI call.
 - ADDED FOR HOSTED CI: Five lifecycle cases: normal/one-repair delivery with single capture,
   schema/builder failure release with one notice, cached delivery retry with no new AI call.
+- FAIL (corrected assertion): First task workflow `37820404225` passed 307 tests and failed
+  one historical builder assertion expecting `B2`. The visible title moves data to row 4;
+  updated the test to check title/native table plus the same numeric/ID/injection content.
+  Migration drift and Compose steps were skipped in that failed run; final-head CI must pass.
 - NOT RUN locally: Full PostgreSQL/Redis suite, Docker, actual renderer or Microsoft Excel,
   live Telegram/AI, visual/native table-expansion qualification and production deployment.
 - NOT CLAIMED: All-service quality completion, arbitrary formulas/charts/multiple datasets,

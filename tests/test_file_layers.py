@@ -79,9 +79,11 @@ def test_office_files_open_and_contain_expected_text():
     )
     workbook = load_workbook(BytesIO(excel.build(table)))
     assert workbook.active.sheet_view.rightToLeft
-    assert workbook.active["B2"].value == 12
-    assert workbook.active["A3"].data_type == "s" and workbook.active["A3"].value.startswith("'")
-    assert workbook.active["B3"].value == "00123"
+    assert workbook.active["A1"].value == "بيانات"
+    assert workbook.active.tables["Records"].ref == "A3:B5"
+    assert workbook.active["B4"].value == 12
+    assert workbook.active["A5"].data_type == "s" and workbook.active["A5"].value.startswith("'")
+    assert workbook.active["B5"].value == "00123"
     deck = Deck(slides=[Slide(title="عنوان", bullets=["محتوى"])])
     presentation = Presentation(BytesIO(pptx.build(deck)))
     assert any(
