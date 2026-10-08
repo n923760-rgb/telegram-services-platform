@@ -62,6 +62,21 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: New direct-mode server deployment/Telegram acceptance. This section is task
   evidence, not post-merge proof.
 
+## Optional document title continuation — 2026-10-08
+
+- OPERATOR-REPORTED: Main 67b46d1 deployed; clean source, healthy API/bot/worker,
+  migrations exited 0 and `/health` returned `{"status":"ok"}`.
+- FACT: Uploaded PDF sample is readable with correct title and leading-zero numbers.
+  Uploaded Word repeats the whole body as its title; the file cannot prove how that title
+  was entered. Uploaded Excel is one text column, not typed structured data.
+- FACT: This bounded task makes direct Word/PDF titles optional with localized No title
+  buttons and single-line validation; preserves strict smart-mode document schemas.
+- FACT: No provider call, dependency, migration, price or financial policy change.
+  Contracts increment to version 3; stale drafts restart and unprepared old jobs release.
+- PASS: Local lint/format and 39 service tests; full integration evidence requires CI.
+- NOT RUN: Updated server deployment, Telegram optional-title acceptance and financial audit.
+- Excel specialization remains a separate next slice.
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution

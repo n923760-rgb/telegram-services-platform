@@ -76,7 +76,7 @@ def create_router():
                     for i, k in enumerate(field.choice_keys)
                 ]
                 if not field.required:
-                    items.append((tr("skip_field", lang), f"skip:{data['key']}:{index}"))
+                    items.append((tr(field.skip_key, lang), f"skip:{data['key']}:{index}"))
                 items.append(cancel_item)
                 await message.answer(
                     heading + "\n\n" + tr(field.prompt_key, lang),
@@ -299,6 +299,9 @@ def create_router():
             value = message.text or ""
             if not value.strip() or len(value) > field.max_length:
                 await message.answer(tr("input_invalid", lang))
+                return
+            if field.single_line and any(c in value for c in "\r\n\u2028\u2029"):
+                await message.answer(tr("input_single_line", lang))
                 return
         if field.multiple:
             values = get_input(data["inputs"], field.name) or []
