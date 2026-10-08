@@ -105,8 +105,10 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - PASS: 47 local service tests; Arabic/English single-page and 55-row five-page builder
   samples visually inspected with repeated headers, legible cells and page numbers.
   Samples use explicit plans, not a real AI provider; they do not prove factual fidelity.
-- CHECKS: Hosted suite must verify rich-table delivery/capture, bounded repair/failure
-  release, literal/Excel regressions and version-3 snapshot upgrade retaining admin settings.
+- PASS: Application head 0e003c5 passed [hosted workflow 37805173177](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/37805173177):
+  268 tests, lint/format, migrations/drift and Compose configuration. Includes rich-table
+  delivery/capture, bounded repair/failure release, literal/Excel regressions and version-3
+  snapshot upgrade retaining admin settings. Inspect the final documentation-head check too.
 - NOT RUN: New server deployment and live professional Word/source-fidelity acceptance.
   Excel quality improvements remain a later independent task.
 
@@ -162,8 +164,9 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
-Complete the bounded direct-document task and its hosted checks; qualify direct Word/PDF
-using the updated acceptance guide before extending direct modes to Excel or PowerPoint.
+Qualify professional Word against its supplied source using the updated acceptance guide;
+keep literal Word/PDF checks distinct. Defer Excel quality and PowerPoint expansion until
+the owner accepts the real professional Word output.
 Run the [Telegram acceptance guide](../docs/TELEGRAM_ACCEPTANCE.md) on an available staging
 server with a dedicated test account and operator-configured secrets. Use echo first, then
 Office/PDF and clear/unclear OCR; inspect reservations, capture/release and file cleanup.
