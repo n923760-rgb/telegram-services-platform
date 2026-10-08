@@ -183,14 +183,31 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 
 - FAIL: Poppler rendering confirms the existing PDF builder displays source `2026-10-08`
   as `08-10-2026` inside Arabic text, including headings. This is a rendering error.
-- FIX ON TASK BRANCH: Protect matched numeric date order only during bidi shaping, and use
+- MERGED PR #18: Protect matched numeric date order only during bidi shaping, and use
   the same shaped text for width measurement. Dates remain literal, with no parsing,
   conversion, calendar inference or added formatting controls in delivered text.
 - PASS: 29 focused local builder/PDF-plugin/governance tests, lint/format. Inspect every page
   of the corrected one-page mixed fixture and four-page 80-record fixture with Poppler.
-- NOT RUN: Hosted full suite, live-provider source fidelity, new server/iPhone viewer acceptance.
+- PASS: Head `77aba3a` workflow `37827978286` and merged main `b3deb01` workflow
+  `37829349423` passed 340 tests, lint/format, migrations/drift and Compose validation.
+- NOT RUN: Live-provider source fidelity, new server/iPhone viewer acceptance.
   See [PDF date report](REPORTS/2026-10-08-pdf-dates.md). No contract, version, dependency,
   payment, database or runtime changes are included in this rendering fix.
+
+## PDF-to-Word mixed-content fidelity round — 2026-10-08
+
+- FAIL REPRODUCED: Four real hybrid PDFs pass the old service because selectable text masks
+  raster content: ordinary image, inline image, nested Form image and later mixed page.
+- IMPLEMENTED ON TASK BRANCH: Reject raster drawing instructions before AI/output without
+  decoding image pixels. Follow invoked Forms with cycle/depth/instruction traversal limits;
+  retain text-only Forms and allow unused image resources. Localized intake/error explain scope.
+- FACT: Contract version 2; preserve admin price/enablement and generic cancellation/release
+  for old pending version-1 orders. No new OCR, provider, database or dependency changes.
+- PASS: 24 local helper/plugin/governance tests; hosted lifecycle tests must prove release,
+  one notification, no AI/delivery, cleanup and old-order settlement. Full suite collects 355 tests.
+- NOT RUN: New hosted full suite, real provider/Word fidelity or deployment. This is a
+  rejection safeguard, not image reconstruction or full-fidelity conversion qualification.
+- Evidence: [mixed-content report](REPORTS/2026-10-08-pdf-word-image-fidelity.md).
 
 ## Architecture and state owners
 
@@ -244,7 +261,7 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
-Complete the PDF date rendering fix and inspect its source-bound hosted checks.
+Complete the PDF-to-Word mixed-content safeguard and inspect its source-bound hosted checks.
 Qualify professional Word, Excel and PowerPoint against supplied source and native Office;
 keep literal Word/PDF checks distinct. The all-service quality request supersedes the earlier
 Excel/PowerPoint deferral. Continue PDF/OCR fidelity rounds within their approved contracts.

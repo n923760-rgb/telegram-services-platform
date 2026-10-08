@@ -5,12 +5,14 @@ from pypdf import PdfReader
 
 from app.builders import word
 from app.core.i18n import tr
+from app.files.pdf_content import has_image_content
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.pdf_to_word.prompt import PDF_TO_WORD
 from app.services.pdf_to_word.schema import Inputs, WordPlan
 
 
 class PdfToWord(BaseService):
+    version = "2"
     slug = "pdf_to_word"
     name_ar = tr("pdf_to_word_name")
     name_en = tr("pdf_to_word_name", "en")
@@ -32,6 +34,8 @@ class PdfToWord(BaseService):
             pages = []
             text_length = 0
             for index, page in enumerate(reader.pages, 1):
+                if has_image_content(page, reader):
+                    raise ServiceError("pdf_image_content")
                 page_text = (page.extract_text() or "").strip()
                 if not page_text:
                     # Do not silently omit a scanned/drawn page from a mixed PDF.
