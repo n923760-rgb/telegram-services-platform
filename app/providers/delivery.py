@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from aiogram import Bot
 from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
@@ -56,13 +57,17 @@ class TelegramDelivery(Delivery):
 
     async def error(self, user_id, order_id, key):
         lang = await self._lang(user_id)
+        try:
+            reference = UUID(str(order_id))
+        except (ValueError, TypeError, AttributeError):
+            reference = None  # Preserve the adapter's legacy arbitrary display-reference contract.
         async with sessions() as db:
-            order = await db.get(Order, order_id)
+            order = await db.get(Order, reference) if reference else None
             stars = order is not None and order.user_id == user_id and order.payment_mode == "stars"
             charge = (
                 await db.scalar(
                     select(StarCharge).where(
-                        StarCharge.order_id == order_id, StarCharge.accepted.is_(True)
+                        StarCharge.order_id == reference, StarCharge.accepted.is_(True)
                     )
                 )
                 if stars
