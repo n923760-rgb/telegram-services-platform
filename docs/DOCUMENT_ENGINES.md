@@ -26,6 +26,12 @@ adoption record; an approved candidate is not an installed or qualified feature.
 
 ## Next bounded slices
 
+The next source slice implements merge and selected-page extraction through the
+new `pdf_tools` plugin with existing pypdf, without introducing qpdf or AI. It has
+bounded multifile intake, preserves page content/order and rejects forms/signatures.
+It remains disabled until operator acceptance. This does not qualify the remaining
+candidates below or claim production deployment.
+
 | Candidate | Decision and qualification required |
 | --- | --- |
 | XlsxWriter | Already installed transitively by python-pptx; explicitly declare it only when used for a measured feature. Retain openpyxl for reading/editing and the current working renderer. Compare native charts/formatting with source-preservation and phone Excel acceptance. |
@@ -33,7 +39,7 @@ adoption record; an approved candidate is not an installed or qualified feature.
 | LibreOffice / unoserver | Next conversion/preview slice in an isolated worker, with serialized execution, hard process timeout, resource limits and temporary-file cleanup. Do not put a listener in the bot or expose it publicly. |
 | Tesseract | Benchmark Arabic/English source fixtures first. Job-scoped local OCR provider, bounded decoded pixels and queue limits; do not assume confidence alone proves accuracy. AI fallback must reserve its cost before execution. |
 | OCRmyPDF | Searchable scanned-PDF service after the isolated conversion/OCR worker exists. Review licenses of the exact installed components and test large/mixed PDFs. |
-| qpdf | Use only for an operation pypdf cannot adequately handle; avoid duplicating existing parsing functionality. New merge/split plugins need bounded multifile intake through generic schemas. |
+| qpdf | No extra installation for merge/extract: pypdf serves the new bounded plugin. Consider qpdf only for an unmet operation; preserve generic multifile intake. |
 | WeasyPrint | Introduce only for an approved HTML/CSS PDF design unmet by ReportLab. Restrict URL fetching, fonts, input size and execution resources; preserve the tested Arabic/date baseline. |
 | pdfplumber | Already a locked development dependency. Promote to runtime only when a specific table-extraction service is implemented and qualified. |
 | MarkItDown | Structured source extraction with document-specific fidelity fixtures and explicit omissions; not a reconstruction engine. |

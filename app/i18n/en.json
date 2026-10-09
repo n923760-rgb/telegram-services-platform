@@ -164,5 +164,16 @@
   "status_unknown": "Status unavailable",
   "structure_approved": "Structure approved. We will continue processing and send the result here.",
   "unknown_input": "Choose a service to get started or open Help for the steps.",
-  "support_cancelled": "You have left support."
+  "support_cancelled": "You have left support.",
+  "pdf_tools_name": "PDF tools",
+  "pdf_tools_description": "Merge PDFs or extract selected pages without rewriting page content.",
+  "pdf_tools_operation": "Choose an operation.",
+  "pdf_tools_merge": "Merge PDFs",
+  "pdf_tools_extract": "Extract pages",
+  "pdf_tools_files": "Send PDFs in the required order, then tap Done. Merge: two to five files; extraction: one file. Total limit: 200 pages and 20 MB. Fillable forms and signed PDFs are unsupported.",
+  "pdf_tools_pages": "Enter page numbers in the required order, such as 1-3,5 or 3,1. No duplicates; maximum 200 pages.",
+  "pdf_tools_limit": "PDF tool limits exceeded: 200 total pages, 20 MB total and 10 MB per file.",
+  "pdf_tools_form": "This PDF contains a fillable form or signature; this tool does not support editing it.",
+  "pdf_page_selection": "Invalid page selection or a page exceeds the document. Use a selection such as 1-3,5 without duplicates.",
+  "pdf_tools_preview": "PDF ready. Pages were copied in the requested order. Document outlines and metadata are not transferred."
 }
