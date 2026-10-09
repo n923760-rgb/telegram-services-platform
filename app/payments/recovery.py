@@ -42,20 +42,20 @@ async def confirm_refund(db, charge):
 
 
 async def refunds(ctx):
-    now = datetime.now(UTC)
     async with sessions() as db:
         ids = list(
             (
                 await db.scalars(
                     select(StarCharge.charge_id)
                     .where(StarCharge.state.in_(["refund_pending", "refunding"]))
-                    .limit(100)
+                    .limit(20)
                 )
             ).all()
         )
     for charge_id in ids:
         token = uuid4()
         async with sessions.begin() as db:
+            now = datetime.now(UTC)  # Each claim gets a fresh lease, not the batch-start time.
             charge = await locked_charge(db, charge_id)
             if charge.state == "refunding":
                 if charge.lease_until and charge.lease_until > now:

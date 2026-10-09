@@ -370,6 +370,37 @@ async def test_concurrent_refund_claim_calls_provider_once(stars):
     assert len(provider.calls) == 1
 
 
+async def test_each_refund_claim_has_a_fresh_lease(stars, monkeypatch):
+    import app.payments.recovery as recovery
+
+    origin = datetime.now(UTC)
+
+    class Clock:
+        elapsed = 0
+
+        @classmethod
+        def now(cls, zone):
+            return origin + timedelta(seconds=cls.elapsed)
+
+    monkeypatch.setattr(recovery, "datetime", Clock)
+    for name in ("first", "second"):
+        await receive(1, payload(uuid4()), "XTR", 20, name)
+
+    class SlowBatch(Provider):
+        async def refund(self, user_id, charge_id):
+            async with sessions() as db:
+                charge = await db.get(StarCharge, charge_id)
+                assert charge.lease_until > Clock.now(UTC)
+            Clock.elapsed += 600
+            return await super().refund(user_id, charge_id)
+
+    provider = SlowBatch()
+    await refunds({"stars": provider})
+    assert len(provider.calls) == 2
+    async with sessions() as db:
+        assert list((await db.scalars(select(StarCharge.state))).all()) == ["refunded", "refunded"]
+
+
 async def test_external_refund_stops_queued_job(stars):
     oid = await prepare()
     await pay(oid)
