@@ -125,11 +125,7 @@ async def test_review_lists_all_source_ids_even_when_only_two_samples_are_shown(
     class AI:
         async def extract(self, schema, *args):
             return schema.model_validate(
-                {
-                    "assignments": [
-                        {"note_id": index, "category": "review"} for index in range(1, 5)
-                    ]
-                }
+                {"assignments": [{"note_id": index, "category": "review"} for index in range(1, 5)]}
             )
 
     service = MeetingMinutes()

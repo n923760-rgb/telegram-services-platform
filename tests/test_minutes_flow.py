@@ -73,8 +73,7 @@ async def test_confirmed_source_notes_native_pair_single_capture_and_provider_ca
     assert provider.calls == 1
     assert [name for name, _ in delivery.files] == ["minutes.docx", "minutes.pdf"]
     text = [
-        p.text.replace("\u200e", "")
-        for p in Document(BytesIO(delivery.files[0][1])).paragraphs
+        p.text.replace("\u200e", "") for p in Document(BytesIO(delivery.files[0][1])).paragraphs
     ]
     for index, line in enumerate(source["notes"].split("\n"), 1):
         assert text.count(f"[{index}] {line}") == 1

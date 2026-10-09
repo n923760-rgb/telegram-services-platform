@@ -62,3 +62,7 @@ Review improvement: list all source IDs in each category, even though only two s
 samples are shown. Added a coverage test for grouped non-sample references. Initial
 workflow 37931262367 spent over five minutes in native-package installation before
 any source tests; no test/semantic failure has been observed at this point.
+
+Workflow 37932196007/job 113825382885 passed lint, then failed canonical Ruff wrapping
+in two new test expressions. Tests/image were not reached. Apply exact diagnostic
+diff; no behavior/validation/check weakening. New exact-head verification required.
