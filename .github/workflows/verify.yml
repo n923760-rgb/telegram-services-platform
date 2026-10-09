@@ -64,6 +64,8 @@ jobs:
           import os
           from tests.ocr_fixtures import printed, processor
           from tests.word_pdf_fixtures import document, renderer, table_document
+          from tests.minutes_fixtures import inputs as minute_inputs, plan as minute_plan
+          from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
           from tests.images_pdf_fixtures import picture
           from app.builders.images_pdf import build as images_pdf
           from tests.cv_fixtures import inputs as cv_inputs
@@ -88,6 +90,11 @@ jobs:
               text = '\n'.join(page.extract_text() for page in pages)
               assert all(text.count(f'{index:05d}') == 1 for index in range(100, 155))
               for language in ('ar', 'en'):
+                  values = MinuteInputs.parse(minute_inputs(language))
+                  plan = classification_schema(values.lines()).model_validate(minute_plan())
+                  minutes = await renderer().word_pdf(minute_document(values, plan))
+                  text = PdfReader(BytesIO(minutes.pdf)).pages[0].extract_text()
+                  assert '00123' in text and '125.50' in text and '00017' in text
                   cv = await renderer().word_pdf(CvInputs.parse(cv_inputs(language)).document())
                   pages = PdfReader(BytesIO(cv.pdf)).pages
                   assert len(pages) == 1
@@ -102,4 +109,5 @@ jobs:
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
+          print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           PY

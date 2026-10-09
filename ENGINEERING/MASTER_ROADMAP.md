@@ -1,5 +1,21 @@
 # Master engineering roadmap
 
+## Source-bound meeting note organization — 2026-10-09
+
+- MERGED BASELINE: Images PDF PR #29, main `30ec14c`, reviewed
+  workflow `37930551954` passed 571 tests and network-disabled ordered image checks.
+- CURRENT SLICE: Independent disabled `meeting_minutes` classifies existing note
+  IDs only; every note exactly once, no generated assignees/deadlines/free text.
+- Customer reviews counts/sample categories before Word/PDF creation. Confirmation
+  resumes without another AI call; source notes retained with traceable IDs.
+- Prompt treats ambiguous/mixed notes as review. Category correctness still needs
+  live-provider/customer acceptance; structural coverage is not semantic proof.
+- Uses existing job AI budget/one repair, confirmation, abstract renderer and
+  financial policy. 80 notes/12,000 characters, no audio/transcription or translation.
+- Local execution unavailable: local/visual checks NOT RUN. Exact-head hosted
+  lifecycle/native worker checks required before merge; enablement remains separate.
+- Evidence: [meeting minutes](REPORTS/2026-10-09-meeting-minutes.md).
+
 ## Ordered images to PDF — 2026-10-09
 
 - MERGED BASELINE: CV formatting PR #28, main `00848f7`, reviewed workflow

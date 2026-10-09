@@ -219,5 +219,16 @@
   "images_pdf_auto": "Automatic per image",
   "images_pdf_portrait": "Portrait A4",
   "images_pdf_landscape": "Landscape A4",
-  "images_pdf_preview": "PDF with {pages} images in supplied order, without cropping or aspect distortion. Check clarity before printing or sharing."
+  "images_pdf_preview": "PDF with {pages} images in supplied order, without cropping or aspect distortion. Check clarity before printing or sharing.",
+  "minutes_name": "Organize meeting minutes — Word and PDF",
+  "minutes_description": "Group supplied notes into discussion, decisions, actions and review items, with a source reference for each note. Approve the proposed categories before Word/PDF export; no invented names or deadlines.",
+  "minutes_title": "Enter the final meeting title on one line.",
+  "minutes_language": "Choose the minute heading language. Notes remain in their original language; translation is not included.",
+  "minutes_notes": "Send one meeting note per line (up to 80 notes, 1200 characters per line). Include assignees and deadlines when known. Review proposed categories before the file pair is created.",
+  "minutes_discussion": "Discussion",
+  "minutes_decision": "Decisions",
+  "minutes_action": "Actions",
+  "minutes_review": "Items for review",
+  "minutes_review_intro": "Proposed organization, showing counts and sample notes for each category. Bracketed IDs refer to nonempty source lines. Review and approve to create Word/PDF, or cancel if the categories do not fit.",
+  "minutes_preview": "Minutes from your notes using the approved categories, as Word and PDF. Note IDs trace each paragraph to its source; check decisions, assignees and deadlines before sharing."
 }
