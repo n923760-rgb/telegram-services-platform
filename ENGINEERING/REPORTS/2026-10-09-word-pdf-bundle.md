@@ -48,6 +48,13 @@ failure after Word was accepted can resend Word under existing at-least-once pol
 - Added hosted lifecycle: real native success/single capture/zero AI usage/cleanup;
   unavailable/timeout/bad/oversized export and partial save release; cached retry
   before/after Word delivery; busy retry and pre-reservation validation.
+- FAIL first hosted head d6b9073: workflow 37923979447, 507 passed/9 failed.
+  Eight native/lifecycle failures used the internal soffice.bin directly; switch
+  to the supported /usr/bin/libreoffice launcher, which handles initial-profile
+  startup/restarts. One intake test expected input_invalid instead of the existing
+  generic input_single_line error; correct the expectation without changing policy.
+  No merge occurred. Official launcher source:
+  https://github.com/LibreOffice/core/blob/libreoffice-24.2.7.2/desktop/scripts/soffice.sh
 - Full DB/Redis and image build NOT RUN locally. CI additionally runs actual native
   tests on distribution Writer and builds/non-root tests the worker with --network
   none, including Word/PDF + 55-row table. Require exact-head success before merge;

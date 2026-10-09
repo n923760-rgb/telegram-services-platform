@@ -91,7 +91,8 @@ LibreOffice Writer is installed only in the document-worker target. OCR/export
 share one slot per ARQ worker loop, with five-second queue admission and existing
 bounded retries. Each export child has 1 GiB address-space, 60 CPU seconds, 90 wall
 seconds, 10 MiB per-file output and zero core dumps. Private fresh user profile with
-high macro security; fixed headless writer_pdf_Export command, no UNO listener,
+high macro security; supported LibreOffice launcher handles cold-profile startup,
+fixed headless writer_pdf_Export command, no UNO listener,
 no customer command/filter/path options, child credentials/environment cleared.
 Success/failure/cancellation reaps the launcher and kills remaining process-group
 children before temporary cleanup. These are process bounds, not a sandbox or

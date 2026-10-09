@@ -179,7 +179,7 @@ async def test_word_pdf_busy_retry_keeps_credit_then_completes(tmp_path, monkeyp
 
 async def test_invalid_word_pdf_input_never_reserves_credit(tmp_path, monkeypatch):
     _, _, price = await prepare(tmp_path, monkeypatch)
-    with pytest.raises(ServiceError, match="input_invalid"):
+    with pytest.raises(ServiceError, match="input_single_line"):
         await submit(
             1, "text_to_word_pdf", {"text": TEXT, "title": "line\nline"}, price, "invalid-word-pdf"
         )

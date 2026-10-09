@@ -19,7 +19,8 @@ MAX_BYTES = 10 * 1024 * 1024
 class LibreOfficeDocuments(DocumentRenderer):
     """Render builder-owned DOCX only. All profile/output files are request-local."""
 
-    def __init__(self, *, binary: Path = Path("/usr/lib/libreoffice/program/soffice.bin")):
+    # Use the supported launcher: it handles native cold-profile initialization/restarts.
+    def __init__(self, *, binary: Path = Path("/usr/bin/libreoffice")):
         self.binary = binary
 
     async def word_pdf(self, document: WordDocument, *, include_title=True) -> WordFiles:

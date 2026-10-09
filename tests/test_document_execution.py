@@ -105,7 +105,7 @@ def test_export_launcher_uses_private_profile_limits_no_listener_or_credentials(
         "argv",
         [
             "runner",
-            "/usr/lib/libreoffice/program/soffice.bin",
+            "/usr/bin/libreoffice",
             "/tmp/source.docx",
             "/tmp/output",
             "/tmp/profile",
