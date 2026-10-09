@@ -195,5 +195,21 @@
   "document_render_unavailable": "The document converter is unavailable or could not process the document; this request did not complete.",
   "document_render_timeout": "PDF creation exceeded the time limit; this request did not complete.",
   "document_render_limit": "Document conversion limits exceeded: 50 pages or 10 MB.",
-  "document_render_invalid": "A valid PDF could not be created; this request did not complete."
+  "document_render_invalid": "A valid PDF could not be created; this request did not complete.",
+  "cv_name": "CV formatting — Word and PDF",
+  "cv_description": "Format your final career details into a single-column CV with clear headings, editable Word and PDF. No invented experience, rewriting or translation.",
+  "cv_language": "Choose the CV heading language. Enter your details in your desired language; this service formats without translating.",
+  "cv_full_name": "Enter the name to display at the top, on one line.",
+  "cv_contact": "Enter contact details to display: phone, email, city or professional link. Do not include a national ID or full home address.",
+  "cv_summary": "Enter your final concise professional summary, or skip.",
+  "cv_experience": "Enter actual roles, employers, dates, duties and achievements using clear lines. If you have no experience, skip and provide education next.",
+  "cv_education": "Enter qualifications, institution and dates if desired. Skip if you provided experience; at least one is required.",
+  "cv_skills": "Enter your actual skills in the wording you want in the CV.",
+  "cv_additional": "Enter certifications, languages or portfolio links, or skip.",
+  "cv_summary_heading": "Professional summary",
+  "cv_experience_heading": "Work experience",
+  "cv_education_heading": "Education",
+  "cv_skills_heading": "Skills",
+  "cv_additional_heading": "Certifications and additional information",
+  "cv_preview": "CV formatted from your supplied details, as Word and PDF. Review contacts, experience and dates before applying."
 }

@@ -1,5 +1,7 @@
 """Bounded Word-only structure; PDF and other service plans keep their contracts."""
 
+from typing import Literal
+
 from pydantic import Field, model_validator
 
 from app.builders.schema import Document, Section, StrictModel
@@ -28,6 +30,7 @@ class WordSection(Section):
 
 
 class WordDocument(Document):
+    alignment: Literal["auto", "left", "right"] = "auto"
     sections: list[WordSection] = Field(min_length=1, max_length=100)
 
     @model_validator(mode="after")

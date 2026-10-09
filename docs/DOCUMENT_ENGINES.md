@@ -125,6 +125,12 @@ separate security/format qualification and is outside this contract.
 
 ## Remaining candidates
 
+CV formatting reuses this renderer for a separate structured, source-preserving
+Word/PDF service with AR/EN headings. Generic Word alignment defaults to auto;
+the CV selects a consistent right/left document edge without changing script
+direction. Source/native/lifecycle evidence: ENGINEERING/REPORTS/2026-10-09-cv-formatting.md.
+Useful service sequence: [service portfolio](SERVICE_PORTFOLIO.md).
+
 | Candidate | Decision and qualification required |
 | --- | --- |
 | XlsxWriter | Already installed transitively by python-pptx; explicitly declare it only when used for a measured feature. Retain openpyxl for reading/editing and the current working renderer. Compare native charts/formatting with source-preservation and phone Excel acceptance. |

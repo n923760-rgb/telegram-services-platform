@@ -1,5 +1,21 @@
 # Master engineering roadmap
 
+## Valuable service expansion — 2026-10-09
+
+- OWNER DECISION: Integrate useful services gradually; paid value means a clear usable
+  deliverable, explicit source-preservation rules and source-bound quality checks.
+  No blanket deployment/enablement or untested tool-installation claim.
+- MERGED BASELINE: PR #27, main `081de25`; reviewed workflow `37925068485` and
+  merged-main `37925579559` passed 516 tests and actual native worker image checks.
+- CURRENT SLICE: Independent `cv_formatting` turns final structured career details into
+  a classic single-column Word/PDF pair, with Arabic/English headings and no AI or
+  invented qualifications. Generic optional Word alignment, default auto unchanged.
+- PASS locally: 35 independent checks; native bilingual fixtures visually inspected,
+  90-record multi-page CV retained. Hosted lifecycle/image checks required before merge.
+- NEXT: Bounded ordered images-to-PDF with A4 fit/original aspect ratio and EXIF handling.
+- Remaining premium candidates and qualification criteria: [service portfolio](../docs/SERVICE_PORTFOLIO.md).
+- Evidence: [CV formatting](REPORTS/2026-10-09-cv-formatting.md).
+
 ## Native Word/PDF bundle — 2026-10-09
 
 - MERGED BASELINE: PR #26 at `b1f86fe`; reviewed workflow `37920858118` and
