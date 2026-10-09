@@ -2,8 +2,11 @@ from abc import ABC, abstractmethod
 
 from aiogram import Bot
 from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
+from sqlalchemy import select
 
+from app.core.db import sessions
 from app.core.i18n import tr
+from app.core.models import Order, StarCharge
 from app.core.users import get_language
 from app.services.base import Result
 
@@ -53,8 +56,23 @@ class TelegramDelivery(Delivery):
 
     async def error(self, user_id, order_id, key):
         lang = await self._lang(user_id)
+        async with sessions() as db:
+            order = await db.get(Order, order_id)
+            stars = order is not None and order.user_id == user_id and order.payment_mode == "stars"
+            charge = (
+                await db.scalar(
+                    select(StarCharge).where(
+                        StarCharge.order_id == order_id, StarCharge.accepted.is_(True)
+                    )
+                )
+                if stars
+                else None
+            )
+        reason = tr("stars_failure_reason", lang) if stars else tr(key, lang)
+        if charge and charge.state != "refunded":
+            reason += "\n" + tr("stars_refund_pending", lang)
         await self.bot.send_message(
-            user_id, tr("order_failed", lang, order_id=order_id, reason=tr(key, lang))
+            user_id, tr("order_failed", lang, order_id=order_id, reason=reason)
         )
 
     async def confirmation(self, user_id, order_id, preview):

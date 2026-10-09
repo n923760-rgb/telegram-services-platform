@@ -185,7 +185,13 @@ async def dispatch(ctx):
                     .where(
                         Service.enabled.is_(False),
                         Order.status.in_(
-                            ["queued", "processing", "waiting_confirmation", "delivering"]
+                            [
+                                "awaiting_payment",
+                                "queued",
+                                "processing",
+                                "waiting_confirmation",
+                                "delivering",
+                            ]
                         ),
                     )
                 )

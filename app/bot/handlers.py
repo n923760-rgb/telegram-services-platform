@@ -40,10 +40,20 @@ def create_router():
             await message.answer(
                 tr("confirmation_title", lang, name=data.get(f"name_{lang}", data["slug"]))
                 + "\n\n"
-                + tr("confirm_price", lang, amount=sar(data["price"])),
+                + (
+                    tr("stars_confirm", lang, amount=data["stars_price"], terms=data["terms"][lang])
+                    if data.get("payment_mode") == "stars"
+                    else tr("confirm_price", lang, amount=sar(data["price"]))
+                ),
                 reply_markup=buttons(
                     [
-                        (tr("confirm", lang), f"confirm:{data['key']}"),
+                        (
+                            tr(
+                                "stars_agree" if data.get("payment_mode") == "stars" else "confirm",
+                                lang,
+                            ),
+                            f"confirm:{data['key']}",
+                        ),
                         (tr("cancel", lang), f"cancel:{data['key']}"),
                     ]
                 ),
@@ -102,6 +112,11 @@ def create_router():
         if not service or not service.enabled:
             await callback.message.answer(tr("unavailable", lang))
             return
+        if config().stars_enabled and service.price_stars is None:
+            await callback.message.answer(tr("unavailable", lang))
+            return
+        from app.payments.stars import terms_hash
+
         await state.set_state("collect")
         await state.set_data(
             {
@@ -114,6 +129,11 @@ def create_router():
                 "inputs": {},
                 "index": 0,
                 "key": uuid4().hex,
+                "payment_mode": "stars" if config().stars_enabled else "test_credit",
+                "stars_price": service.price_stars if config().stars_enabled else None,
+                "terms_version": config().stars_terms_version if config().stars_enabled else None,
+                "terms_hash": terms_hash() if config().stars_enabled else None,
+                "terms": {"ar": config().stars_terms_ar, "en": config().stars_terms_en},
             }
         )
         await ask(callback.message, state, lang)
@@ -259,14 +279,26 @@ def create_router():
                 data["price"],
                 data["key"],
                 data["version"],
+                expected_stars=data.get("stars_price"),
+                terms_version=data.get("terms_version"),
+                expected_terms_hash=data.get("terms_hash"),
             )
+            if data.get("payment_mode") == "stars":
+                from app.bot.payments import invoice
+
+                await invoice(callback.bot, order_id, callback.from_user.id, lang)
             await state.clear()
             try:
                 await callback.message.edit_reply_markup()
             except Exception:
                 pass
             await callback.message.answer(
-                tr("queued", lang, order_id=order_id), reply_markup=menu(lang)
+                tr(
+                    "stars_invoice_sent" if data.get("payment_mode") == "stars" else "queued",
+                    lang,
+                    order_id=order_id,
+                ),
+                reply_markup=menu(lang),
             )
         except (ServiceError, WalletError) as error:
             await callback.message.answer(tr(error.key, lang))

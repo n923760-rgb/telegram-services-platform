@@ -17,6 +17,10 @@ class Config(BaseSettings):
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     telegram_mode: str = "polling"
     telegram_webhook_secret: SecretStr = SecretStr("")
+    stars_enabled: bool = False
+    stars_terms_version: str = ""
+    stars_terms_ar: str = ""
+    stars_terms_en: str = ""
     ai_provider: str = "openai_compatible"
     ai_api_key: SecretStr = SecretStr("")
     ai_base_url: str = "https://api.openai.com/v1"
@@ -47,6 +51,18 @@ class Config(BaseSettings):
 
     @model_validator(mode="after")
     def validate_config(self):
+        if self.stars_enabled and (
+            self.telegram_mode != "webhook"
+            or not 1 <= len(self.stars_terms_version.strip()) <= 80
+            or any(
+                not 20 <= len(text) <= 2500 for text in (self.stars_terms_ar, self.stars_terms_en)
+            )
+            or any(
+                len(text.encode("utf-16-le")) // 2 > 2500 or not text.strip()
+                for text in (self.stars_terms_ar, self.stars_terms_en)
+            )
+        ):
+            raise ValueError("Stars requires authenticated webhook mode and configured terms")
         if self.telegram_mode not in {"polling", "webhook"}:
             raise ValueError("invalid Telegram mode")
         if self.telegram_mode == "webhook" and not self.telegram_webhook_secret.get_secret_value():

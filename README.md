@@ -4,12 +4,14 @@
 
 Python 3.12 bot for Saudi customers, with Arabic menus, immutable SAR credit accounting,
 durable PostgreSQL orders, ARQ workers, operational controls, and independently discovered services.
-All four requested phases are implemented. No payment gateway or dashboard is included.
+Foundation phases are implemented; live qualification remains a separate launch gate.
+No external payment gateway or dashboard is included.
 
 **Payment constraint:** SAR credit is administrator-issued test credit here. Telegram requires Stars
 for digital-service sales inside Telegram ([official policy](https://core.telegram.org/bots/payments-stars)).
-This project is not cleared for a paid SAR checkout launch. Resolve that business requirement before
-selling services; the implementation does not silently add a different payment system.
+Direct Stars checkout is implemented separately and disabled by default; it never converts SAR
+test credits or mixes their accounting. Configure owner-approved terms and independent Stars prices
+and pass [Stars acceptance](docs/STARS_ACCEPTANCE.md) before enabling commercial sales.
 
 ## Services and architecture
 
@@ -21,6 +23,17 @@ selling services; the implementation does not silently add a different payment s
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pdf` | Disabled | SAR 5 | Explicit direct conversion without AI, or existing AI-organized printable PDF; asks for approval when the AI plan is ambiguous. |
 | `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
+| `local_ocr` | Disabled | DB-owned test price | Bounded local OCR without an AI provider. |
+| `text_to_word_pdf` | Disabled | DB-owned test price | Word with a locally rendered PDF. |
+| `pdf_tools` | Disabled | DB-owned test price | Bounded PDF operations without an AI provider. |
+| `cv_formatting` | Disabled | DB-owned test price | Source-bound CV formatting, not invented CV content. |
+| `images_to_pdf` | Disabled | DB-owned test price | Ordered images to PDF. |
+| `meeting_minutes` | Disabled | DB-owned test price | Source-bound classification and meeting document. |
+| `csv_review` | Disabled | DB-owned test price | Source-preserving CSV workbook and static review. |
+
+Stars prices are unset until explicitly set with `/setstars SLUG INTEGER`; the SAR column above
+describes test credits only, not sale prices or an exchange rate. The V1 completion scope is these
+registered services plus generic customer/admin/recovery/payment flows, not every portfolio candidate.
 
 Word, Excel, PowerPoint and PDF builders are shared infrastructure. Blank, unreadable or empty OCR
 is rejected and credit released.

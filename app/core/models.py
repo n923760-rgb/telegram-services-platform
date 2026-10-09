@@ -9,11 +9,13 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -38,9 +40,15 @@ class Service(Base):
     name_en: Mapped[str] = mapped_column(String(200))
     description_ar: Mapped[str] = mapped_column(String(1000))
     price_halala: Mapped[int] = mapped_column(BigInteger)
+    price_stars: Mapped[int | None] = mapped_column(Integer, nullable=True)
     input_schema: Mapped[dict] = mapped_column(JSON)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    __table_args__ = (CheckConstraint("price_halala > 0"),)
+    __table_args__ = (
+        CheckConstraint("price_halala > 0"),
+        CheckConstraint(
+            "price_stars IS NULL OR price_stars BETWEEN 1 AND 1000000", name="service_stars_price"
+        ),
+    )
 
 
 class Order(Base):
@@ -49,6 +57,13 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     service_slug: Mapped[str] = mapped_column(ForeignKey("services.slug"), index=True)
     price_halala: Mapped[int] = mapped_column(BigInteger)
+    payment_mode: Mapped[str] = mapped_column(
+        String(16), default="test_credit", server_default="test_credit"
+    )
+    price_stars: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    terms_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    terms_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    terms_snapshot: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(32), default="queued", index=True)
     service_version: Mapped[str] = mapped_column(String(32), default="1", server_default="1")
@@ -72,6 +87,10 @@ class Order(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "idempotency_key"),
         CheckConstraint("price_halala > 0"),
+        CheckConstraint(
+            "(payment_mode='test_credit' AND price_stars IS NULL AND terms_version IS NULL AND terms_hash IS NULL AND terms_snapshot IS NULL) OR (payment_mode='stars' AND price_stars IS NOT NULL AND price_stars BETWEEN 1 AND 1000000 AND terms_version IS NOT NULL AND terms_hash IS NOT NULL AND terms_snapshot IS NOT NULL)",
+            name="order_payment_contract",
+        ),
     )
 
 
@@ -177,3 +196,50 @@ class SupportTicket(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     order_id: Mapped[UUID | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class StarCheckout(Base):
+    __tablename__ = "star_checkouts"
+    order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id"), primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    query_id: Mapped[str | None] = mapped_column(String(200), unique=True, nullable=True)
+
+
+class StarCharge(Base):
+    __tablename__ = "star_charges"
+    charge_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    order_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("orders.id"), index=True, nullable=True
+    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    amount: Mapped[int] = mapped_column(Integer)
+    accepted: Mapped[bool] = mapped_column(Boolean)
+    payload: Mapped[str] = mapped_column(String(128))
+    state: Mapped[str] = mapped_column(String(24), index=True)
+    lease_token: Mapped[UUID | None] = mapped_column(nullable=True)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        Index("uq_star_accepted_order", "order_id", unique=True, postgresql_where=text("accepted")),
+        CheckConstraint("NOT accepted OR order_id IS NOT NULL", name="star_charge_accepted_order"),
+        CheckConstraint("amount BETWEEN 1 AND 1000000", name="star_charge_amount"),
+        CheckConstraint(
+            "state IN ('paid','refund_pending','refunding','refund_uncertain','refunded')",
+            name="star_charge_state",
+        ),
+    )
+
+
+class StarEvent(Base):
+    __tablename__ = "star_events"
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    charge_id: Mapped[str] = mapped_column(ForeignKey("star_charges.charge_id"), index=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        UniqueConstraint("charge_id", "kind"),
+        CheckConstraint(
+            "kind IN ('received','refund_requested','refund_started','refund_uncertain','refunded')",
+            name="star_event_kind",
+        ),
+    )

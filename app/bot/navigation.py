@@ -13,6 +13,7 @@ from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, sectio
 from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import Order, Service
+from app.core.settings import config
 from app.orders.engine import register
 from app.orders.state import ALLOWED
 from app.wallet.ledger import balance, sar
@@ -55,10 +56,16 @@ def create_router():
                     select(Service).where(Service.enabled.is_(True)).order_by(Service.slug)
                 )
             ).all()
+        if config().stars_enabled:
+            rows = [service for service in rows if service.price_stars is not None]
         items = [
             (
                 f"{s.name_ar if lang == 'ar' else s.name_en} — "
-                f"{sar(s.price_halala)} {tr('sar', lang)}",
+                + (
+                    f"{s.price_stars} {tr('stars_unit', lang)}"
+                    if config().stars_enabled
+                    else f"{sar(s.price_halala)} {tr('sar', lang)}"
+                ),
                 f"service:{s.slug}",
             )
             for s in rows
@@ -84,7 +91,7 @@ def create_router():
             funds = await balance(db, user_id)
         await message.answer(
             tr(
-                "balance_details",
+                "stars_balance_details" if config().stars_enabled else "balance_details",
                 lang,
                 available=sar(funds.available),
                 reserved=sar(funds.reserved),
@@ -206,15 +213,22 @@ def create_router():
         await leave_support(state)
         order, service = row
         text = tr(
-            "order_details",
+            "stars_order_details" if order.payment_mode == "stars" else "order_details",
             lang,
             order_id=order.id,
             name=service.name_ar if lang == "ar" else service.name_en,
             status=status_label(order.status, lang),
-            amount=sar(order.price_halala),
+            amount=order.price_stars if order.payment_mode == "stars" else sar(order.price_halala),
             created=order.created_at.astimezone(ZoneInfo("Asia/Riyadh")).strftime("%Y-%m-%d %H:%M"),
         )
         items = []
+        if order.status == "awaiting_payment":
+            items.extend(
+                [
+                    (tr("stars_pay", lang), f"pay:{order.id}"),
+                    (tr("cancel_order", lang), f"paycancel:{order.id}"),
+                ]
+            )
         if order.status == "waiting_confirmation":
             preview = (order.result or {}).get("preview", "")
             text += "\n\n" + tr(

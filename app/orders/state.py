@@ -1,4 +1,5 @@
 ALLOWED = {
+    "awaiting_payment": {"queued", "cancelled", "failed"},
     "waiting_confirmation": {"queued", "cancelled", "failed"},
     "queued": {"processing", "failed", "cancelled"},
     "processing": {"queued", "delivering", "failed", "cancelled", "waiting_confirmation"},

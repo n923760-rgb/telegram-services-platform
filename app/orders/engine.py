@@ -6,13 +6,13 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.core.db import sessions
-from app.core.models import Job, Order, Service, User
+from app.core.models import Job, Order, Service, StarCheckout, User
 from app.core.transactions import transaction_retry
 from app.orders.locking import lock_order
 from app.orders.state import transition
+from app.payments.billing import capture_order, refund_order, reserve_order
 from app.services.base import InputSchema, ServiceError
 from app.services.registry import registry
-from app.wallet.ledger import capture, release, reserve
 
 
 @transaction_retry
@@ -33,7 +33,27 @@ async def submit(
     expected_price: int,
     key: str,
     expected_version: str | None = None,
+    *,
+    expected_stars: int | None = None,
+    terms_version: str | None = None,
+    expected_terms_hash: str | None = None,
 ):
+    from app.core.settings import config
+
+    mode = "stars" if expected_stars is not None else "test_credit"
+    from app.payments.stars import terms_hash
+
+    if config().stars_enabled != (mode == "stars"):
+        raise ServiceError("payment_changed")
+    if mode == "stars" and (
+        type(expected_stars) is not int
+        or not 1 <= expected_stars <= 1000000
+        or terms_version != config().stars_terms_version
+        or expected_terms_hash != terms_hash()
+    ):
+        raise ServiceError("payment_changed")
+    if mode == "test_credit" and (terms_version is not None or expected_terms_hash is not None):
+        raise ServiceError("payment_changed")
     digest = hashlib.sha256(
         json.dumps(inputs, sort_keys=True, ensure_ascii=False).encode()
     ).hexdigest()
@@ -52,6 +72,10 @@ async def submit(
                     and not (previous.input_hash == "legacy" and previous.inputs == inputs)
                 )
                 or previous.price_halala != expected_price
+                or previous.payment_mode != mode
+                or previous.price_stars != expected_stars
+                or previous.terms_version != terms_version
+                or previous.terms_hash != expected_terms_hash
                 or (expected_version is not None and previous.service_version != expected_version)
             ):
                 raise ServiceError("invalid_request")
@@ -59,7 +83,9 @@ async def submit(
         service = await db.scalar(select(Service).where(Service.slug == slug).with_for_update())
         if not service or not service.enabled or slug not in registry.types:
             raise ServiceError("unavailable")
-        if service.price_halala != expected_price:
+        if mode == "test_credit" and service.price_halala != expected_price:
+            raise ServiceError("price_changed")
+        if mode == "stars" and service.price_stars != expected_stars:
             raise ServiceError("price_changed")
         if service.version != registry.types[slug].version or (
             expected_version is not None and expected_version != service.version
@@ -71,14 +97,20 @@ async def submit(
 
         await check_admission(db, user_id)
         if registry.types[slug].needs_ai(inputs):
-            from app.core.settings import config
-
             if not config().ai_enabled or await setting(db, "PROVIDER_PAUSED", default=False):
                 raise ServiceError("provider_config")
         active = await db.scalar(
             select(func.count(Order.id)).where(
                 Order.user_id == user_id,
-                Order.status.in_(["queued", "processing", "delivering", "waiting_confirmation"]),
+                Order.status.in_(
+                    [
+                        "awaiting_payment",
+                        "queued",
+                        "processing",
+                        "delivering",
+                        "waiting_confirmation",
+                    ]
+                ),
             )
         )
         if active >= int(await setting(db, "MAX_CONCURRENT_JOBS_PER_USER")):
@@ -93,19 +125,35 @@ async def submit(
             input_schema_snapshot=service.input_schema,
             service_version=service.version,
             idempotency_key=key,
-            status="queued",
+            status="awaiting_payment" if mode == "stars" else "queued",
+            payment_mode=mode,
+            price_stars=expected_stars,
+            terms_version=terms_version,
+            terms_hash=expected_terms_hash,
+            terms_snapshot={"ar": config().stars_terms_ar, "en": config().stars_terms_en}
+            if mode == "stars"
+            else None,
         )
         db.add(order)
         await db.flush()
-        await reserve(db, user_id, expected_price, f"reserve:{order.id}", order.id)
-        db.add(Job(order_id=order.id, status="pending"))
+        await reserve_order(db, order)
+        if mode == "stars":
+            from datetime import UTC, datetime, timedelta
+
+            db.add(
+                StarCheckout(
+                    order_id=order.id, expires_at=datetime.now(UTC) + timedelta(minutes=15)
+                )
+            )
+        else:
+            db.add(Job(order_id=order.id, status="pending"))
         return order.id
 
 
 async def fail_locked(db, order, key="service_failed", cancelled=False):
     if order.status in {"completed", "failed", "cancelled", "refunded"}:
         return
-    await release(db, order.user_id, order.price_halala, f"release:{order.id}", order.id)
+    await refund_order(db, order)
     transition(order, "cancelled" if cancelled else "failed")
     order.error_key = key
     job = await db.scalar(select(Job).where(Job.order_id == order.id))
@@ -118,7 +166,7 @@ async def fail_locked(db, order, key="service_failed", cancelled=False):
 
 
 async def complete_locked(db, order):
-    await capture(db, order.user_id, order.price_halala, f"capture:{order.id}", order.id)
+    await capture_order(db, order)
     transition(order, "completed")
 
 

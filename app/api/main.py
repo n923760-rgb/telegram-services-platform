@@ -82,5 +82,16 @@ async def telegram(request: Request, x_telegram_bot_api_secret_token: str = Head
         update = Update.model_validate_json(body, context={"bot": app.state.bot})
     except ValueError:
         raise HTTPException(422, "invalid update") from None
-    await app.state.dispatcher.feed_update(app.state.bot, update)
+    # Money updates must not wait for or be dropped by customer FSM/rate/ban gates.
+    # An unavailable database propagates HTTP 500 so Telegram can retry the update.
+    from app.bot.payments import handle_precheckout, handle_receipt, handle_refunded
+
+    if update.pre_checkout_query:
+        await handle_precheckout(update.pre_checkout_query, app.state.bot)
+    elif update.message and update.message.successful_payment:
+        await handle_receipt(update.message, app.state.bot)
+    elif update.message and update.message.refunded_payment:
+        await handle_refunded(update.message)
+    else:
+        await app.state.dispatcher.feed_update(app.state.bot, update)
     return {"ok": True}

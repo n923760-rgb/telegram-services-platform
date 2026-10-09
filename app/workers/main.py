@@ -9,9 +9,12 @@ from app.core.settings import config
 from app.files.retention import cleanup, cleanup_terminal_files
 from app.ops.notifier import Notifier
 from app.ops.reports import daily_report, flush_reports
+from app.payments.recovery import refunds
+from app.payments.stars import expire_invoices
 from app.providers.delivery import TelegramDelivery
 from app.providers.notifier import TelegramAdminChannel
 from app.providers.runtime import storage
+from app.providers.stars import TelegramStars
 from app.services.registry import registry
 from app.workers.runner import deliver_confirmations, deliver_failures, dispatch, execute_job
 
@@ -22,6 +25,7 @@ async def startup(ctx):
     ctx["bot"] = Bot(config().bot_token.get_secret_value())
     ctx["delivery"] = TelegramDelivery(ctx["bot"], storage())
     ctx["notifier"] = Notifier(ctx["redis"], TelegramAdminChannel(ctx["bot"]))
+    ctx["stars"] = TelegramStars(ctx["bot"])
 
 
 async def shutdown(ctx):
@@ -33,6 +37,8 @@ async def shutdown(ctx):
 class WorkerSettings:
     functions = [execute_job]
     cron_jobs = [
+        cron(refunds, second={12, 32, 52}, run_at_startup=True),
+        cron(expire_invoices, second={17, 37, 57}, run_at_startup=True),
         cron(deliver_confirmations, second={5, 25, 45}),
         cron(cleanup_terminal_files, second={0, 20, 40}, run_at_startup=True),
         cron(cleanup, minute={0, 15, 30, 45}),
