@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from app.core.settings import config
 from app.providers.ai.gateway import AI
 from app.providers.ai.openai_compatible import OpenAICompatible
+from app.providers.documents.base import DocumentProcessor
+from app.providers.documents.tesseract import TesseractDocuments
 from app.providers.storage import LocalStorage, OwnedStorage
 
 
@@ -10,6 +12,7 @@ from app.providers.storage import LocalStorage, OwnedStorage
 class Runtime:
     ai: AI | None
     storage: OwnedStorage
+    documents: DocumentProcessor | None = None
 
 
 def provider():
@@ -30,5 +33,7 @@ def storage():
 
 def runtime_for(job_id, user_id, *, needs_ai=True):
     return Runtime(
-        AI(provider(), job_id, user_id) if needs_ai else None, OwnedStorage(storage(), user_id)
+        AI(provider(), job_id, user_id) if needs_ai else None,
+        OwnedStorage(storage(), user_id),
+        TesseractDocuments(),
     )

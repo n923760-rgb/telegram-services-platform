@@ -175,5 +175,15 @@
   "pdf_tools_limit": "PDF tool limits exceeded: 200 total pages, 20 MB total and 10 MB per file.",
   "pdf_tools_form": "This PDF contains a fillable form or signature; this tool does not support editing it.",
   "pdf_page_selection": "Invalid page selection or a page exceeds the document. Use a selection such as 1-3,5 without duplicates.",
-  "pdf_tools_preview": "PDF ready. Pages were copied in the requested order. Document outlines and metadata are not transferred."
+  "pdf_tools_preview": "PDF ready. Pages were copied in the requested order. Document outlines and metadata are not transferred.",
+  "local_ocr_name": "Local text recognition",
+  "local_ocr_description": "Read printed text from images without translation. Review text and numbers before use.",
+  "local_ocr_images": "Send up to five clear printed-text images in order, then tap Done. Limits: 10 MB each, 20 MB total. Images are resized to 1024 pixels; avoid dense pages and handwriting.",
+  "local_ocr_language": "Choose the language in the images; the text will not be translated.",
+  "local_ocr_mixed": "Arabic and English",
+  "local_ocr_limit": "Image-processing or output-text limits exceeded.",
+  "local_ocr_busy": "The document processor is busy; this request will be retried automatically.",
+  "local_ocr_timeout": "Reading the image exceeded the time limit; this request did not complete.",
+  "local_ocr_unavailable": "The local text processor is unavailable or could not process the image; this request did not complete.",
+  "local_ocr_preview": "Automatically recognized text without translation. Errors can occur even at high confidence; check text and numbers against the original images."
 }
