@@ -185,5 +185,15 @@
   "local_ocr_busy": "The document processor is busy; this request will be retried automatically.",
   "local_ocr_timeout": "Reading the image exceeded the time limit; this request did not complete.",
   "local_ocr_unavailable": "The local text processor is unavailable or could not process the image; this request did not complete.",
-  "local_ocr_preview": "Automatically recognized text without translation. Errors can occur even at high confidence; check text and numbers against the original images."
+  "local_ocr_preview": "Automatically recognized text without translation. Errors can occur even at high confidence; check text and numbers against the original images.",
+  "word_pdf_name": "Text to Word and PDF",
+  "word_pdf_description": "Format supplied text unchanged and deliver editable Word plus a PDF export of the same document.",
+  "word_pdf_text": "Send the final text as it should appear; formatting does not rewrite or translate it. Maximum 12,000 characters and 50 output pages.",
+  "word_pdf_title": "Send an optional document title (one line, up to 200 characters), or tap Skip.",
+  "word_pdf_preview": "Word and PDF are ready from the same document. Text was preserved without rewriting. Review pages before printing.",
+  "document_render_busy": "The document processor is busy; this request will be retried automatically.",
+  "document_render_unavailable": "The document converter is unavailable or could not process the document; this request did not complete.",
+  "document_render_timeout": "PDF creation exceeded the time limit; this request did not complete.",
+  "document_render_limit": "Document conversion limits exceeded: 50 pages or 10 MB.",
+  "document_render_invalid": "A valid PDF could not be created; this request did not complete."
 }
