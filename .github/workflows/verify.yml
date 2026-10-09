@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 15
     services:
       postgres:
-        image: postgres:16-bookworm
+        image: public.ecr.aws/docker/library/postgres:16-bookworm
         env:
           POSTGRES_USER: services
           POSTGRES_PASSWORD: test-only-password
@@ -21,7 +21,7 @@ jobs:
           --health-cmd "pg_isready -U services -d services_test"
           --health-interval 5s --health-timeout 5s --health-retries 20
       redis:
-        image: redis:7-alpine
+        image: public.ecr.aws/docker/library/redis:7-alpine
         ports: ['6379:6379']
         options: >-
           --health-cmd "redis-cli ping"
@@ -58,7 +58,7 @@ jobs:
           docker compose --env-file .env.example config --quiet
       - name: Build and qualify the document worker image
         run: |
-          docker build --target document-worker -t services-document-worker .
+          docker build --build-arg PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.12-slim --target document-worker -t services-document-worker .
           docker run --rm -i --network none --entrypoint python services-document-worker - <<'PY'
           import asyncio
           import os
