@@ -108,9 +108,10 @@ Keep local build evidence separate from hosted CI and real Telegram/provider qua
 ## Current phase
 Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
 Baseline main 6ce0c5e includes OCR numeric safeguards; its workflow passed 383 tests.
-Current bounded round removes overlapping worksheet/native-table Excel filters.
+Current bounded round preserves Arabic-adjacent numeric text during PDF-to-Word extraction.
 Keep Office/provider visual acceptance separate from schema, font metrics and mocked lifecycle tests.
 PR #5 PDF-to-Word is merged and remains disabled by default.
+PDF-to-Word v3 collects bounded pypdf visitor fragments; preserve admin gates and prices.
 Keep original page-layout/OCR reconstruction out of this text-based conversion; require representative real-provider acceptance before enabling it.
 Use docs/TELEGRAM_ACCEPTANCE.md; distinguish operator-reported runtime evidence from checks run here.
 Treat SAR balances as test credits and configure secrets only on the operating machine.

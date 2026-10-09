@@ -99,7 +99,12 @@ async def test_extract_limit_stops_before_later_pages_or_ai(tmp_path, monkeypatc
         lambda *args, **kwargs: SimpleNamespace(
             is_encrypted=False,
             pages=[
-                SimpleNamespace(extract_text=lambda: "x" * 50001, get_contents=lambda: None),
+                SimpleNamespace(
+                    extract_text=lambda **kwargs: kwargs["visitor_text"](
+                        "x" * 50001, None, None, None, None
+                    ),
+                    get_contents=lambda: None,
+                ),
                 SimpleNamespace(extract_text=later, get_contents=lambda: None),
             ],
         ),

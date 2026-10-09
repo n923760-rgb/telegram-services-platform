@@ -1,5 +1,19 @@
 # Master engineering roadmap
 
+## PDF Arabic numeric extraction — 2026-10-09
+
+- FACT: A supplied one-page text PDF visually contains order 00123 and SAR 125.50;
+  default extraction omits both with the project's locked pypdf 6.19.0.
+- PASS: A generated synthetic Arabic/English regression fails on baseline and passes
+  with bounded visitor-fragment collection and Arabic-presentation-form normalization.
+- PASS: The supplied PDF retains its order, amount and date with the new extractor.
+- FACT: PDF-to-Word version 3 invalidates older pending contracts while preserving
+  administrator-owned enabled/price overrides. No new dependencies or schema migration.
+- UNKNOWN: The exact real-provider reason for the earlier missing-information response.
+  Provider success, native Word acceptance and production deployment remain NOT RUN.
+- Hosted CI is recorded on the task PR separately from local unit verification.
+- See REPORTS/2026-10-09-pdf-arabic-extraction.md.
+
 Reconciled with live GitHub on 2026-10-08. This roadmap is not a production release approval.
 
 ## Current verified state
