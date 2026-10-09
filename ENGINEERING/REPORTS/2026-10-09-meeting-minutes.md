@@ -66,3 +66,17 @@ any source tests; no test/semantic failure has been observed at this point.
 Workflow 37932196007/job 113825382885 passed lint, then failed canonical Ruff wrapping
 in two new test expressions. Tests/image were not reached. Apply exact diagnostic
 diff; no behavior/validation/check weakening. New exact-head verification required.
+
+## Follow-up after local execution recovered
+
+- PASS: Fresh exact published implementation head 27423a9, tree
+  98aa86bdd5cf04e68cce642e3d107b4111ec4b88; 73 independent local checks including
+  all 19 minute cases and existing services/architecture. Lint/format pass.
+- PASS: Actual local LibreOfficeDev 26.8 alpha exported fixed source-bound Arabic
+  and English plans. Both one-page PDFs rendered with Poppler and visually inspected:
+  clear categories, each source reference, complete 00123/125.50/00017 and dates.
+- Local tests use synthetic plans; no live AI classification/semantic acceptance is
+  implied. Hosted full DB/Redis/image checks and final run IDs remain recorded on PR.
+- Prior local NOT RUN statuses are initial-stage history, superseded only by these
+  synthetic unit/native/visual follow-up checks. Real meetings/native Word/mobile/
+  Telegram/staging/deployment/activation remain NOT RUN.
