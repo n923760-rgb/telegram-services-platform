@@ -68,6 +68,10 @@ jobs:
           from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
           from tests.images_pdf_fixtures import picture
           from app.builders.images_pdf import build as images_pdf
+          from tests.csv_review_fixtures import inputs as csv_inputs
+          from app.services.csv_review.schema import Inputs as CsvInputs
+          from app.builders.csv_review import build as csv_review
+          from openpyxl import load_workbook
           from tests.cv_fixtures import inputs as cv_inputs
           from app.services.cv_formatting.schema import Inputs as CvInputs
           from pypdf import PdfReader
@@ -104,10 +108,23 @@ jobs:
           assert len(pages) == 2
           assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
           assert pages[1].images[0].image.getpixel((0, 0)) == (0, 0, 255)
+          for language in ('ar', 'en'):
+              values = CsvInputs.parse(csv_inputs(language))
+              headers, rows = values.records()
+              data, counts = csv_review(headers, rows, trim=True, language=language)
+              workbook = load_workbook(BytesIO(data))
+              assert workbook['Data']['A4'].value == '00123'
+              assert workbook['Data']['C5'].value == '0'
+              assert workbook['Data']['B7'].value == '=1+1'
+              assert workbook['Data']['B7'].data_type == 's'
+              assert workbook['Source']['B4'].value == ' أحمد '
+              assert workbook['Review']['C6'].value == 1
+              assert counts == {'rows': 4, 'blanks': 2, 'duplicates': 1, 'changes': 1}
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
+          print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
           PY

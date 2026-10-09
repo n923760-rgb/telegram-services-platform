@@ -1,18 +1,34 @@
 # Master engineering roadmap
 
+## CSV organization and review — 2026-10-09
+
+- MERGED BASELINE: Main f4dc678 includes PR #30; workflow 37933829212 passed
+  598 tests, migration/drift, Compose and all native network-disabled worker checks.
+- CURRENT SLICE: Independent default-disabled csv_review turns pasted bounded CSV
+  into Data/Source/Review Excel tables. Explicit delimiter and optional ASCII edge
+  trimming; source IDs/numbers/dates remain text. No AI, deleted rows or inferred totals.
+- Stable generated record references remain attached during sorting; review reports
+  empty fields, full-record duplicates and changed source-column numbers.
+- PASS: 31 local unit cases, lint/format/diff. Full lifecycle/worker qualification
+  required on the exact published head before authorized merge; evidence on the PR.
+- NOT RUN: Production deployment, Telegram/staging, representative Excel/mobile
+  qualification and actual customer willingness to pay. Test-credit price only.
+- Evidence: [CSV review](REPORTS/2026-10-09-csv-review.md).
+
 ## Current service expansion verification — 2026-10-09
 
 - MERGED: CV formatting PR #28 at 00848f7; reviewed workflow 37927874220 and
   merged-main 37928968731 passed 545 tests/native Arabic-English CV worker checks.
 - MERGED: Images PDF PR #29 at 30ec14c; reviewed workflow 37930551954 and
   merged-main 37931140860 passed 571 tests/native ordered pixel checks.
-- CURRENT PR #30: Source-bound meeting-note categories, every source ID visible
+- MERGED PR #30 at f4dc678: Source-bound meeting-note categories, every source ID visible
   in review, mandatory approval before native Word/PDF; no invented fields/content.
 - PASS: Local execution recovered; exact implementation head 27423a9 passes 73
   independent cases (CV 20/images 19/minutes 19/Word-PDF 12/governance 3), lint/format.
 - PASS: Native AR/EN minute PDFs and both pages of synthetic receipt/review image PDF
   rendered and visually inspected. Earlier local unavailability is historical below.
-- Require exact-head hosted lifecycle/image success before PR #30 merge. Live AI
+- PASS: PR #30 final-head workflow 37933171985 and merged-main 37933829212
+  passed 598 tests and all native worker checks. Live AI
   category accuracy, representative/native Office/mobile/Telegram/staging/server
   deployment and service activation remain separate NOT RUN gates. All new plugins
   default disabled; SAR values remain administrator-issued test credit.

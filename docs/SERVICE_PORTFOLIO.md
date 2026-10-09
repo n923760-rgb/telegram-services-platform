@@ -18,6 +18,8 @@ required by project governance. No production activation is implied by source me
 | PDF tools | Merge ordered PDFs or extract selected pages, without AI; signatures/forms unsupported. |
 | Word/PDF bundle | Final text, professional template, editable DOCX plus native PDF from the same document. |
 | CV formatting | Structured final career facts, Arabic/English headings, classic single-column Word/PDF; PR #28 passed 545 hosted tests and native CV checks. |
+| Meeting-note organization | Source-bound categories and customer review before Word/PDF; PR #30 passed 598 tests and native export checks. Live AI category accuracy remains unqualified. |
+| CSV organization/review (current slice) | Pasted bounded CSV to sortable Excel with original values, stable record references and static blank/duplicate/edge-change audit. No inferred types, totals or deleted records. |
 | Images to PDF | Ordered image pages, bounded A4 fit/orientation and received-pixel preservation; PR #29 passed 571 tests and native image checks. |
 
 ## Current integration queue
@@ -26,8 +28,8 @@ required by project governance. No production activation is implied by source me
 | --- | --- | --- |
 | 1 | CV formatting (merged, disabled) | Structured actual career details, classic single-column Word/PDF, Arabic or English headings. Formatting only; no invented facts, translation or ATS/job outcome guarantee. Native content/layout and capture/release tests required. |
 | 2 | Images to PDF (merged, disabled) | Ordered pages, EXIF orientation, consistent A4 layout and original aspect ratio. Quality bounded by uploaded image resolution; no OCR or scan-enhancement promise. |
-| 3 | Meeting-note organization (current slice) | Decisions/actions grouped from source notes with traceable references, no invented assignees/deadlines. Requires source-bound extraction/schema repair and real-provider semantic qualification. |
-| 4 | Spreadsheet cleanup/report | Preserve original IDs, blanks, zero/duplicates; explicit normalization rules and audit sheet. No inferred totals/data deletion or executable customer formulas. Native Excel/mobile acceptance required. |
+| 3 | Meeting-note organization (merged, disabled) | Decisions/actions grouped from source notes with traceable references, no invented assignees/deadlines. Requires source-bound extraction/schema repair and real-provider semantic qualification. |
+| 4 | CSV organization/review (current slice) | Preserve original IDs, blanks, zero/duplicates; explicit delimiter/edge rules, original sheet, stable record references and audit sheet. No inferred totals/data deletion or executable customer formulas. Native Excel/mobile acceptance required. |
 | 5 | CV writing/translation | Evidence-bound rewriting of supplied career facts, with review before delivery. Requires factual/source checks and real Arabic/English provider acceptance beyond formatting. |
 | 6 | Study revision pack | Source-bound summary, revision questions and answers with references. Requires omission/fact checks; never fabricate external sources. |
 | 7 | Business document packs | Brief/report/proposal from actual supplied facts, consistent Word/PDF. Define each contract and verification before adding a plugin. |
