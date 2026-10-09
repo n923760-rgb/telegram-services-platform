@@ -34,9 +34,10 @@ def build(images: list[bytes], *, orientation: str = "auto") -> bytes:
             warnings.simplefilter("error", Image.DecompressionBombWarning)
             for data in images:
                 with Image.open(BytesIO(data)) as original:
-                    if original.format not in {"JPEG", "PNG", "WEBP"} or getattr(
-                        original, "n_frames", 1
-                    ) != 1:
+                    if (
+                        original.format not in {"JPEG", "PNG", "WEBP"}
+                        or getattr(original, "n_frames", 1) != 1
+                    ):
                         raise ValueError("unsupported image")
                     width, height = original.size
                     pixels += width * height
