@@ -164,7 +164,7 @@ def build(data: Table) -> bytes:
     )
     sheet.add_table(native_table)
     sheet.freeze_panes = "A4"
-    sheet.auto_filter.ref = ref
+    # The native table owns its filter; a worksheet filter must not overlap it.
     sheet.print_title_rows = "1:3"
     sheet.print_area = f"A1:{last_column}{sheet.max_row}"
     sheet.page_setup.orientation = "landscape" if len(columns) > 5 else "portrait"
