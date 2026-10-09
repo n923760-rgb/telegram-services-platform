@@ -119,3 +119,24 @@ async def test_corrupt_continuation_does_not_make_a_new_provider_call_or_export(
     with pytest.raises(ServiceError, match="provider_invalid"):
         await service.run(inputs() | {"__continuation": {}})
     assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+async def test_review_lists_all_source_ids_even_when_only_two_samples_are_shown(tmp_path):
+    class AI:
+        async def extract(self, schema, *args):
+            return schema.model_validate(
+                {
+                    "assignments": [
+                        {"note_id": index, "category": "review"} for index in range(1, 5)
+                    ]
+                }
+            )
+
+    service = MeetingMinutes()
+    service.runtime = SimpleNamespace(
+        ai=AI(), renderer=None, storage=OwnedStorage(LocalStorage(tmp_path), 1)
+    )
+    result = await service.run(inputs())
+    assert "1, 2, 3, 4" in result.preview
+    assert "[1]" in result.preview and "[2]" in result.preview
+    assert "[3]" not in result.preview and result.needs_confirmation

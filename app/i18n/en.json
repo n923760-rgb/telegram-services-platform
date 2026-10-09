@@ -230,5 +230,6 @@
   "minutes_action": "Actions",
   "minutes_review": "Items for review",
   "minutes_review_intro": "Proposed organization, showing counts and sample notes for each category. Bracketed IDs refer to nonempty source lines. Review and approve to create Word/PDF, or cancel if the categories do not fit.",
-  "minutes_preview": "Minutes from your notes using the approved categories, as Word and PDF. Note IDs trace each paragraph to its source; check decisions, assignees and deadlines before sharing."
+  "minutes_preview": "Minutes from your notes using the approved categories, as Word and PDF. Note IDs trace each paragraph to its source; check decisions, assignees and deadlines before sharing.",
+  "minutes_source_ids": "Source references: {ids}"
 }

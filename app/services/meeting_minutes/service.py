@@ -65,6 +65,7 @@ class MeetingMinutes(BaseService):
             ids = sorted(item.note_id for item in plan.assignments if item.category == category)
             if ids:
                 preview.append(tr("minutes_" + category, values.language) + f" ({len(ids)})")
+                preview.append(tr("minutes_source_ids", ids=", ".join(map(str, ids))))
                 preview.extend(f"[{number}] {notes[number - 1][:180]}" for number in ids[:2])
         return Result(
             preview="\n".join(preview)[:2800],

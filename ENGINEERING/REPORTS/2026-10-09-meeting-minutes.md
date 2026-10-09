@@ -2,7 +2,8 @@
 
 Baseline main 30ec14c419a6712200d3d63920d6d42c025a2cd5, PR #29 merged. Reviewed
 workflow 37930551954/job 113819902555 passed 571 tests and actual worker image.
-Merged-main check is tracked separately on task PR; no deployment implied.
+Merged-main workflow 37931140860/job 113821860919 also passed 571 tests and
+native image checks. No deployment implied.
 
 Owner authorized useful service expansion and continued publication/merge after checks.
 Independent meeting_minutes plugin, disabled by default, SAR 5.00 test credit.
@@ -27,7 +28,7 @@ invention in output: deterministic builder copies original notes with numbered I
 under fixed catalog headings, preserving order within each category. All notes
 retained, including repeated source text at distinct IDs.
 
-Customer must review proposed grouping before export. Preview shows counts and up
+Customer must review proposed grouping before export. Preview shows counts, all source IDs and up
 to two shortened notes per category, not every complete source note; cancellation
 releases customer credit while incurred provider usage remains recorded. Confirmation
 resume revalidates classification and makes no second AI call. Native Word/PDF pair
@@ -56,3 +57,8 @@ prepared retry and at-least-once external duplicate limitations remain unchanged
 Product value is organized source notes plus editable/shareable documents. This is
 not transcript/audio recognition, an autonomous task executor or proof that a note
 was actually agreed in a real meeting. No assignee/deadline is inferred.
+
+Review improvement: list all source IDs in each category, even though only two short
+samples are shown. Added a coverage test for grouped non-sample references. Initial
+workflow 37931262367 spent over five minutes in native-package installation before
+any source tests; no test/semantic failure has been observed at this point.
