@@ -1,5 +1,18 @@
 # Master engineering roadmap
 
+## Deterministic PDF utilities — 2026-10-09
+
+- MERGED: PR #24 at `27d67a6`; exact-head workflow `37917138383` passed 406 tests,
+  lint/format, migrations/drift and Compose. Template and structural gate in main.
+- NEXT SLICE: Registry-discovered `pdf_tools` merges PDFs and extracts selected pages
+  without AI, using the existing pypdf library. Native page text/images/geometry retained.
+- Limits: five files, 10 MiB each/20 MiB total, 200 source pages; explicit source order.
+  Forms/signatures unsupported. New service remains disabled until operator acceptance.
+- No bot/core branches, dependency, migration, existing price or financial-policy change.
+- PASS: 24 local independent cases and lint/format; 439 full tests collected. Hosted
+  capture/release/ownership/retry checks required before merge; no deployment performed.
+- Evidence: [PDF utilities](REPORTS/2026-10-09-pdf-tools.md).
+
 ## Document engines adoption — 2026-10-09
 
 - OWNER DECISION: Adopt specialized deterministic tools and professional templates
