@@ -6,7 +6,46 @@ from sqlalchemy import func, select
 
 from app.core.db import sessions
 from app.core.i18n import tr
-from app.core.models import CostHold, CostUsage, Job, Ledger, Order, User
+from app.core.models import CostHold, CostUsage, Job, Ledger, Order, StarCharge, StarEvent, User
+
+
+async def stars_report(day=None, lang="ar"):
+    zone = ZoneInfo("Asia/Riyadh")
+    day = day or datetime.now(zone).date()
+    start = datetime.combine(day, time.min, zone).astimezone(UTC)
+    end = start + timedelta(days=1)
+    async with sessions() as db:
+        received = await db.scalar(
+            select(func.coalesce(func.sum(StarCharge.amount), 0)).where(
+                StarCharge.created_at >= start, StarCharge.created_at < end
+            )
+        )
+        refunded = await db.scalar(
+            select(func.coalesce(func.sum(StarCharge.amount), 0))
+            .join(StarEvent, StarEvent.charge_id == StarCharge.charge_id)
+            .where(
+                StarEvent.kind == "refunded",
+                StarEvent.created_at >= start,
+                StarEvent.created_at < end,
+            )
+        )
+        pending = await db.scalar(
+            select(func.count(StarCharge.charge_id)).where(
+                StarCharge.state.in_(["refund_pending", "refunding"])
+            )
+        )
+        uncertain = await db.scalar(
+            select(func.count(StarCharge.charge_id)).where(StarCharge.state == "refund_uncertain")
+        )
+    return tr(
+        "stars_report",
+        lang,
+        day=day,
+        received=received,
+        refunded=refunded,
+        pending=pending,
+        uncertain=uncertain,
+    )
 
 
 async def report(day=None):
@@ -65,20 +104,24 @@ async def report(day=None):
             ).all()
         )
     revenue = Decimal(captured - refunds) / 100
-    return tr(
-        "daily_report",
-        day=day,
-        orders=count,
-        revenue=f"{revenue:.2f}",
-        cost=f"{costs:.6f}",
-        pending=f"{pending_cost:.6f}",
-        margin=f"{revenue - costs:.2f}",
-        failed=failures,
-        refunded=f"{Decimal(refunds) / 100:.2f}",
-        released=f"{Decimal(releases) / 100:.2f}",
-        captured=f"{Decimal(captured) / 100:.2f}",
-        users=users,
-        top="، ".join(f"{slug}: {n}" for slug, n in top) or tr("none"),
+    return (
+        tr(
+            "daily_report",
+            day=day,
+            orders=count,
+            revenue=f"{revenue:.2f}",
+            cost=f"{costs:.6f}",
+            pending=f"{pending_cost:.6f}",
+            margin=f"{revenue - costs:.2f}",
+            failed=failures,
+            refunded=f"{Decimal(refunds) / 100:.2f}",
+            released=f"{Decimal(releases) / 100:.2f}",
+            captured=f"{Decimal(captured) / 100:.2f}",
+            users=users,
+            top="، ".join(f"{slug}: {n}" for slug, n in top) or tr("none"),
+        )
+        + "\n\n"
+        + await stars_report(day)
     )
 
 

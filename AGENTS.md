@@ -5,8 +5,8 @@ Build an Arabic-first service platform with independent, deterministic plugins.
 Use Python 3.12, FastAPI, aiogram 3, PostgreSQL, SQLAlchemy 2 async, Alembic,
 Redis, ARQ, Pydantic v2, ruff, pytest and typed Office/PDF builders.
 Keep echo for verification; retain approved OCR/Office/PDF plugins disabled by default.
-Treat SAR balances as administrator-issued test credit; require a separate Stars
-payment design before selling digital services inside Telegram.
+Treat SAR balances as administrator-issued test credit; use the separately reviewed
+docs/STARS_DESIGN.md for direct Stars checkout, never convert historic SAR balances.
 
 ## Structure and boundaries
 Keep Telegram adapters in app/bot and HTTP adapters in app/api.
@@ -26,7 +26,7 @@ Treat plugin code as trusted executable code; do not describe it as sandboxed.
 Use integer halalas for credit and Decimal for finer provider costs.
 Compute available/reserved balances from immutable signed ledger entries.
 Never update/delete ledger history or maintain a mutable balance column.
-Reserve before execution; capture after required delivery; release on failure.
+Reserve/capture/release test credit; Stars charge upfront and refund via confirmed Telegram evidence.
 Refund captured orders once using a compensating entry; never confuse release/refund.
 Bind each wallet operation key globally to its customer/order/amount/payload.
 Lock customer before order/job; acquire provider budgets global-first, then user, then job.
@@ -52,7 +52,8 @@ Validate file content, paths, ownership and decoded image limits.
 Delete files after terminal work; recover pending deletion and expire abandoned files.
 Purge customer content on schedule while preserving minimal financial audit data.
 Change schemas only through Alembic; never create_all in production.
-Keep payment gateways, dashboards, unapproved services, agent loops and n8n out of scope.
+Direct Stars checkout is owner-authorized for V1 completion; external payment gateways,
+dashboards, unapproved services, agent loops and n8n remain out of scope.
 
 ## Add a service
 1. Create app/services/<slug>/ with __init__.py, schema.py, prompt.py, service.py

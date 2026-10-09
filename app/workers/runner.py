@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import DBAPIError
 
 from app.core.db import sessions
-from app.core.models import Job, JobAttempt, Order, Service
+from app.core.models import Job, JobAttempt, Order, Service, StarCharge
 from app.core.settings import config
 from app.orders.engine import complete_locked, fail_locked
 from app.orders.locking import lock_order
@@ -30,6 +30,15 @@ async def execute_job(ctx, job_id: str):
             return
         if order.status in {"completed", "failed", "cancelled", "refunded"}:
             return
+        if order.payment_mode == "stars":
+            charge = await db.scalar(
+                select(StarCharge).where(
+                    StarCharge.order_id == order.id, StarCharge.accepted.is_(True)
+                )
+            )
+            if order.status == "awaiting_payment" or not charge or charge.state != "paid":
+                await fail_locked(db, order, "payment_invalid", cancelled=True)
+                return
         service = await db.get(Service, order.service_slug)
         if not service or not service.enabled:
             await fail_locked(db, order, "unavailable", cancelled=True)
@@ -185,7 +194,13 @@ async def dispatch(ctx):
                     .where(
                         Service.enabled.is_(False),
                         Order.status.in_(
-                            ["queued", "processing", "waiting_confirmation", "delivering"]
+                            [
+                                "awaiting_payment",
+                                "queued",
+                                "processing",
+                                "waiting_confirmation",
+                                "delivering",
+                            ]
                         ),
                     )
                 )

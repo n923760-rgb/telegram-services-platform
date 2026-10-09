@@ -7,8 +7,8 @@ from app.core.models import Order, Service, Setting, User
 from app.core.transactions import transaction_retry
 from app.orders.locking import lock_order
 from app.orders.state import transition
+from app.payments.billing import refund_order
 from app.services.base import ServiceError
-from app.wallet.ledger import apply
 
 
 @transaction_retry
@@ -17,12 +17,14 @@ async def refund(order_id):
         order = await lock_order(db, UUID(str(order_id)))
         if not order or order.status not in {"completed", "refunded"}:
             raise ServiceError("refund_invalid")
-        await apply(db, order.user_id, "refund", order.price_halala, f"refund:{order.id}", order.id)
-        transition(order, "refunded")
+        if await refund_order(db, order, captured=True):
+            transition(order, "refunded")
         return order.id
 
 
-async def set_service(slug, enabled=None, price=None):
+async def set_service(slug, enabled=None, price=None, stars=None):
+    if stars is not None and (type(stars) is not int or not 1 <= stars <= 1000000):
+        raise ServiceError("input_invalid")
     async with sessions.begin() as db:
         service = await db.scalar(select(Service).where(Service.slug == slug).with_for_update())
         if not service:
@@ -53,6 +55,8 @@ async def set_service(slug, enabled=None, price=None):
                 )
         if price is not None:
             service.price_halala = price
+        if stars is not None:
+            service.price_stars = stars
     if enabled is False:
         from app.orders.engine import fail_locked
 
@@ -63,7 +67,13 @@ async def set_service(slug, enabled=None, price=None):
                         select(Order.id).where(
                             Order.service_slug == slug,
                             Order.status.in_(
-                                ["queued", "processing", "waiting_confirmation", "delivering"]
+                                [
+                                    "awaiting_payment",
+                                    "queued",
+                                    "processing",
+                                    "waiting_confirmation",
+                                    "delivering",
+                                ]
                             ),
                         )
                     )

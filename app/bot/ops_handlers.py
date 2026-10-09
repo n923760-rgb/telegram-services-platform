@@ -13,8 +13,10 @@ from app.core.models import Order, SupportTicket
 from app.core.settings import config
 from app.core.users import get_language
 from app.ops.admin import ban, refund, set_service
-from app.ops.reports import report
+from app.ops.reports import report, stars_report
 from app.orders.engine import register
+from app.payments.recovery import reconcile
+from app.providers.stars import TelegramStars
 from app.services.base import ServiceError
 from app.wallet.ledger import WalletError, halalas
 
@@ -22,7 +24,19 @@ from app.wallet.ledger import WalletError, halalas
 def create_router():
     router = Router()
 
-    @router.message(Command("disable", "enable", "setprice", "refund", "ban", "report"))
+    @router.message(
+        Command(
+            "disable",
+            "enable",
+            "setprice",
+            "setstars",
+            "starreconcile",
+            "starstatus",
+            "refund",
+            "ban",
+            "report",
+        )
+    )
     async def admin_ops(message: Message, lang: str = "ar"):
         if message.from_user.id not in config().admin_ids:
             await message.answer(tr("not_allowed", lang))
@@ -30,15 +44,45 @@ def create_router():
         args = (message.text or "").split()
         command = args[0].split("@")[0]
         try:
+            if command == "/starstatus":
+                await message.answer(await stars_report(lang=lang))
+                return
             if command == "/report":
                 await message.answer(await report())
                 return
+            if command == "/starreconcile":
+                offset = int(args[1]) if len(args) > 1 else 0
+                if offset < 0 or len(args) > 2:
+                    raise ValueError
+                count, finished = await reconcile(
+                    {"stars": TelegramStars(message.bot)}, offset=offset
+                )
+                await message.answer(
+                    tr(
+                        "stars_reconciled",
+                        lang,
+                        count=count,
+                        next_offset=offset + count,
+                        coverage=tr(
+                            "stars_history_end" if finished else "stars_history_more", lang
+                        ),
+                    )
+                )
+                return
             if command == "/refund":
-                await refund(UUID(args[1]))
+                order_id = UUID(args[1])
+                await refund(order_id)
+                async with sessions() as db:
+                    order = await db.get(Order, order_id)
+                if order and order.payment_mode == "stars" and order.status != "refunded":
+                    await message.answer(tr("stars_refund_pending", lang))
+                    return
             elif command == "/ban":
                 await ban(int(args[1]))
             elif command == "/setprice":
                 await set_service(args[1], price=halalas(args[2]))
+            elif command == "/setstars":
+                await set_service(args[1], stars=int(args[2]))
             else:
                 await set_service(args[1], enabled=command == "/enable")
             await message.answer(tr("admin_done", lang))
@@ -61,7 +105,7 @@ def create_router():
         await callback.answer()
         await enter_support(callback.message, state, callback.from_user.id, lang)
 
-    @router.message(Command("support"))
+    @router.message(Command("support", "paysupport"))
     @router.message(MenuButton("support"))
     async def support_command(message: Message, state: FSMContext, lang: str = "ar"):
         await enter_support(message, state, message.from_user.id, lang)

@@ -429,7 +429,7 @@ Details: [validation](../docs/VALIDATION.md),
 2. NOT RUN here: Docker build/start/recovery and server-specific deployment qualification.
 3. NOT RUN: Representative Arabic/English PDF extraction and live provider output quality.
 4. UNKNOWN current provider rates/billing need operator configuration and reconciliation.
-5. FACT SAR wallet credits are test credits; Telegram digital sales need a separate Stars design.
+5. FACT SAR wallet credits remain test credits; separate direct Stars checkout is default-disabled and requires source-bound Telegram acceptance.
 6. FACT external delivery is at least once; send/commit crashes can duplicate output.
 
 ## Ordered qualification gates
@@ -452,6 +452,13 @@ Keep payment gateways, dashboards, unapproved extra services, agent loops and n8
 Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 
 ## Exact immediate next round
+
+Owner's 2026-10-09 completion request authorizes the independent direct Stars V1 round.
+Scope: existing registered services and generic customer/admin/payment/recovery flows.
+See [design](../docs/STARS_DESIGN.md) and [acceptance](../docs/STARS_ACCEPTANCE.md).
+Local lint/source checks and hosted PostgreSQL tests must pass before authorized merge.
+Do not mark real Telegram purchase/refund, provider quality, or server deployment complete
+without their actual evidence; future portfolio candidates remain separate work.
 
 Verify the latest main workflow before using that source for runtime qualification.
 Complete the Excel filter-ownership fix and inspect its source-bound hosted checks.
