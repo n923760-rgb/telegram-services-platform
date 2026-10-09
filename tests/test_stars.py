@@ -566,6 +566,29 @@ def test_stars_catalogs_have_matching_keys():
     assert keys and keys <= CATALOGS["en"].keys()
 
 
+async def test_receipt_transaction_retries_are_not_multiplied(stars, monkeypatch):
+    import app.payments.stars as adapter
+
+    class Aborted(Exception):
+        sqlstate = "40001"
+
+    failure = DBAPIError("fixture transaction", {}, Aborted())
+    attempts = []
+
+    class Transaction:
+        async def __aenter__(self):
+            attempts.append(1)
+            raise failure
+
+        async def __aexit__(self, *args):
+            return False
+
+    monkeypatch.setattr(adapter.sessions, "begin", Transaction)
+    with pytest.raises(DBAPIError):
+        await receive(1, payload(uuid4()), "XTR", 20, "bounded")
+    assert len(attempts) == 3
+
+
 @pytest.mark.parametrize("language", ["ar", "en"])
 async def test_real_dispatcher_terms_invoice_recovery_and_admin_denial(stars, language):
     await register(1)
