@@ -12,7 +12,7 @@ from sqlalchemy import select
 from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, section_controls
 from app.core.db import sessions
 from app.core.i18n import tr
-from app.core.models import Order, Service
+from app.core.models import Order, Service, StarCharge
 from app.core.settings import config
 from app.orders.engine import register
 from app.orders.state import ALLOWED
@@ -206,6 +206,17 @@ def create_router():
                     .where(Order.id == order_id, Order.user_id == callback.from_user.id)
                 )
             ).first()
+            charge = (
+                await db.scalar(
+                    select(StarCharge).where(
+                        StarCharge.order_id == order_id,
+                        StarCharge.user_id == callback.from_user.id,
+                        StarCharge.accepted.is_(True),
+                    )
+                )
+                if row and row[0].payment_mode == "stars"
+                else None
+            )
         if row is None:
             await callback.answer(tr("order_unavailable", lang), show_alert=True)
             return
@@ -222,6 +233,8 @@ def create_router():
             created=order.created_at.astimezone(ZoneInfo("Asia/Riyadh")).strftime("%Y-%m-%d %H:%M"),
         )
         items = []
+        if charge:
+            text += "\n" + tr("stars_charge_" + charge.state, lang)
         if order.status == "awaiting_payment":
             items.extend(
                 [

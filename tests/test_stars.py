@@ -9,7 +9,9 @@ from uuid import uuid4
 import httpx
 import pytest
 from aiogram import Bot
-from aiogram.types import Chat, Message, SuccessfulPayment
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.methods import SendInvoice
+from aiogram.types import CallbackQuery, Chat, Message, SuccessfulPayment, Update
 from aiogram.types import User as TelegramUser
 from openpyxl import load_workbook
 from pydantic import SecretStr, ValidationError
@@ -17,6 +19,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 
 from app.api.main import app
+from app.bot.main import create_dispatcher
 from app.bot.payments import handle_receipt, invoice
 from app.core.db import sessions
 from app.core.i18n import CATALOGS
@@ -39,6 +42,7 @@ from app.services.base import ServiceError
 from app.wallet.ledger import balance
 from app.workers.runner import execute_job
 from tests.csv_review_fixtures import inputs as csv_inputs
+from tests.test_bot_flow import Session
 from tests.test_foundation import Delivery, fund, job_for
 from tests.test_real_services import Delivery as FileDelivery
 
@@ -105,6 +109,21 @@ async def test_unpaid_idempotency_no_job_no_credit_and_terms_snapshot(stars):
         assert await db.scalar(select(func.count(Job.id))) == 0
         assert await db.scalar(select(func.count(Ledger.id))) == 0
         assert await db.get(StarCheckout, oid)
+
+
+async def test_worker_fails_closed_for_accidental_unpaid_job(stars):
+    oid = await prepare()
+    async with sessions.begin() as db:
+        job = Job(order_id=oid, status="pending")
+        db.add(job)
+        await db.flush()
+        jid = job.id
+    delivery = Delivery()
+    await execute_job({"delivery": delivery}, str(jid))
+    assert not delivery.results
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "cancelled"
+        assert await db.scalar(select(func.count(Ledger.id))) == 0
 
 
 @pytest.mark.parametrize(
@@ -514,3 +533,138 @@ def test_activation_requires_webhook_secret_and_bounded_real_terms(bad):
 def test_stars_catalogs_have_matching_keys():
     keys = {key for key in CATALOGS["ar"] if key.startswith(("stars_", "payment_"))}
     assert keys and keys <= CATALOGS["en"].keys()
+
+
+@pytest.mark.parametrize("language", ["ar", "en"])
+async def test_real_dispatcher_terms_invoice_recovery_and_admin_denial(stars, language):
+    await register(1)
+    await set_service("echo", stars=20)
+    async with sessions.begin() as db:
+        (await db.get(User, 1)).language = language
+
+    class InvoiceSession(Session):
+        def __init__(self):
+            super().__init__()
+            self.invoices = []
+
+        async def make_request(self, bot, method, timeout=None):
+            if isinstance(method, SendInvoice):
+                self.invoices.append(method)
+                return self.messages[-1]
+            return await super().make_request(bot, method, timeout)
+
+    transport = InvoiceSession()
+    bot = Bot("123456:TEST_TOKEN_ONLY", session=transport)
+    dp = create_dispatcher(MemoryStorage(), guard=False)
+    user = TelegramUser(id=1, is_bot=False, first_name="Fixture")
+    sequence = 0
+
+    async def message(value):
+        nonlocal sequence
+        sequence += 1
+        await dp.feed_update(
+            bot,
+            Update(
+                update_id=sequence,
+                message=Message(
+                    message_id=sequence,
+                    date=datetime.now(UTC),
+                    chat=Chat(id=1, type="private"),
+                    from_user=user,
+                    text=value,
+                ),
+            ),
+        )
+
+    async def callback(value):
+        nonlocal sequence
+        sequence += 1
+        await dp.feed_update(
+            bot,
+            Update(
+                update_id=sequence,
+                callback_query=CallbackQuery(
+                    id=str(sequence),
+                    from_user=user,
+                    chat_instance="fixture",
+                    message=transport.messages[-1],
+                    data=value,
+                ),
+            ),
+        )
+
+    await message("/services")
+    assert "20" in transport.messages[-1].reply_markup.inline_keyboard[0][0].text
+    await callback("service:echo")
+    await message("00123")
+    assert getattr(config(), f"stars_terms_{language}") in transport.messages[-1].text
+    confirm = transport.messages[-1].reply_markup.inline_keyboard[0][0].callback_data
+    await callback(confirm)
+    async with sessions() as db:
+        order = await db.scalar(select(Order))
+        assert order.status == "awaiting_payment"
+    assert len(transport.invoices) == 1 and await job_for(order.id) is None
+    await message("/orders")
+    await callback(f"order:{order.id}")
+    await callback(f"pay:{order.id}")
+    assert len(transport.invoices) == 2
+    await message("/setstars echo 999")
+    async with sessions() as db:
+        assert (await db.get(Service, "echo")).price_stars == 20
+    await message("/paysupport")
+    assert transport.messages[-1].text == CATALOGS[language]["support_prompt"]
+    await dp.storage.close()
+    await bot.session.close()
+
+
+async def test_receipt_db_failure_returns_retryable_http500(stars, monkeypatch):
+    import app.bot.payments as adapter
+
+    async def broken(*args):
+        raise OSError("synthetic DB unavailability")
+
+    monkeypatch.setattr(adapter, "receive", broken)
+    bot = Bot("123456:TEST_TOKEN_ONLY")
+    monkeypatch.setattr(app.state, "bot", bot, raising=False)
+    monkeypatch.setattr(app.state, "dispatcher", NS(), raising=False)
+    event = Message(
+        message_id=1,
+        date=datetime.now(UTC),
+        chat=Chat(id=1, type="private"),
+        from_user=TelegramUser(id=1, is_bot=False, first_name="Fixture"),
+        successful_payment=SuccessfulPayment(
+            currency="XTR",
+            total_amount=20,
+            invoice_payload=payload(uuid4()),
+            telegram_payment_charge_id="charge",
+            provider_payment_charge_id="",
+        ),
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"
+    ) as client:
+        assert (
+            await client.post(
+                "/webhooks/telegram",
+                json={"update_id": 1, "message": event.model_dump(mode="json", exclude_none=True)},
+                headers={"X-Telegram-Bot-Api-Secret-Token": "fixture-secret"},
+            )
+        ).status_code == 500
+    await bot.session.close()
+
+
+@pytest.mark.parametrize("wrong", ["user", "amount", "fractional"])
+async def test_reconciliation_requires_exact_refund_proof(stars, wrong):
+    oid = await prepare()
+    await pay(oid)
+    proof = NS(
+        id="charge",
+        amount=-21 if wrong == "amount" else -20,
+        nanostar_amount=1 if wrong == "fractional" else 0,
+        source=None,
+        receiver=NS(type="user", user=NS(id=2 if wrong == "user" else 1)),
+    )
+    await reconcile({"stars": Provider(transactions=[proof])})
+    async with sessions() as db:
+        assert (await db.get(StarCharge, "charge")).state == "paid"
+        assert (await db.get(Order, oid)).status == "queued"

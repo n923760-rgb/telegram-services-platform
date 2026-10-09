@@ -9,6 +9,7 @@ source-bound checklist passes in Telegram's dedicated test environment first.
 - Back up the database and record the exact deployed Git SHA before migration `0011`.
 - Configure the authenticated HTTPS Telegram webhook through the existing deployment
   instructions. Do not expose PostgreSQL, Redis or the loopback API publicly.
+  Run API/worker/monitor and omit the polling bot process in webhook mode.
 - Privately supply owner-approved Arabic/English purchase/refund/support terms, each
   20–2500 characters and at most 2500 UTF-16 units. No legal/business terms are invented
   by the application. Increment `STARS_TERMS_VERSION` whenever either language changes.
@@ -50,6 +51,8 @@ ID, customer and amount. It never refunds unrelated historic products.
 An uncertain refund is not retried automatically, even when transaction history does not
 show it. Investigate through the responsible merchant and Telegram support; do not mutate the
 audit tables to force an outcome. Disabling new purchases does not disable pending refunds.
+If an approved checkout did not finish payment, cancel its pending invoice and create a new
+order rather than reuse a different checkout query; completed receipts remain idempotent.
 Migration downgrade refuses to erase recorded Stars purchases or receipts; use forward fixes.
 
 ## Commercial acceptance
