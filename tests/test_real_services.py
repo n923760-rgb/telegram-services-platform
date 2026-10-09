@@ -370,7 +370,8 @@ async def test_early_plugin_cancellation_eventually_deletes_uploaded_files(tmp_p
     oid = await submit(
         1, "image_to_text", {"images": [file.key], "language": "none"}, price, "cancel-before-run"
     )
-    monkeypatch.setattr(registry.types["image_to_text"], "version", "2")
+    plugin = registry.types["image_to_text"]
+    monkeypatch.setattr(plugin, "version", plugin.version + "-next")
     await execute_job(ctx, str(await job_for(oid)))
     await cleanup_terminal_files()
     await cleanup_terminal_files()

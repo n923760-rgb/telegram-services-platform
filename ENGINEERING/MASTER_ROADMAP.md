@@ -198,16 +198,33 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 
 - FAIL REPRODUCED: Four real hybrid PDFs pass the old service because selectable text masks
   raster content: ordinary image, inline image, nested Form image and later mixed page.
-- IMPLEMENTED ON TASK BRANCH: Reject raster drawing instructions before AI/output without
+- MERGED PR #19: Reject raster drawing instructions before AI/output without
   decoding image pixels. Follow invoked Forms with cycle/depth/instruction traversal limits;
   retain text-only Forms and allow unused image resources. Localized intake/error explain scope.
 - FACT: Contract version 2; preserve admin price/enablement and generic cancellation/release
   for old pending version-1 orders. No new OCR, provider, database or dependency changes.
 - PASS: 24 local helper/plugin/governance tests; hosted lifecycle tests must prove release,
   one notification, no AI/delivery, cleanup and old-order settlement. Full suite collects 355 tests.
-- NOT RUN: New hosted full suite, real provider/Word fidelity or deployment. This is a
+- PASS: Head `de90211` workflow `37830310598` and merged main `6415e57` workflow
+  `37831298533` passed 355 tests, lint/format, migrations/drift and Compose validation.
+- NOT RUN: Real provider/Word fidelity or deployment. This is a
   rejection safeguard, not image reconstruction or full-fidelity conversion qualification.
 - Evidence: [mixed-content report](REPORTS/2026-10-08-pdf-word-image-fidelity.md).
+
+## OCR translation numeric fidelity round — 2026-10-08
+
+- FACT: The old translation model validates JSON/text length, but accepts changed amounts,
+  dropped identifier zeros, missing/extra numbers and reformatted dates.
+- IMPLEMENTED ON TASK BRANCH: Request-local translation validation compares literal numeric
+  tokens and their occurrence counts with the extracted text. Schema instructions preserve
+  signs/separators/date notation/percentages and digit script; existing one-repair flow applies.
+- FACT: Version 2; unchanged input fields, price/default gates, renderer, provider and financial
+  policy. Old pending version-1 work releases; admin settings remain intact.
+- PASS: 26 focused local schema/plugin/governance tests; 383 tests collected. Hosted cases
+  cover repair, failure release, single capture, cost recording and cached TXT/DOCX delivery.
+- NOT RUN: Hosted full suite, live image/source fidelity, semantic translation and native Word
+  acceptance. Matching numbers alone does not verify their associations, names, units or prose.
+- Evidence: [OCR translation report](REPORTS/2026-10-08-ocr-translation-numbers.md).
 
 ## Architecture and state owners
 
@@ -261,7 +278,7 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
-Complete the PDF-to-Word mixed-content safeguard and inspect its source-bound hosted checks.
+Complete the OCR translation numeric safeguard and inspect its source-bound hosted checks.
 Qualify professional Word, Excel and PowerPoint against supplied source and native Office;
 keep literal Word/PDF checks distinct. The all-service quality request supersedes the earlier
 Excel/PowerPoint deferral. Continue PDF/OCR fidelity rounds within their approved contracts.

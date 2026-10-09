@@ -5,10 +5,11 @@ from app.builders.word import build
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.image_to_text.prompt import EXTRACT
-from app.services.image_to_text.schema import Extracted, Inputs, Translation
+from app.services.image_to_text.schema import Extracted, Inputs, translation_schema
 
 
 class ImageToText(BaseService):
+    version = "2"
     slug = "image_to_text"
     name_ar = tr("ocr_name")
     name_en = tr("ocr_name", "en")
@@ -46,7 +47,7 @@ class ImageToText(BaseService):
         text = extracted.text.strip()
         if values.language != "none":
             translated = await self.runtime.ai.extract(
-                Translation, text, language=values.language, style=values.style
+                translation_schema(text), text, language=values.language, style=values.style
             )
             text = translated.text
         artifacts = []
