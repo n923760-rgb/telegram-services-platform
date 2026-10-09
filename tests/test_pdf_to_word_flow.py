@@ -43,13 +43,13 @@ async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_wo
     oid = await submit(1, "pdf_to_word", {"pdf": source.key}, price, "old-pdf-work")
     async with sessions.begin() as db:
         row = await db.get(Service, "pdf_to_word")
-        row.version, row.price_halala, row.enabled = "1", 777, True
-        (await db.get(Order, oid)).service_version = "1"
+        row.version, row.price_halala, row.enabled = "2", 777, True
+        (await db.get(Order, oid)).service_version = "2"
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "pdf_to_word")
-        assert row.version == "2" and row.price_halala == 777 and row.enabled
+        assert row.version == "3" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
