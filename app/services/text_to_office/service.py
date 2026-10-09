@@ -85,7 +85,11 @@ class TextToOffice(BaseService):
             content = (
                 word.build(plan.document, include_title=False)
                 if values.mode == "direct" and values.title is None
-                else word.build(plan.document, format_dates=values.mode != "direct")
+                else word.build(
+                    plan.document,
+                    format_dates=values.mode != "direct",
+                    professional_template=values.mode != "direct",
+                )
             )
             name = "result.docx"
             mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

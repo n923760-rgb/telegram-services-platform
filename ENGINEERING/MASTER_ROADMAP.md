@@ -1,5 +1,20 @@
 # Master engineering roadmap
 
+## Document engines adoption — 2026-10-09
+
+- OWNER DECISION: Adopt specialized deterministic tools and professional templates
+  gradually, preserve clean registry-driven architecture and default professional output.
+- FIRST SLICE: Reusable source-owned docxtpl Word template with escaped request values,
+  native tables and existing Arabic/date handling; no additional provider calls.
+- FIRST SLICE: Structural DOCX/XLSX/PPTX/PDF gate before storage/delivery, with generic
+  failure/release lifecycle regression. No financial/intake/DB contract changes.
+- PASS: 117 local database-independent checks, lint/format; 406 tests collected.
+  Synthetic single-page and all three pages of 55-row Arabic output visually inspected.
+- NOT RUN locally: Full DB/Redis CI, deployment, live provider and native Office acceptance.
+- Remaining candidates and isolated-worker sequence: [document engines](../docs/DOCUMENT_ENGINES.md).
+  See [template report](REPORTS/2026-10-09-document-templates.md). Only used dependencies
+  are installed; approval of the direction does not imply all candidates are implemented.
+
 ## PDF Arabic numeric extraction — 2026-10-09
 
 - FACT: A supplied one-page text PDF visually contains order 00123 and SAR 125.50;

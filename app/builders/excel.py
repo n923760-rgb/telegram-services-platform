@@ -8,6 +8,7 @@ from openpyxl.worksheet.table import Table as ExcelTable
 from openpyxl.worksheet.table import TableStyleInfo
 
 from app.builders.direction import is_rtl
+from app.builders.quality import validate
 from app.builders.schema import Table
 from app.builders.word import safe_text
 
@@ -174,4 +175,4 @@ def build(data: Table) -> bytes:
     sheet.oddFooter.center.text = "&P / &N"
     buffer = BytesIO()
     workbook.save(buffer)
-    return buffer.getvalue()
+    return validate(buffer.getvalue(), "xlsx")
