@@ -116,7 +116,9 @@ async def receive(user_id, invoice_payload, currency, amount, charge_id):
     Unexpected second/late/mismatched charges become refundable audit records.
     """
     if (
-        currency != "XTR"
+        type(user_id) is not int
+        or user_id <= 0
+        or currency != "XTR"
         or type(amount) is not int
         or not 1 <= amount <= 1000000
         or not isinstance(charge_id, str)
@@ -125,10 +127,12 @@ async def receive(user_id, invoice_payload, currency, amount, charge_id):
         or len(invoice_payload) > 128
     ):
         raise ServiceError("payment_invalid")
-    from app.orders.engine import register
-
-    await register(user_id)
     async with sessions.begin() as db:
+        # Register within this same DB-only retry boundary; nesting register's
+        # decorator would multiply the three-attempt cap during repeated aborts.
+        await db.execute(
+            insert(User).values(id=user_id, language="ar", banned=False).on_conflict_do_nothing()
+        )
         user = await db.scalar(select(User).where(User.id == user_id).with_for_update())
         await db.execute(
             text("SELECT pg_advisory_xact_lock(hashtextextended(:charge, 0))"),
