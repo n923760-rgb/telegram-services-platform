@@ -53,7 +53,8 @@ class Config(BaseSettings):
     def validate_config(self):
         if self.stars_enabled and (
             self.telegram_mode != "webhook"
-            or not 1 <= len(self.stars_terms_version.strip()) <= 80
+            or not 1 <= len(self.stars_terms_version) <= 80
+            or not self.stars_terms_version.strip()
             or any(
                 not 20 <= len(text) <= 2500 for text in (self.stars_terms_ar, self.stars_terms_en)
             )

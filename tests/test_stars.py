@@ -542,6 +542,7 @@ async def test_webhook_money_bypasses_dispatcher_and_notification_failure(stars,
     [
         {"telegram_mode": "polling"},
         {"stars_terms_version": " "},
+        {"stars_terms_version": " " + "v" * 80},
         {"stars_terms_ar": ""},
         {"stars_terms_en": "😀" * 2000},
         {"telegram_webhook_secret": ""},
