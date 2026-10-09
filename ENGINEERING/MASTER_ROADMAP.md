@@ -1,5 +1,23 @@
 # Master engineering roadmap
 
+## Ordered images to PDF — 2026-10-09
+
+- MERGED BASELINE: CV formatting PR #28, main `00848f7`, reviewed workflow
+  `37927874220` passed 545 tests and native Arabic/English CV worker checks.
+- CURRENT SLICE: Separate disabled-by-default `images_to_pdf`, one image per page
+  in supplied order, A4 portrait/landscape/automatic orientation and 10 mm margins.
+  EXIF orientation, alpha on white, no cropping/aspect distortion or new AI call.
+- Limits: five files, 10 MiB each/20 MiB total, 20 million total decoded pixels,
+  10 MiB output. Decode to pixels before embedding; original metadata omitted.
+- Existing Telegram intake normalizes images to 1024 pixels and JPEG quality 88;
+  this service does not restore source resolution or promise scan enhancement.
+- New tests target exact embedded pixels/order/geometry, rotation/transparency,
+  bounds/rejection, native lifecycle capture/release/ownership/cleanup/cached retry.
+- Local execution became unavailable during this round. Local image tests/visual
+  inspection NOT RUN; hosted exact-head checks required before merge and retained
+  on the task PR. Representative/mobile/client/staging acceptance remains NOT RUN.
+- Evidence: [images PDF report](REPORTS/2026-10-09-images-pdf.md).
+
 ## Valuable service expansion — 2026-10-09
 
 - OWNER DECISION: Integrate useful services gradually; paid value means a clear usable

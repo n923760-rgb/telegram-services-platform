@@ -45,7 +45,10 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng libreoffice-writer
       - run: uv sync --locked --group dev
       - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - name: Check formatting with diagnostic diff
+        run: |
+          uv run ruff format --diff .
+          uv run ruff format --check .
       - run: uv run alembic upgrade head
       - run: uv run pytest -q
       - run: uv run alembic check
@@ -61,6 +64,8 @@ jobs:
           import os
           from tests.ocr_fixtures import printed, processor
           from tests.word_pdf_fixtures import document, renderer, table_document
+          from tests.images_pdf_fixtures import picture
+          from app.builders.images_pdf import build as images_pdf
           from tests.cv_fixtures import inputs as cv_inputs
           from app.services.cv_formatting.schema import Inputs as CvInputs
           from pypdf import PdfReader
@@ -88,8 +93,13 @@ jobs:
                   assert len(pages) == 1
                   text = pages[0].extract_text()
                   assert '0500123456' in text and 'sample@example.invalid' in text
+          pages = PdfReader(BytesIO(images_pdf([picture(), picture(240, 120, color='blue')]))).pages
+          assert len(pages) == 2
+          assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
+          assert pages[1].images[0].image.getpixel((0, 0)) == (0, 0, 255)
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
+          print('Non-root worker: ordered images-to-PDF PASS with network disabled')
           PY

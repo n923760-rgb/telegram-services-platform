@@ -211,5 +211,13 @@
   "cv_education_heading": "Education",
   "cv_skills_heading": "Skills",
   "cv_additional_heading": "Certifications and additional information",
-  "cv_preview": "CV formatted from your supplied details, as Word and PDF. Review contacts, experience and dates before applying."
+  "cv_preview": "CV formatted from your supplied details, as Word and PDF. Review contacts, experience and dates before applying.",
+  "images_pdf_name": "Images to PDF",
+  "images_pdf_description": "Combine up to five images in supplied order into a PDF, one image per page with no cropping or aspect distortion. Clarity depends on received images; no OCR or resolution enhancement.",
+  "images_pdf_images": "Send images in the desired PDF page order (up to five). Use clear images and check their details before sending.",
+  "images_pdf_orientation": "Choose A4 page orientation. Automatic mode matches each page to its image.",
+  "images_pdf_auto": "Automatic per image",
+  "images_pdf_portrait": "Portrait A4",
+  "images_pdf_landscape": "Landscape A4",
+  "images_pdf_preview": "PDF with {pages} images in supplied order, without cropping or aspect distortion. Check clarity before printing or sharing."
 }
