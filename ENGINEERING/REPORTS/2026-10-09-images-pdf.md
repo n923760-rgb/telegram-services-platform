@@ -58,3 +58,8 @@ single canonical roadmap and portfolio, not an additional competing project plan
 First published head f93b913 workflow 37929605989 stopped at formatting: one new
 builder condition required canonical Ruff wrapping. Lint passed; tests/image were
 not reached. Exact diagnostic diff applied without changing behavior or checks.
+
+Second head 14823ba workflow 37929833117 passed 571 tests and native image assertions,
+but the final status print was mistakenly outside the Python heredoc, causing a
+shell syntax failure after image smoke. Move the print inside; require full new-head
+success rather than merging the failed workflow.

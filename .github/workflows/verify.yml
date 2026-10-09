@@ -101,5 +101,5 @@ jobs:
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
-          PY
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
+          PY
