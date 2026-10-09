@@ -18,14 +18,15 @@ required by project governance. No production activation is implied by source me
 | PDF tools | Merge ordered PDFs or extract selected pages, without AI; signatures/forms unsupported. |
 | Word/PDF bundle | Final text, professional template, editable DOCX plus native PDF from the same document. |
 | CV formatting | Structured final career facts, Arabic/English headings, classic single-column Word/PDF; PR #28 passed 545 hosted tests and native CV checks. |
+| Images to PDF | Ordered image pages, bounded A4 fit/orientation and received-pixel preservation; PR #29 passed 571 tests and native image checks. |
 
 ## Current integration queue
 
 | Priority | Service | Value and acceptance required |
 | --- | --- | --- |
 | 1 | CV formatting (merged, disabled) | Structured actual career details, classic single-column Word/PDF, Arabic or English headings. Formatting only; no invented facts, translation or ATS/job outcome guarantee. Native content/layout and capture/release tests required. |
-| 2 | Images to PDF (current slice) | Ordered pages, EXIF orientation, consistent A4 layout and original aspect ratio. Quality bounded by uploaded image resolution; no OCR or scan-enhancement promise. |
-| 3 | Meeting-note organization | Decisions/actions grouped from source notes with traceable references, no invented assignees/deadlines. Requires source-bound extraction/schema repair and real-provider semantic qualification. |
+| 2 | Images to PDF (merged, disabled) | Ordered pages, EXIF orientation, consistent A4 layout and original aspect ratio. Quality bounded by uploaded image resolution; no OCR or scan-enhancement promise. |
+| 3 | Meeting-note organization (current slice) | Decisions/actions grouped from source notes with traceable references, no invented assignees/deadlines. Requires source-bound extraction/schema repair and real-provider semantic qualification. |
 | 4 | Spreadsheet cleanup/report | Preserve original IDs, blanks, zero/duplicates; explicit normalization rules and audit sheet. No inferred totals/data deletion or executable customer formulas. Native Excel/mobile acceptance required. |
 | 5 | CV writing/translation | Evidence-bound rewriting of supplied career facts, with review before delivery. Requires factual/source checks and real Arabic/English provider acceptance beyond formatting. |
 | 6 | Study revision pack | Source-bound summary, revision questions and answers with references. Requires omission/fact checks; never fabricate external sources. |

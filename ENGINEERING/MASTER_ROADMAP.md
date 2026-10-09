@@ -1,5 +1,39 @@
 # Master engineering roadmap
 
+## Current service expansion verification — 2026-10-09
+
+- MERGED: CV formatting PR #28 at 00848f7; reviewed workflow 37927874220 and
+  merged-main 37928968731 passed 545 tests/native Arabic-English CV worker checks.
+- MERGED: Images PDF PR #29 at 30ec14c; reviewed workflow 37930551954 and
+  merged-main 37931140860 passed 571 tests/native ordered pixel checks.
+- CURRENT PR #30: Source-bound meeting-note categories, every source ID visible
+  in review, mandatory approval before native Word/PDF; no invented fields/content.
+- PASS: Local execution recovered; exact implementation head 27423a9 passes 73
+  independent cases (CV 20/images 19/minutes 19/Word-PDF 12/governance 3), lint/format.
+- PASS: Native AR/EN minute PDFs and both pages of synthetic receipt/review image PDF
+  rendered and visually inspected. Earlier local unavailability is historical below.
+- Require exact-head hosted lifecycle/image success before PR #30 merge. Live AI
+  category accuracy, representative/native Office/mobile/Telegram/staging/server
+  deployment and service activation remain separate NOT RUN gates. All new plugins
+  default disabled; SAR values remain administrator-issued test credit.
+- Service contracts and next priorities: docs/SERVICE_PORTFOLIO.md; see linked reports.
+
+## Source-bound meeting note organization — 2026-10-09
+
+- MERGED BASELINE: Images PDF PR #29, main `30ec14c`, reviewed
+  workflow `37930551954` passed 571 tests and network-disabled ordered image checks.
+- CURRENT SLICE: Independent disabled `meeting_minutes` classifies existing note
+  IDs only; every note exactly once, no generated assignees/deadlines/free text.
+- Customer reviews counts/sample categories before Word/PDF creation. Confirmation
+  resumes without another AI call; source notes retained with traceable IDs.
+- Prompt treats ambiguous/mixed notes as review. Category correctness still needs
+  live-provider/customer acceptance; structural coverage is not semantic proof.
+- Uses existing job AI budget/one repair, confirmation, abstract renderer and
+  financial policy. 80 notes/12,000 characters, no audio/transcription or translation.
+- Local execution unavailable: local/visual checks NOT RUN. Exact-head hosted
+  lifecycle/native worker checks required before merge; enablement remains separate.
+- Evidence: [meeting minutes](REPORTS/2026-10-09-meeting-minutes.md).
+
 ## Ordered images to PDF — 2026-10-09
 
 - MERGED BASELINE: CV formatting PR #28, main `00848f7`, reviewed workflow

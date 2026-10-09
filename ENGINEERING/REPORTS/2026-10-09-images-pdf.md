@@ -63,3 +63,21 @@ Second head 14823ba workflow 37929833117 passed 571 tests and native image asser
 but the final status print was mistakenly outside the Python heredoc, causing a
 shell syntax failure after image smoke. Move the print inside; require full new-head
 success rather than merging the failed workflow.
+
+## Follow-up after local execution recovered
+
+- PASS: Exact published implementation head 27423a9 checked out separately; preserve
+  the earlier incomplete image worktree. Fresh source tree 98aa86bdd5cf04e68cce642e3d107b4111ec4b88.
+- PASS: 73 independent local cases: 20 CV, 19 images PDF, 19 minutes, 12 existing
+  Word/PDF pair and three architecture gates. Lint/format also pass.
+- PASS: Synthetic receipt/review PNGs exported to a two-page portrait A4 PDF;
+  both pages rendered with Poppler and visually inspected, with readable complete
+  source dates/leading-zero IDs/amount and no crop. This does not restore original
+  camera resolution or qualify representative Telegram/customer/native-mobile output.
+- PASS hosted image slice: reviewed workflow 37930551954/job 113819902555 and
+  merged-main 37931140860/job 113821860919 passed 571 tests and every worker gate.
+  Merged image source 30ec14c419a6712200d3d63920d6d42c025a2cd5.
+
+The earlier NOT RUN local entries describe initial preparation; the follow-up above
+supersedes them for these synthetic checks. Full DB/Redis/image build remain NOT RUN
+locally; hosted and representative/live-provider/staging evidence remain distinct.
