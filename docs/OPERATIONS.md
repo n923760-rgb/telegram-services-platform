@@ -63,3 +63,11 @@ Revised-spec controls:
 Terminal file deletion has a durable files_deleted marker and a 20-second/startup recovery sweep.
 Cleanup failures keep the marker pending. Storage implementations own TTL expiry; Telegram delivery
 reads through the storage interface rather than assuming a local filesystem path.
+
+CI pulls Docker Official Images from Docker's Amazon ECR Public registry to avoid
+Docker Hub anonymous pull limits. The document-worker build selects the Python image
+through `PYTHON_IMAGE`; the default Dockerfile and Compose builds still use `python:3.12-slim`.
+No registry credentials or image publication are required. See
+https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/.
+Registry outages must be resolved and the full workflow rerun; do not skip financial tests
+or the non-root, network-disabled native worker qualification to obtain a passing check.
