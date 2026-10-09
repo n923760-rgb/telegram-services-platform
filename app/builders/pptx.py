@@ -8,6 +8,7 @@ from pptx.util import Inches, Pt
 
 from app.builders.direction import has_arabic, is_rtl
 from app.builders.pptx_layout import FONT, plan_slide
+from app.builders.quality import validate
 from app.builders.schema import Deck
 from app.builders.word import safe_text
 
@@ -172,4 +173,4 @@ def build(data: Deck) -> bytes:
 
     buffer = BytesIO()
     prs.save(buffer)
-    return buffer.getvalue()
+    return validate(buffer.getvalue(), "pptx")

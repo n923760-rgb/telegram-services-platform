@@ -12,6 +12,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 from app.builders.direction import is_rtl
+from app.builders.quality import validate
 from app.builders.schema import Document
 from app.builders.word import DATE_TOKEN, safe_text
 
@@ -155,4 +156,4 @@ def build(data: Document, *, include_title: bool = True) -> bytes:
     while story and isinstance(story[-1], Spacer):
         story.pop()
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
-    return buffer.getvalue()
+    return validate(buffer.getvalue(), "pdf")

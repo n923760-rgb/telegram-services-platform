@@ -11,8 +11,10 @@ from docx.shared import Cm, Pt, RGBColor
 from docx.text.run import Run
 
 from app.builders.direction import is_rtl
+from app.builders.quality import validate
 from app.builders.schema import Document
 from app.builders.word_schema import WordDocument, WordTable
+from app.builders.word_template import render
 
 BODY_FONT = "DejaVu Sans"
 DARK = RGBColor(0, 0, 0)
@@ -183,9 +185,17 @@ def _page_number_footer(document):
     run._r.append(end)
 
 
-def build(data: Document, *, include_title: bool = True, format_dates: bool = False) -> bytes:
+def build(
+    data: Document,
+    *,
+    include_title: bool = True,
+    format_dates: bool = False,
+    professional_template: bool = False,
+) -> bytes:
     data = WordDocument.model_validate(data.model_dump() if isinstance(data, Document) else data)
-    doc = Word()
+    doc, slots = (
+        render(data, include_title=include_title) if professional_template else (Word(), {})
+    )
     title_properties = doc.styles["Title"].element.get_or_add_pPr()
     for border in list(title_properties.findall(qn("w:pBdr"))):
         title_properties.remove(border)
@@ -206,9 +216,30 @@ def build(data: Document, *, include_title: bool = True, format_dates: bool = Fa
     section.left_margin = Cm(2.5)
     section.right_margin = Cm(2.5)
 
-    if include_title:
+    if professional_template:
+        for paragraph in list(doc.paragraphs):
+            if paragraph.text in slots:
+                table = slots.pop(paragraph.text)
+                previous = paragraph._p.getprevious()
+                if not table.caption and previous is not None and previous.tag == qn("w:tbl"):
+                    spacer = doc.add_paragraph()
+                    spacer.paragraph_format.space_after = Pt(4)
+                    spacer.paragraph_format.line_spacing = Pt(4)
+                    _direction(spacer, False)
+                    paragraph._p.addprevious(spacer._p)
+                before = set(doc.element.body)
+                _table(doc, table)
+                for element in list(doc.element.body):
+                    if element not in before:
+                        paragraph._p.addprevious(element)
+                doc.element.body.remove(paragraph._p)
+            else:
+                _direction(paragraph, is_rtl(paragraph.text))
+        if slots:
+            raise ValueError("unfilled professional table slots")
+    elif include_title:
         _heading(doc, data.title, 0)
-    for part in data.sections:
+    for part in [] if professional_template else data.sections:
         if part.heading:
             _heading(doc, part.heading, 1)
         for paragraph in part.paragraphs:
@@ -230,7 +261,9 @@ def build(data: Document, *, include_title: bool = True, format_dates: bool = Fa
             ),
         ]
         for paragraph in paragraphs:
-            if paragraph._p.pPr.find(qn("w:bidi")).get(qn("w:val")) == "1":
+            properties = paragraph._p.pPr
+            bidi = properties.find(qn("w:bidi")) if properties is not None else None
+            if bidi is not None and bidi.get(qn("w:val")) == "1":
                 for run in paragraph.runs:
                     if DATE_TOKEN.fullmatch(run.text):
                         # Strong LTR boundaries are portable to Word and LibreOffice.
@@ -239,4 +272,4 @@ def build(data: Document, *, include_title: bool = True, format_dates: bool = Fa
     _page_number_footer(doc)
     buffer = BytesIO()
     doc.save(buffer)
-    return buffer.getvalue()
+    return validate(buffer.getvalue(), "docx")
