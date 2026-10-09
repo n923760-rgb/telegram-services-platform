@@ -24,20 +24,60 @@ adoption record; an approved candidate is not an installed or qualified feature.
   schema migration. Professional planning still requires the existing AI call; template
   rendering adds none. A failed gate follows the existing generic failure/release path.
 
-## Next bounded slices
+## Local printed-text recognition
 
-The next source slice implements merge and selected-page extraction through the
+The merged PDF slice implements merge and selected-page extraction through the
 new `pdf_tools` plugin with existing pypdf, without introducing qpdf or AI. It has
 bounded multifile intake, preserves page content/order and rejects forms/signatures.
 It remains disabled until operator acceptance. This does not qualify the remaining
 candidates below or claim production deployment.
+
+The next bounded source slice adds an independent `local_ocr` plugin (disabled by
+default), using an injected `DocumentProcessor` and native Tesseract. Select Arabic,
+English or mixed source text, without translation or AI fallback. Existing vision OCR
+remains available under its existing gate. SAR 2.00 is administrator-issued test credit.
+
+Native packages are installed only in the `document-worker` Docker target; Compose
+selects that target for the existing worker. Bot/API/migrations retain the lean image.
+Each worker process serializes local OCR with a five-second queue wait. Each native
+child has 512 MiB address-space, 20-second CPU and 2 MiB output-file limits, one
+OpenMP thread and a 25-second wall timeout. Cancellation/timeout kills and reaps the
+process group before removing its private temporary directory. These are process
+bounds, not a sandbox or complete worker/container resource quota. Multiple worker
+processes have independent slots. Queue pressure uses the existing bounded job retry.
+
+Intake limits: five images, 10 MiB each/20 MiB total, existing decoded-pixel/EXIF
+validation and 1024-pixel normalization, maximum 50,000 output characters. Dense
+pages, handwriting, tables and layout reconstruction are unqualified. TSV words
+retain native line order, with no numeric rewriting; character-weighted confidence
+below 0.70 or a numeric word below 0.85 rejects the request. These scores are only
+heuristics: a confidently incorrect recognition can pass. The result asks users to
+compare text/numbers with the source. Long text includes a UTF-8 TXT download.
+No original page structure, translation or Word reconstruction is promised.
+
+Synthetic native fixtures qualify a small printed-text case in Arabic, English and
+mixed mode; English fixture compares an identifier with leading zeros, amount and
+date exactly. Full CI adds native lifecycle checks and builds/runs the non-root
+worker image with network disabled. Representative customer images, real Telegram
+staging, throughput and server installation remain separate acceptance gates.
+
+Tesseract upstream: https://github.com/tesseract-ocr/tesseract (Apache-2.0).
+Language data upstream: https://github.com/tesseract-ocr/tessdata_fast (Apache-2.0).
+Use the distribution's `tesseract-ocr`, `tesseract-ocr-ara`, `tesseract-ocr-eng`
+packages; retain their packaged copyright/license notices. No model weights or
+upstream implementation are vendored. Package versions come from the base image's
+distribution repositories; image-build qualification does not freeze these versions.
+See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html for the native
+interface and https://tesseract-ocr.github.io/tessdoc/Installation.html for packages.
+
+## Remaining candidates
 
 | Candidate | Decision and qualification required |
 | --- | --- |
 | XlsxWriter | Already installed transitively by python-pptx; explicitly declare it only when used for a measured feature. Retain openpyxl for reading/editing and the current working renderer. Compare native charts/formatting with source-preservation and phone Excel acceptance. |
 | PptxGenJS | Compare representative editable Arabic layouts before adding a second language/runtime. Current native python-pptx density safeguards remain the baseline. |
 | LibreOffice / unoserver | Next conversion/preview slice in an isolated worker, with serialized execution, hard process timeout, resource limits and temporary-file cleanup. Do not put a listener in the bot or expose it publicly. |
-| Tesseract | Benchmark Arabic/English source fixtures first. Job-scoped local OCR provider, bounded decoded pixels and queue limits; do not assume confidence alone proves accuracy. AI fallback must reserve its cost before execution. |
+| Tesseract | Bounded local provider and printed-image plugin in this source slice. Require representative Arabic/English customer-image acceptance before enablement. No automatic AI fallback. |
 | OCRmyPDF | Searchable scanned-PDF service after the isolated conversion/OCR worker exists. Review licenses of the exact installed components and test large/mixed PDFs. |
 | qpdf | No extra installation for merge/extract: pypdf serves the new bounded plugin. Consider qpdf only for an unmet operation; preserve generic multifile intake. |
 | WeasyPrint | Introduce only for an approved HTML/CSS PDF design unmet by ReportLab. Restrict URL fetching, fonts, input size and execution resources; preserve the tested Arabic/date baseline. |

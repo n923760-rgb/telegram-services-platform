@@ -1,5 +1,19 @@
 # Master engineering roadmap
 
+## Local printed-text OCR — 2026-10-09
+
+- MERGED BASELINE: PR #25 at `02d11c8`; exact-head workflow `37918022653`
+  and merged-main workflow `37918332000` passed 439 tests and all existing gates.
+- NEXT SLICE: Independent default-disabled local OCR plugin, injected document provider
+  and worker-only Tesseract packages. No AI calls, translation or automatic fallback.
+- Limits: five images/20 MiB total, existing 1024-pixel normalization; serialized
+  subprocesses with CPU/memory/output/wall limits and cancellation cleanup.
+- PASS: 33 local independent tests, including actual Arabic/English/mixed native OCR
+  and exact English identifier/amount/date matching; full suite collects 481 tests.
+- Hosted lifecycle, migration/drift, Compose and actual worker image checks required
+  before merge. Representative images, Telegram staging and deployment NOT RUN.
+- Evidence: [local OCR report](REPORTS/2026-10-09-local-ocr.md).
+
 ## Deterministic PDF utilities — 2026-10-09
 
 - MERGED: PR #24 at `27d67a6`; exact-head workflow `37917138383` passed 406 tests,

@@ -54,6 +54,9 @@ services:
       retries: 3
   worker:
     <<: *app
+    build:
+      context: .
+      target: document-worker
     command: [arq, app.workers.main.WorkerSettings]
     healthcheck:
       test: [CMD, python, -m, app.ops.healthcheck, worker]
