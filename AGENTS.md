@@ -107,8 +107,8 @@ Keep local build evidence separate from hosted CI and real Telegram/provider qua
 
 ## Current phase
 Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
-Baseline main 6415e57 includes the mixed-PDF safeguard; its workflow passed 355 tests.
-Current bounded round preserves numeric tokens during OCR translation with existing bounded repair.
+Baseline main 6ce0c5e includes OCR numeric safeguards; its workflow passed 383 tests.
+Current bounded round removes overlapping worksheet/native-table Excel filters.
 Keep Office/provider visual acceptance separate from schema, font metrics and mocked lifecycle tests.
 PR #5 PDF-to-Word is merged and remains disabled by default.
 Keep original page-layout/OCR reconstruction out of this text-based conversion; require representative real-provider acceptance before enabling it.

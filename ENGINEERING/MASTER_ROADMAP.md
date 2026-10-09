@@ -215,16 +215,33 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 
 - FACT: The old translation model validates JSON/text length, but accepts changed amounts,
   dropped identifier zeros, missing/extra numbers and reformatted dates.
-- IMPLEMENTED ON TASK BRANCH: Request-local translation validation compares literal numeric
+- MERGED PR #20: Request-local translation validation compares literal numeric
   tokens and their occurrence counts with the extracted text. Schema instructions preserve
   signs/separators/date notation/percentages and digit script; existing one-repair flow applies.
 - FACT: Version 2; unchanged input fields, price/default gates, renderer, provider and financial
   policy. Old pending version-1 work releases; admin settings remain intact.
 - PASS: 26 focused local schema/plugin/governance tests; 383 tests collected. Hosted cases
   cover repair, failure release, single capture, cost recording and cached TXT/DOCX delivery.
-- NOT RUN: Hosted full suite, live image/source fidelity, semantic translation and native Word
-  acceptance. Matching numbers alone does not verify their associations, names, units or prose.
+- PASS: Reviewed head `ea3b7d0` workflow `37832745093` and merged main `6ce0c5e`
+  workflow `37862487540` passed 383 tests, lint/format, migrations/drift and Compose validation.
+- NOT RUN: Live image/source fidelity, semantic translation and native Word acceptance.
+  Matching numbers alone does not verify their associations, names, units or prose.
 - Evidence: [OCR translation report](REPORTS/2026-10-08-ocr-translation-numbers.md).
+
+## Excel filter interoperability round — 2026-10-09
+
+- OPERATOR-REPORTED: Main `6ce0c5e` deployed with backup/migrations PASS, healthy application
+  containers and `/health` ok. Actual uploaded XLSX retains the four synthetic source rows,
+  IDs, dates, blank amount, zero and duplicate row, but Excel on iPhone requests repair and
+  the owner reports recovery cannot open it. Native Excel acceptance is FAIL, not qualified.
+- FACT: Both worksheet and native-table filters cover exactly the same range in the upload
+  and current builder. Three new tests reproduce this filter-ownership defect before the fix.
+- FIX ON TASK BRANCH: Remove only the overlapping worksheet filter; keep the native Records
+  table and its filter. Existing values, formatting, RTL, print settings and freeze panes stay.
+- INFERENCE: This known interop defect may explain the reported failure. Native iPhone
+  opening/edit/save/reopen still must confirm the fix; no repaired-output claim is made.
+- NOT RUN: Final hosted checks and post-fix native Excel/provider qualification.
+- Evidence: [filter interoperability report](REPORTS/2026-10-09-excel-filter-ownership.md).
 
 ## Architecture and state owners
 
@@ -278,7 +295,8 @@ Do not purchase infrastructure, merge, tag, release or deploy implicitly.
 ## Exact immediate next round
 
 Verify the latest main workflow before using that source for runtime qualification.
-Complete the OCR translation numeric safeguard and inspect its source-bound hosted checks.
+Complete the Excel filter-ownership fix and inspect its source-bound hosted checks.
+Retest the same synthetic source in native Excel before considering Excel qualified.
 Qualify professional Word, Excel and PowerPoint against supplied source and native Office;
 keep literal Word/PDF checks distinct. The all-service quality request supersedes the earlier
 Excel/PowerPoint deferral. Continue PDF/OCR fidelity rounds within their approved contracts.
