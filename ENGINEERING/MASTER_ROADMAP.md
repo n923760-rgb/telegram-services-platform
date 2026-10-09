@@ -1,5 +1,24 @@
 # Master engineering roadmap
 
+## Native Word/PDF bundle — 2026-10-09
+
+- MERGED BASELINE: PR #26 at `b1f86fe`; reviewed workflow `37920858118` and
+  merged-main workflow `37921298499` passed 481 tests, migrations/drift, Compose
+  and non-root worker image build with actual Arabic/English/mixed OCR.
+- NEXT SLICE: Separate default-disabled `text_to_word_pdf` formats final text with
+  the source-owned Word template and exports that same DOCX through LibreOffice.
+  No AI calls, rewriting, translation, uploaded Office parsing or core service branches.
+- Shared native capacity serializes OCR/export; per-request profile and temporary
+  files, fixed headless export, CPU/address-space/output/wall limits and group cleanup.
+- REPRODUCED/FIXED: Native PDF visually reversed an Arabic-adjacent ISO date despite
+  correct text extraction. Existing date-direction formatting fixes the new renderer;
+  an actual glyph-position regression test failed before and passed after the fix.
+- PASS: 25 new independent cases plus existing OCR/architecture regressions: 61 cases;
+  single-page Arabic/bilingual sample and all three pages of a 55-row table inspected.
+- Full suite collects 516 tests. Exact-head hosted lifecycle/image checks required
+  before merge; real Telegram, native Office and server deployment remain NOT RUN.
+- Evidence: [Word/PDF bundle](REPORTS/2026-10-09-word-pdf-bundle.md).
+
 ## Local printed-text OCR — 2026-10-09
 
 - MERGED BASELINE: PR #25 at `02d11c8`; exact-head workflow `37918022653`

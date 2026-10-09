@@ -32,7 +32,7 @@ bounded multifile intake, preserves page content/order and rejects forms/signatu
 It remains disabled until operator acceptance. This does not qualify the remaining
 candidates below or claim production deployment.
 
-The next bounded source slice adds an independent `local_ocr` plugin (disabled by
+The merged OCR slice adds an independent `local_ocr` plugin (disabled by
 default), using an injected `DocumentProcessor` and native Tesseract. Select Arabic,
 English or mixed source text, without translation or AI fallback. Existing vision OCR
 remains available under its existing gate. SAR 2.00 is administrator-issued test credit.
@@ -70,13 +70,66 @@ distribution repositories; image-build qualification does not freeze these versi
 See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html for the native
 interface and https://tesseract-ocr.github.io/tessdoc/Installation.html for packages.
 
+## Source-owned Word/PDF export
+
+Next bounded source slice: separate `text_to_word_pdf`, disabled by default, SAR 3.00
+administrator-issued test credit. It accepts final text plus optional title, applies
+our professional Word template and exports that same DOCX with native LibreOffice.
+It does not rewrite/translate text or accept Office uploads. Existing AI services
+and their prices/contracts remain unchanged. The injected renderer accepts typed
+WordDocument data; raw uploaded Office bytes are rejected. Only our builder creates
+DOCX input. Do not reuse the lightweight artifact gate as an upload security boundary.
+
+Reuse the builder's date-direction formatting: invisible LTR marks around recognized
+date runs in Arabic paragraphs/table cells prevent reversed visual dates. Content
+is not rewritten, but formatted DOCX is not character-for-character identical due
+to these direction marks. PDF text extraction alone can miss reversed glyph order;
+a native regression checks positions as well as source numbers. Native Word views
+may paginate differently because their fonts/rendering engines differ.
+
+LibreOffice Writer is installed only in the document-worker target. OCR/export
+share one slot per ARQ worker loop, with five-second queue admission and existing
+bounded retries. Each export child has 1 GiB address-space, 60 CPU seconds, 90 wall
+seconds, 10 MiB per-file output and zero core dumps. Private fresh user profile with
+high macro security; supported LibreOffice launcher handles cold-profile startup,
+fixed headless writer_pdf_Export command, no UNO listener,
+no customer command/filter/path options, child credentials/environment cleared.
+Success/failure/cancellation reaps the launcher and kills remaining process-group
+children before temporary cleanup. These are process bounds, not a sandbox or
+aggregate container quota; worker replicas have independent capacity.
+
+Inputs: 12,000 characters, optional 200-character single-line title; export at most
+50 pages and 10 MiB. Validate DOCX and PDF structurally before owner-bound storage;
+render both in memory before saving either. If a later save fails, attempt deletion
+of earlier saved artifacts; crash/deletion failure can leave unreferenced files for
+the existing TTL sweep. Required delivery includes both files before credit capture.
+Retry uses prepared files; at-least-once delivery can duplicate Word if PDF sending
+failed after Word was accepted. No exactly-once or deployment claim.
+
+CI installs Writer for mandatory native tests and builds/runs the real non-root
+worker image with network disabled. Local developer LibreOfficeDev 26.8 alpha
+qualification is distinct from distribution-packaged Ubuntu/Debian image checks.
+Synthetic Arabic/bilingual text and a 55-row native table cover numeric/date and
+page bounds, embedded fonts, repeated headers and visual review; representative
+customer layouts/native Office/staging/load acceptance remain separate.
+
+Upstream: https://www.libreoffice.org/licenses/ and
+https://help.libreoffice.org/latest/en-US/text/shared/guide/start_parameters.html.
+LibreOffice is available under MPL-2.0, with additional component licenses; retain
+distribution copyright/license notices and source access (distribution source
+packages or https://www.libreoffice.org/download/download-libreoffice/).
+No upstream code is vendored or modified; no unoserver listener is installed.
+Package versions come from the distribution repositories and are not frozen by a
+successful image-build check. Conversion of arbitrary Office uploads requires a
+separate security/format qualification and is outside this contract.
+
 ## Remaining candidates
 
 | Candidate | Decision and qualification required |
 | --- | --- |
 | XlsxWriter | Already installed transitively by python-pptx; explicitly declare it only when used for a measured feature. Retain openpyxl for reading/editing and the current working renderer. Compare native charts/formatting with source-preservation and phone Excel acceptance. |
 | PptxGenJS | Compare representative editable Arabic layouts before adding a second language/runtime. Current native python-pptx density safeguards remain the baseline. |
-| LibreOffice / unoserver | Next conversion/preview slice in an isolated worker, with serialized execution, hard process timeout, resource limits and temporary-file cleanup. Do not put a listener in the bot or expose it publicly. |
+| LibreOffice / unoserver | Source-owned Word/PDF export implemented in this slice, with serialized headless subprocesses and limits. No listener or uploaded Office conversion. Qualify further formats separately. |
 | Tesseract | Bounded local provider and printed-image plugin in this source slice. Require representative Arabic/English customer-image acceptance before enablement. No automatic AI fallback. |
 | OCRmyPDF | Searchable scanned-PDF service after the isolated conversion/OCR worker exists. Review licenses of the exact installed components and test large/mixed PDFs. |
 | qpdf | No extra installation for merge/extract: pypdf serves the new bounded plugin. Consider qpdf only for an unmet operation; preserve generic multifile intake. |

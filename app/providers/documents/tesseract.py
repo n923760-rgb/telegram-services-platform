@@ -1,33 +1,14 @@
 import asyncio
 import os
-import signal
-import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from weakref import WeakKeyDictionary
 
 from app.files.validation import image
 from app.providers.documents.base import DocumentError, DocumentProcessor, Language, Recognition
+from app.providers.documents.execution import run_child, slot
 from app.providers.documents.tsv import MAX_OUTPUT, MAX_TEXT, parse
 
-_slots = WeakKeyDictionary()
 LANGUAGES = {"ar": "ara", "en": "eng", "mixed": "ara+eng"}
-
-
-def slot():
-    loop = asyncio.get_running_loop()
-    if loop not in _slots:
-        _slots[loop] = asyncio.Semaphore(1)
-    return _slots[loop]
-
-
-async def stop(process):
-    if process.returncode is None:
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-    await process.wait()
 
 
 class TesseractDocuments(DocumentProcessor):
@@ -67,35 +48,16 @@ class TesseractDocuments(DocumentProcessor):
         with TemporaryDirectory(prefix="document-ocr-") as directory:
             source, target = Path(directory) / "input.jpg", Path(directory) / "output"
             source.write_bytes(data)
-            args = [
-                sys.executable,
-                "-m",
-                "app.providers.documents.runner",
-                str(source),
-                str(target),
-                language,
-            ]
+            args = [str(source), str(target), language]
             if self.tessdata_dir is not None:
                 args.append(str(self.tessdata_dir))
-            try:
-                process = await asyncio.create_subprocess_exec(
-                    *args,
-                    stdout=asyncio.subprocess.DEVNULL,
-                    stderr=asyncio.subprocess.DEVNULL,
-                    start_new_session=True,
-                )
-            except OSError:
-                raise DocumentError("local_ocr_unavailable") from None
-            try:
-                await asyncio.wait_for(process.wait(), timeout=25)
-            except TimeoutError:
-                await stop(process)
-                raise DocumentError("local_ocr_timeout") from None
-            except asyncio.CancelledError:
-                await stop(process)
-                raise
-            if process.returncode != 0:
-                raise DocumentError("local_ocr_unavailable")
+            await run_child(
+                "app.providers.documents.runner",
+                args,
+                timeout=25,
+                unavailable_key="local_ocr_unavailable",
+                timeout_key="local_ocr_timeout",
+            )
             output = target.with_suffix(".tsv")
             if not output.is_file() or output.stat().st_size > MAX_OUTPUT:
                 raise DocumentError("local_ocr_limit")
