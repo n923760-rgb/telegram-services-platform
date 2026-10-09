@@ -269,6 +269,15 @@ def build(
                         # Strong LTR boundaries are portable to Word and LibreOffice.
                         # Only professional mode adds these invisible formatting marks.
                         run.text = "\u200e" + run.text + "\u200e"
+    if data.alignment != "auto":
+        # Align the document edge consistently while preserving each paragraph's script direction.
+        for paragraph in doc.paragraphs:
+            properties = paragraph._p.get_or_add_pPr()
+            bidi = properties.find(qn("w:bidi"))
+            rtl = bidi is not None and bidi.get(qn("w:val")) == "1"
+            properties.find(qn("w:jc")).set(
+                qn("w:val"), "start" if (data.alignment == "right") == rtl else "end"
+            )
     _page_number_footer(doc)
     buffer = BytesIO()
     doc.save(buffer)

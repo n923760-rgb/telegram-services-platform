@@ -61,6 +61,8 @@ jobs:
           import os
           from tests.ocr_fixtures import printed, processor
           from tests.word_pdf_fixtures import document, renderer, table_document
+          from tests.cv_fixtures import inputs as cv_inputs
+          from app.services.cv_formatting.schema import Inputs as CvInputs
           from pypdf import PdfReader
           from io import BytesIO
           assert os.getuid() == 10001
@@ -80,7 +82,14 @@ jobs:
               assert 2 <= len(pages) <= 5
               text = '\n'.join(page.extract_text() for page in pages)
               assert all(text.count(f'{index:05d}') == 1 for index in range(100, 155))
+              for language in ('ar', 'en'):
+                  cv = await renderer().word_pdf(CvInputs.parse(cv_inputs(language)).document())
+                  pages = PdfReader(BytesIO(cv.pdf)).pages
+                  assert len(pages) == 1
+                  text = pages[0].extract_text()
+                  assert '0500123456' in text and 'sample@example.invalid' in text
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
+          print('Non-root worker: Arabic and English CV PASS with network disabled')
           PY
