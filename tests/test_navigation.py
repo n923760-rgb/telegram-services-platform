@@ -442,6 +442,7 @@ async def test_service_buttons_show_name_and_price_only_at_confirmation(flow, la
         service.name_ar = "خدمة تجريبية PDF إلى Excel"
         service.name_en = "PDF to Excel demo"
     await message("/services")
+    await callback("catalog:other:0")
     markup = transport.messages[-1].reply_markup
     control = next(
         b for row in markup.inline_keyboard for b in row if b.callback_data == "service:echo"

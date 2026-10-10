@@ -649,6 +649,7 @@ async def test_real_dispatcher_terms_invoice_recovery_and_admin_denial(stars, la
         )
 
     await message("/services")
+    await callback("catalog:other:0")
     async with sessions() as db:
         service = await db.get(Service, "echo")
         expected_name = service.name_ar if language == "ar" else service.name_en

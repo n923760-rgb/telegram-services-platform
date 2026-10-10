@@ -9,6 +9,7 @@ from app.services.document_image_enhancement.schema import Inputs
 
 class DocumentImageEnhancement(BaseService):
     slug = "document_image_enhancement"
+    category = "images"
     name_ar = tr("document_image_name")
     name_en = tr("document_image_name", "en")
     description_ar = tr("document_image_description")

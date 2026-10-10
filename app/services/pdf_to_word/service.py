@@ -15,6 +15,7 @@ from app.services.pdf_to_word.schema import Inputs, WordPlan
 class PdfToWord(BaseService):
     version = "3"
     slug = "pdf_to_word"
+    category = "documents"
     name_ar = tr("pdf_to_word_name")
     name_en = tr("pdf_to_word_name", "en")
     description_ar = tr("pdf_to_word_description")

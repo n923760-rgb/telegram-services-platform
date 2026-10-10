@@ -8,6 +8,7 @@ from app.services.document_results import word_pdf_result
 
 class CvFormatting(BaseService):
     slug = "cv_formatting"
+    category = "professional"
     name_ar = tr("cv_name")
     name_en = tr("cv_name", "en")
     description_ar = tr("cv_description")

@@ -105,7 +105,9 @@ async def test_english_user_gets_localized_menu_and_service_names():
     await message("/start")
     assert transport.messages[-1].text == tr("welcome", "en")
     await callback("menu:services")
-    assert transport.messages[-1].text == tr("choose_service", "en")
+    assert transport.messages[-1].text == tr("catalog_choose", "en")
+    await callback("catalog:other:0")
+    assert tr("choose_service", "en") in transport.messages[-1].text
     button_texts = [
         button.text for row in transport.messages[-1].reply_markup.inline_keyboard for button in row
     ]

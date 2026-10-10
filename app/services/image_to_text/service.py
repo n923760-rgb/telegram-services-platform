@@ -11,6 +11,7 @@ from app.services.image_to_text.schema import Extracted, Inputs, translation_sch
 class ImageToText(BaseService):
     version = "2"
     slug = "image_to_text"
+    category = "images"
     name_ar = tr("ocr_name")
     name_en = tr("ocr_name", "en")
     description_ar = tr("ocr_description")

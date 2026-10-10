@@ -9,6 +9,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 
+from app.bot.catalog import parse_callback
+from app.bot.catalog import view as catalog_view
 from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, section_controls
 from app.core.db import sessions
 from app.core.display import message_parts, order_reference, result_preview
@@ -49,7 +51,7 @@ def create_router():
         await callback.answer()
         await home(callback.message, state, callback.from_user.id, lang)
 
-    async def show_services(message, state, lang):
+    async def show_services(message, state, lang, *, category=None, page=0):
         await leave_support(state)
         async with sessions() as db:
             rows = (
@@ -59,11 +61,9 @@ def create_router():
             ).all()
         if config().stars_enabled:
             rows = [service for service in rows if service.price_stars is not None]
-        items = [(s.name_ar if lang == "ar" else s.name_en, f"service:{s.slug}") for s in rows]
+        text, items = catalog_view(rows, lang, category=category, page=page)
         items.extend(await section_controls(state, lang))
-        await message.answer(
-            tr("choose_service" if rows else "no_services", lang), reply_markup=buttons(items)
-        )
+        await message.answer(text, reply_markup=buttons(items))
 
     @router.message(Command("services"))
     @router.message(MenuButton("services"))
@@ -74,6 +74,15 @@ def create_router():
     async def services_callback(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await callback.answer()
         await show_services(callback.message, state, lang)
+
+    @router.callback_query(F.data.startswith("catalog:"))
+    async def category_callback(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        parsed = parse_callback(callback.data)
+        if parsed is None:
+            await callback.answer(tr("invalid_request", lang))
+            return
+        await callback.answer()
+        await show_services(callback.message, state, lang, category=parsed[0], page=parsed[1])
 
     async def show_balance(message, state, user_id, lang):
         await leave_support(state)
