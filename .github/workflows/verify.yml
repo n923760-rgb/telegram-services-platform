@@ -82,6 +82,7 @@ jobs:
           from io import BytesIO
           from PIL import Image
           from app.providers.documents.previews import PdfPreviews
+          from app.builders.document_image import build as enhance_image
           assert os.getuid() == 10001
           async def verify():
               for language, text in [
@@ -91,6 +92,13 @@ jobs:
               ]:
                   result = await processor().recognize([printed(text)], language)
                   assert result.text.replace('\u200f', '') == text
+              for mode in ("contrast", "grayscale"):
+                  expected = "Invoice 00123\nTotal 125.50\nDate 2026-10-09"
+                  _, _, enhanced, comparison = enhance_image(printed(expected), mode)
+                  with Image.open(BytesIO(enhanced)) as after, Image.open(BytesIO(comparison)) as pair:
+                      assert pair.size == (after.width * 2, after.height)
+                  recognition = await processor().recognize([enhanced], "en")
+                  assert recognition.text == expected
               rendered = await renderer().word_pdf(document())
               preview = await PdfPreviews().first_page(rendered.pdf)
               assert preview.pages == 1
@@ -150,4 +158,5 @@ jobs:
           print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
           print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
           print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
+          print('Non-root worker: document image contrast/grayscale and numeric OCR fixture PASS with network disabled')
           PY

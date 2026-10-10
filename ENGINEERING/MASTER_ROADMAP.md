@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Document image contrast enhancement — 2026-10-11
+
+- OWNER AUTHORITY: Continue recommended preview/image-quality improvements and verified merges.
+- BASELINE: Main 38fbd5b and PR #43 visual-review foundation candidate 1f942a2; exact candidate/full hosted evidence required before each merge.
+- CURRENT SLICE: Independent default-disabled image contrast/grayscale service; exact received bytes, processed PNG and left/right comparison; no AI or core branching. Existing packages promoted to explicit direct declarations with unchanged package/version sets.
+- PASS LOCAL: 57 focused checks, real numeric OCR fixture after both modes, synthetic visual inspection, lint/format/diff; hosted lifecycle/native qualification required.
+- Evidence: [document image report](REPORTS/2026-10-11-document-image-enhancement.md).
+- NOT RUN: Server installation/enablement, representative customer image/mobile/load acceptance and commercial Stars pricing.
+
 ## Source-owned document visual review — 2026-10-11
 
 - OWNER AUTHORITY: Continue recommended previews/image-quality improvements and verified merges.

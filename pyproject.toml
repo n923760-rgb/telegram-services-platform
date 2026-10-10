@@ -24,6 +24,9 @@ dependencies = [
  "pypdf>=6,<7",
  "docxtpl>=0.20,<0.21",
  "camelot-py==2.0.0",
+ "numpy==2.5.3",
+ "opencv-python-headless==5.0.0.93",
+ "pypdfium2==5.13.0",
 ]
 [dependency-groups]
 dev = ["ruff>=0.9,<1", "pytest>=8,<10", "pytest-asyncio>=0.25,<2", "pdfplumber>=0.11,<1"]
