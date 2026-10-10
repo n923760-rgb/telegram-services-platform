@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, section_controls
 from app.core.db import sessions
+from app.core.display import message_parts, order_reference, result_preview
 from app.core.i18n import tr
 from app.core.models import Order, Service, StarCharge
 from app.core.settings import config
@@ -161,7 +162,7 @@ def create_router():
         items = [
             (
                 f"{(service.name_ar if lang == 'ar' else service.name_en)[:45]} · "
-                f"{status_label(order.status, lang)} · {str(order.id)[:8]}",
+                f"{status_label(order.status, lang)} · {order_reference(order.id)}",
                 f"order:{order.id}",
             )
             for order, service in rows[:PAGE_SIZE]
@@ -243,9 +244,9 @@ def create_router():
                 ]
             )
         if order.status == "waiting_confirmation":
-            preview = (order.result or {}).get("preview", "")
+            preview = result_preview(order.result or {}, lang)
             text += "\n\n" + tr(
-                "confirmation_waiting", lang, order_id=order.id, preview=str(preview)[:2500]
+                "confirmation_waiting", lang, order_id=order_reference(order.id), preview=preview
             )
             items.extend(
                 [
@@ -255,6 +256,10 @@ def create_router():
             )
         items.extend([(tr("refresh", lang), f"order:{order.id}"), (tr("orders", lang), "orders:0")])
         items.extend(await section_controls(state, lang))
-        await callback.message.answer(text, reply_markup=buttons(items))
+        parts = list(message_parts(text))
+        for index, part in enumerate(parts):
+            await callback.message.answer(
+                part, reply_markup=buttons(items) if index == len(parts) - 1 else None
+            )
 
     return router

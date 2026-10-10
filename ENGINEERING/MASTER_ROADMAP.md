@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Telegram mobile UI review — 2026-10-10
+
+- OWNER AUTHORITY: Fix screenshot issues and check related interface paths; continuous verified merge authority persists.
+- VERIFIED BASELINE: Main 1421359 / PR #40; post-merge workflow 38075628816 SUCCESS.
+- CURRENT SLICE: Adaptive full-width choice labels, separate cancellation/approval rows, display-only short references, complete UTF-16 preview splitting and localized PDF-table reviews independent of file heading language.
+- Source UUIDs/ownership/financial policy remain authoritative; legacy previews retain fallback. Full IDs remain in order details for support.
+- PASS LOCAL: 63 independent UI/provider/PDF-table/architecture checks; 900 tests collected. Exact published head requires full hosted lifecycle and seven native gates before merge.
+- Evidence: [mobile UI report](REPORTS/2026-10-10-mobile-ui.md).
+- NOT RUN: Updated device/font screenshots, live AI heading qualification, server update.
+
 ## PDF tables to Excel — 2026-10-10
 
 - OWNER AUTHORITY: Complete independent development slice; prior verified continuous merge authority persists.

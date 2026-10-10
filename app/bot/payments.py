@@ -10,6 +10,7 @@ from aiogram.filters import Command
 from aiogram.types import LabeledPrice
 
 from app.core.db import sessions
+from app.core.display import order_reference
 from app.core.i18n import tr
 from app.core.models import Order, StarCheckout
 from app.core.settings import config
@@ -88,7 +89,7 @@ async def handle_receipt(message, bot):
             tr(
                 "stars_paid" if state == "paid" else "stars_receipt_recorded",
                 lang,
-                order_id=order_id,
+                order_id=order_reference(order_id),
             ),
         )
 

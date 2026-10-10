@@ -175,3 +175,26 @@ def test_oversized_heading_plan_cannot_hide_tables_from_confirmation():
                 ]
             }
         )
+
+
+async def test_file_heading_language_does_not_control_review_language(tmp_path):
+    storage = OwnedStorage(LocalStorage(tmp_path), 1)
+    file = storage.save("source.pdf", b"synthetic", "application/pdf")
+
+    async def extract(*args):
+        return extraction()
+
+    service = PdfTablesExcel()
+    service.runtime = SimpleNamespace(
+        storage=storage, tables=SimpleNamespace(extract=extract), ai=None
+    )
+    request = inputs(pdf=file.key, language="en")
+    result = await service.run(request)
+    assert "راجع" in result.preview_localizations["ar"]
+    assert "Review" in result.preview_localizations["en"]
+    assert "Column 1" not in result.preview_localizations["ar"]
+    final = await service.run({**request, "__continuation": result.continuation})
+    assert "Excel" in final.preview_localizations["ar"]
+    book = load_workbook(BytesIO(storage.read(final.artifacts[0].key)))
+    assert book["Data1"]["A3"].value == "Column 1"
+    assert book["Data1"]["A5"].value == "00123"

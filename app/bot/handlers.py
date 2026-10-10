@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from app.bot.ui import buttons, home_keyboard, leave_support, menu
 from app.core.db import sessions
+from app.core.display import order_reference
 from app.core.i18n import tr
 from app.core.models import Order, Service
 from app.core.settings import config
@@ -90,7 +91,9 @@ def create_router():
                 items.append(cancel_item)
                 await message.answer(
                     heading + "\n\n" + tr(field.prompt_key, lang),
-                    reply_markup=buttons(items, columns=2 if field.choices else 1),
+                    reply_markup=buttons(
+                        items, columns=2 if field.choices else 1, separate_last=bool(field.choices)
+                    ),
                 )
         data["pending_prompt"] = False
         await state.set_data(data)
@@ -296,7 +299,7 @@ def create_router():
                 tr(
                     "stars_invoice_sent" if data.get("payment_mode") == "stars" else "queued",
                     lang,
-                    order_id=order_id,
+                    order_id=order_reference(order_id),
                 ),
                 reply_markup=menu(lang),
             )

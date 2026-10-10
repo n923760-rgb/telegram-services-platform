@@ -391,3 +391,41 @@ async def test_all_order_states_have_localized_labels():
         for lang in ("ar", "en"):
             assert status_label(status, lang) != f"status_{status}"
     assert status_label("unexpected", "en") == tr("status_unknown", "en")
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_waiting_history_and_notification_show_complete_localized_preview(
+    flow, tmp_path, lang
+):
+    from app.providers.storage import LocalStorage
+    from app.workers.runner import deliver_confirmations
+    from tests.test_real_services import Delivery
+
+    transport, message, callback, _ = flow
+    await fund()
+    await set_language(1, lang)
+    oid = await submit(1, "echo", {"text": "content"}, 100, "preview-language")
+    previews = {
+        "ar": "عربي " + "🙂" * 2700 + "آخر عمود",
+        "en": "English " + "🙂" * 2700 + "LAST COLUMN",
+    }
+    async with sessions.begin() as db:
+        order = await db.get(Order, oid)
+        order.status = "waiting_confirmation"
+        order.result = {
+            "preview": "Legacy English",
+            "preview_localizations": previews,
+            "continuation": {"accepted": True},
+        }
+    delivery = Delivery(LocalStorage(tmp_path))
+    await deliver_confirmations({"delivery": delivery})
+    assert delivery.confirmations[0][1] == previews[lang]
+    await message("/orders")
+    before = len(transport.messages)
+    await callback(f"order:{oid}")
+    messages = transport.messages[before:]
+    assert previews[lang] in "".join(m.text for m in messages)
+    assert all(len(m.text.encode("utf-16-le")) // 2 <= 3500 for m in messages)
+    assert all(m.reply_markup is None for m in messages[:-1])
+    data = [b.callback_data for row in messages[-1].reply_markup.inline_keyboard for b in row]
+    assert f"approve:{oid}" in data and f"reject:{oid}" in data

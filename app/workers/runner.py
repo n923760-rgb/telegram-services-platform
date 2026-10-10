@@ -5,8 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import DBAPIError
 
 from app.core.db import sessions
+from app.core.display import result_preview
 from app.core.models import Job, JobAttempt, Order, Service, StarCharge
 from app.core.settings import config
+from app.core.users import get_language
 from app.orders.engine import complete_locked, fail_locked
 from app.orders.locking import lock_order
 from app.orders.state import transition
@@ -268,7 +270,9 @@ async def deliver_confirmations(ctx):
         )
     for order_id, user_id, result in rows:
         try:
-            await ctx["delivery"].confirmation(user_id, order_id, result["preview"])
+            await ctx["delivery"].confirmation(
+                user_id, order_id, result_preview(result, await get_language(user_id))
+            )
         except Exception:
             continue
         async with sessions.begin() as db:

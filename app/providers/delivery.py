@@ -6,6 +6,7 @@ from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboar
 from sqlalchemy import select
 
 from app.core.db import sessions
+from app.core.display import message_parts, order_reference, result_preview
 from app.core.i18n import tr
 from app.core.models import Order, StarCharge
 from app.core.users import get_language
@@ -29,22 +30,14 @@ class TelegramDelivery(Delivery):
 
     async def send(self, user_id, order_id, result):
         lang = await self._lang(user_id)
-        await self.bot.send_message(user_id, tr("result_header", lang, order_id=order_id))
-        if result.preview:
-            await self.bot.send_message(
-                user_id, tr("structure_preview", lang, preview=result.preview)
-            )
-        part = ""
-        units = 0
-        for character in result.text:
-            size = 2 if ord(character) > 0xFFFF else 1
-            if units + size > 3500:
+        await self.bot.send_message(
+            user_id, tr("result_header", lang, order_id=order_reference(order_id))
+        )
+        preview = result_preview(result.model_dump(), lang)
+        if preview:
+            for part in message_parts(tr("structure_preview", lang, preview=preview)):
                 await self.bot.send_message(user_id, part)
-                part = ""
-                units = 0
-            part += character
-            units += size
-        if part:
+        for part in message_parts(result.text):
             await self.bot.send_message(user_id, part)
         for artifact in result.artifacts:
             await self.bot.send_document(
@@ -77,7 +70,7 @@ class TelegramDelivery(Delivery):
         if charge and charge.state != "refunded":
             reason += "\n" + tr("stars_refund_pending", lang)
         await self.bot.send_message(
-            user_id, tr("order_failed", lang, order_id=order_id, reason=reason)
+            user_id, tr("order_failed", lang, order_id=order_reference(order_id), reason=reason)
         )
 
     async def confirmation(self, user_id, order_id, preview):
@@ -87,15 +80,26 @@ class TelegramDelivery(Delivery):
                 [
                     InlineKeyboardButton(
                         text=tr("approve_structure", lang), callback_data=f"approve:{order_id}"
-                    ),
+                    )
+                ],
+                [
                     InlineKeyboardButton(
                         text=tr("cancel_order", lang), callback_data=f"reject:{order_id}"
-                    ),
-                ]
+                    )
+                ],
             ]
         )
-        await self.bot.send_message(
-            user_id,
-            tr("confirmation_waiting", lang, order_id=order_id, preview=preview),
-            reply_markup=markup,
+        parts = list(
+            message_parts(
+                tr(
+                    "confirmation_waiting",
+                    lang,
+                    order_id=order_reference(order_id),
+                    preview=preview,
+                )
+            )
         )
+        for index, part in enumerate(parts):
+            await self.bot.send_message(
+                user_id, part, reply_markup=markup if index == len(parts) - 1 else None
+            )

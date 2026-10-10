@@ -22,11 +22,27 @@ class MenuButton(Filter):
         return message.text in self.labels
 
 
-def buttons(items, columns=1):
-    items = [InlineKeyboardButton(text=text, callback_data=data) for text, data in items]
-    return InlineKeyboardMarkup(
-        inline_keyboard=[items[i : i + columns] for i in range(0, len(items), columns)]
-    )
+def buttons(items, columns=1, *, separate_last=False):
+    controls = [InlineKeyboardButton(text=text, callback_data=data) for text, data in items]
+    tail = controls.pop() if separate_last and controls else None
+    rows, pending = [], []
+    for button in controls:
+        # Telegram does not wrap button labels. Give long labels the whole row.
+        if columns == 1 or len(button.text) > 18:
+            if pending:
+                rows.append(pending)
+                pending = []
+            rows.append([button])
+        else:
+            pending.append(button)
+            if len(pending) == columns:
+                rows.append(pending)
+                pending = []
+    if pending:
+        rows.append(pending)
+    if tail:
+        rows.append([tail])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def menu(lang="ar"):
