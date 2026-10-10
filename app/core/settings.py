@@ -1,6 +1,7 @@
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,6 +17,7 @@ class Config(BaseSettings):
     )
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     telegram_mode: str = "polling"
+    telegram_api_environment: Literal["production", "test"] = "production"
     telegram_webhook_secret: SecretStr = SecretStr("")
     stars_enabled: bool = False
     stars_terms_version: str = ""

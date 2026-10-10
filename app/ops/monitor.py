@@ -1,6 +1,5 @@
 import asyncio
 
-from aiogram import Bot
 from redis.asyncio import Redis
 from sqlalchemy import text
 
@@ -8,6 +7,7 @@ from app.core.db import sessions
 from app.core.settings import config
 from app.ops.notifier import Notifier
 from app.providers.notifier import TelegramAdminChannel
+from app.providers.telegram import create_bot
 
 
 async def monitor_once(redis, notifier):
@@ -40,7 +40,7 @@ async def monitor_once(redis, notifier):
 
 
 async def main():
-    bot = Bot(config().bot_token.get_secret_value())
+    bot = create_bot()
     redis = Redis.from_url(config().redis_url.get_secret_value(), socket_timeout=3)
     notifier = Notifier(redis, TelegramAdminChannel(bot))
     try:

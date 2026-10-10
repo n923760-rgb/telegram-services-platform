@@ -151,6 +151,7 @@ reconciliation. See [operations](docs/OPERATIONS.md). No credentials are require
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | PostgreSQL container initialization; keep DSN consistent. |
 | `APP_ENV`, `STORAGE_ROOT` | Environment; temporary file path (`/data/files` in Compose). |
 | `TELEGRAM_MODE`, `TELEGRAM_WEBHOOK_SECRET` | `polling` by default; secret required for `webhook`. |
+| `TELEGRAM_API_ENVIRONMENT` | `production` by default; explicit `test` selects Telegram's separate test server for all processes and file downloads. Independent of `APP_ENV`; other values are rejected. |
 | `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, `AI_ENABLED` | Provider selection/configuration; AI disabled by default. |
 | `AI_INPUT_USD_PER_MILLION`, `AI_OUTPUT_USD_PER_MILLION`, `USD_TO_SAR` | Operator-maintained current rates; rate defaults are zero to prevent accidental AI activation. |
 | `AI_IMAGE_TOKEN_BOUND`, `AI_MAX_OUTPUT_TOKENS` | Conservative image bound 20000; output maximum 8192 tokens (configurable up to 32768). |
@@ -192,6 +193,13 @@ Use an HTTPS reverse proxy in front of the loopback API. Set `TELEGRAM_MODE=webh
 `/webhooks/telegram` URL with Telegram `setWebhook`, passing the same `secret_token`. Registration is
 an operator action; no token-bearing URL is logged by this project. Remove the webhook before returning
 to polling. `/health/live` is liveness, `/health` checks DB and Redis. `/webhooks/payment` returns 501.
+
+For dedicated Telegram test-server setup, use [Stars acceptance](docs/STARS_ACCEPTANCE.md).
+Set `TELEGRAM_API_ENVIRONMENT=test` on an isolated installation with test-server bot/user/admin
+credentials, separate database/Redis/file volumes, and its own webhook. Restart API, worker,
+monitor and any polling process together after changing this setting. `APP_ENV=test` alone
+does not change the Telegram endpoint. Never switch an existing database containing unpaid
+orders, payment receipts or refunds between Telegram environments; qualify a fresh installation.
 
 ## Add a service without changing bot/core
 

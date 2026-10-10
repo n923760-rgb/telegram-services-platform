@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import suppress
 
-from aiogram import Bot, Dispatcher
+from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisEventIsolation, RedisStorage
 
 from app.bot.handlers import create_router as services_router
@@ -13,6 +13,7 @@ from app.core.db import sessions
 from app.core.logging import configure_logging
 from app.core.settings import config
 from app.ops.heartbeat import heartbeat
+from app.providers.telegram import create_bot
 from app.services.registry import registry
 
 
@@ -43,7 +44,7 @@ async def main():
     async with sessions.begin() as db:
         await registry.sync(db)
     cfg = config()
-    bot = Bot(cfg.bot_token.get_secret_value())
+    bot = create_bot()
     dp = create_dispatcher()
     pulse = asyncio.create_task(heartbeat())
     try:

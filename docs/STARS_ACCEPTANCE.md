@@ -6,6 +6,19 @@ source-bound checklist passes in Telegram's dedicated test environment first.
 
 ## Operator prerequisites
 
+- Create a separate user and bot on Telegram's dedicated test server; a second bot on the
+  ordinary server does not provide test Stars. On iOS, tap the Settings icon ten times,
+  then Accounts > Login to another account > Test; create the bot using that server's
+  BotFather. See [Telegram's official instructions](https://core.telegram.org/bots/features#dedicated-test-environment).
+- Use an isolated installation, private test bot token/test administrator IDs, separate
+  PostgreSQL/Redis/file volumes and a dedicated webhook URL. Set
+  `TELEGRAM_API_ENVIRONMENT=test` in its private `.env`; `APP_ENV` is independent.
+  API, worker, polling bot and monitor use this setting for all Telegram methods and
+  file downloads. Register `setWebhook` against the same test API, using the configured
+  bot factory (`app.providers.telegram.create_bot`) or Telegram's official `/test/` path.
+  Never reuse production financial data or change an installation with outstanding
+  payments/refunds between environments. The default remains `production`; unknown
+  setting values fail validation, and transport failures never fall back to another API.
 - Back up the database and record the exact deployed Git SHA before migration `0011`.
 - Configure the authenticated HTTPS Telegram webhook through the existing deployment
   instructions. Do not expose PostgreSQL, Redis or the loopback API publicly.
@@ -20,10 +33,17 @@ source-bound checklist passes in Telegram's dedicated test environment first.
 - Set `STARS_ENABLED=true` only with webhook mode, secret and both approved terms.
   Config validation fails closed otherwise. Never store real secrets in Git or chat.
 
+On an identified, fresh Compose staging installation, start API/worker/monitor and their
+dependencies without the polling bot: `docker compose up -d --build api worker monitor`.
+An existing running polling container must be stopped through that installation's approved
+deployment procedure before webhook testing. Do not deploy or stop a production bot to run
+this checklist. Restart all Telegram runtime processes together after endpoint changes.
+
 ## Required test journeys
 
 | Journey | Required evidence |
 | --- | --- |
+| Test-server routing | Record source SHA and selected environment without secrets; verify the dedicated test bot can receive `/start`, download a synthetic upload and deliver a file through the test worker. |
 | Terms and invoice | Arabic/English price and full terms precede explicit agreement; `/terms` works; one private XTR invoice with empty provider token. |
 | No payment | Invoice alone creates no job or ledger reservation; expiry/cancellation blocks execution. |
 | Pre-checkout | Owner, currency, frozen price, live service/version, terms and expiry checked; answer within Telegram's 10-second window. Approval alone starts no job. |
