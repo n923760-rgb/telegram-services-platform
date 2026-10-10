@@ -4,7 +4,9 @@ from app.providers.documents.base import DocumentError
 from app.services.base import Result, ServiceError
 
 
-async def word_pdf_result(runtime, document, *, preview, include_title=True, filename="result"):
+async def word_pdf_result(
+    runtime, document, *, preview, preview_localizations=None, include_title=True, filename="result"
+):
     if runtime.renderer is None:
         raise ServiceError("document_render_unavailable")
     try:
@@ -27,4 +29,6 @@ async def word_pdf_result(runtime, document, *, preview, include_title=True, fil
         for artifact in artifacts:
             runtime.storage.delete(artifact.key)
         raise
-    return Result(preview=preview, artifacts=artifacts)
+    return Result(
+        preview=preview, preview_localizations=preview_localizations or {}, artifacts=artifacts
+    )

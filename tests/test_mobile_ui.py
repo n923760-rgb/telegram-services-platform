@@ -100,3 +100,45 @@ def test_prepared_legacy_results_keep_their_preview():
         result_preview({"preview": "Legacy", "preview_localizations": {"en": "New"}}, "ar")
         == "Legacy"
     )
+
+
+@pytest.mark.parametrize("kind", ["word", "pdf", "pptx"])
+async def test_office_confirmation_localizes_ui_and_preserves_source_title_question(tmp_path, kind):
+    from types import SimpleNamespace
+
+    from app.providers.storage import LocalStorage, OwnedStorage
+    from app.services.text_to_office.service import TextToOffice
+    from app.services.text_to_pdf.service import TextToPdf
+    from app.services.text_to_pptx.service import TextToPptx
+
+    title, question = "عنوان العميل 00123", "سؤال العميل 00017"
+    document = {"title": title, "sections": [{"paragraphs": ["قيمة 125.50"]}]}
+    payload = {
+        "ambiguous": True,
+        "question": question,
+        **(
+            {"deck": {"slides": [{"title": title, "bullets": ["قيمة 125.50"]}]}}
+            if kind == "pptx"
+            else {"document": document}
+        ),
+    }
+    calls = []
+
+    async def extract(schema, *args):
+        calls.append(args)
+        return schema.model_validate(payload)
+
+    plugin = {"word": TextToOffice, "pdf": TextToPdf, "pptx": TextToPptx}[kind]()
+    plugin.runtime = SimpleNamespace(
+        ai=SimpleNamespace(extract=extract), storage=OwnedStorage(LocalStorage(tmp_path), 1)
+    )
+    request = {"text": "نص العميل"}
+    if kind == "word":
+        request["target"] = "word"
+    elif kind == "pdf":
+        request["mode"] = "smart"
+    result = await plugin.run(request)
+    assert result.needs_confirmation and not result.artifacts and len(calls) == 1
+    assert result.preview_localizations["ar"] != result.preview_localizations["en"]
+    for review in result.preview_localizations.values():
+        assert title in review and question in review

@@ -145,6 +145,7 @@ async def test_service_owns_artifact_without_ai_and_catalogs_cover_intake(tmp_pa
     result = await service.run(inputs())
     assert len(result.artifacts) == 1 and result.artifacts[0].filename == "review.xlsx"
     assert "4" in result.preview and not result.needs_confirmation
+    assert "4" in result.preview_localizations["ar"] and "4" in result.preview_localizations["en"]
     assert (
         load_workbook(BytesIO(storage.read(result.artifacts[0].key, 1)))["Data"]["A4"].value
         == "00123"

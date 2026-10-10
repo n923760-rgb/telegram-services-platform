@@ -2,7 +2,7 @@ import asyncio
 from decimal import Decimal
 
 from app.builders.images_pdf import build
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.images_to_pdf.schema import Inputs
 
@@ -49,7 +49,11 @@ class ImagesToPdf(BaseService):
         except ValueError:
             raise ServiceError("input_invalid") from None
         artifact = self.runtime.storage.save("images.pdf", pdf, "application/pdf")
-        return Result(preview=tr("images_pdf_preview", pages=len(images)), artifacts=[artifact])
+        return Result(
+            preview=tr("images_pdf_preview", pages=len(images)),
+            preview_localizations=translations("images_pdf_preview", pages=len(images)),
+            artifacts=[artifact],
+        )
 
 
 SERVICE = ImagesToPdf

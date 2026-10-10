@@ -9,3 +9,7 @@ def tr(key: str, lang: str = "ar", **values) -> str:
     return (
         CATALOGS.get(lang, CATALOGS["ar"]).get(key, CATALOGS["ar"].get(key, key)).format(**values)
     )
+
+
+def translations(key: str, **values) -> dict[str, str]:
+    return {lang: tr(key, lang, **values) for lang in CATALOGS}

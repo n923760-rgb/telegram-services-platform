@@ -101,6 +101,11 @@ async def test_review_precedes_render_and_resume_uses_no_second_ai_call(tmp_path
     review = await service.run(source)
     assert review.needs_confirmation and not review.artifacts
     assert "[3]" in review.preview and "00017" in review.preview
+    for lang in ("ar", "en"):
+        assert (
+            "[3]" in review.preview_localizations[lang]
+            and "00017" in review.preview_localizations[lang]
+        )
     assert not list(tmp_path.glob("[0-9]*/*/*"))
     resumed = source | {"__continuation": review.continuation}
     assert not service.needs_ai(resumed)
@@ -136,3 +141,32 @@ async def test_review_lists_all_source_ids_even_when_only_two_samples_are_shown(
     assert "1, 2, 3, 4" in result.preview
     assert "[1]" in result.preview and "[2]" in result.preview
     assert "[3]" not in result.preview and result.needs_confirmation
+
+
+async def test_maximum_note_review_keeps_all_ids_in_both_ui_languages(tmp_path):
+    class AI:
+        async def extract(self, schema, *args):
+            categories = ("discussion", "decision", "action", "review")
+            return schema.model_validate(
+                {
+                    "assignments": [
+                        {"note_id": index, "category": categories[(index - 1) % 4]}
+                        for index in range(1, 81)
+                    ]
+                }
+            )
+
+    service = MeetingMinutes()
+    service.runtime = SimpleNamespace(
+        ai=AI(), renderer=None, storage=OwnedStorage(LocalStorage(tmp_path), 1)
+    )
+    source = {
+        **inputs("en"),
+        "notes": "\n".join(f"Source {i:02d} " + "x" * 130 for i in range(1, 81)),
+    }
+    result = await service.run(source)
+    assert result.needs_confirmation
+    for lang in ("ar", "en"):
+        review = result.preview_localizations[lang]
+        assert len(review) <= 2800
+        assert ", 80" in review and "Source 01" in review
