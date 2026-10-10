@@ -1,5 +1,16 @@
 # Master engineering roadmap
 
+## Optional lexical CSV candidate review — 2026-10-11
+
+- OWNER AUTHORITY: Continue useful GitHub integrations and verified merges; no server/activation evidence inferred from continuation.
+- VERIFIED BASELINE: Main 0b5603e / PR #44; qualified source passed 950 hosted tests and nine actual non-root/network-disabled worker gates.
+- CURRENT SLICE: CSV v2 optional local RapidFuzz 3.14.6 report. Up to 200 records when enabled (usual review still 500); minimum differing-cell ratio >=90, no extra preprocessing, changed numeric/empty cells excluded. No AI, deletion, merging or same-entity probability claim.
+- REPORT: Source-bound pairs/different column numbers; first 1000 pairs in stable source order, total and omissions disclosed. Data/Source and exact-equality Review preserved; static Similarities sheet.
+- PASS LOCAL: 52 CSV/unit cases plus three pure architecture cases; lint/format/diff and single-package dependency delta, 977 suite cases collected. Local DB/native container qualification NOT RUN.
+- COMPATIBILITY: Missing/null option keeps usual output. Registry version bumps to 2 and preserves DB-owned prices/enabled flags; queued v1 orders follow existing cancellation/release policy, not transparent cross-version execution.
+- LOCAL/HOSTED evidence: [CSV similarity report](REPORTS/2026-10-11-csv-similarity.md). Full exact-head hosted lifecycle/native qualification required before authorized merge.
+- NOT RUN: Server update, mobile workbook acceptance, representative false-positive/missed-pair usefulness and load; do not enable or market by passing synthetic checks alone.
+
 ## Document image contrast enhancement — 2026-10-11
 
 - OWNER AUTHORITY: Continue recommended preview/image-quality improvements and verified merges.

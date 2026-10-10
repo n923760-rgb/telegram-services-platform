@@ -6,6 +6,7 @@ from io import BytesIO
 from openpyxl import load_workbook
 
 from app.builders import excel
+from app.builders.csv_similarity import review as similarity_review
 from app.builders.quality import validate
 from app.builders.schema import Table
 from app.core.i18n import tr
@@ -29,7 +30,7 @@ def _sheet(title, columns, rows, *, literal=False):
     return book
 
 
-def build(headers, rows, *, trim, language):
+def build(headers, rows, *, trim, language, similarity=False):
     # Called with validated parsed CSV. Original record order and count never change.
     columns = [header.strip() for header in headers]
     clean = [[value.strip(" \t") if trim else value for value in row] for row in rows]
@@ -78,7 +79,33 @@ def build(headers, rows, *, trim, language):
         ],
         audit,
     )
-    for donor, name in [(source, "Source"), (report, "Review")]:
+    donors = [(source, "Source"), (report, "Review")]
+    if similarity:
+        candidates = similarity_review(clean)
+        counts.update(
+            similar_pairs=candidates.total,
+            shown_pairs=len(candidates.pairs),
+            omitted_pairs=candidates.total - len(candidates.pairs),
+        )
+        similar = _sheet(
+            tr("csv_similarity_title", language),
+            [
+                tr(key, language)
+                for key in (
+                    "csv_similarity_first",
+                    "csv_similarity_second",
+                    "csv_similarity_score",
+                    "csv_similarity_columns",
+                )
+            ],
+            [
+                [pair.first, pair.second, pair.score, ", ".join(map(str, pair.columns))]
+                for pair in candidates.pairs
+            ]
+            or [[None, None, None, None]],
+        )
+        donors.append((similar, "Similarities"))
+    for donor, name in donors:
         sheet = book.create_sheet(name)
         original = donor.active
         for row in original:
@@ -121,6 +148,12 @@ def build(headers, rows, *, trim, language):
     review["A2"].alignment = copy(review["A1"].alignment)
     review.merge_cells("A2:D2")
     review.row_dimensions[2].height = 120
+    if similarity:
+        sheet = book["Similarities"]
+        sheet["A2"] = tr("csv_similarity_summary", language, **counts)
+        sheet["A2"].alignment = copy(sheet["A1"].alignment)
+        sheet.merge_cells("A2:D2")
+        sheet.row_dimensions[2].height = 195
     # Header normalization is explicit and independently visible in Source/Data.
     book["Data"]["A2"] = tr(
         "csv_review_mode_trim" if trim else "csv_review_mode_preserve", language

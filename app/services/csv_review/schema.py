@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints, ValidationError, model_validator
 
+from app.builders.csv_similarity import MAX_ROWS
 from app.builders.schema import StrictModel
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
@@ -16,6 +17,7 @@ class Inputs(StrictModel):
     delimiter: Literal["comma", "semicolon", "tab"]
     whitespace: Literal["preserve", "trim"]
     language: Literal["ar", "en"]
+    similarity: Literal["conservative"] | None = None
 
     @model_validator(mode="after")
     def valid_csv(self):
@@ -35,6 +37,8 @@ class Inputs(StrictModel):
             raise ValueError("invalid CSV") from None
         if not 2 <= len(records) <= 501:
             raise ValueError("require a header and 1 to 500 records")
+        if self.similarity == "conservative" and len(records) - 1 > MAX_ROWS:
+            raise ValueError("similarity requires at most 200 records")
         headers = records[0]
         normalized = [value.strip() for value in headers]
         if not 1 <= len(headers) <= 20 or any(

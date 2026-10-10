@@ -83,6 +83,7 @@ jobs:
           from PIL import Image
           from app.providers.documents.previews import PdfPreviews
           from app.builders.document_image import build as enhance_image
+          from tests.csv_similarity_fixtures import inputs as similarity_inputs
           assert os.getuid() == 10001
           async def verify():
               for language, text in [
@@ -149,6 +150,15 @@ jobs:
               assert workbook['Source']['B4'].value == ' أحمد '
               assert workbook['Review']['C6'].value == 1
               assert counts == {'rows': 4, 'blanks': 2, 'duplicates': 1, 'changes': 1}
+              values = CsvInputs.parse(similarity_inputs(language))
+              headers, rows = values.records()
+              data, counts = csv_review(headers, rows, trim=False, language=language, similarity=True)
+              workbook = load_workbook(BytesIO(data))
+              assert counts['similar_pairs'] == 2 and counts['omitted_pairs'] == 0
+              assert workbook['Similarities']['A4'].value == 1 and workbook['Similarities']['B4'].value == 2
+              assert workbook['Data']['A4'].value == '00123'
+              assert workbook['Data']['C4'].value == '=1+1' and workbook['Data']['C4'].data_type == 's'
+              assert workbook['Data'].max_row == workbook['Source'].max_row == 8
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
@@ -159,4 +169,5 @@ jobs:
           print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
           print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
           print('Non-root worker: document image contrast/grayscale and numeric OCR fixture PASS with network disabled')
+          print('Non-root worker: Arabic/English lexical CSV candidates, numeric exclusions and literal source retention PASS with network disabled')
           PY
