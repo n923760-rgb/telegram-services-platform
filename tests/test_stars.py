@@ -649,7 +649,10 @@ async def test_real_dispatcher_terms_invoice_recovery_and_admin_denial(stars, la
         )
 
     await message("/services")
-    assert "20" in transport.messages[-1].reply_markup.inline_keyboard[0][0].text
+    async with sessions() as db:
+        service = await db.get(Service, "echo")
+        expected_name = service.name_ar if language == "ar" else service.name_en
+    assert transport.messages[-1].reply_markup.inline_keyboard[0][0].text == expected_name
     await callback("service:echo")
     await message("00123")
     assert getattr(config(), f"stars_terms_{language}") in transport.messages[-1].text

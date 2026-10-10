@@ -142,3 +142,22 @@ async def test_office_confirmation_localizes_ui_and_preserves_source_title_quest
     assert result.preview_localizations["ar"] != result.preview_localizations["en"]
     for review in result.preview_localizations.values():
         assert title in review and question in review
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("payment", ["confirm_price", "stars_confirm"])
+def test_price_is_a_separate_confirmation_line(lang, payment):
+    terms = "Owner purchase terms"
+    rendered = tr(payment, lang, amount="12.34", terms=terms)
+    price_line, detail = rendered.split("\n\n", 1)
+    assert "12.34" in price_line and "12.34" not in detail
+    if payment == "stars_confirm":
+        assert terms in detail
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+def test_pdf_workbook_instructions_have_separate_sheet_lines(lang):
+    text = tr("pdf_tables_delivered", lang)
+    lines = [line for line in text.splitlines() if line.startswith("•")]
+    assert len(lines) == 3
+    assert [line.rsplit(": ", 1)[1] for line in lines] == ["Data", "Source", "Review"]
