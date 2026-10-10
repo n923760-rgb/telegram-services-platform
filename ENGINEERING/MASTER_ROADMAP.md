@@ -1,5 +1,25 @@
 # Master engineering roadmap
 
+## Independent proofreading and rewriting — 2026-10-10
+
+- OWNER AUTHORITY: Continue the proposed independent writing/proofreading service;
+  prior continuous verified merge instruction persists. No deployment/activation implied.
+- VERIFIED BASELINE: Main 68ae143 / PR #37. Post-merge workflow 38069092755,
+  job 114262659938: 740 tests, migration/drift, Compose, all six actual native worker gates PASS.
+- CURRENT SLICE: Default-disabled `text_editing`: original-language Arabic/English
+  pasted text, proofread-only or rewrite; tone intake shown only for rewrite.
+  12000 characters/80 nonempty source lines; output bounded to 24000 characters.
+- Exact source ID coverage/order, per-line numeric/contact-token occurrence counts,
+  original blank lines and owned UTF-8 revision.txt. Existing AI budget/one repair,
+  cached delivery and financial policy reused; no new vendor SDK/dependency/migration.
+- Structural validation cannot prove language, meaning, names, negations, qualifiers
+  or promises. Draft needs customer review and real-provider semantic qualification.
+- PASS LOCAL: 82 service/source/architecture checks and lint/format; 785 tests collected.
+- LOCAL/HOSTED evidence: [editing report](REPORTS/2026-10-10-text-editing.md).
+  Exact published head must pass hosted lifecycle/native gates before authorized merge.
+- NOT RUN: Live AI/Telegram, server update, operator pricing and activation.
+  Next bounded proposals: source-bound summaries/revision and actual-fact CV writing.
+
 ## Independent source-bound text translation — 2026-10-10
 
 - OWNER REQUEST: Add separately discoverable text translation and useful paid services;
