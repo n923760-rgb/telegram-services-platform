@@ -285,5 +285,9 @@
   "stars_reconciled": "Reviewed {count} transactions. {coverage}\nNext offset: {next_offset}. Reaching a page end does not prove all refunds succeeded.",
   "stars_history_end": "Reached the end of the currently available page.",
   "stars_history_more": "Coverage is bounded; continue subsequent pages.",
-  "alert_payment_reconciliation": "Uncertain Stars refund needs reconciliation against Telegram history; do not blindly repeat it."
+  "alert_payment_reconciliation": "Uncertain Stars refund needs reconciliation against Telegram history; do not blindly repeat it.",
+  "text_translation_name": "Text translation",
+  "text_translation_description": "Translate to Arabic or English in your selected style, with numeric and source-line checks. Text and TXT file; not certified translation.",
+  "text_translation_input": "Send text to translate: up to 12000 characters and 80 nonempty lines.",
+  "text_translation_language": "Which language should the text be translated into?"
 }
