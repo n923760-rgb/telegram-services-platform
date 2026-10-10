@@ -429,3 +429,30 @@ async def test_waiting_history_and_notification_show_complete_localized_preview(
     assert all(m.reply_markup is None for m in messages[:-1])
     data = [b.callback_data for row in messages[-1].reply_markup.inline_keyboard for b in row]
     assert f"approve:{oid}" in data and f"reject:{oid}" in data
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_service_buttons_show_name_and_price_only_at_confirmation(flow, lang):
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    async with sessions.begin() as db:
+        service = await db.get(Service, "echo")
+        service.price_halala = 1234
+        service.name_ar = "خدمة تجريبية PDF إلى Excel"
+        service.name_en = "PDF to Excel demo"
+    await message("/services")
+    markup = transport.messages[-1].reply_markup
+    control = next(
+        b for row in markup.inline_keyboard for b in row if b.callback_data == "service:echo"
+    )
+    assert control.text == ("خدمة تجريبية PDF إلى Excel" if lang == "ar" else "PDF to Excel demo")
+    assert "12.34" not in transport.messages[-1].text
+    await callback(control.callback_data)
+    await message("Customer content")
+    review = transport.messages[-1].text
+    assert tr("confirm_price", lang, amount="12.34") in review
+    assert review.split("\n\n")[1] == tr("confirm_price", lang, amount="12.34").split("\n\n")[0]
+    assert await state.get_state() == "confirm"
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(Order)) == 0

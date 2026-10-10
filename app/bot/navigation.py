@@ -59,18 +59,7 @@ def create_router():
             ).all()
         if config().stars_enabled:
             rows = [service for service in rows if service.price_stars is not None]
-        items = [
-            (
-                f"{s.name_ar if lang == 'ar' else s.name_en} — "
-                + (
-                    f"{s.price_stars} {tr('stars_unit', lang)}"
-                    if config().stars_enabled
-                    else f"{sar(s.price_halala)} {tr('sar', lang)}"
-                ),
-                f"service:{s.slug}",
-            )
-            for s in rows
-        ]
+        items = [(s.name_ar if lang == "ar" else s.name_en, f"service:{s.slug}") for s in rows]
         items.extend(await section_controls(state, lang))
         await message.answer(
             tr("choose_service" if rows else "no_services", lang), reply_markup=buttons(items)

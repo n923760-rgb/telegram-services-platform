@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Service menu and confirmation price layout — 2026-10-10
+
+- OWNER AUTHORITY: Prices only in the confirmation review, clearer service buttons and related workbook instructions.
+- VERIFIED BASELINE: Main aef8b6a / PR #41; 904 tests and seven native gates passed.
+- CURRENT SLICE: Name-only service buttons, price disclosure notice and separate price line in SAR/Stars confirmation; one workbook sheet per instruction bullet.
+- PASS LOCAL: 27 UI unit checks, lint/format/diff, 912 tests collected. Full hosted dispatcher/payment/native qualification required before merge.
+- Evidence: [price layout report](REPORTS/2026-10-10-service-price-layout.md).
+- NOT RUN: Server installation and mobile visual acceptance.
+
 ## Telegram mobile UI review — 2026-10-10
 
 - OWNER AUTHORITY: Fix screenshot issues and check related interface paths; continuous verified merge authority persists.
