@@ -233,14 +233,31 @@ def create_router():
                 ]
             )
         if order.status == "waiting_confirmation":
+            review_suffix = ":visual" if (order.result or {}).get("prepared_delivery") else ""
+            if (order.result or {}).get("preview_artifacts"):
+                from app.providers.delivery import TelegramDelivery
+                from app.providers.runtime import storage
+                from app.services.base import Result
+
+                await TelegramDelivery(callback.bot, storage()).send_preview_images(
+                    order.user_id, Result.model_validate(order.result)
+                )
             preview = result_preview(order.result or {}, lang)
             text += "\n\n" + tr(
                 "confirmation_waiting", lang, order_id=order_reference(order.id), preview=preview
             )
             items.extend(
                 [
-                    (tr("approve_structure", lang), f"approve:{order.id}"),
-                    (tr("cancel_order", lang), f"reject:{order.id}"),
+                    (
+                        tr(
+                            "approve_delivery"
+                            if (order.result or {}).get("prepared_delivery")
+                            else "approve_structure",
+                            lang,
+                        ),
+                        f"approve:{order.id}{review_suffix}",
+                    ),
+                    (tr("cancel_order", lang), f"reject:{order.id}{review_suffix}"),
                 ]
             )
         items.extend([(tr("refresh", lang), f"order:{order.id}"), (tr("orders", lang), "orders:0")])

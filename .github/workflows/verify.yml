@@ -80,6 +80,8 @@ jobs:
           from app.services.cv_formatting.schema import Inputs as CvInputs
           from pypdf import PdfReader
           from io import BytesIO
+          from PIL import Image
+          from app.providers.documents.previews import PdfPreviews
           assert os.getuid() == 10001
           async def verify():
               for language, text in [
@@ -90,6 +92,11 @@ jobs:
                   result = await processor().recognize([printed(text)], language)
                   assert result.text.replace('\u200f', '') == text
               rendered = await renderer().word_pdf(document())
+              preview = await PdfPreviews().first_page(rendered.pdf)
+              assert preview.pages == 1
+              with Image.open(BytesIO(preview.png)) as image:
+                  assert image.width <= 960 and image.height <= 1440
+                  assert min(image.convert("L").getextrema()) < 100
               text = PdfReader(BytesIO(rendered.pdf)).pages[0].extract_text()
               assert text.count('00123') == text.count('125.50') == text.count('2026-10-09') == 2
               table = await renderer().word_pdf(table_document())
@@ -142,4 +149,5 @@ jobs:
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
           print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
+          print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
           PY

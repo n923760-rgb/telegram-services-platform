@@ -30,6 +30,7 @@ class Config(BaseSettings):
     ai_max_output_tokens: int = 8192
     ai_model: str = "gpt-4.1-mini"
     ai_enabled: bool = False
+    document_visual_review: bool = False
     ai_input_usd_per_million: Decimal = Decimal("0")
     ai_output_usd_per_million: Decimal = Decimal("0")
     usd_to_sar: Decimal = Decimal("3.75")

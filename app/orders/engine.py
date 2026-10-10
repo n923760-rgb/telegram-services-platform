@@ -11,7 +11,7 @@ from app.core.transactions import transaction_retry
 from app.orders.locking import lock_order
 from app.orders.state import transition
 from app.payments.billing import capture_order, refund_order, reserve_order
-from app.services.base import InputSchema, ServiceError
+from app.services.base import InputSchema, Result, ServiceError
 from app.services.registry import registry
 
 
@@ -171,7 +171,7 @@ async def complete_locked(db, order):
 
 
 @transaction_retry
-async def confirm_structure(order_id, user_id, approved):
+async def confirm_structure(order_id, user_id, approved, *, expected_prepared=None):
     from datetime import UTC, datetime
 
     async with sessions.begin() as db:
@@ -183,12 +183,25 @@ async def confirm_structure(order_id, user_id, approved):
             raise ServiceError("not_allowed")
         if order.status != "waiting_confirmation":
             raise ServiceError("invalid_request")
+        if (
+            expected_prepared is not None
+            and bool((order.result or {}).get("prepared_delivery")) != expected_prepared
+        ):
+            raise ServiceError("stale_button")
         if not approved:
             await fail_locked(db, order, "cancelled", cancelled=True)
             return
         result = order.result or {}
-        order.inputs = {**order.inputs, "__continuation": result.get("continuation", {})}
-        order.result = None
+        if result.get("prepared_delivery"):
+            prepared = Result.model_validate(result)
+            prepared.prepared_delivery = False
+            prepared.needs_confirmation = False
+            prepared.continuation = {}
+            order.result = prepared.model_dump(mode="json")
+        else:
+            order.inputs = {**order.inputs, "__continuation": result.get("continuation", {})}
+            order.result = None
+        order.confirmation_notified = False
         transition(order, "queued")
         job = await db.scalar(select(Job).where(Job.order_id == order.id).with_for_update())
         job.status = "pending"

@@ -31,9 +31,10 @@ def artifact_keys(result):
         return []
     if not isinstance(result, dict):
         raise ValueError("malformed order result")
-    artifacts = result.get("artifacts", [])
-    if not isinstance(artifacts, list):
+    files, previews = result.get("artifacts", []), result.get("preview_artifacts", [])
+    if not isinstance(files, list) or not isinstance(previews, list):
         raise ValueError("malformed order result artifacts")
+    artifacts = files + previews
     keys = []
     for artifact in artifacts:
         if not isinstance(artifact, dict) or not isinstance(artifact.get("key"), str):
@@ -138,9 +139,9 @@ async def cleanup_order_files(order_id, owned_storage=None):
         return True
     owned = owned_storage or OwnedStorage(storage(), order.user_id)
     success = await delete_inputs(order.inputs, order.input_schema_snapshot, owned)
-    for artifact in (order.result or {}).get("artifacts", []):
+    for key in artifact_keys(order.result):
         try:
-            owned.delete(artifact["key"])
+            owned.delete(key)
         except Exception:
             success = False
     if success:

@@ -339,5 +339,10 @@
   "pdf_tables_quality": "Could not extract tables within quality limits. Try the other method or a clearer PDF; no guessed data was delivered.",
   "pdf_tables_unavailable": "The table extraction engine is unavailable.",
   "pdf_tables_busy": "The document engine is busy; the job will retry.",
-  "pdf_tables_timeout": "Table extraction exceeded its time limit."
+  "pdf_tables_timeout": "Table extraction exceeded its time limit.",
+  "document_visual_review": "The document is ready for delivery.\nPages: {pages}\n\nThe image shows the first page only, not the remaining pages. Word appearance may vary by application.",
+  "document_preview_caption": "First-page preview of the PDF prepared for delivery.",
+  "approve_delivery": "Approve and deliver",
+  "document_preview_invalid": "Could not prepare the document preview. Please try again.",
+  "document_preview_timeout": "Document preview took too long. Please try again."
 }
