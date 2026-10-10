@@ -289,5 +289,12 @@
   "text_translation_name": "Text translation",
   "text_translation_description": "Translate to Arabic or English in your selected style, with numeric and source-line checks. Text and TXT file; not certified translation.",
   "text_translation_input": "Send text to translate: up to 12000 characters and 80 nonempty lines.",
-  "text_translation_language": "Which language should the text be translated into?"
+  "text_translation_language": "Which language should the text be translated into?",
+  "text_editing_name": "Proofreading and rewriting",
+  "text_editing_description": "Proofread or rewrite in the original language, with numeric, email and URL checks. Draft text and TXT for your review.",
+  "text_editing_input": "Send Arabic or English text: up to 12000 characters and 80 nonempty lines. Review the draft against the original before use.",
+  "text_editing_mode": "Choose proofreading only or rewriting.",
+  "text_editing_proofread": "Proofreading only",
+  "text_editing_rewrite": "Rewriting",
+  "text_editing_tone": "Choose a rewriting tone. Proofreading only keeps the original tone."
 }
