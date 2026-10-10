@@ -24,6 +24,7 @@ required by project governance. No production activation is implied by source me
 | CV formatting | Structured final career facts, Arabic/English headings, classic single-column Word/PDF; PR #28 passed 545 hosted tests and native CV checks. |
 | Meeting-note organization | Source-bound categories and customer review before Word/PDF; PR #30 passed 598 tests and native export checks. Live AI category accuracy remains unqualified. |
 | CSV organization/review (current slice) | Pasted bounded CSV to sortable Excel with original values, stable record references and static blank/duplicate/edge-change audit. No inferred types, totals or deleted records. |
+| Document image contrast | Default-disabled local contrast/grayscale: unchanged received bytes, enhanced PNG and left/right comparison. No reconstruction, deskew, crop or general OCR improvement promise; native/customer/load acceptance remain distinct. |
 | Images to PDF | Ordered image pages, bounded A4 fit/orientation and received-pixel preservation; PR #29 passed 571 tests and native image checks. |
 
 ## Current integration queue

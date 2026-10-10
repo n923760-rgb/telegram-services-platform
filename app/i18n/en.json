@@ -344,5 +344,12 @@
   "document_preview_caption": "First-page preview of the PDF prepared for delivery.",
   "approve_delivery": "Approve and deliver",
   "document_preview_invalid": "Could not prepare the document preview. Please try again.",
-  "document_preview_timeout": "Document preview took too long. Please try again."
+  "document_preview_timeout": "Document preview took too long. Please try again.",
+  "document_image_name": "Improve document image contrast",
+  "document_image_description": "Color contrast enhancement or grayscale, with received image and comparison. Does not restore missing text or correct content.",
+  "document_image_input": "Send a printed-document image. We preserve the bytes received by the bot; Telegram may compress photos before receipt.",
+  "document_image_mode": "Choose processing. Grayscale removes colors; check text, numbers and stamps after processing.",
+  "document_image_contrast": "Improve color contrast",
+  "document_image_grayscale": "Grayscale and contrast",
+  "document_image_result": "Images prepared:\n• received: unchanged received image\n• enhanced: processed image\n• comparison: received left, processed right\n\nProcessing does not restore missing detail or guarantee better OCR. Check text, numbers and stamps. Processing resolution is up to 1024 pixels on the longest side."
 }
