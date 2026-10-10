@@ -79,6 +79,10 @@ async def test_actual_dispatcher_dynamic_echo_conversation():
     await message("/start")
     assert transport.messages[-1].text == tr("welcome")
     await callback("menu:services")
+    assert (
+        transport.messages[-1].reply_markup.inline_keyboard[0][0].callback_data == "catalog:other:0"
+    )
+    await callback("catalog:other:0")
     assert transport.messages[-1].reply_markup.inline_keyboard[0][0].callback_data == "service:echo"
     await callback("service:echo")
     assert transport.messages[-1].text.endswith(tr("input_text"))

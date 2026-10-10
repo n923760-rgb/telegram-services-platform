@@ -47,6 +47,7 @@ async def test_browsing_keeps_draft_inputs_and_does_not_reserve(flow, lang):
     await set_language(1, lang)
     async with sessions.begin() as db:
         (await db.get(Service, "csv_review")).enabled = True
+    await message("/start")
     await callback("service:echo")
     saved = await state.get_data()
     await message("/services")
@@ -97,7 +98,8 @@ async def test_stars_availability_filter_still_applies_to_categories(flow, monke
 
 @pytest.mark.parametrize("data", ["catalog:unknown:0", "catalog:data:-1", "catalog:data:1000000"])
 async def test_malformed_category_does_not_change_draft_or_create_orders(flow, data):
-    _, _, callback, state = flow
+    _, message, callback, state = flow
+    await message("/start")
     await callback("service:echo")
     saved = await state.get_data()
     await callback(data)
