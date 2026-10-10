@@ -1,5 +1,26 @@
 # Master engineering roadmap
 
+## Extractive source-bound key points — 2026-10-10
+
+- OWNER AUTHORITY: Continue independent useful services under prior verified merge
+  instruction. Current bounded slice implements extractive points, not free-text claims.
+- VERIFIED BASELINE: Main e624000 / PR #38. Post-merge workflow 38070202160,
+  job 114265871891: 785 tests, migration/drift, Compose and all six native worker gates PASS.
+- CURRENT SLICE: Default-disabled `text_summary`: 12000 characters, 2–80 nonempty
+  source lines (one paragraph per line); short/standard selects at most 3/7 points,
+  always fewer paragraphs than the source. Original source strings only in source order.
+- AI returns strict unique known integer IDs only; no AI-produced prose is delivered.
+  Heading language AR/EN does not translate source. Chat points plus owned UTF-8
+  summary-source.txt containing selected points and all numbered source paragraphs.
+- Semantic importance, coherence and omitted context remain unqualified; exact quotes
+  do not establish summary completeness or customer value. Live provider/user acceptance
+  required before activation; rewriting/study questions remain separate proposals.
+- PASS LOCAL: 90 independent source/service/architecture checks, lint/format/diff;
+  829 tests collected, including 30 new unit cases and 14 new DB lifecycle cases.
+- LOCAL/HOSTED evidence: [key-points report](REPORTS/2026-10-10-text-summary.md).
+  Exact published head must pass full lifecycle/native CI before authorized merge.
+- NOT RUN: Live provider/Telegram, server update, pricing and activation.
+
 ## Independent proofreading and rewriting — 2026-10-10
 
 - OWNER AUTHORITY: Continue the proposed independent writing/proofreading service;

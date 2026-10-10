@@ -296,5 +296,15 @@
   "text_editing_mode": "Choose proofreading only or rewriting.",
   "text_editing_proofread": "Proofreading only",
   "text_editing_rewrite": "Rewriting",
-  "text_editing_tone": "Choose a rewriting tone. Proofreading only keeps the original tone."
+  "text_editing_tone": "Choose a rewriting tone. Proofreading only keeps the original tone.",
+  "text_summary_name": "Extract key points",
+  "text_summary_description": "Select important original paragraphs with references and a TXT report containing the source for review. No rewriting or translation.",
+  "text_summary_input": "Send Arabic or English text, one paragraph per line: 2 to 80 nonempty lines and up to 12000 characters. Selected paragraphs stay as written.",
+  "text_summary_length": "Choose the maximum point count. Fewer paragraphs than the full source will be selected.",
+  "text_summary_short": "Short: up to 3 points",
+  "text_summary_standard": "Extended: up to 7 points",
+  "text_summary_language": "Choose the report heading language. Source paragraphs retain their original language.",
+  "text_summary_heading": "Selected key points: {selected} of {total} paragraphs. Bracketed numbers refer to the source.",
+  "text_summary_notice": "This selects original paragraphs and is not a comprehensive summary. Important details or conditions may be omitted; review the attached full source before relying on it.",
+  "text_summary_source_heading": "Full source — paragraph references"
 }
