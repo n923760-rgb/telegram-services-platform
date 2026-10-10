@@ -65,7 +65,13 @@ async def test_invalid_translation_after_one_repair_releases_credit(tmp_path, mo
     _, provider, delivery, ctx, price = await setup(
         "text_translation", [invalid, invalid, "unused"], tmp_path, monkeypatch
     )
-    oid = await submit(1, "text_translation", {"text": SOURCE, "language": "en"}, price, "invalid")
+    oid = await submit(
+        1,
+        "text_translation",
+        {"text": SOURCE, "language": "en", "style": "formal"},
+        price,
+        "invalid",
+    )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "failed"
@@ -79,7 +85,13 @@ async def test_cached_translation_delivery_does_not_call_provider_again(tmp_path
     _, provider, delivery, ctx, price = await setup(
         "text_translation", [json.dumps(PLAN)], tmp_path, monkeypatch
     )
-    oid = await submit(1, "text_translation", {"text": SOURCE, "language": "en"}, price, "cached")
+    oid = await submit(
+        1,
+        "text_translation",
+        {"text": SOURCE, "language": "en", "style": "formal"},
+        price,
+        "cached",
+    )
     jid = await job_for(oid)
     send = delivery.send
 
@@ -109,7 +121,11 @@ async def test_file_save_failure_releases_credit(tmp_path, monkeypatch):
 
     monkeypatch.setattr(store, "save", fail)
     oid = await submit(
-        1, "text_translation", {"text": SOURCE, "language": "en"}, price, "save-fail"
+        1,
+        "text_translation",
+        {"text": SOURCE, "language": "en", "style": "formal"},
+        price,
+        "save-fail",
     )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
@@ -128,7 +144,7 @@ async def test_rejected_input_or_disabled_ai_reserves_no_credit(tmp_path, monkey
         await submit(
             1,
             "text_translation",
-            {"text": SOURCE if disabled else " ", "language": "en"},
+            {"text": SOURCE if disabled else " ", "language": "en", "style": "formal"},
             price,
             "rejected",
         )
