@@ -111,6 +111,8 @@ async def test_delivery_retry_uses_same_prepared_files_without_new_render(tmp_pa
 async def test_structural_then_visual_review_notifies_both_without_second_ai(tmp_path, monkeypatch):
     from tests.minutes_fixtures import inputs, plan
 
+    monkeypatch.setattr(config(), "ai_enabled", True)
+
     oid, jid, ctx, renderer, _, _ = await setup(tmp_path, monkeypatch, "meeting_minutes", inputs())
 
     async def extract(schema, source, prompt):
@@ -142,6 +144,8 @@ async def test_structural_then_visual_review_notifies_both_without_second_ai(tmp
 
 async def test_old_notification_cannot_mark_new_review_as_notified(tmp_path, monkeypatch):
     from tests.minutes_fixtures import inputs, plan
+
+    monkeypatch.setattr(config(), "ai_enabled", True)
 
     oid, jid, ctx, _, _, _ = await setup(tmp_path, monkeypatch, "meeting_minutes", inputs())
 
