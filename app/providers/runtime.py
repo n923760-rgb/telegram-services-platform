@@ -8,6 +8,8 @@ from app.providers.documents.libreoffice import LibreOfficeDocuments
 from app.providers.documents.rendering import DocumentRenderer
 from app.providers.documents.tesseract import TesseractDocuments
 from app.providers.storage import LocalStorage, OwnedStorage
+from app.providers.tables.base import TableExtractor
+from app.providers.tables.camelot import CamelotTables
 
 
 @dataclass
@@ -16,6 +18,7 @@ class Runtime:
     storage: OwnedStorage
     documents: DocumentProcessor | None = None
     renderer: DocumentRenderer | None = None
+    tables: TableExtractor | None = None
 
 
 def provider():
@@ -40,4 +43,5 @@ def runtime_for(job_id, user_id, *, needs_ai=True):
         OwnedStorage(storage(), user_id),
         TesseractDocuments(),
         LibreOfficeDocuments(),
+        CamelotTables(),
     )

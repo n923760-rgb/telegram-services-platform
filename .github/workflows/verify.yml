@@ -72,6 +72,10 @@ jobs:
           from app.services.csv_review.schema import Inputs as CsvInputs
           from app.builders.csv_review import build as csv_review
           from openpyxl import load_workbook
+          from tests.pdf_tables_fixtures import table_pdf
+          from app.providers.tables.camelot import CamelotTables
+          from app.services.pdf_tables_excel.schema import direct_labels
+          from app.builders.pdf_tables import build as tables_excel
           from tests.cv_fixtures import inputs as cv_inputs
           from app.services.cv_formatting.schema import Inputs as CvInputs
           from pypdf import PdfReader
@@ -104,6 +108,16 @@ jobs:
                   assert len(pages) == 1
                   text = pages[0].extract_text()
                   assert '0500123456' in text and 'sample@example.invalid' in text
+              for language in ('ar', 'en'):
+                  for method in ('lattice', 'stream'):
+                      data, rows = table_pdf(language, ruled=method == 'lattice')
+                      result = await CamelotTables().extract(data, method)
+                      assert result.tables[0].rows == rows
+                      data = tables_excel(result, direct_labels(result, language), language=language, enhanced=False)
+                      book = load_workbook(BytesIO(data))
+                      for name in ('Data1', 'Source1'):
+                          assert [[book[name].cell(r, c).value for c in range(1, 4)] for r in range(4, 7)] == rows
+                          assert book[name]['C5'].data_type == 's'
           pages = PdfReader(BytesIO(images_pdf([picture(), picture(240, 120, color='blue')]))).pages
           assert len(pages) == 2
           assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
@@ -127,4 +141,5 @@ jobs:
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
+          print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
           PY
