@@ -161,3 +161,21 @@ when distributing it. This project does not vendor or modify upstream implementa
 or use upstream sample templates. The template source is authored in this repository.
 The wheel retains its license; both uv and container requirements are locked.
 Do not generalize this review to the other candidate libraries or their models.
+
+## Bounded Camelot table extraction
+
+Camelot 2.0.0 (MIT), https://github.com/camelot-dev/camelot, is installed unchanged
+for the default-disabled independent PDF-table service. Only native lattice/stream
+are used; no ML/OCR extras, model downloads, Ghostscript or customer URLs. Provider,
+resource bounds and customer acceptance limits are recorded in
+[the slice report](../ENGINEERING/REPORTS/2026-10-10-pdf-tables-excel.md).
+
+Runtime lock adds numpy, pandas, playa-pdf, opencv-python-headless, tabulate,
+python-dateutil, six and mypy-extensions; pypdfium2 moves from development-only to
+runtime through Camelot. Preserve all distributed package LICENSE/NOTICE files.
+Camelot/playa use MIT; pandas/numpy BSD-family notices; OpenCV wheel Apache-2.0
+and bundled third-party notices; PDFium/pypdfium2 include BSD/Apache and component
+notices. Dependencies have their own terms; this is not a blanket license assertion
+for optional models or every bundled library. No upstream code is vendored/modified.
+OpenCV here is Camelot's extraction dependency, not a customer image-enhancement
+feature. Further tools from the research list remain unimplemented proposals.

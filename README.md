@@ -30,6 +30,7 @@ and pass [Stars acceptance](docs/STARS_ACCEPTANCE.md) before enabling commercial
 | `images_to_pdf` | Disabled | DB-owned test price | Ordered images to PDF. |
 | `meeting_minutes` | Disabled | DB-owned test price | Source-bound classification and meeting document. |
 | `csv_review` | Disabled | DB-owned test price | Source-preserving CSV workbook and static review. |
+| `pdf_tables_excel` | Disabled | SAR 5 test credit | Bounded text PDF tables to literal Excel; optional AI headings and mandatory structure approval. |
 
 Stars prices are unset until explicitly set with `/setstars SLUG INTEGER`; the SAR column above
 describes test credits only, not sale prices or an exchange rate. The V1 completion scope is these
