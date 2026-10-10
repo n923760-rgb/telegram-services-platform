@@ -7,20 +7,19 @@ from sqlalchemy import text
 
 from app.core.db import engine, sessions
 from app.core.settings import config
+from app.providers.telegram import create_bot
 
 
 @asynccontextmanager
 async def lifespan(app):
     cfg = config()
     if cfg.telegram_mode == "webhook":
-        from aiogram import Bot
-
         from app.bot.main import create_dispatcher
         from app.services.registry import registry
 
         async with sessions.begin() as db:
             await registry.sync(db)
-        app.state.bot = Bot(cfg.bot_token.get_secret_value())
+        app.state.bot = create_bot()
         app.state.dispatcher = create_dispatcher()
     try:
         yield

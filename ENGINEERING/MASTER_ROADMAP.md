@@ -1,5 +1,21 @@
 # Master engineering roadmap
 
+## Dedicated Telegram test-server qualification — 2026-10-10
+
+- VERIFIED BASELINE: main a0ab15c includes Stars PR #32 and corrections #33–#35.
+  Workflow 37992934577/job 114031500940 passed 696 tests, lint/format, migration/drift,
+  Compose and all six actual non-root/network-disabled native worker qualifications.
+- CONFIRMED GAP: All four runtime processes constructed production-only Telegram bots;
+  the documented dedicated-test-environment Stars journeys could not select the test API.
+- CURRENT SLICE: Explicit validated `TELEGRAM_API_ENVIRONMENT=production|test` and one
+  provider bot factory, used by API/polling/worker/monitor for methods and file URLs.
+  Production remains the default; no automatic endpoint fallback or Stars activation.
+- Verification and boundaries: [test-server report](REPORTS/2026-10-10-telegram-test-environment.md).
+- NEXT: On an identified isolated installation, execute the source-bound
+  [Stars acceptance guide](../docs/STARS_ACCEPTANCE.md), then representative provider/native
+  Office output, restart/recovery, support, alerts and off-server backup/restore journeys.
+  These require private operator configuration; no live payment/deployment evidence claimed.
+
 ## CSV organization and review — 2026-10-09
 
 - MERGED BASELINE: Main f4dc678 includes PR #30; workflow 37933829212 passed

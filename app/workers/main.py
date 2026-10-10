@@ -1,6 +1,5 @@
 from zoneinfo import ZoneInfo
 
-from aiogram import Bot
 from arq import cron
 from arq.connections import RedisSettings
 
@@ -15,6 +14,7 @@ from app.providers.delivery import TelegramDelivery
 from app.providers.notifier import TelegramAdminChannel
 from app.providers.runtime import storage
 from app.providers.stars import TelegramStars
+from app.providers.telegram import create_bot
 from app.services.registry import registry
 from app.workers.runner import deliver_confirmations, deliver_failures, dispatch, execute_job
 
@@ -22,7 +22,7 @@ from app.workers.runner import deliver_confirmations, deliver_failures, dispatch
 async def startup(ctx):
     async with sessions.begin() as db:
         await registry.sync(db)
-    ctx["bot"] = Bot(config().bot_token.get_secret_value())
+    ctx["bot"] = create_bot()
     ctx["delivery"] = TelegramDelivery(ctx["bot"], storage())
     ctx["notifier"] = Notifier(ctx["redis"], TelegramAdminChannel(ctx["bot"]))
     ctx["stars"] = TelegramStars(ctx["bot"])

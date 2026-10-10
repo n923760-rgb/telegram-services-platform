@@ -154,3 +154,20 @@ async def test_worker_shutdown_after_failed_startup_preserves_original_error(mon
     close = AsyncMock()
     await shutdown({"bot": SimpleNamespace(session=SimpleNamespace(close=close))})
     close.assert_awaited_once()
+
+
+async def test_worker_delivery_and_refunds_share_selected_test_api(monkeypatch):
+    from app.core.settings import config
+
+    monkeypatch.setattr(config(), "telegram_api_environment", "test")
+    ctx = {"redis": SimpleNamespace()}
+    await startup(ctx)
+    try:
+        token = config().bot_token.get_secret_value()
+        assert ctx["stars"].bot is ctx["bot"]
+        assert ctx["delivery"].bot is ctx["bot"]
+        assert ctx["bot"].session.api.api_url(token, "refundStarPayment") == (
+            f"https://api.telegram.org/bot{token}/test/refundStarPayment"
+        )
+    finally:
+        await shutdown(ctx)
