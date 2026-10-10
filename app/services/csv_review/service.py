@@ -8,6 +8,7 @@ from app.services.csv_review.schema import Inputs
 
 
 class CsvReview(BaseService):
+    version = "2"
     slug = "csv_review"
     name_ar = tr("csv_review_name")
     name_en = tr("csv_review_name", "en")
@@ -35,6 +36,14 @@ class CsvReview(BaseService):
                 choices=["preserve", "trim"],
                 choice_keys=["csv_review_preserve", "csv_review_trim"],
             ),
+            InputField(
+                name="similarity",
+                prompt_key="csv_similarity_prompt",
+                choices=["conservative"],
+                choice_keys=["csv_similarity_on"],
+                required=False,
+                skip_key="csv_similarity_off",
+            ),
             InputField(name="text", prompt_key="csv_review_text"),
         ]
     )
@@ -48,16 +57,25 @@ class CsvReview(BaseService):
         values = Inputs.parse(inputs)
         headers, rows = values.records()
         content, counts = await asyncio.to_thread(
-            build, headers, rows, trim=values.whitespace == "trim", language=values.language
+            build,
+            headers,
+            rows,
+            trim=values.whitespace == "trim",
+            language=values.language,
+            similarity=values.similarity == "conservative",
         )
         artifact = self.runtime.storage.save(
             "review.xlsx",
             content,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
+        previews = translations("csv_review_preview", **counts)
+        if values.similarity == "conservative":
+            for language in previews:
+                previews[language] += "\n\n" + tr("csv_similarity_preview", language, **counts)
         return Result(
-            preview=tr("csv_review_preview", values.language, **counts),
-            preview_localizations=translations("csv_review_preview", **counts),
+            preview=previews[values.language],
+            preview_localizations=previews,
             artifacts=[artifact],
         )
 

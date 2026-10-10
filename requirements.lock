@@ -150,6 +150,8 @@ python-dotenv==1.2.4
     # via pydantic-settings
 python-pptx==1.0.2
     # via telegram-services
+rapidfuzz==3.14.6
+    # via telegram-services
 redis==5.3.1
     # via
     #   arq
