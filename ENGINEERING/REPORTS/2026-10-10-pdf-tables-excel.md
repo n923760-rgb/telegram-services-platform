@@ -34,7 +34,7 @@ row deletion or aggregation. Source is extracted text, not proof of fidelity to 
 Customer must compare with the PDF. Blank strings display as empty Excel cells.
 Generic order/payment/budget/retention policy is reused without service branches.
 
-PASS LOCAL: 43 independent plugin/native/architecture tests before lifecycle additions;
+PASS LOCAL: 44 independent plugin/native/architecture tests including complete heading-review bounds;
 real synthetic AR/EN, lattice/stream two-page extraction matches all fixture cells.
 Lint/format/diff and complete collection are recorded during final qualification.
 NOT RUN LOCAL: full PostgreSQL/Redis lifecycle suite or Docker (unavailable here).

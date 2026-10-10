@@ -110,8 +110,11 @@ class PdfTablesExcel(BaseService):
                 + table_labels.title
             )
             preview.append(" | ".join(table_labels.columns))
+        review = "\n\n".join(preview)
+        if len(review) > 2800:
+            raise ServiceError("provider_invalid")
         return Result(
-            preview="\n\n".join(preview)[:2800],
+            preview=review,
             needs_confirmation=True,
             continuation=prepared.model_dump(mode="json"),
         )

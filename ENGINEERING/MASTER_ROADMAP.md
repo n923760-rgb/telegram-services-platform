@@ -6,7 +6,7 @@
 - VERIFIED BASELINE: Main 822efbd / PR #39; 829 tests and six native worker gates passed on its published head.
 - CURRENT SLICE: Default-disabled `pdf_tables_excel`, Camelot 2.0.0, bounded text-only PDF extraction with lattice/stream; source-preserving Excel and mandatory structure confirmation.
 - Optional AI proposes headings only; original cells remain literal text in Data/Source sheets with stable references and Review metrics. Metrics do not prove extraction correctness.
-- PASS LOCAL: 43 independent plugin/native/architecture checks; full hosted lifecycle/native qualification required before merge.
+- PASS LOCAL: 44 independent plugin/native/architecture checks; full hosted lifecycle/native qualification required before merge.
 - Evidence and constraints: [PDF tables report](REPORTS/2026-10-10-pdf-tables-excel.md).
 - NOT RUN: Representative customer PDF/mobile Excel/live AI/Telegram, server installation, activation and commercial prices.
 

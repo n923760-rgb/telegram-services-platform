@@ -46,6 +46,12 @@ class TableLabels(StrictModel):
 class Labels(StrictModel):
     tables: list[TableLabels] = Field(min_length=1, max_length=5)
 
+    @model_validator(mode="after")
+    def review_budget(self):
+        if sum(len(text) for table in self.tables for text in [table.title, *table.columns]) > 1800:
+            raise ValueError("headings must fit the complete customer review")
+        return self
+
 
 def labels_schema(extraction):
     widths = {i: len(table.rows[0]) for i, table in enumerate(extraction.tables, 1)}

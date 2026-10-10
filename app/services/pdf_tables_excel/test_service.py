@@ -150,3 +150,28 @@ async def test_missing_runtime_capability_creates_no_output(tmp_path, mode):
     with pytest.raises(ServiceError):
         await service.run(inputs(mode=mode))
     assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+def test_oversized_heading_plan_cannot_hide_tables_from_confirmation():
+    source = Extraction.model_validate(
+        {
+            "pages": 2,
+            "tables": [
+                {"page": page, "rows": [["x"] * 12] * 2, "accuracy": 100, "whitespace": 0}
+                for page in (1, 2)
+            ],
+        }
+    )
+    with pytest.raises(ValidationError):
+        labels_schema(source).model_validate(
+            {
+                "tables": [
+                    {
+                        "table_id": page,
+                        "title": "Title",
+                        "columns": [chr(65 + i) * 100 for i in range(12)],
+                    }
+                    for page in (1, 2)
+                ]
+            }
+        )
