@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.providers.documents.base import DocumentError
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.local_ocr.schema import Inputs
@@ -60,7 +60,12 @@ class LocalOcr(BaseService):
                     "result.txt", recognized.text.encode("utf-8"), "text/plain"
                 )
             )
-        return Result(text=recognized.text, preview=tr("local_ocr_preview"), artifacts=artifacts)
+        return Result(
+            text=recognized.text,
+            preview=tr("local_ocr_preview"),
+            preview_localizations=translations("local_ocr_preview"),
+            artifacts=artifacts,
+        )
 
 
 SERVICE = LocalOcr

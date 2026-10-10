@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.builders.pdf_tools import PdfToolError, build
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.pdf_tools.schema import Inputs
 
@@ -51,7 +51,11 @@ class PdfTools(BaseService):
         except PdfToolError as error:
             raise ServiceError(error.key) from None
         artifact = self.runtime.storage.save("result.pdf", content, "application/pdf")
-        return Result(preview=tr("pdf_tools_preview"), artifacts=[artifact])
+        return Result(
+            preview=tr("pdf_tools_preview"),
+            preview_localizations=translations("pdf_tools_preview"),
+            artifacts=[artifact],
+        )
 
 
 SERVICE = PdfTools

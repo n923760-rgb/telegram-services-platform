@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema
 from app.services.cv_formatting.schema import Inputs
 from app.services.document_results import word_pdf_result
@@ -48,7 +48,11 @@ class CvFormatting(BaseService):
     async def run(self, inputs):
         values = Inputs.parse(inputs)
         return await word_pdf_result(
-            self.runtime, values.document(), filename="cv", preview=tr("cv_preview")
+            self.runtime,
+            values.document(),
+            filename="cv",
+            preview=tr("cv_preview"),
+            preview_localizations=translations("cv_preview"),
         )
 
 

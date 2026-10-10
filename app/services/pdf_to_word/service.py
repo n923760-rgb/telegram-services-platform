@@ -4,7 +4,7 @@ from io import BytesIO
 from pypdf import PdfReader
 
 from app.builders import word
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.files.pdf_content import has_image_content
 from app.files.pdf_text import extract_page_text
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
@@ -66,7 +66,13 @@ class PdfToWord(BaseService):
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
         preview = tr("pdf_to_word_preview", title=plan.document.title, pages=len(reader.pages))
-        return Result(preview=preview, artifacts=[artifact])
+        return Result(
+            preview=preview,
+            preview_localizations=translations(
+                "pdf_to_word_preview", title=plan.document.title, pages=len(reader.pages)
+            ),
+            artifacts=[artifact],
+        )
 
 
 SERVICE = PdfToWord

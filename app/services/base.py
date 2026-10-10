@@ -140,6 +140,7 @@ class Result(BaseModel):
     text: str = ""
     artifacts: list[Artifact] = []
     preview: str = ""
+    preview_localizations: dict[Literal["ar", "en"], str] = {}
     needs_confirmation: bool = False
     continuation: dict = {}
     cost_sar: Decimal = Decimal("0")
@@ -150,7 +151,11 @@ class Result(BaseModel):
             raise ValueError("empty result")
         if self.needs_confirmation and not self.continuation:
             raise ValueError("missing continuation")
-        if len(self.text) > 50000 or len(self.preview) > 3000:
+        if (
+            len(self.text) > 50000
+            or len(self.preview) > 3000
+            or any(len(value) > 3000 for value in self.preview_localizations.values())
+        ):
             raise ValueError("oversized result")
         return self
 

@@ -29,18 +29,27 @@ class TextToPptx(BaseService):
         )
         if plan.missing_information:
             raise ServiceError("needs_information")
-        preview = tr(
-            "pptx_preview",
-            slides=len(plan.deck.slides),
-            title=plan.deck.slides[0].title,
-        )
-        tables = sum(slide.table is not None for slide in plan.deck.slides)
-        if tables:
-            preview += "\n" + tr("pptx_tables_preview", tables=tables)
-        preview = preview[:1400]
+        reviews = {}
+        for lang in ("ar", "en"):
+            preview = tr(
+                "pptx_preview",
+                lang,
+                slides=len(plan.deck.slides),
+                title=plan.deck.slides[0].title,
+            )
+            tables = sum(slide.table is not None for slide in plan.deck.slides)
+            if tables:
+                preview += "\n" + tr("pptx_tables_preview", lang, tables=tables)
+            preview = preview[:1400]
+            reviews[lang] = preview
+        preview = reviews["ar"]
         if plan.ambiguous and not continuation:
             return Result(
                 preview=tr("ambiguous_preview", question=plan.question, preview=preview),
+                preview_localizations={
+                    lang: tr("ambiguous_preview", lang, question=plan.question, preview=review)
+                    for lang, review in reviews.items()
+                },
                 needs_confirmation=True,
                 continuation=plan.model_dump(mode="json"),
             )
@@ -50,7 +59,7 @@ class TextToPptx(BaseService):
             content,
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         )
-        return Result(preview=preview, artifacts=[artifact])
+        return Result(preview=preview, preview_localizations=reviews, artifacts=[artifact])
 
 
 SERVICE = TextToPptx

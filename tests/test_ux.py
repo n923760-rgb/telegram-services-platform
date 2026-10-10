@@ -217,7 +217,9 @@ async def test_english_delivery_localizes_envelopes_and_preserves_customer_conte
     await delivery.confirmation(1, "order", preview)
     call = bot.send_message.await_args
     assert call.args[1] == tr("confirmation_waiting", "en", order_id="order", preview=preview)
-    buttons = call.kwargs["reply_markup"].inline_keyboard[0]
+    rows = call.kwargs["reply_markup"].inline_keyboard
+    assert [len(row) for row in rows] == [1, 1]
+    buttons = [button for row in rows for button in row]
     assert [(button.text, button.callback_data) for button in buttons] == [
         (tr("approve_structure", "en"), "approve:order"),
         (tr("cancel_order", "en"), "reject:order"),

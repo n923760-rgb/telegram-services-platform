@@ -2,7 +2,7 @@ import asyncio
 from decimal import Decimal
 
 from app.builders.csv_review import build
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema, Result
 from app.services.csv_review.schema import Inputs
 
@@ -56,7 +56,9 @@ class CsvReview(BaseService):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         return Result(
-            preview=tr("csv_review_preview", values.language, **counts), artifacts=[artifact]
+            preview=tr("csv_review_preview", values.language, **counts),
+            preview_localizations=translations("csv_review_preview", **counts),
+            artifacts=[artifact],
         )
 
 

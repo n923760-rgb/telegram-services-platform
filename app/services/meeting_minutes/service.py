@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import ValidationError
 
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.document_results import word_pdf_result
 from app.services.meeting_minutes.prompt import CLASSIFY
@@ -51,6 +51,7 @@ class MeetingMinutes(BaseService):
                 document(values, plan),
                 filename="minutes",
                 preview=tr("minutes_preview"),
+                preview_localizations=translations("minutes_preview"),
             )
         if self.runtime.ai is None:
             raise ServiceError("provider_config")
@@ -60,15 +61,19 @@ class MeetingMinutes(BaseService):
         )
         plan = await self.runtime.ai.extract(schema, source, CLASSIFY)
         # Review before export; source IDs are the only AI-produced document values.
-        preview = [tr("minutes_review_intro")]
-        for category in ("discussion", "decision", "action", "review"):
-            ids = sorted(item.note_id for item in plan.assignments if item.category == category)
-            if ids:
-                preview.append(tr("minutes_" + category, values.language) + f" ({len(ids)})")
-                preview.append(tr("minutes_source_ids", ids=", ".join(map(str, ids))))
-                preview.extend(f"[{number}] {notes[number - 1][:180]}" for number in ids[:2])
+        reviews = {}
+        for lang in ("ar", "en"):
+            preview = [tr("minutes_review_intro", lang)]
+            for category in ("discussion", "decision", "action", "review"):
+                ids = sorted(item.note_id for item in plan.assignments if item.category == category)
+                if ids:
+                    preview.append(tr("minutes_" + category, lang) + f" ({len(ids)})")
+                    preview.append(tr("minutes_source_ids", lang, ids=", ".join(map(str, ids))))
+                    preview.extend(f"[{number}] {notes[number - 1][:180]}" for number in ids[:2])
+            reviews[lang] = "\n".join(preview)
         return Result(
-            preview="\n".join(preview)[:2800],
+            preview=reviews[values.language],
+            preview_localizations=reviews,
             needs_confirmation=True,
             continuation=plan.model_dump(mode="json"),
         )

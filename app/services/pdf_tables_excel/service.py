@@ -75,7 +75,13 @@ class PdfTablesExcel(BaseService):
                 content,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-            return Result(preview=tr("pdf_tables_delivered", values.language), artifacts=[artifact])
+            return Result(
+                preview=tr("pdf_tables_delivered", values.language),
+                preview_localizations={
+                    lang: tr("pdf_tables_delivered", lang) for lang in ("ar", "en")
+                },
+                artifacts=[artifact],
+            )
         if values.mode == "labels" and self.runtime.ai is None:
             raise ServiceError("provider_config")
         if getattr(self.runtime, "tables", None) is None:
@@ -94,27 +100,34 @@ class PdfTablesExcel(BaseService):
                 LABELS.format(language={"ar": "Arabic", "en": "English"}[values.language]),
             )
         prepared = Prepared(extraction=extraction, labels=labels)
-        preview = [tr("pdf_tables_review", values.language)]
-        for table_labels in sorted(labels.tables, key=lambda table: table.table_id):
-            table = extraction.tables[table_labels.table_id - 1]
-            preview.append(
-                tr(
-                    "pdf_tables_review_table",
-                    values.language,
-                    number=table_labels.table_id,
-                    page=table.page,
-                    rows=len(table.rows),
-                    columns=len(table.rows[0]),
+        reviews = {}
+        for lang in ("ar", "en"):
+            preview = [tr("pdf_tables_review", lang)]
+            for table_labels in sorted(labels.tables, key=lambda table: table.table_id):
+                table = extraction.tables[table_labels.table_id - 1]
+                preview.append(
+                    tr(
+                        "pdf_tables_review_table",
+                        lang,
+                        number=table_labels.table_id,
+                        page=table.page,
+                        rows=len(table.rows),
+                        columns=len(table.rows[0]),
+                    )
                 )
-                + "\n"
-                + table_labels.title
-            )
-            preview.append(" | ".join(table_labels.columns))
-        review = "\n\n".join(preview)
-        if len(review) > 2800:
-            raise ServiceError("provider_invalid")
+                if values.mode == "labels":
+                    preview.append(table_labels.title)
+                    preview.extend(
+                        f"{i}. {label}" for i, label in enumerate(table_labels.columns, 1)
+                    )
+                # Generic numbered columns add no information beyond the exact width.
+            review = "\n".join(preview)
+            if len(review) > 2800:
+                raise ServiceError("provider_invalid")
+            reviews[lang] = review
         return Result(
-            preview=review,
+            preview=reviews[values.language],
+            preview_localizations=reviews,
             needs_confirmation=True,
             continuation=prepared.model_dump(mode="json"),
         )

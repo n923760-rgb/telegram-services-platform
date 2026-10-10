@@ -47,37 +47,51 @@ class TextToOffice(BaseService):
         )
         if plan.missing_information:
             raise ServiceError("needs_information")
-        if values.mode == "direct":
-            preview = (
-                tr("document_direct_preview", title=values.title)
-                if values.title
-                else tr("document_direct_no_title_preview")
-            )
-        elif values.target == "word":
-            preview = tr(
-                "word_professional_preview",
-                title=plan.document.title,
-                headings="، ".join(
-                    s.heading or tr("paragraphs") for s in plan.document.sections[:5]
-                ),
-                tables=sum(len(s.tables) for s in plan.document.sections),
-            )
-        else:
-            preview = tr(
-                "excel_preview",
-                columns="، ".join(plan.table.columns[:8]),
-                rows=len(plan.table.rows),
-            )
-            missing = sum(cell is None for row in plan.table.rows for cell in row)
-            unique = {tuple((type(cell).__name__, cell) for cell in row) for row in plan.table.rows}
-            repeated = len(plan.table.rows) - len(unique)
-            if missing or repeated:
-                preview += "\n" + tr("excel_data_notes", missing=missing, repeated=repeated)
-            preview += "\n" + tr("excel_usage")
-        preview = preview[:1400]
+        reviews = {}
+        for lang in ("ar", "en"):
+            if values.mode == "direct":
+                preview = (
+                    tr("document_direct_preview", lang, title=values.title)
+                    if values.title
+                    else tr("document_direct_no_title_preview", lang)
+                )
+            elif values.target == "word":
+                preview = tr(
+                    "word_professional_preview",
+                    lang,
+                    title=plan.document.title,
+                    headings="، ".join(
+                        s.heading or tr("paragraphs", lang) for s in plan.document.sections[:5]
+                    ),
+                    tables=sum(len(s.tables) for s in plan.document.sections),
+                )
+            else:
+                preview = tr(
+                    "excel_preview",
+                    lang,
+                    columns="، ".join(plan.table.columns[:8]),
+                    rows=len(plan.table.rows),
+                )
+                missing = sum(cell is None for row in plan.table.rows for cell in row)
+                unique = {
+                    tuple((type(cell).__name__, cell) for cell in row) for row in plan.table.rows
+                }
+                repeated = len(plan.table.rows) - len(unique)
+                if missing or repeated:
+                    preview += "\n" + tr(
+                        "excel_data_notes", lang, missing=missing, repeated=repeated
+                    )
+                preview += "\n" + tr("excel_usage", lang)
+            preview = preview[:1400]
+            reviews[lang] = preview
+        preview = reviews["ar"]
         if plan.ambiguous and not continuation:
             return Result(
                 preview=tr("ambiguous_preview", question=plan.question, preview=preview),
+                preview_localizations={
+                    lang: tr("ambiguous_preview", lang, question=plan.question, preview=review)
+                    for lang, review in reviews.items()
+                },
                 needs_confirmation=True,
                 continuation=plan.model_dump(mode="json"),
             )
@@ -98,7 +112,7 @@ class TextToOffice(BaseService):
             name = "result.xlsx"
             mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         artifact = self.runtime.storage.save(name, content, mime)
-        return Result(preview=preview, artifacts=[artifact])
+        return Result(preview=preview, preview_localizations=reviews, artifacts=[artifact])
 
 
 SERVICE = TextToOffice

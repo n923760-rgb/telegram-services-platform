@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.builders.word_schema import WordDocument
-from app.core.i18n import tr
+from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema
 from app.services.document_results import word_pdf_result
 from app.services.text_to_word_pdf.schema import Inputs
@@ -40,6 +40,7 @@ class TextToWordPdf(BaseService):
             WordDocument.model_validate(values.document().model_dump()),
             include_title=values.title is not None,
             preview=tr("word_pdf_preview"),
+            preview_localizations=translations("word_pdf_preview"),
         )
 
 
