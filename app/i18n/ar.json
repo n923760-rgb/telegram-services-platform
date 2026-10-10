@@ -285,5 +285,9 @@
   "stars_reconciled": "تمت مراجعة {count} معاملة. {coverage}\nالإزاحة التالية: {next_offset}. انتهاء الصفحة ليس إثباتًا لنجاح جميع الاسترجاعات.",
   "stars_history_end": "وصل الفحص إلى نهاية الصفحة المتاحة.",
   "stars_history_more": "التغطية محدودة؛ تابع الصفحات التالية.",
-  "alert_payment_reconciliation": "استرجاع نجوم غير مؤكد يحتاج مطابقة سجل Telegram؛ لا تكرر الاسترجاع عشوائيًا."
+  "alert_payment_reconciliation": "استرجاع نجوم غير مؤكد يحتاج مطابقة سجل Telegram؛ لا تكرر الاسترجاع عشوائيًا.",
+  "text_translation_name": "ترجمة نصوص",
+  "text_translation_description": "ترجمة إلى العربية أو الإنجليزية بأسلوب تختاره، مع فحص الأرقام وتغطية الأسطر. نص وملف TXT؛ ليست ترجمة معتمدة.",
+  "text_translation_input": "أرسل النص للترجمة: حتى 12000 حرف و80 سطرًا غير فارغ.",
+  "text_translation_language": "إلى أي لغة تريد ترجمة النص؟"
 }

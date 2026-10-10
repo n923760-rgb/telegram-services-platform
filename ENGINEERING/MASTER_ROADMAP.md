@@ -1,5 +1,23 @@
 # Master engineering roadmap
 
+## Independent source-bound text translation — 2026-10-10
+
+- OWNER REQUEST: Add separately discoverable text translation and useful paid services;
+  preserve modular architecture and existing source/payment/quality boundaries.
+- VERIFIED BASELINE: Main 99f4b6f / PR #36; post-merge workflow 38066931365 passed
+  708 tests and every existing financial/native document qualification gate.
+- CURRENT SLICE: Default-disabled `text_translation`: pasted text, AR/EN target, four
+  existing styles; 12000 input characters/80 nonempty lines, 24000 output characters.
+- Strict source IDs exactly once, numeric-token multiset per line, original ordering
+  and blank lines retained; text and UTF-8 TXT delivery. Shared existing numeric validator
+  moved without changing the OCR contract; old imports retained for compatibility.
+- PASS LOCAL: 49 independent service/schema/OCR-number/architecture checks; lint/format.
+  Full lifecycle/financial/DB/native hosted gates required before authorized merge.
+- NOT RUN: Live semantic/style/names/links qualification, Telegram/server deployment,
+  operator prices and paid launch. Structural/source-ID checks are not semantic proof.
+- Next proposals and existing deliverables: [service portfolio](../docs/SERVICE_PORTFOLIO.md).
+  Evidence: [translation report](REPORTS/2026-10-10-text-translation.md).
+
 ## Dedicated Telegram test-server qualification — 2026-10-10
 
 - VERIFIED BASELINE: main a0ab15c includes Stars PR #32 and corrections #33–#35.

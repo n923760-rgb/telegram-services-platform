@@ -14,6 +14,7 @@ required by project governance. No production activation is implied by source me
 | Text PDF | Direct final text or existing AI planning, with Arabic/date checks. |
 | Text PDF to Word | Editable extracted text; no original layout/images/table reconstruction promise. |
 | Vision OCR/translation | Existing bounded AI flow, unreadable-image rejection and numeric-preservation translation gate. |
+| Independent text translation | Arabic/English target and formal/business/academic/casual style. Source-line IDs checked exactly once, numeric tokens checked per line, original blank lines retained; chat text plus UTF-8 TXT. Default disabled pending live meaning/style qualification. |
 | Local printed OCR | Source text/TXT, Arabic/English/mixed, native confidence/numeric safeguards; compare against original images. |
 | PDF tools | Merge ordered PDFs or extract selected pages, without AI; signatures/forms unsupported. |
 | Word/PDF bundle | Final text, professional template, editable DOCX plus native PDF from the same document. |
@@ -26,6 +27,7 @@ required by project governance. No production activation is implied by source me
 
 | Priority | Service | Value and acceptance required |
 | --- | --- | --- |
+| Current | Independent text translation | Added on owner request, 2026-10-10. Bounded pasted text only; no uploaded-document layout reconstruction, certified translation or claim that structural checks prove semantic accuracy. |
 | 1 | CV formatting (merged, disabled) | Structured actual career details, classic single-column Word/PDF, Arabic or English headings. Formatting only; no invented facts, translation or ATS/job outcome guarantee. Native content/layout and capture/release tests required. |
 | 2 | Images to PDF (merged, disabled) | Ordered pages, EXIF orientation, consistent A4 layout and original aspect ratio. Quality bounded by uploaded image resolution; no OCR or scan-enhancement promise. |
 | 3 | Meeting-note organization (merged, disabled) | Decisions/actions grouped from source notes with traceable references, no invented assignees/deadlines. Requires source-bound extraction/schema repair and real-provider semantic qualification. |
@@ -34,6 +36,23 @@ required by project governance. No production activation is implied by source me
 | 6 | Study revision pack | Source-bound summary, revision questions and answers with references. Requires omission/fact checks; never fabricate external sources. |
 | 7 | Business document packs | Brief/report/proposal from actual supplied facts, consistent Word/PDF. Define each contract and verification before adding a plugin. |
 | Later | Searchable scanned PDF, background removal, compression | Qualify resource/model/component licenses and actual output improvement separately before installing tools. |
+
+## Suggested next paid deliverables
+
+These are proposals, not implemented or activated services. Start each with a bounded
+source contract, editable/useful output and live customer/provider quality acceptance.
+
+| Service | Concrete customer result |
+| --- | --- |
+| Source-bound summaries/revision | A concise summary with traceable source sections, then optional study questions/answers. |
+| Writing and proofreading | Improve a supplied email/letter while preserving names, dates and factual claims; review the revised text. |
+| CV writing/translation | Rewrite actual provided career facts, then use the existing CV Word/PDF formatter; no invented achievements. |
+| Business documents | A quotation/proposal/report from supplied details; no invented tax, legal or financial facts. |
+
+Existing CV formatting, PDF utilities, CSV review, images PDF and document bundles
+already provide deliverables without new AI calls; improve their real acceptance and
+pricing before expanding the tool inventory for its own sake. Added source code is
+distinct from runtime deployment, service enablement and a qualified paid launch.
 
 ## Merge and activation gates
 
