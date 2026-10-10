@@ -179,3 +179,9 @@ notices. Dependencies have their own terms; this is not a blanket license assert
 for optional models or every bundled library. No upstream code is vendored/modified.
 OpenCV here is Camelot's extraction dependency, not a customer image-enhancement
 feature. Further tools from the research list remain unimplemented proposals.
+
+## Optional source-owned PDF visual review
+
+`DOCUMENT_VISUAL_REVIEW=false` is the default. After staging qualification, enabling it adds a first-page PNG review to builder-owned Word/PDF pairs (Word/PDF bundle, CV and minutes). The worker stores the final files before review; customer approval delivers those same bytes without another AI/export. Page count is displayed; the preview does not show all pages. pypdfium2 uses the existing locked dependency and package attribution above.
+
+Preview child uses private temporary files and fixed bounds (PDF 10 MiB / 50 pages; PNG 960x1440 / 3 MiB; 512 MiB address space, 15 CPU / 20 wall seconds). It shares native capacity with OCR/export. Native limits are not a sandbox or server/container quota. Preview images follow owner access, active-order protection and terminal deletion. Reviews expire after the existing 30-minute window; SAR releases / Stars refund evidence remain distinct. Validate Telegram image readability and server capacity before enabling. See the 2026-10-11 visual-review report.

@@ -20,6 +20,9 @@ class Delivery(ABC):
     async def error(self, user_id: int, order_id, key: str):
         raise NotImplementedError
 
+    async def visual_confirmation(self, user_id, order_id, result: Result):
+        raise NotImplementedError
+
 
 class TelegramDelivery(Delivery):
     def __init__(self, bot: Bot, storage=None):
@@ -73,18 +76,40 @@ class TelegramDelivery(Delivery):
             user_id, tr("order_failed", lang, order_id=order_reference(order_id), reason=reason)
         )
 
-    async def confirmation(self, user_id, order_id, preview):
+    async def send_preview_images(self, user_id, result):
         lang = await self._lang(user_id)
+        for artifact in result.preview_artifacts:
+            await self.bot.send_photo(
+                user_id,
+                BufferedInputFile(
+                    self.storage.read(artifact.key, user_id), filename=artifact.filename
+                ),
+                caption=tr("document_preview_caption", lang),
+            )
+
+    async def visual_confirmation(self, user_id, order_id, result):
+        await self.send_preview_images(user_id, result)
+        await self.confirmation(
+            user_id,
+            order_id,
+            result_preview(result.model_dump(), await self._lang(user_id)),
+            prepared=result.prepared_delivery,
+        )
+
+    async def confirmation(self, user_id, order_id, preview, *, prepared=False):
+        lang = await self._lang(user_id)
+        suffix = ":visual" if prepared else ""
         markup = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=tr("approve_structure", lang), callback_data=f"approve:{order_id}"
+                        text=tr("approve_delivery" if prepared else "approve_structure", lang),
+                        callback_data=f"approve:{order_id}{suffix}",
                     )
                 ],
                 [
                     InlineKeyboardButton(
-                        text=tr("cancel_order", lang), callback_data=f"reject:{order_id}"
+                        text=tr("cancel_order", lang), callback_data=f"reject:{order_id}{suffix}"
                     )
                 ],
             ]

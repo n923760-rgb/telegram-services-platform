@@ -139,6 +139,8 @@ class Artifact(BaseModel):
 class Result(BaseModel):
     text: str = ""
     artifacts: list[Artifact] = []
+    preview_artifacts: list[Artifact] = []
+    prepared_delivery: bool = False
     preview: str = ""
     preview_localizations: dict[Literal["ar", "en"], str] = {}
     needs_confirmation: bool = False
@@ -151,6 +153,14 @@ class Result(BaseModel):
             raise ValueError("empty result")
         if self.needs_confirmation and not self.continuation:
             raise ValueError("missing continuation")
+        if len(self.preview_artifacts) > 1 or any(
+            image.mime != "image/png" for image in self.preview_artifacts
+        ):
+            raise ValueError("invalid visual preview")
+        if self.prepared_delivery and (
+            not self.needs_confirmation or not self.artifacts or not self.preview_artifacts
+        ):
+            raise ValueError("invalid prepared delivery")
         if (
             len(self.text) > 50000
             or len(self.preview) > 3000

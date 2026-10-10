@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Source-owned document visual review — 2026-10-11
+
+- OWNER AUTHORITY: Continue recommended previews/image-quality improvements and verified merges.
+- VERIFIED BASELINE: Main 38fbd5b / PR #42; 912 tests and seven native worker gates passed.
+- CURRENT SLICE: Optional first-page PDF visual review for source-owned Word/PDF pairs; cached file delivery after approval, owner-bound preview retention and phase-safe notification/controls. No new dependency or migration.
+- PASS LOCAL: 56 focused checks, native PDF first-page image and visual inspection, lint/format/diff; PostgreSQL/full native Word qualification requires hosted CI. Local LibreOffice unavailable.
+- Evidence: [visual review report](REPORTS/2026-10-11-document-visual-review.md).
+- NOT RUN: Server installation/enablement, customer/mobile/throughput acceptance; independent image enhancement is next.
+
 ## Service menu and confirmation price layout — 2026-10-10
 
 - OWNER AUTHORITY: Prices only in the confirmation review, clearer service buttons and related workbook instructions.

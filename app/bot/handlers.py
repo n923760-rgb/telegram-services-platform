@@ -419,10 +419,14 @@ def create_router():
 
         await callback.answer()
         try:
+            parts = callback.data.split(":")
+            if len(parts) not in {2, 3} or (len(parts) == 3 and parts[2] != "visual"):
+                raise ServiceError("invalid_request")
             await confirm_structure(
-                UUID(callback.data.split(":")[1]),
+                UUID(parts[1]),
                 callback.from_user.id,
                 callback.data.startswith("approve:"),
+                expected_prepared=len(parts) == 3,
             )
             try:
                 await callback.message.edit_reply_markup()

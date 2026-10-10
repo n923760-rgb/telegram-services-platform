@@ -726,3 +726,55 @@ async def test_reconciliation_requires_exact_refund_proof(stars, wrong):
     async with sessions() as db:
         assert (await db.get(StarCharge, "charge")).state == "paid"
         assert (await db.get(Order, oid)).status == "queued"
+
+
+@pytest.mark.parametrize("approved", [True, False])
+async def test_prepared_visual_delivery_uses_original_stars_charge(
+    stars, tmp_path, monkeypatch, approved
+):
+    from unittest.mock import AsyncMock
+
+    from app.orders.engine import confirm_structure
+    from app.providers.storage import OwnedStorage
+    from app.services.base import Result
+    from app.services.registry import registry
+    from app.workers.runner import deliver_confirmations
+
+    oid = await prepare()
+    await pay(oid)
+    store = LocalStorage(tmp_path)
+    owned = OwnedStorage(store, 1)
+    final = owned.save("final.pdf", b"prepared bytes", "application/pdf")
+    image = owned.save("preview.png", b"preview bytes", "image/png")
+    plugin = NS(
+        run=AsyncMock(
+            return_value=Result(
+                artifacts=[final],
+                preview_artifacts=[image],
+                prepared_delivery=True,
+                needs_confirmation=True,
+                continuation={"prepared": True},
+                preview="Ready",
+            )
+        )
+    )
+    monkeypatch.setattr(registry, "get", lambda slug, runtime: plugin)
+    delivery = FileDelivery(store)
+    delivery.visual_confirmation = AsyncMock()
+    ctx = {"delivery": delivery, "runtime_factory": lambda jid, uid: NS(storage=owned)}
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await deliver_confirmations(ctx)
+    assert delivery.visual_confirmation.await_count == 1
+    await confirm_structure(oid, 1, approved)
+    if approved:
+        await execute_job(ctx, str(jid))
+        assert delivery.files == [("final.pdf", b"prepared bytes")]
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == ("completed" if approved else "cancelled")
+        assert (await db.get(StarCharge, "charge")).state == (
+            "paid" if approved else "refund_pending"
+        )
+        assert await db.scalar(select(func.count(Ledger.id))) == 0
+    assert plugin.run.await_count == 1

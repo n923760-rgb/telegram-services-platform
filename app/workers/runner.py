@@ -270,11 +270,17 @@ async def deliver_confirmations(ctx):
         )
     for order_id, user_id, result in rows:
         try:
-            await ctx["delivery"].confirmation(
-                user_id, order_id, result_preview(result, await get_language(user_id))
-            )
+            if (result or {}).get("preview_artifacts"):
+                await ctx["delivery"].visual_confirmation(
+                    user_id, order_id, Result.model_validate(result)
+                )
+            else:
+                await ctx["delivery"].confirmation(
+                    user_id, order_id, result_preview(result, await get_language(user_id))
+                )
         except Exception:
             continue
         async with sessions.begin() as db:
-            order = await db.get(Order, order_id)
-            order.confirmation_notified = True
+            order = await db.get(Order, order_id, with_for_update=True)
+            if order and order.status == "waiting_confirmation" and order.result == result:
+                order.confirmation_notified = True

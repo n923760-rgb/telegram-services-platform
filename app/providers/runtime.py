@@ -5,6 +5,7 @@ from app.providers.ai.gateway import AI
 from app.providers.ai.openai_compatible import OpenAICompatible
 from app.providers.documents.base import DocumentProcessor
 from app.providers.documents.libreoffice import LibreOfficeDocuments
+from app.providers.documents.previews import PdfPreviews, PreviewRenderer
 from app.providers.documents.rendering import DocumentRenderer
 from app.providers.documents.tesseract import TesseractDocuments
 from app.providers.storage import LocalStorage, OwnedStorage
@@ -19,6 +20,7 @@ class Runtime:
     documents: DocumentProcessor | None = None
     renderer: DocumentRenderer | None = None
     tables: TableExtractor | None = None
+    previews: PreviewRenderer | None = None
 
 
 def provider():
@@ -44,4 +46,5 @@ def runtime_for(job_id, user_id, *, needs_ai=True):
         TesseractDocuments(),
         LibreOfficeDocuments(),
         CamelotTables(),
+        PdfPreviews() if config().document_visual_review else None,
     )
