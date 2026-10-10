@@ -1,0 +1,150 @@
+{
+  "observed_at": "2026-10-08T23:39:14.080Z",
+  "target": {
+    "repository": "n923760-rgb/telegram-services-platform",
+    "official_branch": "main",
+    "head": "6415e57da8cec22d198c4bd941d4ffa864dc3c98",
+    "tree": "a3daed90963d47863e596da8606eddb63747ef32",
+    "classic_branch_protected": false,
+    "repository_rulesets": [],
+    "workflow": {
+      "id": 37831298533,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 113497016943,
+          "name": "test",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1
+            },
+            {
+              "name": "Initialize containers",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3
+            },
+            {
+              "name": "Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 4
+            },
+            {
+              "name": "Run python -m pip install uv==0.12.19",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5
+            },
+            {
+              "name": "Run sudo apt-get update && sudo apt-get install -y fonts-dejavu-core",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6
+            },
+            {
+              "name": "Run uv sync --locked --group dev",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7
+            },
+            {
+              "name": "Run uv run ruff check .",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8
+            },
+            {
+              "name": "Run uv run ruff format --check .",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9
+            },
+            {
+              "name": "Run uv run alembic upgrade head",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10
+            },
+            {
+              "name": "Run uv run pytest -q",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11
+            },
+            {
+              "name": "Run uv run alembic check",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 12
+            },
+            {
+              "name": "Validate Compose with example configuration",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13
+            },
+            {
+              "name": "Post Run actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 24
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 25
+            },
+            {
+              "name": "Stop containers",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 26
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27
+            }
+          ]
+        }
+      ]
+    },
+    "open_pr": {
+      "number": 20,
+      "head": "ea3b7d09ebe338a6c9fce306ee20d6691e971dae",
+      "topic": "OCR translation numeric fidelity",
+      "overlapping_files": []
+    }
+  },
+  "reference": {
+    "repository": "n923760-rgb/engineering-governance",
+    "head": "f3ec2dcca8851d185c2fb0ab96214a6662e52c6c",
+    "tree": "40ca567a91de1591426e81cc2b1e27b53cc495eb",
+    "workflow": {
+      "id": 37860391490,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  },
+  "method": "GitHub connector GET responses; sanitized selected fields; live Git confirmed target main.",
+  "limits": [
+    "API observation is a timestamped snapshot.",
+    "Hosted checks do not prove real provider/runtime or actual AI executor isolation.",
+    "This artifact contains no credentials or customer content."
+  ]
+}
