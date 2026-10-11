@@ -83,6 +83,7 @@ jobs:
           from PIL import Image
           from app.providers.documents.previews import PdfPreviews
           from app.builders.document_image import build as enhance_image
+          from tests.document_image_fixtures import shaded, check_quality
           from tests.csv_similarity_fixtures import inputs as similarity_inputs
           from app.services.image_to_text.service import ImageToText
           from app.services.pdf_tables_excel.service import PdfTablesExcel
@@ -121,6 +122,15 @@ jobs:
                       assert pair.size == (after.width * 2, after.height)
                   recognition = await processor().recognize([enhanced], "en")
                   assert recognition.text == expected
+              for language, expected in [
+                  ("en", "Invoice 00123\nTotal 125.50\nDate 2026-10-09"),
+                  ("mixed", "مرحبا بكم\nInvoice 00123\nTotal 125.50"),
+              ]:
+                  _, _, enhanced, _ = enhance_image(shaded(expected))
+                  recognition = await processor().recognize([enhanced], language)
+                  assert recognition.text.replace('\u200f', '') == expected
+              _, _, enhanced, _ = enhance_image(shaded())
+              check_quality(enhanced)
               rendered = await renderer().word_pdf(document())
               preview = await PdfPreviews().first_page(rendered.pdf)
               assert preview.pages == 1
@@ -191,5 +201,6 @@ jobs:
           print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
           print('Non-root worker: document image contrast/grayscale and numeric OCR fixture PASS with network disabled')
           print('Non-root worker: Arabic/English lexical CSV candidates, numeric exclusions and literal source retention PASS with network disabled')
+          print('Non-root worker: automatic document illumination, colored stamp and mixed numeric OCR fixture PASS with network disabled')
           print('Non-root worker: unified mixed-language OCR and automatic Arabic/English ruled/unruled table extraction PASS with network disabled')
           PY

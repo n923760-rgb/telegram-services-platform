@@ -13,7 +13,7 @@ from app.wallet.ledger import halalas
 
 
 def _input_contract(schema):
-    """Ignore only the no-op defaults added to InputField in the title upgrade.
+    """Ignore only known no-op defaults added to InputField.
 
     Preserve unknown keys and every other difference so real changes still need a bump.
     Copy rather than mutate the DB snapshot or a plugin's schema.
@@ -26,6 +26,8 @@ def _input_contract(schema):
                 field.pop("skip_key")
             if field.get("single_line") is False:
                 field.pop("single_line")
+            if field.get("preserve_image") is False:
+                field.pop("preserve_image")
             normalize(field.get("fields", []))
 
     normalize(result.get("fields", []))

@@ -4,7 +4,7 @@ from io import BytesIO
 
 from PIL import Image
 
-from app.files.validation import image
+from app.files.validation import image_pixels
 
 FORMATS = {
     "JPEG": ("jpg", "image/jpeg"),
@@ -13,31 +13,46 @@ FORMATS = {
 }
 
 
-def build(data: bytes, mode: str):
+def build(data: bytes, mode: str = "contrast"):
     if mode not in {"contrast", "grayscale"}:
         raise ValueError("unsupported mode")
-    # The shared validator bounds decoding and corrects EXIF. Processing is <=1024x1024.
-    normalized = image(data, 10 * 1024 * 1024)
+    # Keep source pixels without the old intermediate JPEG encode; never upscale.
+    original = image_pixels(data, 10 * 1024 * 1024, max_side=2048)
     with Image.open(BytesIO(data)) as source:
         extension, mime = FORMATS[source.format]
-    with Image.open(BytesIO(normalized)) as source:
-        original = source.convert("RGB")
     import cv2
     import numpy as np
 
     pixels = np.array(original)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    lab = cv2.cvtColor(pixels, cv2.COLOR_RGB2LAB)
+    light = lab[:, :, 0]
+    residual = np.abs(light.astype(np.int16) - cv2.medianBlur(light, 3).astype(np.int16))
+    # Only denoise detected high-frequency texture, blending to retain weak strokes.
+    if np.median(residual) >= 2:
+        filtered = cv2.bilateralFilter(light, 5, 18, 2)
+        light = cv2.addWeighted(light, 0.5, filtered, 0.5, 0)
+    background = cv2.GaussianBlur(
+        light.astype(np.float32), (0, 0), sigmaX=max(3, min(light.shape) / 20)
+    )
+    low, high = np.percentile(background, (10, 90))
+    # Avoid treating dark pages/flat images as uneven white paper. No cropping,
+    # thresholding, geometric correction, learned reconstruction or text synthesis.
+    if np.median(light) > 110 and high - low > 18:
+        gain = np.clip(high / np.maximum(background, 32), 1.0, 1.6)
+        light = np.clip(light.astype(np.float32) * gain, 0, 255).astype(np.uint8)
+    clahe = cv2.createCLAHE(clipLimit=1.3, tileGridSize=(8, 8))
+    adjusted = cv2.addWeighted(light, 0.65, clahe.apply(light), 0.35, 0)
     if mode == "grayscale":
-        processed = Image.fromarray(clahe.apply(cv2.cvtColor(pixels, cv2.COLOR_RGB2GRAY))).convert(
-            "RGB"
-        )
+        processed = Image.fromarray(adjusted).convert("RGB")
     else:
-        lab = cv2.cvtColor(pixels, cv2.COLOR_RGB2LAB)
-        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+        lab[:, :, 0] = adjusted
         processed = Image.fromarray(cv2.cvtColor(lab, cv2.COLOR_LAB2RGB))
-    comparison = Image.new("RGB", (original.width * 2, original.height), "white")
-    comparison.paste(original, (0, 0))
-    comparison.paste(processed, (original.width, 0))
+    before, after = original.copy(), processed.copy()
+    before.thumbnail((1024, 1024))
+    after.thumbnail((1024, 1024))
+    comparison = Image.new("RGB", (before.width * 2, before.height), "white")
+    comparison.paste(before, (0, 0))
+    comparison.paste(after, (before.width, 0))
     outputs = []
     for picture in (processed, comparison):
         stream = BytesIO()

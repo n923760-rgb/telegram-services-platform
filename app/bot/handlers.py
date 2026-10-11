@@ -361,7 +361,8 @@ def create_router():
             from app.files.telegram import receive
 
             try:
-                value = await receive(message, field.kind, message.from_user.id)
+                options = {"preserve_image": True} if field.preserve_image else {}
+                value = await receive(message, field.kind, message.from_user.id, **options)
             except ServiceError as error:
                 await message.answer(tr(error.key, lang))
                 return

@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Automatic document image enhancement v2 — 2026-10-11
+
+- OWNER AUTHORITY: Improve the weak document image result; one customer outcome, internal implementation selection, payment last.
+- BASELINE: Main 47aee09 / PR #51; operator reported healthy deployment. Uploaded comparison is not the raw source and is not a fidelity fixture.
+- CHANGE: One image question; opt-in exact validated received source; lossless decode and 2048px bound; conservative illumination/noise/luminance contrast processing; enhanced/comparison/source delivery order.
+- COMPATIBILITY: Generic preserve_image default is a no-op for all existing plugins. v2 real contract bump preserves admin price/enabled settings; incompatible queued v1 releases, prepared results replay. No dependencies, migration, AI or payment changes.
+- Evidence: [Enhancement v2 report](REPORTS/2026-10-11-document-image-v2.md). Full exact-head hosted lifecycle and twelve actual native worker gates required before merge.
+- NOT RUN: Updated VPS/mobile acceptance, source-photo moire/faint handwriting/general OCR acceptance and production load.
+
 ## Completion navigation across services — 2026-10-11
 
 - OWNER AUTHORITY: Home/another-service controls after any service; continue service development/activation, payment last.

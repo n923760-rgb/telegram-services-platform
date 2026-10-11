@@ -24,7 +24,7 @@ async def test_legacy_service_snapshots_upgrade_without_cancelling_unchanged_ord
     async with sessions.begin() as db:
         for slug, cls in registry.types.items():
             row = await db.get(Service, slug)
-            # Exact old serialization: the two new InputField keys were absent.
+            # Exact old serialization: known no-op InputField defaults were absent.
             old = _input_contract(cls.input_schema.model_dump())
             row.input_schema = old
             row.enabled, row.price_halala = True, 777
@@ -110,7 +110,13 @@ async def test_office_upgrade_preserves_admin_settings_and_releases_old_job(
 
 
 @pytest.mark.parametrize(
-    "change", [{"single_line": True}, {"skip_key": "document_no_title"}, {"unknown": False}]
+    "change",
+    [
+        {"single_line": True},
+        {"skip_key": "document_no_title"},
+        {"unknown": False},
+        {"preserve_image": True},
+    ],
 )
 async def test_registry_still_rejects_real_or_unknown_same_version_changes(change):
     async with sessions.begin() as db:
@@ -139,6 +145,7 @@ def test_contract_default_normalization_is_recursive_and_does_not_mutate():
     assert schema == original
     assert "single_line" not in legacy["fields"][0]["fields"][0]
     assert "skip_key" not in legacy["fields"][0]
+    assert "preserve_image" not in legacy["fields"][0]["fields"][0]
     assert _input_contract(legacy) == legacy
 
 
