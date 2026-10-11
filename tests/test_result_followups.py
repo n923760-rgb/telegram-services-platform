@@ -80,20 +80,39 @@ async def test_original_then_independent_translation_intake_and_single_capture(
 
 
 @pytest.mark.parametrize("slug", ["image_to_text", "local_ocr"])
-async def test_delivery_places_optional_button_after_original_text(flow, completed, slug):
-    transport, message, _, _ = flow
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_delivery_places_optional_button_after_original_text(flow, completed, slug, lang):
+    from app.core.users import set_language
+
+    transport, message, callback, state = flow
     oid, store, _, _, _, _ = completed
     async with sessions.begin() as db:
         order = await db.get(Order, oid)
         order.service_slug, order.service_version = slug, registry.types[slug].version
         order.status = "delivering"
+    await set_language(1, lang)
     await message("/start")
     adapter = TelegramDelivery(Bot("123456:TEST_TOKEN_ONLY", session=transport), store)
     await adapter.send(1, oid, Result(text=SOURCE))
     assert transport.messages[-2].text == SOURCE
-    assert transport.messages[-1].text == tr("result_followups")
+    assert transport.messages[-1].text == tr("result_followups", lang)
+    rows = transport.messages[-1].reply_markup.inline_keyboard
+    assert [len(row) for row in rows] == [1, 1, 1]
+    assert [(row[0].text, row[0].callback_data) for row in rows] == [
+        (tr("home", lang), "menu:home"),
+        (tr("result_another_service", lang), "menu:services"),
+        (tr("translate_result", lang), f"follow:{oid.hex}:0"),
+    ]
     assert button_by_prefix(transport.messages[-1].reply_markup, "follow:") == f"follow:{oid.hex}:0"
     assert len(f"follow:{oid.hex}:0".encode()) <= 64
+    for navigation in ("menu:home", "menu:services"):
+        await callback(navigation)
+        assert await state.get_state() is None
+        assert "inputs" not in await state.get_data()
+        async with sessions() as db:
+            assert await db.scalar(select(func.count(Order.id))) == 1
+            assert (await balance(db, 1)).reserved == 0
+            assert (await db.get(Order, oid)).result["text"] == SOURCE
 
 
 @pytest.mark.parametrize(

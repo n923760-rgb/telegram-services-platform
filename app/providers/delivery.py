@@ -65,6 +65,10 @@ class TelegramDelivery(Delivery):
                 tr("result_followups", lang),
                 reply_markup=buttons(
                     [
+                        (tr("home", lang), "menu:home"),
+                        (tr("result_another_service", lang), "menu:services"),
+                    ]
+                    + [
                         (tr(action.label_key, lang), f"follow:{reference.hex}:{index}")
                         for index, (action, _, _) in actions.items()
                     ]
