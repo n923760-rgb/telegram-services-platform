@@ -52,6 +52,19 @@ class Registry:
                 if cls.slug in self.types:
                     raise ValueError("duplicate service")
                 self.types[cls.slug] = cls
+        from app.core.i18n import CATALOGS
+
+        for cls in self.types.values():
+            if len(cls.text_followups) > 3:
+                raise ValueError("too many result followups")
+            for action in cls.text_followups:
+                target = self.types.get(action.service)
+                if not target or any(
+                    action.label_key not in CATALOGS[lang] for lang in ("ar", "en")
+                ):
+                    raise ValueError("invalid result followup")
+                # Validate declaration structure without a runtime/provider or customer content.
+                BaseService.validate_followup_text.__func__(target, action.field, "x")
         return self
 
     def get(self, slug, runtime=None):

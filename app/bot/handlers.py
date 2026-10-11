@@ -106,6 +106,30 @@ def create_router():
             return True
         return False
 
+    async def start_draft(message, state, service, lang, *, inputs=None, index=0):
+        from app.payments.stars import terms_hash
+
+        await state.set_state("collect")
+        await state.set_data(
+            {
+                "slug": service.slug,
+                "name_ar": service.name_ar,
+                "name_en": service.name_en,
+                "schema": service.input_schema,
+                "price": service.price_halala,
+                "version": service.version,
+                "inputs": inputs or {},
+                "index": index,
+                "key": uuid4().hex,
+                "payment_mode": "stars" if config().stars_enabled else "test_credit",
+                "stars_price": service.price_stars if config().stars_enabled else None,
+                "terms_version": config().stars_terms_version if config().stars_enabled else None,
+                "terms_hash": terms_hash() if config().stars_enabled else None,
+                "terms": {"ar": config().stars_terms_ar, "en": config().stars_terms_en},
+            }
+        )
+        await ask(message, state, lang)
+
     @router.callback_query(F.data.startswith("service:"))
     async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await register(callback.from_user.id)
@@ -118,28 +142,37 @@ def create_router():
         if config().stars_enabled and service.price_stars is None:
             await callback.message.answer(tr("unavailable", lang))
             return
-        from app.payments.stars import terms_hash
+        await start_draft(callback.message, state, service, lang)
 
-        await state.set_state("collect")
-        await state.set_data(
-            {
-                "slug": service.slug,
-                "name_ar": service.name_ar,
-                "name_en": service.name_en,
-                "schema": service.input_schema,
-                "price": service.price_halala,
-                "version": service.version,
-                "inputs": {},
-                "index": 0,
-                "key": uuid4().hex,
-                "payment_mode": "stars" if config().stars_enabled else "test_credit",
-                "stars_price": service.price_stars if config().stars_enabled else None,
-                "terms_version": config().stars_terms_version if config().stars_enabled else None,
-                "terms_hash": terms_hash() if config().stars_enabled else None,
-                "terms": {"ar": config().stars_terms_ar, "en": config().stars_terms_en},
-            }
+    @router.callback_query(F.data.startswith("follow:"))
+    async def follow_result(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        from app.bot.followups import available_followups, parse_callback
+        from app.bot.ui import section_controls
+
+        try:
+            order_id, index = parse_callback(callback.data)
+            action = (await available_followups(callback.from_user.id, order_id)).get(index)
+            if not action:
+                raise ServiceError("followup_unavailable")
+        except ServiceError as error:
+            await callback.answer(tr(error.key, lang), show_alert=True)
+            return
+        # Repeated clicks recover a pending prompt, never overwrite an active draft.
+        if (await state.get_data()).get("key"):
+            await callback.answer()
+            if await _resume_if_pending(callback.message, state, lang):
+                return
+            await callback.message.answer(
+                tr("followup_draft_exists", lang),
+                reply_markup=buttons(await section_controls(state, lang)),
+            )
+            return
+        followup, service, text = action
+        await callback.answer()
+        # Keep the original result/order untouched and use the usual target intake.
+        await start_draft(
+            callback.message, state, service, lang, inputs={followup.field: text}, index=1
         )
-        await ask(callback.message, state, lang)
 
     @router.callback_query(F.data.startswith("lang:"))
     async def language_choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):

@@ -178,7 +178,7 @@ async def test_failed_more_files_prompt_recovers(monkeypatch):
     assert transport.messages[-1].text.endswith(tr("more_files"))
     assert button_by_prefix(transport.messages[-1].reply_markup, "done:")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "done:"))
-    assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()
     await bot.session.close()
 
@@ -235,7 +235,6 @@ async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
     assert transport.messages[-1].text.endswith(tr("more_files"))
     # Complete the draft: only A was accepted, B was never received.
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "done:"))
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     assert counter["n"] == 1
     async with sessions() as db:

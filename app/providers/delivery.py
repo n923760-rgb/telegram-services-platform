@@ -49,6 +49,27 @@ class TelegramDelivery(Delivery):
                     self.storage.read(artifact.key, user_id), filename=artifact.filename
                 ),
             )
+        from app.bot.followups import available_followups
+        from app.bot.ui import buttons
+
+        try:
+            reference = UUID(str(order_id))
+        except (ValueError, TypeError, AttributeError):
+            reference = None
+        actions = (
+            await available_followups(user_id, reference, delivering=True) if reference else {}
+        )
+        if actions:
+            await self.bot.send_message(
+                user_id,
+                tr("result_followups", lang),
+                reply_markup=buttons(
+                    [
+                        (tr(action.label_key, lang), f"follow:{reference.hex}:{index}")
+                        for index, (action, _, _) in actions.items()
+                    ]
+                ),
+            )
         return "telegram:accepted"
 
     async def error(self, user_id, order_id, key):
