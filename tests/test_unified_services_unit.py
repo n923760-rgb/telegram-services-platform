@@ -12,26 +12,29 @@ from app.services.image_to_text.service import ImageToText
 from app.services.pdf_tables_excel.service import PdfTablesExcel
 from app.services.pdf_tables_excel.test_service import extraction, inputs
 from app.services.registry import Registry, registry
+from tests.ocr_fixtures import printed
 
 
 def ocr(tmp_path, recognition=None, error=None):
     storage = OwnedStorage(LocalStorage(tmp_path), 1)
-    image = storage.save("image.jpg", b"synthetic", "image/jpeg")
+    image = storage.save("image.jpg", printed(), "image/jpeg")
     documents = SimpleNamespace(recognize=AsyncMock(return_value=recognition, side_effect=error))
     ai = SimpleNamespace(
-        extract=AsyncMock(return_value=Extracted(readable=True, confidence=0.99, text="AI 00123"))
+        review_candidate=AsyncMock(side_effect=lambda candidate, *args, **kwargs: candidate),
+        extract=AsyncMock(return_value=Extracted(readable=True, confidence=0.99, text="AI 00123")),
     )
     service = ImageToText()
     service.runtime = SimpleNamespace(storage=storage, documents=documents, ai=ai)
     return service, {"images": [image.key]}, documents, ai
 
 
-async def test_one_native_result_preserves_original_and_does_not_call_ai(tmp_path):
+async def test_one_native_result_preserves_original_and_is_reviewed_without_regeneration(tmp_path):
     service, request, documents, ai = ocr(tmp_path, Recognition("Original 00123", 0.95))
     result = await service.run(request)
     assert result.text == "Original 00123" and not result.needs_confirmation
-    documents.recognize.assert_awaited_once_with([b"synthetic"], "mixed")
+    documents.recognize.assert_awaited_once_with([printed()], "mixed")
     ai.extract.assert_not_awaited()
+    ai.review_candidate.assert_awaited_once()
 
 
 @pytest.mark.parametrize("confidence", [0.0, 0.7, 0.899])

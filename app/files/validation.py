@@ -56,9 +56,9 @@ def image_pixels(data: bytes, max_bytes: int, *, max_side: int = 1024) -> Image.
         raise ServiceError("file_invalid") from None
 
 
-def image(data: bytes, max_bytes: int) -> bytes:
-    # Preserve the existing 1024px/JPEG admission and AI/OCR contract.
-    picture = image_pixels(data, max_bytes)
+def image(data: bytes, max_bytes: int, *, max_side: int = 1024) -> bytes:
+    # Default intake retains its 1024px bound; trusted OCR opts into 2048px.
+    picture = image_pixels(data, max_bytes, max_side=max_side)
     output = BytesIO()
     try:
         picture.save(output, format="JPEG", quality=88, optimize=True)

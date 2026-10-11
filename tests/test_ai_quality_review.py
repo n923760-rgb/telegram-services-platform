@@ -226,3 +226,48 @@ def test_production_runtime_automatically_reviews(monkeypatch):
     active = runtime.runtime_for("job", 1, needs_ai=True)
     assert active.ai.provider is provider and active.ai.quality_review is True
     assert runtime.runtime_for("job", 1, needs_ai=False).ai is None
+
+
+async def test_native_candidate_approval_uses_one_review_without_regeneration(ledger):
+    candidate = Document.model_validate_json(CONTENT)
+    provider = Provider(['{"accepted":true,"issues":[]}'])
+    result = await AI(provider, "job", 1, quality_review=True).review_candidate(
+        candidate, "source", "Preserve all numeric values"
+    )
+    assert result is candidate and provider.calls == 1
+    assert [event[0] for event in ledger] == ["reserve", "settle"]
+
+
+async def test_native_candidate_corrected_once_and_rejected_final_review_fails(ledger):
+    provider = Provider(
+        [
+            "{}",
+            '{"accepted":false,"issues":["numbers"]}',
+            CONTENT,
+            '{"accepted":false,"issues":["numbers"]}',
+            "unused",
+        ]
+    )
+    with pytest.raises(ServiceError, match="provider_invalid"):
+        await AI(provider, "job", 1, quality_review=True).review_candidate(
+            Document.model_validate_json(CONTENT), "source", "Preserve numeric values"
+        )
+    assert provider.calls == 4 and provider.responses == ["unused"]
+    assert [event[0] for event in ledger] == ["reserve", "settle"] * 4
+
+
+async def test_native_correction_schema_failure_never_adds_another_creation(ledger):
+    provider = Provider(['{"accepted":false,"issues":["numbers"]}', "{}", "unused"])
+    with pytest.raises(ServiceError, match="provider_invalid"):
+        await AI(provider, "job", 1, quality_review=True).review_candidate(
+            Document.model_validate_json(CONTENT), "source"
+        )
+    assert provider.calls == 2 and provider.responses == ["unused"]
+
+
+async def test_native_review_failure_keeps_uncertain_usage(ledger):
+    with pytest.raises(IndexError):
+        await AI(Provider([]), "job", 1, quality_review=True).review_candidate(
+            Document.model_validate_json(CONTENT), "source"
+        )
+    assert [event[0] for event in ledger] == ["reserve", "uncertain"]

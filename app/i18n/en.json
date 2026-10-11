@@ -68,7 +68,7 @@
   "ocr_unclear": "The image could not be read clearly, so this request did not complete. Start a new request with a clearer image.",
   "ocr_name": "Extract text from images",
   "ocr_description": "Extract original image text; optional separate translation after delivery",
-  "ocr_images": "Send clear images (up to 5), then tap Done.",
+  "ocr_images": "Send up to 5 clear images, then tap Done. For small text, send the image as a file to retain detail.",
   "ocr_language": "Original text language",
   "translate_result": "Translate text — optional",
   "result_another_service": "✨ Request another service",
