@@ -73,8 +73,8 @@ async def test_ocr_long_original_cached_delivery_retains_editable_numeric_output
     tmp_path, monkeypatch
 ):
     records = 60
-    source, translated = (SOURCE + "\n") * records, (GOOD + "\n") * records
-    assert len(translated.strip()) > 3500
+    source = (SOURCE + "\n") * records
+    assert len(source.strip()) > 3500
     store, provider, delivery, ctx, price = await setup(
         "image_to_text",
         [extracted(source)],
@@ -108,7 +108,8 @@ async def test_ocr_long_original_cached_delivery_retains_editable_numeric_output
     document = Document(BytesIO(files["result.docx"]))
     body = "\n".join(p.text for p in document.paragraphs[1:])
     assert body.count("00123") == records and body.count("125.50") == records
-    document.paragraphs[1].runs[0].text = "Updated editable text 00123"
+    # Arabic dates/numbers are separate direction-aware runs; edit the whole paragraph.
+    document.paragraphs[1].text = "Updated editable text 00123"
     saved = BytesIO()
     document.save(saved)
     assert Document(BytesIO(saved.getvalue())).paragraphs[1].text == "Updated editable text 00123"

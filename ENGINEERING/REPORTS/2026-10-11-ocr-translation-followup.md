@@ -46,5 +46,13 @@ shared numeric safeguards, plugin architecture) and reviewed source change.
 Full disposable-DB lifecycle, drift, Compose and all native worker gates require
 hosted exact-head qualification; PR records actual head/run/test evidence before merge.
 
+First hosted head fd5ed5df00bf5447df0f2f339ac94e03689b0db5 / run 38116559302:
+1042 passed, one failed, one warning in 315.83s. Failure was the retained long-output
+Word editability assertion: it edited only the first run, but Arabic/date text uses
+several direction-aware runs. Corrected to edit the complete paragraph and locally
+verified numeric counts plus edit/save/reopen on the actual builder's Arabic output.
+This did not change generated files or loosen source-content checks. Drift/Compose/
+native steps were skipped on the failed run; the corrected head requires a full rerun.
+
 NOT RUN: VPS update, mobile UX and real AI/Tesseract/translation meaning/style
 acceptance for this new path. Existing operator checks do not qualify this change.
