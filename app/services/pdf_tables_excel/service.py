@@ -17,6 +17,7 @@ from app.services.pdf_tables_excel.schema import (
 
 
 class PdfTablesExcel(BaseService):
+    version = "2"
     slug = "pdf_tables_excel"
     category = "data"
     name_ar = tr("pdf_tables_name")
@@ -28,12 +29,6 @@ class PdfTablesExcel(BaseService):
     input_schema = InputSchema(
         fields=[
             InputField(name="pdf", kind="file", prompt_key="pdf_tables_file"),
-            InputField(
-                name="method",
-                prompt_key="pdf_tables_method",
-                choices=["lattice", "stream"],
-                choice_keys=["pdf_tables_lattice", "pdf_tables_stream"],
-            ),
             InputField(
                 name="mode",
                 prompt_key="pdf_tables_mode",
@@ -88,9 +83,13 @@ class PdfTablesExcel(BaseService):
         if getattr(self.runtime, "tables", None) is None:
             raise ServiceError("pdf_tables_unavailable")
         try:
-            extraction = await self.runtime.tables.extract(
-                self.runtime.storage.read(values.pdf), values.method
-            )
+            data = self.runtime.storage.read(values.pdf)
+            try:
+                extraction = await self.runtime.tables.extract(data, "lattice")
+            except DocumentError as error:
+                if error.key not in {"pdf_tables_missing", "pdf_tables_quality"}:
+                    raise
+                extraction = await self.runtime.tables.extract(data, "stream")
         except DocumentError as error:
             raise ServiceError(error.key, transient=error.transient) from None
         labels = direct_labels(extraction, values.language)

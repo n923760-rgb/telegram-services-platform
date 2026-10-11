@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Unified customer outcomes, internal engines — 2026-10-11
+
+- OWNER AUTHORITY: One OCR service, no customer local/AI selection; apply outcome-first policy to all current/future services. Payment work last.
+- BASELINE: Main 7a7c5c2 / PR #47, 1043 hosted cases and ten native gates passed.
+- SLICE: OCR v4 mixed native-first/classified AI fallback within one order/price; generic replacement metadata hides/rejects new legacy purchases and resolves old buttons to current-price canonical drafts. Retain historical execution/admin overrides.
+- CURRENT AUDIT: All 18 plugins reviewed. PDF tables v2 automatically selects bounded extraction methods; document/heading choices describe outputs, not engines. Preserve format/language/operation and rewriting consent choices.
+- SAFETY: Owner-bound bytes, numeric native thresholds retained, AI budgets unchanged, no extra fee/auto activation/migration/dependency/payment change. Confidence is not a correctness guarantee.
+- Evidence: [Unified service report](REPORTS/2026-10-11-unified-service-experience.md). Exact-head full lifecycle and eleven native worker gates required before authorized merge.
+- NOT RUN: VPS/mobile acceptance and real-provider OCR fallback on the owner screenshots.
+
 ## Original OCR and optional independent translation — 2026-10-11
 
 - OWNER AUTHORITY: Extract original text first; translation remains independent with an optional result button. Continue verified development/merges; payment work remains last.

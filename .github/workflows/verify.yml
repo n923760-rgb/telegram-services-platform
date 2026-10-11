@@ -84,8 +84,29 @@ jobs:
           from app.providers.documents.previews import PdfPreviews
           from app.builders.document_image import build as enhance_image
           from tests.csv_similarity_fixtures import inputs as similarity_inputs
+          from app.services.image_to_text.service import ImageToText
+          from app.services.pdf_tables_excel.service import PdfTablesExcel
+          from app.providers.storage import LocalStorage, OwnedStorage
+          from types import SimpleNamespace
+          from tempfile import TemporaryDirectory
           assert os.getuid() == 10001
           async def verify():
+              with TemporaryDirectory() as directory:
+                  from pathlib import Path
+                  storage = OwnedStorage(LocalStorage(Path(directory)), 1)
+                  image = storage.save('source.png', printed(), 'image/png')
+                  service = ImageToText()
+                  service.runtime = SimpleNamespace(storage=storage, documents=processor(), ai=None)
+                  result = await service.run({'images': [image.key]})
+                  assert result.text == 'Invoice 00123\nTotal 125.50\nDate 2026-10-09'
+                  for language in ('ar', 'en'):
+                      for ruled in (True, False):
+                          data, rows = table_pdf(language, ruled=ruled)
+                          source = storage.save('source.pdf', data, 'application/pdf')
+                          table_service = PdfTablesExcel()
+                          table_service.runtime = SimpleNamespace(storage=storage, tables=CamelotTables(), ai=None)
+                          result = await table_service.run({'pdf': source.key, 'mode': 'direct', 'language': language})
+                          assert result.continuation['extraction']['tables'][0]['rows'] == rows
               for language, text in [
                   ('en', 'Invoice 00123\nTotal 125.50\nDate 2026-10-09'),
                   ('ar', 'مرحبا بكم\nخدمة قراءة النصوص'),
@@ -170,4 +191,5 @@ jobs:
           print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
           print('Non-root worker: document image contrast/grayscale and numeric OCR fixture PASS with network disabled')
           print('Non-root worker: Arabic/English lexical CSV candidates, numeric exclusions and literal source retention PASS with network disabled')
+          print('Non-root worker: unified mixed-language OCR and automatic Arabic/English ruled/unruled table extraction PASS with network disabled')
           PY

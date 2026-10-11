@@ -20,6 +20,8 @@ def view(rows, lang, *, category=None, page=0):
     groups = {key: [] for key in CATEGORY_KEYS}
     for service in rows:
         cls = registry.types.get(service.slug)
+        if getattr(cls, "replaced_by", None) is not None:
+            continue
         key = getattr(cls, "category", "other")
         groups[key if key in groups else "other"].append(service)
     if category is None:

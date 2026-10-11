@@ -33,7 +33,7 @@ def test_callback_contains_only_order_reference_and_bounded_action_index():
 
 
 def test_ocr_intake_extracts_without_translation_choices():
-    assert ImageToText.version == "3"
+    assert ImageToText.version == "4"
     assert [field.name for field in ImageToText.input_schema.conversation()] == ["images"]
     assert [field.name for field in LocalOcr.input_schema.conversation()] == ["images", "language"]
     assert ImageToText.text_followups == LocalOcr.text_followups

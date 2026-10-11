@@ -15,6 +15,7 @@ from app.core.settings import config
 from app.core.users import set_language
 from app.orders.engine import register, submit
 from app.services.base import InputSchema, ServiceError, active_field, get_input, set_input
+from app.services.registry import registry
 from app.wallet.ledger import WalletError, apply, balance, halalas, sar
 
 
@@ -134,7 +135,8 @@ def create_router():
     async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await register(callback.from_user.id)
         async with sessions() as db:
-            service = await db.get(Service, callback.data.split(":", 1)[1])
+            slug = registry.customer_slug(callback.data.split(":", 1)[1])
+            service = await db.get(Service, slug) if slug else None
         await callback.answer()
         if not service or not service.enabled:
             await callback.message.answer(tr("unavailable", lang))

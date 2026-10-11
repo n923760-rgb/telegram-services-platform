@@ -55,12 +55,18 @@ class Registry:
         from app.core.i18n import CATALOGS
 
         for cls in self.types.values():
+            if cls.replaced_by is not None:
+                target = self.types.get(cls.replaced_by)
+                if not target or target is cls or target.replaced_by is not None:
+                    raise ValueError("invalid service replacement")
             if len(cls.text_followups) > 3:
                 raise ValueError("too many result followups")
             for action in cls.text_followups:
                 target = self.types.get(action.service)
-                if not target or any(
-                    action.label_key not in CATALOGS[lang] for lang in ("ar", "en")
+                if (
+                    not target
+                    or target.replaced_by is not None
+                    or any(action.label_key not in CATALOGS[lang] for lang in ("ar", "en"))
                 ):
                     raise ValueError("invalid result followup")
                 # Validate declaration structure without a runtime/provider or customer content.
@@ -71,6 +77,15 @@ class Registry:
         service = self.types[slug]()
         service.runtime = runtime
         return service
+
+    def customer_slug(self, slug):
+        """Resolve an old selection to a fresh canonical draft, never an existing order."""
+        cls = self.types.get(slug)
+        return (getattr(cls, "replaced_by", None) or slug) if cls else None
+
+    def customer_visible(self, slug):
+        cls = self.types.get(slug)
+        return cls is not None and getattr(cls, "replaced_by", None) is None
 
     async def sync(self, db):
         from sqlalchemy.dialects.postgresql import insert

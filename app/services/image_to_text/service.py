@@ -3,6 +3,7 @@ from decimal import Decimal
 from app.builders.schema import Document, Section
 from app.builders.word import build
 from app.core.i18n import tr
+from app.providers.documents.base import DocumentError
 from app.services.base import (
     BaseService,
     InputField,
@@ -16,7 +17,7 @@ from app.services.image_to_text.schema import Extracted, Inputs
 
 
 class ImageToText(BaseService):
-    version = "3"
+    version = "4"
     slug = "image_to_text"
     category = "images"
     name_ar = tr("ocr_name")
@@ -39,7 +40,24 @@ class ImageToText(BaseService):
     async def run(self, inputs):
         values = Inputs.model_validate(inputs)
         images = [self.runtime.storage.read(key) for key in values.images]
-        extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=images)
+        extracted = None
+        documents = getattr(self.runtime, "documents", None)
+        if documents is not None and sum(map(len, images)) <= 20 * 1024 * 1024:
+            try:
+                recognized = await documents.recognize(images, "mixed")
+                if recognized.confidence >= 0.90 and recognized.text.strip():
+                    extracted = Extracted(
+                        readable=True, confidence=recognized.confidence, text=recognized.text
+                    )
+            except DocumentError as error:
+                # Invalid files, resource/security failures and other errors do not
+                # authorize an outbound fallback. Both engines share one order/price.
+                if error.key not in {"ocr_unclear", "local_ocr_unavailable"}:
+                    raise ServiceError(error.key, transient=error.transient) from None
+        if extracted is None:
+            if self.runtime.ai is None:
+                raise ServiceError("provider_config")
+            extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=images)
         if not extracted.readable or extracted.confidence < 0.7 or not extracted.text.strip():
             raise ServiceError("ocr_unclear")
         text = extracted.text.strip()

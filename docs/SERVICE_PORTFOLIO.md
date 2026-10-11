@@ -13,12 +13,12 @@ required by project governance. No production activation is implied by source me
 | PowerPoint planning | Editable bounded slide layouts; source-bound native/mobile review remains necessary. |
 | Text PDF | Direct final text or existing AI planning, with Arabic/date checks. |
 | Text PDF to Word | Editable extracted text; no original layout/images/table reconstruction promise. |
-| Vision OCR | v3 extracts original image text only. Optional post-delivery shortcut to independent translation; no language/style questions during extraction. Local printed OCR retains its source-language question. |
+| Image text extraction | v4 is one customer service: internal mixed native recognition then classified AI fallback within the same confirmed price. Original text only; optional independent translation after delivery. No engine/language/style questions during extraction. |
 | Independent text translation | Arabic/English target and formal/business/academic/casual style. Source-line IDs checked exactly once, numeric tokens checked per line, original blank lines retained; chat text plus UTF-8 TXT. Default disabled pending live meaning/style qualification. |
 | Independent proofreading/rewriting | Arabic/English original language, proofreading only or formal/business/casual rewriting. Per-line numeric/email/URL checks, source coverage/order/blank lines, draft text plus TXT. Structural validation does not prove semantic fidelity. Default disabled. |
-| PDF tables to Excel | Default-disabled `pdf_tables_excel`: bounded image-free text PDFs, lattice/stream extraction, literal cells and source sheets. Optional AI headings only; mandatory confirmation. Camelot metrics are heuristics; representative PDF/mobile Excel acceptance required. |
+| PDF tables to Excel | Default-disabled v2 `pdf_tables_excel`: bounded image-free text PDFs, internal lattice/stream selection, literal cells and source sheets. Generic/proposed headings are output choices; mandatory confirmation. Camelot metrics are heuristics; representative PDF/mobile Excel acceptance required. |
 | Extract key points | Default-disabled `text_summary`: select original paragraphs, up to 3/7 points, fewer than source count. Exact source IDs only; quotes in source order, TXT report includes all numbered source paragraphs. No rewriting/translation or generated facts. Importance and omitted context still require live-provider/customer acceptance. |
-| Local printed OCR | Source text/TXT, Arabic/English/mixed, native confidence/numeric safeguards; compare against original images. |
+| Historical local OCR | Retired as a customer product, retained for historical execution. Its engine is integrated into the single image text extraction service. |
 | PDF tools | Merge ordered PDFs or extract selected pages, without AI; signatures/forms unsupported. |
 | Word/PDF bundle | Final text, professional template, editable DOCX plus native PDF from the same document. |
 | CV formatting | Structured final career facts, Arabic/English headings, classic single-column Word/PDF; PR #28 passed 545 hosted tests and native CV checks. |

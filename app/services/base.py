@@ -197,6 +197,8 @@ class BaseService:
     requires_ai = False
     runtime: Any = None
     text_followups: tuple[TextFollowup, ...] = ()
+    # Retain historical execution, but never sell a second implementation of one result.
+    replaced_by: str | None = None
 
     @classmethod
     def validate_followup_text(cls, name: str, text: str) -> None:
