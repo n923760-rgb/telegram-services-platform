@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Image enhancement candidate selection and rejection — 2026-10-11
+
+- OWNER AUTHORITY: Continue quality-first automatic AI improvement without engine choices.
+- BASELINE: Main 5ecde14 / PR #57.
+- CHANGE: Enhancement v3 evaluates source, native contrast and bounded sharpen evidence with the production AI gate. Deliver selected candidate only; no reliable improvement fails before artifact save and uses ordinary settlement.
+- COMPATIBILITY: Administrator prices/flags retained; AI now required for this outcome, no extra intake option. Old unprepared v2 jobs settle under version policy; cached results replay. No new models/dependencies, activation or deployment.
+- Evidence: [candidate review report](REPORTS/2026-10-11-enhancement-candidate-review.md). Full exact-head hosted financial/native checks required before merge; actual AI visual acceptance NOT RUN.
+
+
 ## OCR source detail and native candidate review — 2026-10-11
 
 - OWNER AUTHORITY: Continue automatic AI quality work without customer engine choices; translation independent and optional.

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field, ValidationError
 
 from app.builders.schema import StrictModel
@@ -13,3 +15,7 @@ class Inputs(StrictModel):
             return cls.model_validate(inputs)
         except ValidationError:
             raise ServiceError("input_invalid") from None
+
+
+class Assessment(StrictModel):
+    choice: Literal["none", "contrast", "sharpen"]

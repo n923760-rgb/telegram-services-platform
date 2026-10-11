@@ -9,6 +9,7 @@ from PIL.ImageDraw import Draw
 from app.builders.document_image import build
 from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
+from app.services.document_image_enhancement.schema import Assessment
 from app.services.document_image_enhancement.service import DocumentImageEnhancement
 
 
@@ -52,15 +53,15 @@ def test_invalid_contract_rejected_before_reservation(inputs):
         DocumentImageEnhancement.needs_ai(inputs)
 
 
-async def test_plugin_returns_received_bytes_unchanged_without_ai(tmp_path):
+async def test_plugin_returns_received_bytes_unchanged_with_automatic_selection(tmp_path):
     storage = OwnedStorage(LocalStorage(tmp_path), 1)
     data = picture()
     source = storage.save("source.png", data, "image/png")
     service = DocumentImageEnhancement()
-    ai = SimpleNamespace(extract=AsyncMock(side_effect=AssertionError("no AI")))
+    ai = SimpleNamespace(extract=AsyncMock(return_value=Assessment(choice="contrast")))
     service.runtime = SimpleNamespace(storage=storage, ai=ai)
     inputs = {"image": source.key}
-    assert not service.needs_ai(inputs)
+    assert service.needs_ai(inputs)
     result = await service.run(inputs)
     assert [a.filename for a in result.artifacts] == [
         "enhanced.png",
@@ -69,14 +70,17 @@ async def test_plugin_returns_received_bytes_unchanged_without_ai(tmp_path):
     ]
     assert storage.read(result.artifacts[2].key) == data
     assert result.preview_localizations.keys() == {"ar", "en"}
-    assert not ai.extract.called
+    ai.extract.assert_awaited_once()
 
 
 async def test_later_save_failure_removes_partial_outputs_and_keeps_input(tmp_path):
     storage = OwnedStorage(LocalStorage(tmp_path, quota_files=3), 1)
     source = storage.save("source.png", picture(), "image/png")
     service = DocumentImageEnhancement()
-    service.runtime = SimpleNamespace(storage=storage, ai=None)
+    service.runtime = SimpleNamespace(
+        storage=storage,
+        ai=SimpleNamespace(extract=AsyncMock(return_value=Assessment(choice="contrast"))),
+    )
     with pytest.raises(ServiceError, match="storage_quota"):
         await service.run({"image": source.key})
     assert len(list(tmp_path.glob("[0-9]*/*/*"))) == 1

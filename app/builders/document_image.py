@@ -14,7 +14,7 @@ FORMATS = {
 
 
 def build(data: bytes, mode: str = "contrast"):
-    if mode not in {"contrast", "grayscale"}:
+    if mode not in {"contrast", "grayscale", "sharpen"}:
         raise ValueError("unsupported mode")
     # Keep source pixels without the old intermediate JPEG encode; never upscale.
     original = image_pixels(data, 10 * 1024 * 1024, max_side=2048)
@@ -24,6 +24,15 @@ def build(data: bytes, mode: str = "contrast"):
     import numpy as np
 
     pixels = np.array(original)
+    if mode == "sharpen":
+        # Bounded luminance-only edge contrast; no reconstruction or text synthesis.
+        light = np.array(original.convert("L")).astype(np.float32)
+        detail = light - cv2.GaussianBlur(light, (0, 0), sigmaX=1.0)
+        delta = np.clip(0.8 * detail, -12, 12)
+        processed = Image.fromarray(
+            np.clip(pixels.astype(np.float32) + delta[:, :, None], 0, 255).astype(np.uint8)
+        )
+        return extension, mime, *_outputs(original, processed)
     lab = cv2.cvtColor(pixels, cv2.COLOR_RGB2LAB)
     light = lab[:, :, 0]
     residual = np.abs(light.astype(np.int16) - cv2.medianBlur(light, 3).astype(np.int16))
@@ -55,6 +64,10 @@ def build(data: bytes, mode: str = "contrast"):
     else:
         lab[:, :, 0] = adjusted
         processed = Image.fromarray(cv2.cvtColor(lab, cv2.COLOR_LAB2RGB))
+    return extension, mime, *_outputs(original, processed)
+
+
+def _outputs(original, processed):
     before, after = original.copy(), processed.copy()
     before.thumbnail((1024, 1024))
     after.thumbnail((1024, 1024))
@@ -69,4 +82,4 @@ def build(data: bytes, mode: str = "contrast"):
         if not payload or len(payload) > 10 * 1024 * 1024:
             raise ValueError("output limit")
         outputs.append(payload)
-    return extension, mime, *outputs
+    return outputs
