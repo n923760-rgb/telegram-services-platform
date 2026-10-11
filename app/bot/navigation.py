@@ -34,7 +34,10 @@ def create_router():
     async def home(message, state, user_id, lang):
         await register(user_id)
         await leave_support(state)
-        await message.answer(tr("welcome", lang), reply_markup=home_keyboard(lang))
+        await message.answer(
+            tr("welcome", lang),
+            reply_markup=home_keyboard(lang, admin=user_id in config().admin_ids),
+        )
         if (await state.get_data()).get("key"):
             await message.answer(
                 tr("draft_saved", lang),

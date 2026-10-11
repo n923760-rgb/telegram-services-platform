@@ -51,6 +51,22 @@ class Service(Base):
     )
 
 
+class StarPriceChange(Base):
+    __tablename__ = "star_price_changes"
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    actor_id: Mapped[int] = mapped_column(BigInteger)
+    service_slug: Mapped[str] = mapped_column(ForeignKey("services.slug"), index=True)
+    old_price: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    new_price: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        CheckConstraint(
+            "old_price IS NULL OR old_price BETWEEN 1 AND 1000000", name="price_change_old"
+        ),
+        CheckConstraint("new_price BETWEEN 1 AND 1000000", name="price_change_new"),
+    )
+
+
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

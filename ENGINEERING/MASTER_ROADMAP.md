@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Private admin service prices — 2026-10-11
+
+- OWNER AUTHORITY: Admin buttons and manual owner-set Stars selling prices, independent of provider expense; continuous verified development/merges.
+- CURRENT SLICE: Private `/admin` and owner home button, six services/page with prices/state, order totals, Stars report, last-five immutable price edits. Reply-bound five-minute price proposal, frozen confirmation, server authorization, optimistic stale-price detection and atomic audit/idempotency.
+- COMPATIBILITY: Additive migration 0012; no price defaults/activation/payment conversion. Paid prices retained, old unpaid invoices invalidated by existing policy. Customer draft/support FSM states preserved. Existing `/setstars` enters audited price change; `/setprice` test credit unchanged.
+- Evidence: [admin report](REPORTS/2026-10-11-admin-service-prices.md), [usage](../docs/ADMIN_PANEL.md). Full hosted migration/financial/native verification required before merge.
+- NOT RUN: VPS deployment and real Telegram/mobile ForceReply acceptance. Enable/disable confirmation, support buttons and rendered-image restoration remain later slices.
+
+
+
 ## Bounded automatic AI content quality — 2026-10-11
 
 - OWNER AUTHORITY: Continue verified development and merges, internal automatic AI improvements, manual owner prices, independent optional translation.
