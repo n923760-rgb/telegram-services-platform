@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Clearly optional result translation — 2026-10-11
+
+- OWNER AUTHORITY: Add Home/another-service exits and explicitly optional translation after original OCR delivery.
+- BASELINE: Main 7cf4b7c / PR #49; 1070 hosted cases and eleven native worker gates passed.
+- CHANGE: Existing eligible followup panel now offers three separate rows: Home, another service, optional translation. Reuse ordinary navigation and owner-bound translation callbacks; no automatic draft/order/reservation.
+- COMPATIBILITY: No contract/version, activation, dependency, schema, payment, price or engine change. Existing availability gates and original result retained.
+- Evidence: [Optional translation navigation report](REPORTS/2026-10-11-optional-translation-navigation.md). Exact-head hosted regression/native qualification required before merge.
+- NOT RUN: Updated VPS/mobile acceptance.
+
 ## Explicit original-text OCR guidance — 2026-10-11
 
 - BASELINE: Main 444f25a / PR #48; 1070 hosted cases and eleven native worker gates passed.
