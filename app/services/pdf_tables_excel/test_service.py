@@ -32,7 +32,6 @@ def extraction():
 def inputs(**changes):
     return {
         "pdf": "1/" + "a" * 32 + "/source.pdf",
-        "method": "lattice",
         "mode": "direct",
         "language": "en",
         **changes,

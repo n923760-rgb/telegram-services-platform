@@ -7,8 +7,7 @@ from sqlalchemy import func, select
 from app.core.db import sessions
 from app.core.models import CostHold, CostUsage, Job, Order, Service
 from app.core.settings import config
-from app.ops.admin import set_service
-from app.orders.engine import submit
+from app.orders.engine import submit as current_submit
 from app.providers.documents.base import DocumentError
 from app.providers.storage import LocalStorage
 from app.services.base import ServiceError
@@ -17,6 +16,16 @@ from app.workers.runner import deliver_failures, execute_job
 from tests.ocr_fixtures import printed, processor
 from tests.test_foundation import fund, job_for
 from tests.test_real_services import Delivery
+
+
+async def submit(*args, **kwargs):
+    """Seed a pre-retirement order; execute it under the current production registry."""
+    from unittest.mock import patch
+
+    from app.services.local_ocr.service import LocalOcr
+
+    with patch.object(LocalOcr, "replaced_by", None):
+        return await current_submit(*args, **kwargs)
 
 
 async def prepare(tmp_path, monkeypatch):
@@ -32,9 +41,11 @@ async def prepare(tmp_path, monkeypatch):
     await fund()
     async with sessions() as db:
         assert not (await db.get(Service, "local_ocr")).enabled
-    await set_service("local_ocr", enabled=True)
-    async with sessions() as db:
-        price = (await db.get(Service, "local_ocr")).price_halala
+    # A historical enabled override is retained by sync, not re-enabled today.
+    async with sessions.begin() as db:
+        row = await db.get(Service, "local_ocr")
+        row.enabled = True
+        price = row.price_halala
     storage = LocalStorage(tmp_path)
     return storage, Delivery(storage), price
 
@@ -46,6 +57,12 @@ async def test_local_ocr_actual_native_capture_once_zero_ai_cost_and_cleanup(tmp
         1, "local_ocr", {"images": [image.key], "language": "en"}, price, "local-ocr"
     )
     jid = await job_for(oid)
+    assert (
+        await current_submit(
+            1, "local_ocr", {"images": [image.key], "language": "en"}, price, "local-ocr"
+        )
+        == oid
+    )
     await execute_job({"delivery": delivery}, str(jid))
     await execute_job({"delivery": delivery}, str(jid))
     async with sessions() as db:

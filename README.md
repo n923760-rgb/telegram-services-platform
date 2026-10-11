@@ -18,12 +18,12 @@ and pass [Stars acceptance](docs/STARS_ACCEPTANCE.md) before enabling commercial
 | Service | Default | Test price | Behavior |
 | --- | --- | --- | --- |
 | `echo` | Enabled | SAR 1 | Proves collection → confirmation → reservation → worker → delivery → capture. |
-| `image_to_text` | Disabled | SAR 3 | Up to five images, original-text AI OCR; long output includes TXT and DOCX. Optional result shortcut opens independent translation, with its own confirmation. |
+| `image_to_text` | Disabled | SAR 3 | One original-text extraction service: bounded native recognition and classified AI fallback internally, same order/price; long output includes TXT and DOCX. Optional independent translation has its own confirmation. |
 | `text_to_office` | Disabled | SAR 5 | Automatic professional Word with sections/editable tables; explicit first-line directive preserves text without AI. Excel uses AI organization; asks for structure approval only for material ambiguity. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pdf` | Disabled | SAR 5 | Explicit direct conversion without AI, or existing AI-organized printable PDF; asks for approval when the AI plan is ambiguous. |
 | `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
-| `local_ocr` | Disabled | DB-owned test price | Bounded local OCR without an AI provider. |
+| `local_ocr` | Retired from customer selection | Historic DB-owned test price | Kept for historical execution only; old selection opens a new `image_to_text` draft at its current price. |
 | `text_to_word_pdf` | Disabled | DB-owned test price | Word with a locally rendered PDF. |
 | `pdf_tools` | Disabled | DB-owned test price | Bounded PDF operations without an AI provider. |
 | `cv_formatting` | Disabled | DB-owned test price | Source-bound CV formatting, not invented CV content. |

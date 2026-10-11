@@ -126,20 +126,21 @@ async def test_ocr_without_translation_has_one_call_and_keeps_original_numbers(
     assert provider.calls == 1 and delivery.results[0].text == SOURCE
 
 
+@pytest.mark.parametrize("old_version", ["2", "3"])
 async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, old_version
 ):
     store, provider, delivery, ctx, price = await setup("image_to_text", [], tmp_path, monkeypatch)
     oid = await create_order(store, price)
     async with sessions.begin() as db:
         row = await db.get(Service, "image_to_text")
-        row.version, row.price_halala, row.enabled = "2", 777, True
-        (await db.get(Order, oid)).service_version = "2"
+        row.version, row.price_halala, row.enabled = old_version, 777, True
+        (await db.get(Order, oid)).service_version = old_version
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "image_to_text")
-        assert row.version == "3" and row.price_halala == 777 and row.enabled
+        assert row.version == "4" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

@@ -20,6 +20,7 @@ Never import Telegram, HTTP clients or vendor SDKs from a service plugin.
 Never branch on a specific service slug in wallet/orders/jobs/core policy.
 Use abstract, injected providers; never change services to swap an AI vendor.
 Generate customer menus and intake from the registered input schema.
+Sell outcomes, not engines; select bounded implementations internally within the confirmed price. Retire duplicates via replaced_by, preserving history and meaningful output/consent choices.
 Treat plugin code as trusted executable code; do not describe it as sandboxed.
 
 ## Financial governance

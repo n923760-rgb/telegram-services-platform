@@ -32,10 +32,12 @@ bounded multifile intake, preserves page content/order and rejects forms/signatu
 It remains disabled until operator acceptance. This does not qualify the remaining
 candidates below or claim production deployment.
 
-The merged OCR slice adds an independent `local_ocr` plugin (disabled by
-default), using an injected `DocumentProcessor` and native Tesseract. Select Arabic,
-English or mixed source text, without translation or AI fallback. Existing vision OCR
-remains available under its existing gate. SAR 2.00 is administrator-issued test credit.
+The original `local_ocr` plugin is now historical execution only, not a separate
+customer product. Canonical `image_to_text` v4 uses the injected `DocumentProcessor`
+with mixed source language internally, then existing job-scoped AI for classified
+unclear/unavailable recognition. One confirmed price, original text only, optional
+independent translation afterwards. Admin prices/gates remain DB-owned; no automatic
+activation or price transfer from the retired plugin. See the unified-service report.
 
 Native packages are installed only in the `document-worker` Docker target; Compose
 selects that target for the existing worker. Bot/API/migrations retain the lean image.
