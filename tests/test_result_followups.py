@@ -79,9 +79,11 @@ async def test_original_then_independent_translation_intake_and_single_capture(
         assert (await balance(db, 1)).available == 1000 - price - 300
 
 
-@pytest.mark.parametrize("slug", ["image_to_text", "local_ocr"])
+@pytest.mark.parametrize(
+    "slug", ["image_to_text", "local_ocr", "text_translation", "csv_review", "text_to_word_pdf"]
+)
 @pytest.mark.parametrize("lang", ["ar", "en"])
-async def test_delivery_places_optional_button_after_original_text(flow, completed, slug, lang):
+async def test_delivery_navigation_and_only_declared_optional_actions(flow, completed, slug, lang):
     from app.core.users import set_language
 
     transport, message, callback, state = flow
@@ -95,16 +97,26 @@ async def test_delivery_places_optional_button_after_original_text(flow, complet
     adapter = TelegramDelivery(Bot("123456:TEST_TOKEN_ONLY", session=transport), store)
     await adapter.send(1, oid, Result(text=SOURCE))
     assert transport.messages[-2].text == SOURCE
-    assert transport.messages[-1].text == tr("result_followups", lang)
+    actions = await available_followups(1, oid, delivering=True)
+    assert bool(actions) == (slug in {"image_to_text", "local_ocr"})
+    assert transport.messages[-1].text == tr(
+        "result_followups" if actions else "result_complete", lang
+    )
     rows = transport.messages[-1].reply_markup.inline_keyboard
-    assert [len(row) for row in rows] == [1, 1, 1]
+    assert [len(row) for row in rows] == [1] * (2 + len(actions))
     assert [(row[0].text, row[0].callback_data) for row in rows] == [
         (tr("home", lang), "menu:home"),
         (tr("result_another_service", lang), "menu:services"),
-        (tr("translate_result", lang), f"follow:{oid.hex}:0"),
+    ] + [
+        (tr(action.label_key, lang), f"follow:{oid.hex}:{index}")
+        for index, (action, _, _) in actions.items()
     ]
-    assert button_by_prefix(transport.messages[-1].reply_markup, "follow:") == f"follow:{oid.hex}:0"
-    assert len(f"follow:{oid.hex}:0".encode()) <= 64
+    if actions:
+        assert (
+            button_by_prefix(transport.messages[-1].reply_markup, "follow:")
+            == f"follow:{oid.hex}:0"
+        )
+    assert all(len(row[0].callback_data.encode()) <= 64 for row in rows)
     for navigation in ("menu:home", "menu:services"):
         await callback(navigation)
         assert await state.get_state() is None
@@ -113,6 +125,53 @@ async def test_delivery_places_optional_button_after_original_text(flow, complet
             assert await db.scalar(select(func.count(Order.id))) == 1
             assert (await balance(db, 1)).reserved == 0
             assert (await db.get(Order, oid)).result["text"] == SOURCE
+    # A late result must not discard a separate intake already started by the customer.
+    await callback("service:echo")
+    saved = await state.get_data()
+    for navigation in ("menu:home", "menu:services"):
+        await callback(navigation)
+        assert await state.get_state() == "collect"
+        assert await state.get_data() == saved
+
+
+async def test_completion_footer_send_failure_retries_cached_result_once(
+    flow, tmp_path, monkeypatch
+):
+    from unittest.mock import AsyncMock
+
+    transport, _, _, _ = flow
+    store, provider, _, ctx, price = await setup(
+        "image_to_text", [extracted(SOURCE)], tmp_path, monkeypatch
+    )
+    bot = Bot("123456:TEST_TOKEN_ONLY", session=transport)
+    adapter = TelegramDelivery(bot, store)
+    send = bot.send_message
+
+    async def fail_footer(chat_id, text, **kwargs):
+        if text == tr("result_complete"):
+            raise OSError("footer transport failure")
+        return await send(chat_id, text, **kwargs)
+
+    monkeypatch.setattr(bot, "send_message", AsyncMock(side_effect=fail_footer))
+    ctx["delivery"] = adapter
+    oid = await create_order(store, price)
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    async with sessions.begin() as db:
+        order, job = await db.get(Order, oid), await db.get(Job, jid)
+        assert order.status == "delivering" and order.result["text"] == SOURCE
+        assert (await balance(db, 1)).reserved == price
+        assert job.status == "pending"
+        job.next_run_at = datetime.now(UTC) - timedelta(seconds=1)
+    monkeypatch.setattr(bot, "send_message", send)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    assert provider.calls == 1
+    assert transport.messages[-1].text == tr("result_complete")
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price, 0)
 
 
 @pytest.mark.parametrize(

@@ -209,6 +209,7 @@ async def test_english_delivery_localizes_envelopes_and_preserves_customer_conte
         tr("result_header", "en", order_id="order"),
         tr("structure_preview", "en", preview=preview),
         content,
+        tr("result_complete", "en"),
     ]
     bot.reset_mock()
     await delivery.error(1, "order", "service_failed")

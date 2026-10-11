@@ -246,8 +246,9 @@ async def test_telegram_delivery_uses_storage_interface_and_utf16_chunks(tmp_pat
     bot = AsyncMock()
     text = "🙂" * 6000
     await TelegramDelivery(bot, store).send(1, "order", Result(text=text, artifacts=[file]))
-    chunks = [call.args[1] for call in bot.send_message.await_args_list[1:]]
+    chunks = [call.args[1] for call in bot.send_message.await_args_list[1:-1]]
     assert "".join(chunks) == text
     assert all(len(chunk.encode("utf-16-le")) // 2 <= 3500 for chunk in chunks)
     document = bot.send_document.await_args.args[1]
     assert isinstance(document, BufferedInputFile) and document.data == b"content"
+    assert [call[0] for call in bot.method_calls[-2:]] == ["send_document", "send_message"]

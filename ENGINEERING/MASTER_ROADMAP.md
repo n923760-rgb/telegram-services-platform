@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Completion navigation across services — 2026-10-11
+
+- OWNER AUTHORITY: Home/another-service controls after any service; continue service development/activation, payment last.
+- BASELINE: Main fbffa58 / PR #50; 1072 hosted cases and eleven native worker gates passed.
+- CHANGE: Generic Telegram delivery sends one completion panel after all text/artifacts. Existing eligible plugin followups remain optional; ordinary services receive only Home/another-service. Existing drafts, purchase confirmation and cached retry policy retained.
+- AUDIT: 18 registered plugins, one historical replacement, 17 customer-visible source entries including the test echo. Runtime enabled flags are UNKNOWN here; preserve DB-owned settings. Local file services first, provider-assisted semantics and proposed extensions need separate acceptance.
+- Evidence: [Completion report](REPORTS/2026-10-11-service-completion-navigation.md), [activation plan](../docs/SERVICE_ACTIVATION.md). Full exact-head hosted/native qualification required before merge.
+- NOT RUN: VPS activation/update, representative customer/mobile and real-provider acceptance. No default activation, migration, dependency, price, contract/version or payment change.
+
 ## Clearly optional result translation — 2026-10-11
 
 - OWNER AUTHORITY: Add Home/another-service exits and explicitly optional translation after original OCR delivery.

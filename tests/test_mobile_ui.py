@@ -8,7 +8,7 @@ from app.bot.ui import buttons
 from app.core.display import message_parts, order_reference, result_preview
 from app.core.i18n import tr
 from app.providers.delivery import TelegramDelivery
-from app.services.base import Result
+from app.services.base import Artifact, Result
 
 REFERENCE = UUID("6c7382cc-ee7f-4206-b528-cdc51a150506")
 
@@ -72,6 +72,21 @@ async def test_confirmation_splits_all_preview_text_and_preserves_full_callbacks
     assert rows[1][0].callback_data == f"reject:{REFERENCE}"
 
 
+async def test_failed_artifact_delivery_never_announces_completion():
+    from types import SimpleNamespace
+
+    bot = AsyncMock()
+    bot.send_document.side_effect = OSError("transport offline")
+    delivery = TelegramDelivery(bot, SimpleNamespace(read=lambda key, owner: b"document"))
+    delivery._lang = AsyncMock(return_value="ar")
+    artifact = Artifact(key="result", filename="result.pdf", mime="application/pdf")
+    with pytest.raises(OSError, match="transport offline"):
+        await delivery.send(1, "legacy-order", Result(artifacts=[artifact]))
+    assert [call.args[1] for call in bot.send_message.await_args_list] == [
+        tr("result_header", order_id="legacy-order")
+    ]
+
+
 @pytest.mark.parametrize("lang", ["ar", "en"])
 async def test_delivery_uses_ui_language_for_preview_without_translating_customer_text(lang):
     bot = AsyncMock()
@@ -85,7 +100,14 @@ async def test_delivery_uses_ui_language_for_preview_without_translating_custome
     await delivery.send(1, REFERENCE, result)
     texts = [call.args[1] for call in bot.send_message.await_args_list]
     assert result.preview_localizations[lang] in texts[1]
-    assert texts[-1] == result.text and "6C7382CC" in texts[0]
+    assert texts[-2] == result.text and "6C7382CC" in texts[0]
+    assert texts[-1] == tr("result_complete", lang)
+    rows = bot.send_message.await_args.kwargs["reply_markup"].inline_keyboard
+    assert [(row[0].text, row[0].callback_data) for row in rows] == [
+        (tr("home", lang), "menu:home"),
+        (tr("result_another_service", lang), "menu:services"),
+    ]
+    assert [len(row) for row in rows] == [1, 1]
 
 
 @pytest.mark.parametrize("localizations", [{"ar": "x" * 3001}, {"en": "x" * 3001}, {"fr": "text"}])
