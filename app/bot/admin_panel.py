@@ -16,13 +16,21 @@ from app.bot.ui import MenuButton, buttons
 from app.core.db import sessions
 from app.core.display import message_parts
 from app.core.i18n import tr
-from app.core.models import Order, Service, StarPriceChange
+from app.core.models import (
+    Order,
+    Service,
+    ServiceActivationChange,
+    ServiceActivationTask,
+    StarPriceChange,
+)
 from app.core.settings import config
+from app.ops.activation import change_activation, digest, preview, totals
 from app.ops.prices import change_stars_price
 from app.ops.readiness import ai_configuration, checks
 from app.ops.reports import stars_report
 from app.services.base import ServiceError
 from app.services.registry import registry
+from app.wallet.ledger import sar
 
 PAGE_SIZE = 6
 TTL = 300
@@ -54,6 +62,7 @@ def controls(lang):
         [
             (tr("admin_services", lang), "admin:services:0"),
             (tr("admin_readiness", lang), "admin:readiness:0"),
+            (tr("admin_activation_history", lang), "admin:activation_history"),
             (tr("admin_orders", lang), "admin:orders"),
             (tr("admin_stars", lang), "admin:stars"),
             (tr("admin_history", lang), "admin:history"),
@@ -137,7 +146,7 @@ def create_router():
         if not allowed(message.from_user):
             await message.answer(tr("not_allowed", lang))
             return
-        await state.update_data(admin_price=None)
+        await state.update_data(admin_price=None, admin_activation=None)
         await message.answer(tr("admin_panel_intro", lang), reply_markup=controls(lang))
 
     @router.callback_query(F.data.startswith("admin:"))
@@ -147,6 +156,29 @@ def create_router():
             return
         parts = (callback.data or "").split(":")
         try:
+            if len(parts) == 3 and parts[1] == "activation_confirm":
+                pending = (await state.get_data()).get("admin_activation") or {}
+                if pending.get("token") != parts[2] or pending.get("expires", 0) < time.time():
+                    raise ServiceError("stale_button")
+                await change_activation(
+                    pending["slug"],
+                    pending["enabled"],
+                    actor_id=callback.from_user.id,
+                    expected_hash=pending["hash"],
+                    change_id=pending["token"],
+                )
+                await state.update_data(admin_activation=None)
+                await callback.answer(tr("admin_done", lang))
+                await callback.message.answer(
+                    tr(
+                        "admin_activation_enabled"
+                        if pending["enabled"]
+                        else "admin_activation_disabled",
+                        lang,
+                    ),
+                    reply_markup=controls(lang),
+                )
+                return
             if len(parts) == 3 and parts[1] == "confirm":
                 pending = (await state.get_data()).get("admin_price") or {}
                 if (
@@ -168,7 +200,7 @@ def create_router():
                     tr("admin_price_saved", lang), reply_markup=controls(lang)
                 )
                 return
-            await state.update_data(admin_price=None)
+            await state.update_data(admin_price=None, admin_activation=None)
             if len(parts) == 2 and parts[1] in {"home", "cancel"}:
                 text, keyboard = tr("admin_panel_intro", lang), controls(lang)
             elif (
@@ -200,10 +232,100 @@ def create_router():
                     [
                         (tr("refresh", lang), f"admin:inspect:{row.slug}"),
                         (tr("admin_edit_price", lang), f"admin:price:{row.slug}"),
+                        (
+                            tr("admin_deactivate" if row.enabled else "admin_activate", lang),
+                            f"admin:activation:{row.slug}:{int(not row.enabled)}",
+                        ),
                         (tr("admin_readiness", lang), "admin:readiness:0"),
                         (tr("admin_back", lang), "admin:home"),
                     ]
                 )
+            elif len(parts) == 4 and parts[1] == "activation" and parts[3] in {"0", "1"}:
+                enabled = parts[3] == "1"
+                evidence = await preview(parts[2], enabled, actor_id=callback.from_user.id)
+                async with sessions() as db:
+                    row = await db.get(Service, parts[2])
+                pending = {
+                    "slug": parts[2],
+                    "enabled": enabled,
+                    "hash": digest(evidence),
+                    "token": uuid4().hex,
+                    "expires": time.time() + TTL,
+                }
+                await state.update_data(admin_activation=pending)
+                impact = totals(evidence)
+                text = tr(
+                    "admin_activation_review",
+                    lang,
+                    name=row.name_en if lang == "en" else row.name_ar,
+                    action=tr("admin_activate" if enabled else "admin_deactivate", lang),
+                    active=impact["active"],
+                    credit=sar(impact["test_credit"]),
+                    unpaid=impact["unpaid"],
+                    stars=impact["paid_stars"],
+                    refunds=impact["refunds_in_progress"],
+                )
+                text += "\n\n" + tr(
+                    "admin_activation_enable_warning"
+                    if enabled
+                    else "admin_activation_disable_warning",
+                    lang,
+                )
+                keyboard = buttons(
+                    [
+                        (
+                            tr("admin_activation_confirm", lang),
+                            f"admin:activation_confirm:{pending['token']}",
+                        ),
+                        (tr("cancel", lang), "admin:cancel"),
+                    ]
+                )
+            elif len(parts) == 2 and parts[1] == "activation_history":
+                async with sessions() as db:
+                    rows = (
+                        await db.execute(
+                            select(ServiceActivationChange, ServiceActivationTask.completed_at)
+                            .outerjoin(ServiceActivationTask)
+                            .order_by(
+                                ServiceActivationChange.created_at.desc(),
+                                ServiceActivationChange.id.desc(),
+                            )
+                            .limit(5)
+                        )
+                    ).all()
+                text = (
+                    tr("admin_activation_history", lang)
+                    + "\n\n"
+                    + (
+                        "\n\n".join(
+                            tr(
+                                "admin_activation_entry",
+                                lang,
+                                slug=row.service_slug,
+                                actor=row.actor_id,
+                                action=tr(
+                                    "admin_activate" if row.new_enabled else "admin_deactivate",
+                                    lang,
+                                ),
+                                active=len(row.snapshot["orders"]),
+                                status=tr(
+                                    "admin_activation_settling"
+                                    if not row.new_enabled
+                                    and row.snapshot["orders"]
+                                    and done is None
+                                    else "admin_activation_recorded",
+                                    lang,
+                                ),
+                                date=row.created_at.astimezone(ZoneInfo("Asia/Riyadh")).strftime(
+                                    "%Y-%m-%d %H:%M"
+                                ),
+                            )
+                            for row, done in rows
+                        )
+                        or tr("admin_history_empty", lang)
+                    )
+                )
+                keyboard = controls(lang)
             elif len(parts) == 3 and parts[1] == "price":
                 async with sessions() as db:
                     row = await db.get(Service, parts[2])

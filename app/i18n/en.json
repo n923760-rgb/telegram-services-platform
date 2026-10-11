@@ -436,5 +436,20 @@
   "admin_readiness_price": "Stars selling price: {price}",
   "admin_missing_stars_price": "Set a Stars price to list this service in the current payment mode.",
   "admin_edit_price": "Edit Stars price",
-  "admin_readiness_limits": "Configuration evidence only, not operational approval. Worker containers, native tools, files, remaining spending budgets and actual customer acceptance are not checked. Test the service after updating before making it available."
+  "admin_readiness_limits": "Configuration evidence only, not operational approval. Worker containers, native tools, files, remaining spending budgets and actual customer acceptance are not checked. Test the service after updating before making it available.",
+  "admin_activate": "Enable service",
+  "admin_deactivate": "Disable service",
+  "admin_activation_confirm": "Confirm activation change",
+  "admin_activation_review": "Review activation change\nService: {name}\nAction: {action}\n\nUnfinished orders: {active}\nTest-credit order values: {credit} SAR\nStars orders without a recorded accepted payment: {unpaid}\nRecorded paid Stars potentially requiring refund: {stars}\nPayments already in refund workflow: {refunds}\n\nPoint-in-time snapshot. Changed state, price or affected orders require a fresh review. Confirmation expires in five minutes.",
+  "admin_activation_enable_warning": "Enabling admits new orders under current prices/settings and resets the previous circuit pause. It does not activate payment, change prices or certify output quality or worker tools. Test before serving customers.",
+  "admin_activation_disable_warning": "Disabling blocks new orders and queues cancellation of the specified unfinished orders. Test-credit reservations are released; recorded payments enter Stars refund workflow, not a completed refund until Telegram confirms it. Completed orders are not cancelled. An in-flight provider call may continue and its cost is not erased by disabling.",
+  "admin_activation_enabled": "Service enabled and change recorded. Prices retained; actual environment output acceptance is still required.",
+  "admin_activation_disabled": "Service disabled and change recorded. A durable task cancels the specified orders, if any; the worker resumes it. Stars refunds remain pending until Telegram confirms them. Prices retained.",
+  "admin_activation_changed": "Service state/settings or affected orders changed. Reopen the service and review again.",
+  "admin_activation_pending": "Cancellation from a previous disable is unfinished. Check the worker and activation history before enabling again.",
+  "admin_activation_limit": "Affected orders or payments exceed the panel's safe review bound. No change; operational handling is required before retrying.",
+  "admin_activation_history": "Activation change history",
+  "admin_activation_entry": "Service: {slug}\nAdmin: {actor}\nAction: {action}\nSnapshot orders: {active}\nState: {status}\nDate: {date}",
+  "admin_activation_settling": "Worker cancellation recovery pending",
+  "admin_activation_recorded": "Change recorded; follow Stars refunds in the Stars report"
 }

@@ -67,6 +67,32 @@ class StarPriceChange(Base):
     )
 
 
+class ServiceActivationChange(Base):
+    __tablename__ = "service_activation_changes"
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    actor_id: Mapped[int] = mapped_column(BigInteger)
+    service_slug: Mapped[str] = mapped_column(ForeignKey("services.slug"), index=True)
+    old_enabled: Mapped[bool] = mapped_column(Boolean)
+    new_enabled: Mapped[bool] = mapped_column(Boolean)
+    snapshot_hash: Mapped[str] = mapped_column(String(64))
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        CheckConstraint("old_enabled <> new_enabled", name="activation_state_change"),
+        CheckConstraint("actor_id > 0", name="activation_actor"),
+    )
+
+
+class ServiceActivationTask(Base):
+    __tablename__ = "service_activation_tasks"
+    change_id: Mapped[UUID] = mapped_column(
+        ForeignKey("service_activation_changes.id"), primary_key=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+
+
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

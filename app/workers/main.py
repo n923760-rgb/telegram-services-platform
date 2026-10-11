@@ -6,6 +6,7 @@ from arq.connections import RedisSettings
 from app.core.db import sessions
 from app.core.settings import config
 from app.files.retention import cleanup, cleanup_terminal_files
+from app.ops.activation import settle_activations
 from app.ops.notifier import Notifier
 from app.ops.reports import daily_report, flush_reports
 from app.payments.recovery import refunds
@@ -37,6 +38,7 @@ async def shutdown(ctx):
 class WorkerSettings:
     functions = [execute_job]
     cron_jobs = [
+        cron(settle_activations, second={3, 23, 43}, run_at_startup=True),
         cron(refunds, second={12, 32, 52}, run_at_startup=True),
         cron(expire_invoices, second={17, 37, 57}, run_at_startup=True),
         cron(deliver_confirmations, second={5, 25, 45}),
