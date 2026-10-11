@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Preserve received image quality in PDF — 2026-10-11
+
+- OWNER AUTHORITY: Continue quality-first development after the full review; internal engines, manual prices, independent operating costs.
+- BASELINE: Verified local/remote main f288f7a / PR #52. Separate pending AI-review/profile work preserved.
+- CHANGE: ImagesToPdf v2 exact validated received-source admission; injected resource-bounded native PDF generation, shared per-worker capacity. Retain pixel/EXIF/output/storage limits and builder page behavior.
+- COMPATIBILITY: Real contract bump preserves administrator enabled/SAR/Stars overrides; unprepared v1 cancels through existing settlement policy; prepared result delivery reuses the saved PDF.
+- QUALIFICATION: Actual intake-to-PDF high-resolution pixel tests; full hosted lifecycle and additional native worker source gate required before authorized merge.
+- Evidence: [Source-quality report](REPORTS/2026-10-11-images-pdf-source-quality.md). No pricing, activation, migration, model or payment changes; real Telegram/VPS quality/load NOT RUN.
+
 ## Automatic document image enhancement v2 — 2026-10-11
 
 - OWNER AUTHORITY: Improve the weak document image result; one customer outcome, internal implementation selection, payment last.

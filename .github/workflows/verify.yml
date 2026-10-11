@@ -68,6 +68,7 @@ jobs:
           from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
           from tests.images_pdf_fixtures import picture
           from app.builders.images_pdf import build as images_pdf
+          from app.providers.documents.images_pdf import NativeImagePdf
           from tests.csv_review_fixtures import inputs as csv_inputs
           from app.services.csv_review.schema import Inputs as CsvInputs
           from app.builders.csv_review import build as csv_review
@@ -92,6 +93,12 @@ jobs:
           from tempfile import TemporaryDirectory
           assert os.getuid() == 10001
           async def verify():
+              source = picture(1800, 1200, color='white')
+              native_pdf = await NativeImagePdf().render([source], 'auto')
+              embedded = PdfReader(BytesIO(native_pdf)).pages[0].images[0].image
+              with Image.open(BytesIO(source)) as original:
+                  assert embedded.size == original.size == (1800, 1200)
+                  assert embedded.tobytes() == original.convert('RGB').tobytes()
               with TemporaryDirectory() as directory:
                   from pathlib import Path
                   storage = OwnedStorage(LocalStorage(Path(directory)), 1)

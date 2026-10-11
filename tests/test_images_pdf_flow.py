@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
@@ -102,7 +103,7 @@ async def test_failed_generation_releases_credit_without_delivery(tmp_path, monk
 
 
 async def test_delivery_retry_reuses_pdf_without_generation_or_early_capture(tmp_path, monkeypatch):
-    from app.services.images_to_pdf import service
+    from app.providers.documents.images_pdf import NativeImagePdf
 
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     file = storage.save(1, "source.png", picture(), "image/png")
@@ -125,7 +126,7 @@ async def test_delivery_retry_reuses_pdf_without_generation_or_early_capture(tmp
     def no_build(*args, **kwargs):
         raise AssertionError("retry must use prepared PDF")
 
-    monkeypatch.setattr(service, "build", no_build)
+    monkeypatch.setattr(NativeImagePdf, "render", no_build)
     monkeypatch.setattr(delivery, "send", original)
     await execute_job({"delivery": delivery}, str(jid))
     async with sessions() as db:
@@ -148,3 +149,71 @@ async def test_duplicate_image_keys_never_reserve_credit(tmp_path, monkeypatch):
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
         assert (await balance(db, 1)).reserved == 0
+
+
+async def test_source_preservation_upgrade_keeps_admin_settings_and_cancels_old_job(
+    tmp_path, monkeypatch
+):
+    from app.services.registry import registry
+
+    storage, delivery, price = await prepare(tmp_path, monkeypatch)
+    file = storage.save(1, "source.png", picture(), "image/png")
+    oid = await submit(
+        1, "images_to_pdf", {"images": [file.key], "orientation": "auto"}, price, "legacy-images"
+    )
+    jid = await job_for(oid)
+    async with sessions.begin() as db:
+        row = await db.get(Service, "images_to_pdf")
+        old = deepcopy(row.input_schema)
+        old["fields"][0].pop("preserve_image")
+        row.version, row.input_schema = "1", old
+        row.price_halala, row.price_stars = 777, 25
+        order = await db.get(Order, oid)
+        order.service_version, order.input_schema_snapshot = "1", old
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        row = await db.get(Service, "images_to_pdf")
+        assert row.version == "2" and row.enabled
+        assert row.price_halala == 777 and row.price_stars == 25
+    await execute_job({"delivery": delivery}, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "cancelled"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+    assert delivery.files == []
+
+
+async def test_cached_legacy_pdf_is_delivered_without_regeneration_after_upgrade(
+    tmp_path, monkeypatch
+):
+    storage, delivery, price = await prepare(tmp_path, monkeypatch)
+    file = storage.save(1, "source.png", picture(), "image/png")
+    oid = await submit(
+        1, "images_to_pdf", {"images": [file.key], "orientation": "auto"}, price, "cached-legacy"
+    )
+    jid = await job_for(oid)
+    original = delivery.send
+
+    async def offline(*args):
+        raise ConnectionError("synthetic delivery failure")
+
+    monkeypatch.setattr(delivery, "send", offline)
+    await execute_job({"delivery": delivery}, str(jid))
+    async with sessions.begin() as db:
+        order = await db.get(Order, oid)
+        assert order.result
+        order.service_version = "1"
+        (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
+
+    def no_build(*args, **kwargs):
+        raise AssertionError("cached result must not be regenerated")
+
+    from app.providers.documents.images_pdf import NativeImagePdf
+
+    monkeypatch.setattr(NativeImagePdf, "render", no_build)
+    monkeypatch.setattr(delivery, "send", original)
+    await execute_job({"delivery": delivery}, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await balance(db, 1)).reserved == 0
+    assert len(delivery.files) == 1

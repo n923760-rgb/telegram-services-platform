@@ -1,13 +1,13 @@
-import asyncio
 from decimal import Decimal
 
-from app.builders.images_pdf import build
 from app.core.i18n import tr, translations
+from app.providers.documents.base import DocumentError
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.images_to_pdf.schema import Inputs
 
 
 class ImagesToPdf(BaseService):
+    version = "2"
     slug = "images_to_pdf"
     category = "pdf"
     name_ar = tr("images_pdf_name")
@@ -18,7 +18,13 @@ class ImagesToPdf(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
-            InputField(name="images", kind="image", prompt_key="images_pdf_images", multiple=True),
+            InputField(
+                name="images",
+                kind="image",
+                prompt_key="images_pdf_images",
+                multiple=True,
+                preserve_image=True,
+            ),
             InputField(
                 name="orientation",
                 prompt_key="images_pdf_orientation",
@@ -46,9 +52,11 @@ class ImagesToPdf(BaseService):
             if sum(map(len, images)) > 20 * 1024 * 1024:
                 raise ServiceError("input_invalid")
         try:
-            pdf = await asyncio.to_thread(build, images, orientation=values.orientation)
-        except ValueError:
-            raise ServiceError("input_invalid") from None
+            if self.runtime.image_pdf is None:
+                raise ServiceError("document_render_unavailable")
+            pdf = await self.runtime.image_pdf.render(images, values.orientation)
+        except DocumentError as error:
+            raise ServiceError(error.key, transient=error.transient) from None
         artifact = self.runtime.storage.save("images.pdf", pdf, "application/pdf")
         return Result(
             preview=tr("images_pdf_preview", pages=len(images)),
