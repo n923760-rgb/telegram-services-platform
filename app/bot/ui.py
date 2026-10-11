@@ -49,12 +49,13 @@ def menu(lang="ar"):
     return buttons([(tr(key, lang), f"menu:{key}") for key in HOME_ITEMS], columns=2)
 
 
-def home_keyboard(lang="ar"):
+def home_keyboard(lang="ar", *, admin=False):
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=tr(key, lang)) for key in HOME_ITEMS[i : i + 2]]
             for i in range(0, len(HOME_ITEMS), 2)
-        ],
+        ]
+        + ([[KeyboardButton(text=tr("admin_panel", lang))]] if admin else []),
         resize_keyboard=True,
         is_persistent=True,
         input_field_placeholder=tr("menu_placeholder", lang),

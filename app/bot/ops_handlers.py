@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from aiogram import F, Router
 from aiogram.filters import Command, StateFilter
@@ -9,10 +9,11 @@ from sqlalchemy import select
 from app.bot.ui import MenuButton, buttons, leave_support, menu, section_controls
 from app.core.db import sessions
 from app.core.i18n import tr
-from app.core.models import Order, SupportTicket
+from app.core.models import Order, Service, SupportTicket
 from app.core.settings import config
 from app.core.users import get_language
 from app.ops.admin import ban, refund, set_service
+from app.ops.prices import change_stars_price
 from app.ops.reports import report, stars_report
 from app.orders.engine import register
 from app.payments.recovery import reconcile
@@ -82,7 +83,17 @@ def create_router():
             elif command == "/setprice":
                 await set_service(args[1], price=halalas(args[2]))
             elif command == "/setstars":
-                await set_service(args[1], stars=int(args[2]))
+                async with sessions() as db:
+                    row = await db.get(Service, args[1])
+                if row is None:
+                    raise ServiceError("unavailable")
+                await change_stars_price(
+                    args[1],
+                    int(args[2]),
+                    expected_price=row.price_stars,
+                    actor_id=message.from_user.id,
+                    change_id=uuid4(),
+                )
             else:
                 await set_service(args[1], enabled=command == "/enable")
             await message.answer(tr("admin_done", lang))

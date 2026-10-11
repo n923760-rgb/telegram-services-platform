@@ -4,6 +4,7 @@ from contextlib import suppress
 from aiogram import Dispatcher
 from aiogram.fsm.storage.redis import RedisEventIsolation, RedisStorage
 
+from app.bot.admin_panel import create_router as admin_router
 from app.bot.handlers import create_router as services_router
 from app.bot.middleware import Guard, PrivateChatGate, UserContext
 from app.bot.navigation import create_router as navigation_router
@@ -34,6 +35,7 @@ def create_dispatcher(storage=None, guard=True):
         dp.callback_query.outer_middleware(Guard(storage.redis))
     dp.include_router(payments_router())
     dp.include_router(navigation_router())
+    dp.include_router(admin_router())
     dp.include_router(operations_router())
     dp.include_router(services_router())
     return dp
