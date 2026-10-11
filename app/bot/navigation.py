@@ -35,7 +35,7 @@ def create_router():
         await register(user_id)
         await leave_support(state)
         await message.answer(
-            tr("welcome", lang),
+            tr("stars_welcome" if config().stars_enabled else "welcome", lang),
             reply_markup=home_keyboard(lang, admin=user_id in config().admin_ids),
         )
         if (await state.get_data()).get("key"):
@@ -89,6 +89,14 @@ def create_router():
 
     async def show_balance(message, state, user_id, lang):
         await leave_support(state)
+        if config().stars_enabled:
+            await message.answer(
+                tr("stars_balance_details", lang),
+                reply_markup=buttons(
+                    [(tr("services", lang), "menu:services")] + await section_controls(state, lang)
+                ),
+            )
+            return
         async with sessions() as db:
             funds = await balance(db, user_id)
         await message.answer(
@@ -134,7 +142,8 @@ def create_router():
     async def show_help(message, state, lang):
         await leave_support(state)
         await message.answer(
-            tr("help_text", lang), reply_markup=buttons(await section_controls(state, lang))
+            tr("stars_help_text" if config().stars_enabled else "help_text", lang),
+            reply_markup=buttons(await section_controls(state, lang)),
         )
 
     @router.message(Command("help"))

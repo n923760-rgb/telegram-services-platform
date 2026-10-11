@@ -1,5 +1,5 @@
 {
-  "welcome": "Welcome 👋\nChoose a service to get started and track progress in My orders.\n\nCredit is for testing only.",
+  "welcome": "Welcome to Yusr 👋\nDigital services powered by AI and specialized tools.\nChoose a service, send your content and review the price before confirming.\n\nCurrent credit is for testing only.",
   "services": "✨ Services",
   "balance": "💰 My balance",
   "support": "💬 Contact support",
@@ -294,7 +294,7 @@
   "payment_changed": "The price or purchase terms changed. Choose the service again before paying.",
   "payment_expired": "The invoice was cancelled or expired.",
   "payment_refunded": "Telegram confirmed the refund and the order was stopped.",
-  "stars_balance_details": "Stars are paid per order; there is no internal Stars wallet. Historic SAR test credits remain separate and are never converted.\nTest available: SAR {available} | Test reserved: SAR {reserved}.",
+  "stars_balance_details": "⭐ Pay with Telegram Stars\n\nChoose a service and send your content. Review the price before confirming, then pay the Telegram invoice.\n\nYou can buy Stars through Telegram when needed. There is no bot wallet to top up.\n\nPayment help: /paysupport",
   "stars_order_details": "Order: {order_id}\nService: {name}\nStatus: {status}\nPrice: {amount} Telegram Stars\nCreated: {created}",
   "stars_refund_pending": "Refund request recorded. Funds are not considered refunded until Telegram confirms it. Support: /paysupport",
   "stars_failure_reason": "The service could not be completed or the order was cancelled.",
@@ -410,5 +410,12 @@
   "admin_no_orders": "No orders yet.",
   "admin_history_title": "Last five price changes — Riyadh time",
   "admin_history_entry": "Service: {slug}\nAdmin: {actor}\nOld price: {old}\nNew price: {new}\nDate: {date}",
-  "admin_history_empty": "No recorded changes yet."
+  "admin_history_empty": "No recorded changes yet.",
+  "bot_description": "Yusr — digital services powered by AI: text extraction, translation, documents, presentations and spreadsheets. Choose a service, review the price and receive the result here. Content improvement and checks depend on the task.",
+  "bot_short_description": "AI-powered digital services: text, documents, spreadsheets and presentations.",
+  "stars_welcome": "Welcome to Yusr 👋\nDigital services powered by AI and specialized tools.\nChoose a service, send your content and review the price before confirming.\n\nPay per order with Telegram Stars ⭐ without topping up a bot wallet.",
+  "payments": "⭐ Payments",
+  "profile_updated": "Bot description and information updated in Arabic and English.",
+  "stars_help_text": "How to complete a task\n\n1. Choose a service and send your content.\n2. Review the Stars price and terms.\n3. Agree and pay the Telegram invoice.\n4. Execution starts after payment confirmation; receive the result here.\n\nAI and processing tools operate inside the service without an engine selector. No bot wallet top-up is needed.\n\n/orders My orders\n/terms Terms\n/paysupport Payment support\n/support Support\n/menu Home\n\nTemporary files are deleted automatically; save your result when it arrives.",
+  "profile_update_failed": "Bot information update was not completed. Some descriptions may have changed; retry /syncprofile."
 }

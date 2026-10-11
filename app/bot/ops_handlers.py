@@ -36,6 +36,7 @@ def create_router():
             "refund",
             "ban",
             "report",
+            "syncprofile",
         )
     )
     async def admin_ops(message: Message, lang: str = "ar"):
@@ -45,6 +46,12 @@ def create_router():
         args = (message.text or "").split()
         command = args[0].split("@")[0]
         try:
+            if command == "/syncprofile":
+                from app.bot.profile import update_profile
+
+                await update_profile(message.bot)
+                await message.answer(tr("profile_updated", lang))
+                return
             if command == "/starstatus":
                 await message.answer(await stars_report(lang=lang))
                 return

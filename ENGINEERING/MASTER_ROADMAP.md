@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Bot information and per-order Stars navigation — 2026-10-11
+
+- OWNER AUTHORITY: Identify professional AI-supported services in bot information; make Stars payment accessible without a fictitious internal wallet.
+- CURRENT SLICE: Arabic/English welcome/description, explicit authenticated `/syncprofile`, safe partial-failure/retry message, Stars-specific help and Payments label. Existing callback/old label compatibility, test-credit UI and private admin button retained.
+- COMPATIBILITY: No activation, pricing, terms, ledger or provider-policy changes. Stars page does not query test-credit balance. Telegram metadata written only by the explicit admin command after deployment.
+- Evidence: [bot information report](REPORTS/2026-10-11-bot-information.md), [usage](../docs/BOT_INFORMATION.md). Exact-head hosted workflow required before merge.
+- NOT RUN: Production profile writes, VPS/mobile acceptance and actual Stars purchase/refund qualification.
+
+
 ## Private admin service prices — 2026-10-11
 
 - OWNER AUTHORITY: Admin buttons and manual owner-set Stars selling prices, independent of provider expense; continuous verified development/merges.
