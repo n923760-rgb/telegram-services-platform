@@ -33,7 +33,7 @@ async def test_received_high_resolution_pixels_survive_intake_and_pdf(
     image.save(source, format=format)
     data = source.getvalue()
 
-    class Bot:
+    class DownloadFixture:
         async def download(self, file_id, destination=None):
             destination.write(data)
             return destination
@@ -42,7 +42,7 @@ async def test_received_high_resolution_pixels_survive_intake_and_pdf(
     monkeypatch.setattr(telegram, "storage", lambda: store)
     media = SimpleNamespace(file_id="source", file_size=len(data), mime_type="image/jpeg")
     message = SimpleNamespace(
-        bot=Bot(),
+        bot=DownloadFixture(),
         photo=[media] if upload == "photo" else [],
         document=media if upload == "document" else None,
     )
