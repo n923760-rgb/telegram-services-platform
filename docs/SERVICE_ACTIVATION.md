@@ -12,7 +12,7 @@ prints service metadata only, not secrets, orders, prompts or customer content.
 The AI flag means configured activation, not provider connectivity/quality.
 
 ```bash
-docker compose exec -T --interactive=false api python - <<'PY'
+docker compose exec -T api python - <<'PY'
 import asyncio
 from sqlalchemy import select
 from app.core.db import sessions
