@@ -41,6 +41,7 @@ async def evaluate(slug, notifier=None):
                                     "ocr_unclear",
                                     "input_invalid",
                                     "needs_information",
+                                    "enhancement_not_improved",
                                     "cost_cap",
                                     "user_cost_cap",
                                     "job_cost_cap",

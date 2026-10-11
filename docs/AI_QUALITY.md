@@ -29,7 +29,8 @@ This is a same-provider/model content check, not an independent accuracy guarant
 It covers production AI.extract paths: translation, editing, summary selection,
 Office/PDF/PowerPoint plans, meeting minutes, optional table labels and AI OCR
 fallback and native OCR candidates when production AI is configured. Deterministic
-PDF/image tools, image restoration and direct CV formatting are outside this gate. It reviews content
+PDF/image tools and direct CV formatting are outside this gate. Document-image
+enhancement v3 uses the gate to review its candidate selection. It reviews content
 before rendering, not all rendered pages/slides. No services are activated here.
 
 Real Arabic/English/provider acceptance must measure meaning, names, negation,
@@ -64,3 +65,15 @@ No model/provider cost defaults, selling prices, activation or payment mode chan
 Version 5 is a real intake contract change: unprepared older jobs settle/cancel via
 existing recovery rules; prepared results are replayed. Operator acceptance must
 verify cost headroom for image review and Arabic/English numeric fidelity.
+
+
+## Document-image enhancement v3
+
+The processor produces native contrast and bounded sharpen candidates internally.
+AI evaluates source/candidates in fixed order; a strict none/contrast/sharpen choice
+is itself reviewed by the production quality gate. Only a selected candidate is
+saved/delivered. None or unavailable review stops the order and invokes existing
+settlement. It does not reconstruct missing text or certify OCR/QR/handwriting.
+Representative real-provider visual testing remains required before claiming an
+accuracy or restoration improvement. The customer still sees one image question,
+and owner-set prices/flags are preserved. This service now needs configured AI.

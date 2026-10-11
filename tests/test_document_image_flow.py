@@ -11,14 +11,20 @@ from app.providers.storage import LocalStorage
 from app.services.document_image_enhancement.test_service import picture
 from app.wallet.ledger import balance
 from app.workers.runner import execute_job
+from tests.test_file_layers import Provider
 from tests.test_foundation import fund, job_for
 from tests.test_navigation import flow  # noqa: F401
 from tests.test_real_services import Delivery
 
 
 async def setup(tmp_path, monkeypatch, data=None):
+    from app.providers import runtime
+
     await fund()
+    monkeypatch.setattr(config(), "ai_enabled", True)
     monkeypatch.setattr(config(), "storage_root", tmp_path)
+    provider = Provider(['{"choice":"contrast"}', '{"accepted":true,"issues":[]}'])
+    monkeypatch.setattr(runtime, "provider", lambda: provider)
     async with sessions.begin() as db:
         service = await db.get(Service, "document_image_enhancement")
         assert not service.enabled
@@ -31,9 +37,6 @@ async def setup(tmp_path, monkeypatch, data=None):
 
 
 async def test_local_enhancement_delivers_three_files_and_captures_once(tmp_path, monkeypatch):
-    from app.providers import runtime
-
-    monkeypatch.setattr(runtime, "provider", lambda: pytest.fail("Must not construct AI"))
     oid, jid, store, price = await setup(tmp_path, monkeypatch)
     delivery = Delivery(store)
     await execute_job({"delivery": delivery}, str(jid))
@@ -44,7 +47,7 @@ async def test_local_enhancement_delivers_three_files_and_captures_once(tmp_path
         assert (await db.get(Order, oid)).status == "completed"
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000 - price, 0)
-        assert await db.scalar(select(func.count(CostUsage.id))) == 0
+        assert await db.scalar(select(func.count(CostUsage.id))) == 2
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -91,7 +94,10 @@ async def test_send_retry_uses_cached_enhanced_files(tmp_path, monkeypatch):
         assert (await db.get(Order, oid)).status == "completed"
 
 
-async def test_v1_upgrade_keeps_admin_settings_and_releases_incompatible_job(tmp_path, monkeypatch):
+@pytest.mark.parametrize("old_version", ["1", "2"])
+async def test_old_upgrade_keeps_admin_settings_and_releases_incompatible_job(
+    tmp_path, monkeypatch, old_version
+):
     from copy import deepcopy
 
     from app.services.base import InputField
@@ -101,23 +107,25 @@ async def test_v1_upgrade_keeps_admin_settings_and_releases_incompatible_job(tmp
     async with sessions.begin() as db:
         row = await db.get(Service, "document_image_enhancement")
         old = deepcopy(row.input_schema)
-        old["fields"][0].pop("preserve_image")
-        old["fields"].append(
-            InputField(
-                name="mode",
-                prompt_key="document_image_mode",
-                choices=["contrast", "grayscale"],
-                choice_keys=["document_image_contrast", "document_image_grayscale"],
-            ).model_dump()
-        )
-        row.version, row.input_schema, row.price_halala = "1", old, 777
+        if old_version == "1":
+            old["fields"][0].pop("preserve_image")
+            old["fields"].append(
+                InputField(
+                    name="mode",
+                    prompt_key="document_image_mode",
+                    choices=["contrast", "grayscale"],
+                    choice_keys=["document_image_contrast", "document_image_grayscale"],
+                ).model_dump()
+            )
+        row.version, row.input_schema, row.price_halala = old_version, old, 777
         order = await db.get(Order, oid)
-        order.service_version, order.input_schema_snapshot = "1", old
-        order.inputs = {**order.inputs, "mode": "contrast"}
+        order.service_version, order.input_schema_snapshot = old_version, old
+        if old_version == "1":
+            order.inputs = {**order.inputs, "mode": "contrast"}
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "document_image_enhancement")
-        assert row.version == "2" and row.enabled and row.price_halala == 777
+        assert row.version == "3" and row.enabled and row.price_halala == 777
     await execute_job({"delivery": Delivery(store)}, str(jid))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"
@@ -131,6 +139,7 @@ async def test_image_upload_reaches_price_confirmation_without_engine_question(f
 
     transport, message, callback, state = flow
     await fund()
+    monkeypatch.setattr(config(), "ai_enabled", True)
     async with sessions.begin() as db:
         (await db.get(Service, "document_image_enhancement")).enabled = True
 
@@ -147,3 +156,19 @@ async def test_image_upload_reaches_price_confirmation_without_engine_question(f
     async with sessions() as db:
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
+
+
+async def test_no_reliable_improvement_releases_without_delivering_image(tmp_path, monkeypatch):
+    from app.providers import runtime
+
+    oid, jid, store, price = await setup(tmp_path, monkeypatch)
+    provider = Provider(['{"choice":"none"}', '{"accepted":true,"issues":[]}'])
+    monkeypatch.setattr(runtime, "provider", lambda: provider)
+    delivery = Delivery(store)
+    await execute_job({"delivery": delivery}, str(jid))
+    assert not delivery.files and provider.calls == 2
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "failed"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
