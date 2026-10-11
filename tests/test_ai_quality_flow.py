@@ -134,6 +134,9 @@ async def test_paid_stars_review_failure_queues_one_refund_without_credit_conver
     _, provider, delivery, ctx, _ = await reviewed(
         tmp_path, monkeypatch, [json.dumps(PLAN), REJECT, json.dumps(PLAN), REJECT]
     )
+    from app.providers import runtime
+
+    monkeypatch.setattr(runtime, "provider", lambda: provider)
     oid = await prepare("text_translation", {"text": SOURCE, "language": "en", "style": "formal"})
     await pay(oid, charge="quality-charge")
     jid = await job_for(oid)
