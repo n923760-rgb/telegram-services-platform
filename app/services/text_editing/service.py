@@ -8,6 +8,7 @@ from app.services.text_editing.schema import Inputs, render, revision_schema
 
 class TextEditing(BaseService):
     slug = "text_editing"
+    category = "text"
     name_ar = tr("text_editing_name")
     name_en = tr("text_editing_name", "en")
     description_ar = tr("text_editing_description")

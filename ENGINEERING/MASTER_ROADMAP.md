@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Service categories and bounded browsing — 2026-10-11
+
+- OWNER AUTHORITY: Finish/organize services; payment work last. Reuse existing payment policy without adding activation or pricing changes.
+- VERIFIED BASELINE: Main 9633359 / PR #45; 977 tests and ten actual worker gates passed.
+- CURRENT SLICE: Plugin-owned category metadata, six customer sections plus generic fallback; only currently enabled/payment-eligible services, no empty sections. Up to six services/page, back/previous/next, stale page clamp and safe empty-category response.
+- COMPATIBILITY: No DB migration, dependencies, input contracts/version bumps, service activation or price changes. Legacy service callbacks still select directly; browsing preserves drafts and reserves nothing. No named service list in bot/core.
+- Evidence: [category report](REPORTS/2026-10-11-service-categories.md). Exact-head full lifecycle/native CI required before authorized merge.
+- NOT RUN: Server update/mobile acceptance and paid launch. Payment completion deferred per owner instruction.
+
 ## Optional lexical CSV candidate review — 2026-10-11
 
 - OWNER AUTHORITY: Continue useful GitHub integrations and verified merges; no server/activation evidence inferred from continuation.

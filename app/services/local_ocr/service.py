@@ -8,6 +8,7 @@ from app.services.local_ocr.schema import Inputs
 
 class LocalOcr(BaseService):
     slug = "local_ocr"
+    category = "images"
     name_ar = tr("local_ocr_name")
     name_en = tr("local_ocr_name", "en")
     description_ar = tr("local_ocr_description")

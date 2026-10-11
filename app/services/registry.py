@@ -8,6 +8,7 @@ from sqlalchemy import select
 import app.services
 from app.core.models import Service
 from app.services.base import BaseService
+from app.services.catalog import CATEGORY_KEYS
 from app.wallet.ledger import halalas
 
 
@@ -42,6 +43,8 @@ class Registry:
                 cls = module.SERVICE
                 if not issubclass(cls, BaseService) or cls.slug != info.name:
                     raise ValueError("invalid service plugin")
+                if cls.category not in CATEGORY_KEYS:
+                    raise ValueError("invalid service category")
                 if not re.fullmatch(r"[a-z][a-z0-9_]{0,39}", cls.slug) or not re.fullmatch(
                     r"[A-Za-z0-9_.-]{1,32}", cls.version
                 ):
@@ -62,6 +65,13 @@ class Registry:
         from app.core.i18n import CATALOGS
 
         for slug, cls in self.types.items():
+            category_key = CATEGORY_KEYS[cls.category]
+            if any(
+                key not in CATALOGS[lang]
+                for lang in ("ar", "en")
+                for key in (category_key, category_key + "_description")
+            ):
+                raise ValueError("missing category i18n")
             for field in cls.input_schema.conversation():
                 if any(
                     key not in CATALOGS["ar"] or key not in CATALOGS["en"]

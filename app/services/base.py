@@ -178,6 +178,7 @@ class ServiceError(Exception):
 
 class BaseService:
     version = "1"
+    category = "other"
     slug: str
     name_ar: str
     name_en: str

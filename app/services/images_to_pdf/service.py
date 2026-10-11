@@ -9,6 +9,7 @@ from app.services.images_to_pdf.schema import Inputs
 
 class ImagesToPdf(BaseService):
     slug = "images_to_pdf"
+    category = "pdf"
     name_ar = tr("images_pdf_name")
     name_en = tr("images_pdf_name", "en")
     description_ar = tr("images_pdf_description")

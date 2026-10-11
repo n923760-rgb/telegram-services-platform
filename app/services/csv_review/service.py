@@ -10,6 +10,7 @@ from app.services.csv_review.schema import Inputs
 class CsvReview(BaseService):
     version = "2"
     slug = "csv_review"
+    category = "data"
     name_ar = tr("csv_review_name")
     name_en = tr("csv_review_name", "en")
     description_ar = tr("csv_review_description")

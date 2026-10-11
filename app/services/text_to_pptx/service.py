@@ -10,6 +10,7 @@ from app.services.text_to_pptx.schema import DeckPlan, Inputs
 class TextToPptx(BaseService):
     version = "2"
     slug = "text_to_pptx"
+    category = "documents"
     name_ar = tr("pptx_name")
     name_en = tr("pptx_name", "en")
     description_ar = tr("pptx_description")

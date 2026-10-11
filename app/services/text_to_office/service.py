@@ -10,6 +10,7 @@ from app.services.text_to_office.schema import ExcelPlan, Inputs, WordPlan
 class TextToOffice(BaseService):
     version = "5"
     slug = "text_to_office"
+    category = "documents"
     name_ar = tr("office_name")
     name_en = tr("office_name", "en")
     description_ar = tr("office_description")

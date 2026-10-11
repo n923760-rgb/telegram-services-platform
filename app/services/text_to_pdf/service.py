@@ -10,6 +10,7 @@ from app.services.text_to_pdf.schema import Inputs, PdfPlan
 class TextToPdf(BaseService):
     version = "3"
     slug = "text_to_pdf"
+    category = "documents"
     name_ar = tr("pdf_name")
     name_en = tr("pdf_name", "en")
     description_ar = tr("pdf_description")

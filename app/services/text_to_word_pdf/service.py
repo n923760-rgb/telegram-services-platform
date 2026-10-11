@@ -9,6 +9,7 @@ from app.services.text_to_word_pdf.schema import Inputs
 
 class TextToWordPdf(BaseService):
     slug = "text_to_word_pdf"
+    category = "documents"
     name_ar = tr("word_pdf_name")
     name_en = tr("word_pdf_name", "en")
     description_ar = tr("word_pdf_description")

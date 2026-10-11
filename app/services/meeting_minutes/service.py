@@ -12,6 +12,7 @@ from app.services.meeting_minutes.schema import Inputs, classification_schema, d
 
 class MeetingMinutes(BaseService):
     slug = "meeting_minutes"
+    category = "professional"
     name_ar = tr("minutes_name")
     name_en = tr("minutes_name", "en")
     description_ar = tr("minutes_description")
