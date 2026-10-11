@@ -59,21 +59,20 @@ class TelegramDelivery(Delivery):
         actions = (
             await available_followups(user_id, reference, delivering=True) if reference else {}
         )
-        if actions:
-            await self.bot.send_message(
-                user_id,
-                tr("result_followups", lang),
-                reply_markup=buttons(
-                    [
-                        (tr("home", lang), "menu:home"),
-                        (tr("result_another_service", lang), "menu:services"),
-                    ]
-                    + [
-                        (tr(action.label_key, lang), f"follow:{reference.hex}:{index}")
-                        for index, (action, _, _) in actions.items()
-                    ]
-                ),
-            )
+        await self.bot.send_message(
+            user_id,
+            tr("result_followups" if actions else "result_complete", lang),
+            reply_markup=buttons(
+                [
+                    (tr("home", lang), "menu:home"),
+                    (tr("result_another_service", lang), "menu:services"),
+                ]
+                + [
+                    (tr(action.label_key, lang), f"follow:{reference.hex}:{index}")
+                    for index, (action, _, _) in actions.items()
+                ]
+            ),
+        )
         return "telegram:accepted"
 
     async def error(self, user_id, order_id, key):
