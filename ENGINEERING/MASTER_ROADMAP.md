@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Private service configuration inspection — 2026-10-11
+
+- OWNER AUTHORITY: Continue professional service development and easier administrator controls, manual prices retained.
+- BASELINE: Main 1c053b7 / PR #58; no VPS update or image-quality acceptance claimed.
+- CHANGE: Read-only admin configuration browser, six entries/page, live refresh, stored/code version mismatch, activation/listing filters, local AI enabled/paused/cost-configuration evidence, current payment mode and Stars price; existing audited price shortcut.
+- LIMITS: No provider request, native/worker probe, budget/admission approval or output-quality certification. Mixed services retain actual input-dependent admission; no guessed inputs. Retired plugins omitted; existing private-chat/owner gates retained.
+- COMPATIBILITY: No contracts, migration, dependencies, pricing, activation, payment or financial policy changes. Customer draft/support state retained.
+- Evidence: [configuration report](REPORTS/2026-10-11-admin-service-configuration.md), [admin instructions](../docs/ADMIN_PANEL.md). Exact-head hosted full workflow required before merge; VPS/mobile/provider acceptance NOT RUN.
+
 ## Image enhancement candidate selection and rejection — 2026-10-11
 
 - OWNER AUTHORITY: Continue quality-first automatic AI improvement without engine choices.

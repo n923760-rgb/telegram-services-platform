@@ -19,6 +19,7 @@ from app.core.i18n import tr
 from app.core.models import Order, Service, StarPriceChange
 from app.core.settings import config
 from app.ops.prices import change_stars_price
+from app.ops.readiness import ai_configuration, checks
 from app.ops.reports import stars_report
 from app.services.base import ServiceError
 from app.services.registry import registry
@@ -52,6 +53,7 @@ def controls(lang):
     return buttons(
         [
             (tr("admin_services", lang), "admin:services:0"),
+            (tr("admin_readiness", lang), "admin:readiness:0"),
             (tr("admin_orders", lang), "admin:orders"),
             (tr("admin_stars", lang), "admin:stars"),
             (tr("admin_history", lang), "admin:history"),
@@ -85,6 +87,45 @@ async def show_services(message, lang, page):
     await message.answer(
         tr("admin_services_text", lang) + "\n\n" + "\n\n".join(details), reply_markup=buttons(items)
     )
+
+
+async def show_readiness(message, lang, page):
+    async with sessions() as db:
+        rows = list((await db.scalars(select(Service).order_by(Service.slug))).all())
+    rows = [row for row in rows if registry.customer_visible(row.slug)]
+    page = min(max(page, 0), max((len(rows) - 1) // PAGE_SIZE, 0))
+    items = [
+        (row.name_en if lang == "en" else row.name_ar, f"admin:inspect:{row.slug}")
+        for row in rows[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]
+    ]
+    if page:
+        items.append((tr("previous_page", lang), f"admin:readiness:{page - 1}"))
+    if (page + 1) * PAGE_SIZE < len(rows):
+        items.append((tr("next_page", lang), f"admin:readiness:{page + 1}"))
+    items.append((tr("admin_back", lang), "admin:home"))
+    await message.answer(tr("admin_readiness_intro", lang), reply_markup=buttons(items))
+
+
+def readiness_text(row, evidence, lang):
+    lines = [
+        row.name_en if lang == "en" else row.name_ar,
+        tr("admin_enabled" if evidence["enabled"] else "admin_disabled", lang),
+        tr("admin_listed" if evidence["listed"] else "admin_not_listed", lang),
+        tr(
+            "admin_version_ok" if evidence["version_matches"] else "admin_version_mismatch",
+            lang,
+            stored=row.version,
+            source=evidence["source_version"],
+        ),
+        tr("admin_ai_" + evidence["ai_state"], lang),
+        tr("admin_ai_required" if evidence["ai_required"] else "admin_ai_input_dependent", lang),
+        tr("admin_stars_mode" if evidence["stars_enabled"] else "admin_test_credit_mode", lang),
+        tr("admin_readiness_price", lang, price=price_label(row.price_stars, lang)),
+    ]
+    if evidence["stars_price_missing"]:
+        lines.append(tr("admin_missing_stars_price", lang))
+    lines.append(tr("admin_readiness_limits", lang))
+    return "\n\n".join(lines)
 
 
 def create_router():
@@ -136,6 +177,33 @@ def create_router():
                 await callback.answer()
                 await show_services(callback.message, lang, int(parts[2]))
                 return
+            elif (
+                len(parts) == 3
+                and parts[1] == "readiness"
+                and re.fullmatch(r"[0-9]{1,5}", parts[2])
+            ):
+                await callback.answer()
+                await show_readiness(callback.message, lang, int(parts[2]))
+                return
+            elif len(parts) == 3 and parts[1] == "inspect":
+                async with sessions() as db:
+                    row = await db.get(Service, parts[2])
+                    if not row or not registry.customer_visible(row.slug):
+                        raise ServiceError("unavailable")
+                    evidence = checks(
+                        row,
+                        ai_state=await ai_configuration(db),
+                        stars_enabled=config().stars_enabled,
+                    )
+                text = readiness_text(row, evidence, lang)
+                keyboard = buttons(
+                    [
+                        (tr("refresh", lang), f"admin:inspect:{row.slug}"),
+                        (tr("admin_edit_price", lang), f"admin:price:{row.slug}"),
+                        (tr("admin_readiness", lang), "admin:readiness:0"),
+                        (tr("admin_back", lang), "admin:home"),
+                    ]
+                )
             elif len(parts) == 3 and parts[1] == "price":
                 async with sessions() as db:
                     row = await db.get(Service, parts[2])
