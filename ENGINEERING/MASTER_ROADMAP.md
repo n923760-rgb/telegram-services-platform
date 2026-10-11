@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Bounded automatic AI content quality — 2026-10-11
+
+- OWNER AUTHORITY: Continue verified development and merges, internal automatic AI improvements, manual owner prices, independent optional translation.
+- VERIFIED BASELINE: Main 2ac05a7 / PR #53; original-image PDF intake and bounded native worker retained.
+- CURRENT SLICE: Production AI extraction reviews source/task/schema/candidate automatically; one creation repair shared by schema/content defects, final source-based review; at most five calls per extraction, ordinary job/global/user caps and usage ledger.
+- COMPATIBILITY: No dependency/migration/service contract or activation changes. Prices, Stars policy, native paths and cached result replay preserved. Same-model review is not accuracy certification or rendered-file inspection.
+- Evidence: [quality report](REPORTS/2026-10-11-bounded-ai-quality.md), [scope](../docs/AI_QUALITY.md). Exact-head hosted lifecycle/native gates required before merge.
+- NOT RUN: Real-provider meaning/false-verdict acceptance, VPS/mobile/load and all-page visual AI review.
+
+
 ## Preserve received image quality in PDF — 2026-10-11
 
 - OWNER AUTHORITY: Continue quality-first development after the full review; internal engines, manual prices, independent operating costs.
