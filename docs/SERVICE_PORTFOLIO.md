@@ -13,7 +13,7 @@ required by project governance. No production activation is implied by source me
 | PowerPoint planning | Editable bounded slide layouts; source-bound native/mobile review remains necessary. |
 | Text PDF | Direct final text or existing AI planning, with Arabic/date checks. |
 | Text PDF to Word | Editable extracted text; no original layout/images/table reconstruction promise. |
-| Vision OCR/translation | Existing bounded AI flow, unreadable-image rejection and numeric-preservation translation gate. |
+| Vision OCR | v3 extracts original image text only. Optional post-delivery shortcut to independent translation; no language/style questions during extraction. Local printed OCR retains its source-language question. |
 | Independent text translation | Arabic/English target and formal/business/academic/casual style. Source-line IDs checked exactly once, numeric tokens checked per line, original blank lines retained; chat text plus UTF-8 TXT. Default disabled pending live meaning/style qualification. |
 | Independent proofreading/rewriting | Arabic/English original language, proofreading only or formal/business/casual rewriting. Per-line numeric/email/URL checks, source coverage/order/blank lines, draft text plus TXT. Structural validation does not prove semantic fidelity. Default disabled. |
 | PDF tables to Excel | Default-disabled `pdf_tables_excel`: bounded image-free text PDFs, lattice/stream extraction, literal cells and source sheets. Optional AI headings only; mandatory confirmation. Camelot metrics are heuristics; representative PDF/mobile Excel acceptance required. |

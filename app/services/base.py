@@ -176,6 +176,14 @@ class ServiceError(Exception):
         super().__init__(key)
 
 
+class TextFollowup(BaseModel):
+    """Trusted plugin declaration; source is always the retained result text."""
+
+    service: str = Field(pattern=r"^[a-z][a-z0-9_]{0,39}$")
+    field: str = Field(pattern=r"^[a-z][a-z0-9_]{0,40}$")
+    label_key: str = Field(pattern=r"^[a-z][a-z0-9_]{0,60}$")
+
+
 class BaseService:
     version = "1"
     category = "other"
@@ -188,6 +196,23 @@ class BaseService:
     enabled_by_default = True
     requires_ai = False
     runtime: Any = None
+    text_followups: tuple[TextFollowup, ...] = ()
+
+    @classmethod
+    def validate_followup_text(cls, name: str, text: str) -> None:
+        # Only the first, unconditional, free-text field can be prefilled. Intake then
+        # continues normally; no choices, uploads or purchase confirmation are skipped.
+        field = cls.input_schema.conversation()[0]
+        if (
+            field.name != name
+            or field.kind != "text"
+            or field.choices
+            or field.when
+            or not text.strip()
+            or len(text) > field.max_length
+            or (field.single_line and any(c in text for c in "\r\n\u2028\u2029"))
+        ):
+            raise ServiceError("input_invalid")
 
     @classmethod
     def needs_ai(cls, inputs: dict) -> bool:

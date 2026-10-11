@@ -61,7 +61,7 @@ async def setup(slug, responses, tmp_path, monkeypatch):
     return store, provider, delivery, ctx, price
 
 
-async def test_real_ocr_success_translation_and_capture(tmp_path, monkeypatch):
+async def test_real_ocr_original_text_and_capture(tmp_path, monkeypatch):
     store, provider, delivery, ctx, price = await setup(
         "image_to_text",
         ['{"readable":true,"confidence":.99,"text":"مرحبا 123"}', '{"text":"Hello 123"}'],
@@ -74,7 +74,7 @@ async def test_real_ocr_success_translation_and_capture(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "image_to_text",
-        {"images": [file.key], "language": "en", "style": "formal"},
+        {"images": [file.key]},
         price,
         "ocr",
     )
@@ -82,9 +82,9 @@ async def test_real_ocr_success_translation_and_capture(tmp_path, monkeypatch):
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).available == 1000 - price
-        assert (await db.get(Job, await job_for(oid))).cost_sar == Decimal(".008")
-    assert delivery.results[0].text == "Hello 123"
-    assert provider.calls == 2
+        assert (await db.get(Job, await job_for(oid))).cost_sar == Decimal(".004")
+    assert delivery.results[0].text == "مرحبا 123"
+    assert provider.calls == 1 and len(provider.responses) == 1
 
 
 async def test_real_ocr_unreadable_releases_and_notifies(tmp_path, monkeypatch):
@@ -92,9 +92,7 @@ async def test_real_ocr_unreadable_releases_and_notifies(tmp_path, monkeypatch):
         "image_to_text", ['{"readable":false,"confidence":0,"text":""}'], tmp_path, monkeypatch
     )
     file = store.save(1, "input.jpg", b"test", "image/jpeg")
-    oid = await submit(
-        1, "image_to_text", {"images": [file.key], "language": "none"}, price, "bad-image"
-    )
+    oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "bad-image")
     await execute_job(ctx, str(await job_for(oid)))
     await deliver_failures(ctx)
     await deliver_failures(ctx)
@@ -296,9 +294,7 @@ async def test_long_ocr_delivers_txt_docx_and_deletes_all_files(tmp_path, monkey
         monkeypatch,
     )
     file = store.save(1, "input.jpg", b"test image", "image/jpeg")
-    oid = await submit(
-        1, "image_to_text", {"images": [file.key], "language": "none"}, price, "long-ocr"
-    )
+    oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "long-ocr")
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
@@ -367,9 +363,7 @@ async def test_early_plugin_cancellation_eventually_deletes_uploaded_files(tmp_p
     store, _, _, ctx, price = await setup("image_to_text", [], tmp_path, monkeypatch)
     monkeypatch.setattr(config(), "storage_root", tmp_path)
     file = store.save(1, "input.jpg", b"fixture", "image/jpeg")
-    oid = await submit(
-        1, "image_to_text", {"images": [file.key], "language": "none"}, price, "cancel-before-run"
-    )
+    oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "cancel-before-run")
     plugin = registry.types["image_to_text"]
     monkeypatch.setattr(plugin, "version", plugin.version + "-next")
     await execute_job(ctx, str(await job_for(oid)))

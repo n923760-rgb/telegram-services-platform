@@ -18,7 +18,7 @@ and pass [Stars acceptance](docs/STARS_ACCEPTANCE.md) before enabling commercial
 | Service | Default | Test price | Behavior |
 | --- | --- | --- | --- |
 | `echo` | Enabled | SAR 1 | Proves collection → confirmation → reservation → worker → delivery → capture. |
-| `image_to_text` | Disabled | SAR 3 | Up to five images, Arabic/English OCR, optional Arabic/English translation and style; long output includes TXT and DOCX. |
+| `image_to_text` | Disabled | SAR 3 | Up to five images, original-text AI OCR; long output includes TXT and DOCX. Optional result shortcut opens independent translation, with its own confirmation. |
 | `text_to_office` | Disabled | SAR 5 | Automatic professional Word with sections/editable tables; explicit first-line directive preserves text without AI. Excel uses AI organization; asks for structure approval only for material ambiguity. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pdf` | Disabled | SAR 5 | Explicit direct conversion without AI, or existing AI-organized printable PDF; asks for approval when the AI plan is ambiguous. |

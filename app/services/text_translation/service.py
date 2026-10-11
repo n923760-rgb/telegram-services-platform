@@ -34,6 +34,12 @@ class TextTranslation(BaseService):
     )
 
     @classmethod
+    def validate_followup_text(cls, name, text):
+        super().validate_followup_text(name, text)
+        # Apply this plugin's printable-text and 80 nonblank-line bounds before intake.
+        Inputs.parse({"text": text, "language": "ar"})
+
+    @classmethod
     def needs_ai(cls, inputs):
         Inputs.parse(inputs)
         return True

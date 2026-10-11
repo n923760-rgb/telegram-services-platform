@@ -9,9 +9,10 @@ from docx import Document
 from app.core.db import sessions
 from app.core.models import Job, Order, Service
 from app.orders.engine import submit
+from app.services.base import ServiceError
 from app.services.registry import registry
 from app.wallet.ledger import balance
-from app.workers.runner import deliver_failures, execute_job
+from app.workers.runner import execute_job
 from tests.test_foundation import job_for
 from tests.test_ocr_translation_quality import GOOD, SOURCE
 from tests.test_real_services import setup
@@ -21,11 +22,9 @@ def extracted(text=SOURCE):
     return json.dumps({"readable": True, "confidence": 0.99, "text": text})
 
 
-async def create_order(store, price, language="en"):
+async def create_order(store, price):
     image = store.save(1, "input.jpg", b"synthetic test image", "image/jpeg")
-    inputs = {"images": [image.key], "language": language}
-    if language != "none":
-        inputs["style"] = "formal"
+    inputs = {"images": [image.key]}
     return await submit(
         1,
         "image_to_text",
@@ -35,11 +34,8 @@ async def create_order(store, price, language="en"):
     )
 
 
-@pytest.mark.parametrize("repair", [False, True])
-async def test_ocr_translation_preserves_numbers_then_captures_once(tmp_path, monkeypatch, repair):
+async def test_ocr_preserves_original_numbers_and_never_translates(tmp_path, monkeypatch):
     responses = [extracted()]
-    if repair:
-        responses.append(json.dumps({"text": GOOD.replace("125.50", "250.50")}))
     responses.append(json.dumps({"text": GOOD}))
     store, provider, delivery, ctx, price = await setup(
         "image_to_text", responses, tmp_path, monkeypatch
@@ -52,33 +48,28 @@ async def test_ocr_translation_preserves_numbers_then_captures_once(tmp_path, mo
         assert (await db.get(Order, oid)).status == "completed"
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000 - price, 0)
-        assert (await db.get(Job, jid)).cost_sar == Decimal(".004") * len(responses)
-    assert provider.calls == len(responses) and len(delivery.results) == 1
-    assert delivery.results[0].text == GOOD
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".004")
+    assert provider.calls == 1 and len(delivery.results) == 1
+    assert delivery.results[0].text == SOURCE
+    assert len(provider.responses) == 1
 
 
-async def test_ocr_numeric_failure_after_one_repair_releases_and_notifies_once(
-    tmp_path, monkeypatch
+@pytest.mark.parametrize("legacy", [{"language": "none"}, {"language": "en", "style": "formal"}])
+async def test_embedded_translation_inputs_rejected_before_reservation(
+    tmp_path, monkeypatch, legacy
 ):
-    wrong = json.dumps({"text": GOOD.replace("00123", "123")})
-    store, provider, delivery, ctx, price = await setup(
-        "image_to_text", [extracted(), wrong, wrong, "unused"], tmp_path, monkeypatch
-    )
-    oid = await create_order(store, price)
-    await execute_job(ctx, str(await job_for(oid)))
-    await deliver_failures(ctx)
-    await deliver_failures(ctx)
+    store, provider, delivery, _, price = await setup("image_to_text", [], tmp_path, monkeypatch)
+    image = store.save(1, "input.jpg", b"synthetic", "image/jpeg")
+    with pytest.raises(ServiceError):
+        await submit(1, "image_to_text", {"images": [image.key], **legacy}, price, "legacy")
     async with sessions() as db:
-        assert (await db.get(Order, oid)).status == "failed"
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
-    assert provider.calls == 3 and len(provider.responses) == 1
+    assert provider.calls == 0
     assert not delivery.results and not delivery.files
-    assert delivery.errors == [(1, oid, "provider_invalid")]
-    assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-async def test_ocr_long_translation_cached_delivery_retains_editable_numeric_output(
+async def test_ocr_long_original_cached_delivery_retains_editable_numeric_output(
     tmp_path, monkeypatch
 ):
     records = 60
@@ -86,7 +77,7 @@ async def test_ocr_long_translation_cached_delivery_retains_editable_numeric_out
     assert len(translated.strip()) > 3500
     store, provider, delivery, ctx, price = await setup(
         "image_to_text",
-        [extracted(source), json.dumps({"text": translated})],
+        [extracted(source)],
         tmp_path,
         monkeypatch,
     )
@@ -111,9 +102,9 @@ async def test_ocr_long_translation_cached_delivery_retains_editable_numeric_out
         assert (await db.get(Order, oid)).status == "completed"
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000 - price, 0)
-    assert provider.calls == 2 and len(delivery.results) == 1
+    assert provider.calls == 1 and len(delivery.results) == 1
     files = dict(delivery.files)
-    assert files["result.txt"].decode() == translated.strip()
+    assert files["result.txt"].decode() == source.strip()
     document = Document(BytesIO(files["result.docx"]))
     body = "\n".join(p.text for p in document.paragraphs[1:])
     assert body.count("00123") == records and body.count("125.50") == records
@@ -129,7 +120,7 @@ async def test_ocr_without_translation_has_one_call_and_keeps_original_numbers(
     store, provider, delivery, ctx, price = await setup(
         "image_to_text", [extracted()], tmp_path, monkeypatch
     )
-    oid = await create_order(store, price, "none")
+    oid = await create_order(store, price)
     await execute_job(ctx, str(await job_for(oid)))
     assert provider.calls == 1 and delivery.results[0].text == SOURCE
 
@@ -141,13 +132,13 @@ async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
     oid = await create_order(store, price)
     async with sessions.begin() as db:
         row = await db.get(Service, "image_to_text")
-        row.version, row.price_halala, row.enabled = "1", 777, True
-        (await db.get(Order, oid)).service_version = "1"
+        row.version, row.price_halala, row.enabled = "2", 777, True
+        (await db.get(Order, oid)).service_version = "2"
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "image_to_text")
-        assert row.version == "2" and row.price_halala == 777 and row.enabled
+        assert row.version == "3" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

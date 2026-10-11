@@ -3,7 +3,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from app.services.image_to_text.schema import Translation, translation_schema
+from app.services.translation import Translation, translation_schema
 
 SOURCE = "الطلب 00123 بمبلغ 125.50 ريال بتاريخ 2026-10-08. النسبة 12.5%؛ الصفر 0."
 GOOD = "Order 00123, amount 125.50 SAR, date 2026-10-08. Rate 12.5%; zero 0."

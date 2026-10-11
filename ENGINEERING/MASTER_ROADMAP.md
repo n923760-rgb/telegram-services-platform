@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Original OCR and optional independent translation — 2026-10-11
+
+- OWNER AUTHORITY: Extract original text first; translation remains independent with an optional result button. Continue verified development/merges; payment work remains last.
+- VERIFIED BASELINE: Main 79d063e / PR #46; 1005 hosted tests and ten native worker gates passed.
+- CURRENT SLICE: AI OCR v3 accepts images only. Both OCR plugins declare generic text followups to the existing translation service. Prefill the retained original result, then collect target language/style and use ordinary purchase confirmation.
+- SAFETY: Owner/status/version/expiry checks, current target gates/schema/price, original text preserved, no truncation, no order/reservation on click, no active-draft replacement. Target printable-text/12000-character/80-line limits checked before offering the shortcut.
+- COMPATIBILITY: No migration/dependency/payment policy or admin activation change. DB-owned price/enabled flags retained; queued old AI OCR contracts follow existing cancellation/release policy. Source content uses existing retention and draft TTL.
+- Evidence: [OCR followup report](REPORTS/2026-10-11-ocr-translation-followup.md). Exact-head full lifecycle/native qualification required before authorized merge.
+- NOT RUN: VPS update, real Telegram/provider/translation meaning and mobile acceptance for this change.
+
 ## Service categories and bounded browsing — 2026-10-11
 
 - OWNER AUTHORITY: Finish/organize services; payment work last. Reuse existing payment policy without adding activation or pricing changes.

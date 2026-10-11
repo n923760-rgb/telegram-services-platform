@@ -2,7 +2,14 @@ from decimal import Decimal
 
 from app.core.i18n import tr, translations
 from app.providers.documents.base import DocumentError
-from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.services.base import (
+    BaseService,
+    InputField,
+    InputSchema,
+    Result,
+    ServiceError,
+    TextFollowup,
+)
 from app.services.local_ocr.schema import Inputs
 
 
@@ -15,6 +22,9 @@ class LocalOcr(BaseService):
     price_sar = Decimal("2.00")
     enabled_by_default = False
     requires_ai = False
+    text_followups = (
+        TextFollowup(service="text_translation", field="text", label_key="translate_result"),
+    )
     input_schema = InputSchema(
         fields=[
             InputField(name="images", kind="image", prompt_key="local_ocr_images", multiple=True),
