@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Explicit original-text OCR guidance — 2026-10-11
+
+- BASELINE: Main 444f25a / PR #48; 1070 hosted cases and eleven native worker gates passed.
+- OPERATOR EVIDENCE: VPS HEAD 444f25a, healthy API/bot/worker and database/cache, successful migration. Pasted English wording differs from earlier English image, but source/service/translation step remains UNKNOWN.
+- CHANGE: Explicit verbatim/no-translation/no-editing/source-instructions-as-data guidance in OCR prompt/output field description. Existing contract/version, routing/thresholds, cached results, costs/prices and optional independent translation unchanged.
+- LIMIT: Model guidance is not deterministic fidelity validation. Require full exact-head hosted regression/native checks and separate live-provider/source acceptance.
+- Evidence: [Verbatim OCR report](REPORTS/2026-10-11-ocr-verbatim-guidance.md). No new dependency, migration, activation or payment work.
+- NOT RUN: Updated VPS/live-provider acceptance. Do not claim the ambiguous pasted output proves a specific engine bug.
+
 ## Unified customer outcomes, internal engines — 2026-10-11
 
 - OWNER AUTHORITY: One OCR service, no customer local/AI selection; apply outcome-first policy to all current/future services. Payment work last.
