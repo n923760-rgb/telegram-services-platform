@@ -43,7 +43,7 @@ def storage():
 
 def runtime_for(job_id, user_id, *, needs_ai=True):
     return Runtime(
-        AI(provider(), job_id, user_id) if needs_ai else None,
+        AI(provider(), job_id, user_id, quality_review=True) if needs_ai else None,
         OwnedStorage(storage(), user_id),
         TesseractDocuments(),
         LibreOfficeDocuments(),
