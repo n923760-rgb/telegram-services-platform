@@ -38,6 +38,11 @@ retained 1152px raised mean English-engine word confidence on that screen from
 Arabic receipt/text samples cannot be qualified locally: installed native data here
 is English/OSD only. Hosted Arabic synthetic fixtures are distinct evidence.
 
+Initial hosted head 43b59ce: 1166 passed / 3 failed because three old intake
+fixtures omitted the explicit preserve_image keyword. Updated fixtures assert it
+is True, preserving their malformed-callback/draft-recovery assertions. No runtime
+policy was weakened. Rerun full hosted workflow on the corrected head before merge.
+
 ## Limits and deployment
 
 Same-model review can still accept wrong text. The uploaded comparisons are composites,

@@ -554,7 +554,8 @@ async def test_negative_choice_index_is_rejected():
 async def test_malformed_done_callback_is_rejected(monkeypatch):
     import app.files.telegram as telegram_module
 
-    async def fake_receive(message, kind, user_id):
+    async def fake_receive(message, kind, user_id, *, preserve_image=False):
+        assert preserve_image is True
         return f"1/{'a' * 32}/input.jpg"
 
     monkeypatch.setattr(telegram_module, "receive", fake_receive)

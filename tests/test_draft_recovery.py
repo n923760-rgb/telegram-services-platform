@@ -160,7 +160,8 @@ async def test_failed_choice_prompt_recovers():
 async def test_failed_more_files_prompt_recovers(monkeypatch):
     import app.files.telegram as telegram_module
 
-    async def fake_receive(message, kind, user_id):
+    async def fake_receive(message, kind, user_id, *, preserve_image=False):
+        assert preserve_image is True
         return f"1/{'a' * 32}/input.jpg"
 
     monkeypatch.setattr(telegram_module, "receive", fake_receive)
@@ -214,7 +215,8 @@ async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
     monkeypatch.setattr(config(), "ai_enabled", True)
     counter = {"n": 0}
 
-    async def fake_receive(message, kind, user_id):
+    async def fake_receive(message, kind, user_id, *, preserve_image=False):
+        assert preserve_image is True
         counter["n"] += 1
         hexpart = ("a" if counter["n"] == 1 else "b") * 32
         return f"1/{hexpart}/input.jpg"
