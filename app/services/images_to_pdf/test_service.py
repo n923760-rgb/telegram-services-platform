@@ -7,10 +7,60 @@ from pypdf import PdfReader
 from pypdf.generic import ContentStream
 
 from app.builders.images_pdf import build
+from app.providers.documents.images_pdf import NativeImagePdf
 from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
 from app.services.images_to_pdf.service import ImagesToPdf
 from tests.images_pdf_fixtures import picture
+
+
+@pytest.mark.parametrize("format", ["PNG", "JPEG", "WEBP"])
+@pytest.mark.parametrize("upload", ["document", "photo"])
+async def test_received_high_resolution_pixels_survive_intake_and_pdf(
+    tmp_path, monkeypatch, format, upload
+):
+    from PIL import ImageDraw
+
+    from app.files import telegram
+
+    # Real admission previously shrank these small strokes to 1024px, even though
+    # the PDF builder already preserved whatever reduced pixels it received.
+    image = Image.new("RGB", (1800, 1200), "white")
+    draw = ImageDraw.Draw(image)
+    draw.text((700, 600), "Order 00123 / Total 125.50 / 2026-10-11", fill="black")
+    draw.line((50, 80, 1700, 81), fill="blue", width=1)
+    source = BytesIO()
+    image.save(source, format=format)
+    data = source.getvalue()
+
+    class Bot:
+        async def download(self, file_id, destination=None):
+            destination.write(data)
+            return destination
+
+    store = LocalStorage(tmp_path)
+    monkeypatch.setattr(telegram, "storage", lambda: store)
+    media = SimpleNamespace(file_id="source", file_size=len(data), mime_type="image/jpeg")
+    message = SimpleNamespace(
+        bot=Bot(),
+        photo=[media] if upload == "photo" else [],
+        document=media if upload == "document" else None,
+    )
+    service = ImagesToPdf()
+    field = service.input_schema.conversation()[0]
+    key = await telegram.receive(message, field.kind, 1, preserve_image=field.preserve_image)
+    assert store.read(key, 1) == data
+    service.runtime = SimpleNamespace(
+        storage=OwnedStorage(store, 1), ai=None, image_pdf=NativeImagePdf()
+    )
+    result = await service.run({"images": [key], "orientation": "auto"})
+    pdf = store.read(result.artifacts[0].key, 1)
+    embedded = PdfReader(BytesIO(pdf)).pages[0].images[0].image
+    with Image.open(BytesIO(data)) as received:
+        expected = received.convert("RGB")
+        assert embedded.size == expected.size == (1800, 1200)
+        assert embedded.tobytes() == expected.tobytes()
+    assert not embedded.getexif()
 
 
 @pytest.mark.parametrize("orientation", ["auto", "portrait", "landscape"])
@@ -111,7 +161,7 @@ async def test_owned_sources_produce_actual_pdf_and_foreign_source_fails(tmp_pat
     first = storage.save("one.png", picture(), "image/png")
     second = storage.save("two.png", picture(240, 120), "image/png")
     service = ImagesToPdf()
-    service.runtime = SimpleNamespace(storage=storage, ai=None)
+    service.runtime = SimpleNamespace(storage=storage, ai=None, image_pdf=NativeImagePdf())
     values = {"images": [first.key, second.key], "orientation": "portrait"}
     service.input_schema.validate_inputs(values)
     assert not service.needs_ai(values)
@@ -121,6 +171,53 @@ async def test_owned_sources_produce_actual_pdf_and_foreign_source_fails(tmp_pat
     foreign = LocalStorage(tmp_path).save(2, "foreign.png", picture(), "image/png")
     with pytest.raises(ServiceError, match="input_invalid"):
         await service.run({"images": [foreign.key], "orientation": "auto"})
+
+
+@pytest.mark.parametrize("failure", ["timeout", "missing"])
+async def test_native_failure_releases_capacity_and_removes_private_sources(monkeypatch, failure):
+    from pathlib import Path
+
+    from app.providers.documents import images_pdf
+    from app.providers.documents.base import DocumentError
+
+    directories = []
+
+    async def fail_child(module, args, **kwargs):
+        root = Path(args[0])
+        directories.append(root)
+        assert root.joinpath("0.image").read_bytes() == picture()
+        if failure == "timeout":
+            raise DocumentError("document_render_timeout")
+
+    monkeypatch.setattr(images_pdf, "run_child", fail_child)
+    with pytest.raises(DocumentError, match="document_render_timeout|input_invalid"):
+        await NativeImagePdf().render([picture()], "auto")
+    assert not images_pdf.slot().locked()
+    assert len(directories) == 1 and not directories[0].exists()
+
+
+async def test_native_cancellation_releases_capacity_and_removes_private_sources(monkeypatch):
+    import asyncio
+    from pathlib import Path
+
+    from app.providers.documents import images_pdf
+
+    started = asyncio.Event()
+    directories = []
+
+    async def wait_child(module, args, **kwargs):
+        directories.append(Path(args[0]))
+        started.set()
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(images_pdf, "run_child", wait_child)
+    task = asyncio.create_task(NativeImagePdf().render([picture()], "auto"))
+    await asyncio.wait_for(started.wait(), timeout=1)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert not images_pdf.slot().locked()
+    assert not directories[0].exists()
 
 
 @pytest.mark.parametrize(
