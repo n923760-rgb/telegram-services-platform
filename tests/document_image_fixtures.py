@@ -28,5 +28,8 @@ def check_quality(enhanced):
     output = np.array(image.convert("L"))
     # Blank-paper strip has no text/stamp; measure illumination variation there.
     assert np.std(output[280:295, 30:970]) < np.std(source[280:295, 30:970]) * 0.6
+    # Blank paper close to text must not develop a bright halo versus the same
+    # column away from text. The texture is retained, so allow its small variation.
+    assert output[20:90, 180].max() - output[280:295, 180].mean() < 10
     color = np.array(image)[240, 880].astype(int)
     assert color[2] > color[1] + 40 and color[1] > color[0] + 20

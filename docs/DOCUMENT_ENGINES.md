@@ -190,7 +190,7 @@ Preview child uses private temporary files and fixed bounds (PDF 10 MiB / 50 pag
 
 ## Conservative document image contrast
 
-Independent default-disabled document_image_enhancement v2 uses the existing OpenCV/numpy packages. One image input selects conservative processing internally: detected high-frequency noise gets blended bilateral filtering; bright, uneven paper receives bounded illumination correction; blended luminance CLAHE retains color channels. No sharpening, binarization, geometric correction, cropping, AI synthesis or OCR fallback.
+Independent default-disabled document_image_enhancement v2 uses the existing OpenCV/numpy packages. One image input selects conservative processing internally: detected high-frequency noise gets blended bilateral filtering; bright, uneven paper receives bounded illumination correction from a foreground-filled background estimate to avoid text/stamp halos; blended luminance CLAHE retains color channels. No sharpening, binarization, geometric correction, cropping, AI synthesis or OCR fallback.
 
 The trusted image field opts into exact validated Telegram-received bytes via generic preserve_image metadata. Default intake still normalizes other services to 1024-pixel JPEG; no global OCR contract change. Enhancement decodes EXIF-oriented RGB directly from source without intermediate JPEG, bounded to 2048 pixels on the longest side (no upscaling). The comparison is downsampled to 1024 pixels per panel; exact received source is delivered separately. Sending an image as a Telegram file avoids Telegram photo compression but cannot restore lost source detail.
 

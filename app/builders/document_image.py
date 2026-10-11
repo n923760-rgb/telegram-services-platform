@@ -31,8 +31,16 @@ def build(data: bytes, mode: str = "contrast"):
     if np.median(residual) >= 2:
         filtered = cv2.bilateralFilter(light, 5, 18, 2)
         light = cv2.addWeighted(light, 0.5, filtered, 0.5, 0)
+    # Estimate paper illumination after filling dark foreground strokes. Blurring
+    # text directly would create bright halos around words/stamps during division.
+    kernel_size = max(15, min(101, (min(light.shape) // 5) | 1))
+    paper = cv2.morphologyEx(
+        light,
+        cv2.MORPH_CLOSE,
+        cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size)),
+    )
     background = cv2.GaussianBlur(
-        light.astype(np.float32), (0, 0), sigmaX=max(3, min(light.shape) / 20)
+        paper.astype(np.float32), (0, 0), sigmaX=max(3, min(light.shape) / 20)
     )
     low, high = np.percentile(background, (10, 90))
     # Avoid treating dark pages/flat images as uneven white paper. No cropping,
