@@ -12,6 +12,7 @@ class InputField(BaseModel):
     required: bool = True
     skip_key: str = "skip_field"
     single_line: bool = False
+    preserve_image: bool = False
     choices: list[str] = []
     choice_keys: list[str] = []
     max_length: int = Field(default=12000, ge=1, le=12000)
@@ -22,6 +23,8 @@ class InputField(BaseModel):
 
     @model_validator(mode="after")
     def valid(self):
+        if self.preserve_image and self.kind != "image":
+            raise ValueError("image preservation requires an image field")
         if not re.fullmatch(r"[a-z][a-z0-9_]{0,40}", self.name):
             raise ValueError("invalid field name")
         if len(set(self.choices)) != len(self.choices):

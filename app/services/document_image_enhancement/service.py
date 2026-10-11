@@ -8,6 +8,7 @@ from app.services.document_image_enhancement.schema import Inputs
 
 
 class DocumentImageEnhancement(BaseService):
+    version = "2"
     slug = "document_image_enhancement"
     category = "images"
     name_ar = tr("document_image_name")
@@ -18,12 +19,8 @@ class DocumentImageEnhancement(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
-            InputField(name="image", kind="image", prompt_key="document_image_input"),
             InputField(
-                name="mode",
-                prompt_key="document_image_mode",
-                choices=["contrast", "grayscale"],
-                choice_keys=["document_image_contrast", "document_image_grayscale"],
+                name="image", kind="image", prompt_key="document_image_input", preserve_image=True
             ),
         ]
     )
@@ -42,17 +39,15 @@ class DocumentImageEnhancement(BaseService):
                 raise ServiceError("input_invalid") from None
             raise
         try:
-            extension, mime, enhanced, comparison = await asyncio.to_thread(
-                build, source, values.mode
-            )
+            extension, mime, enhanced, comparison = await asyncio.to_thread(build, source)
         except (ValueError, KeyError):
             raise ServiceError("input_invalid") from None
         artifacts = []
         try:
             for filename, data, kind in [
-                ("received." + extension, source, mime),
                 ("enhanced.png", enhanced, "image/png"),
                 ("comparison.png", comparison, "image/png"),
+                ("received." + extension, source, mime),
             ]:
                 artifacts.append(self.runtime.storage.save(filename, data, kind))
         except BaseException:

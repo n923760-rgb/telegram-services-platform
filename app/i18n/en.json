@@ -382,10 +382,10 @@
   "catalog_page": "Page {page} of {pages}",
   "catalog_empty": "No services are available in this category now. Choose another category.",
   "document_image_name": "Improve document image contrast",
-  "document_image_description": "Color contrast enhancement or grayscale, with received image and comparison. Does not restore missing text or correct content.",
-  "document_image_input": "Send a printed-document image. We preserve the bytes received by the bot; Telegram may compress photos before receipt.",
+  "document_image_description": "Automatically improve document illumination and contrast while retaining colors, with source and comparison.",
+  "document_image_input": "Send the document image, preferably as a file to retain quality. We automatically enhance it and include the source for comparison.",
   "document_image_mode": "Choose processing. Grayscale removes colors; check text, numbers and stamps after processing.",
   "document_image_contrast": "Improve color contrast",
   "document_image_grayscale": "Grayscale and contrast",
-  "document_image_result": "Images prepared:\n• received: unchanged received image\n• enhanced: processed image\n• comparison: received left, processed right\n\nProcessing does not restore missing detail or guarantee better OCR. Check text, numbers and stamps. Processing resolution is up to 1024 pixels on the longest side."
+  "document_image_result": "Images prepared:\n• enhanced: enhanced image\n• comparison: source left, enhanced right\n• received: unchanged image received by the bot\n\nCheck text, numbers and stamps against the source. Processing does not restore lost detail or guarantee removal of screen-photo moire. Enhancement resolution is up to 2048 pixels on the longest side."
 }
