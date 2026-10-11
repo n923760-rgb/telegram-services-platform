@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Confirmed administrator activation and durable cancellation — 2026-10-12
+
+- OWNER AUTHORITY: Continue service activation controls with an explicit review of unfinished-order impact; preserve manual prices and professional quality boundaries.
+- BASELINE: Main b810384 / PR #59. Source and runtime deployment remain distinct.
+- CHANGE: Service details gain enable/disable proposals, five-minute actor-scoped fingerprint confirmation, impact counts and immutable history. Required version/AI/pause/Stars-price checks for enable; existing circuit reset retained.
+- SAFETY: Gate/audit/fixed-target cancellation task commit together; separate worker recovery uses terminal-safe DB-only settlement/customer-first locks, no external refund claims. No earlier operation replay changes a later flag or cancels later orders. Bounded 100 orders/500 receipts; pending prior panel cancellation blocks enable.
+- COMPATIBILITY: Additive 0013 migration and bounded worker cron, no plugin contracts/default flags/prices/provider/payment policy or dependencies changed. Existing commands/circuit behavior retained and not retroactively audited.
+- Evidence: [activation report](REPORTS/2026-10-12-admin-activation-controls.md), [operator instructions](../docs/ADMIN_PANEL.md). Exact-head full hosted financial/migration/native workflow required before merge; VPS/mobile/provider/real Stars acceptance NOT RUN.
+
 ## Private service configuration inspection — 2026-10-11
 
 - OWNER AUTHORITY: Continue professional service development and easier administrator controls, manual prices retained.
