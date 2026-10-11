@@ -1,8 +1,10 @@
+import asyncio
 from decimal import Decimal
 
 from app.builders.schema import Document, Section
 from app.builders.word import build
 from app.core.i18n import tr
+from app.files.validation import image
 from app.providers.documents.base import DocumentError
 from app.services.base import (
     BaseService,
@@ -17,7 +19,7 @@ from app.services.image_to_text.schema import Extracted, Inputs
 
 
 class ImageToText(BaseService):
-    version = "4"
+    version = "5"
     slug = "image_to_text"
     category = "images"
     name_ar = tr("ocr_name")
@@ -32,7 +34,12 @@ class ImageToText(BaseService):
     input_schema = InputSchema(
         fields=[
             InputField(
-                name="images", kind="image", prompt_key="ocr_images", multiple=True, max_items=5
+                name="images",
+                kind="image",
+                prompt_key="ocr_images",
+                multiple=True,
+                max_items=5,
+                preserve_image=True,
             ),
         ]
     )
@@ -54,10 +61,20 @@ class ImageToText(BaseService):
                 # authorize an outbound fallback. Both engines share one order/price.
                 if error.key not in {"ocr_unclear", "local_ocr_unavailable"}:
                     raise ServiceError(error.key, transient=error.transient) from None
+        if self.runtime.ai is not None:
+            # Strip metadata and validate before any outbound call; the adapter expects JPEG.
+            review_images = [
+                await asyncio.to_thread(image, data, 10 * 1024 * 1024, max_side=2048)
+                for data in images
+            ]
+        if extracted is not None and self.runtime.ai is not None:
+            extracted = await self.runtime.ai.review_candidate(
+                extracted, "", EXTRACT, images=review_images
+            )
         if extracted is None:
             if self.runtime.ai is None:
                 raise ServiceError("provider_config")
-            extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=images)
+            extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=review_images)
         if not extracted.readable or extracted.confidence < 0.7 or not extracted.text.strip():
             raise ServiceError("ocr_unclear")
         text = extracted.text.strip()

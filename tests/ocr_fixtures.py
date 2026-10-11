@@ -2,7 +2,7 @@ import os
 from io import BytesIO
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 
 from app.providers.documents.tesseract import TesseractDocuments
 
@@ -22,3 +22,13 @@ def processor():
     # Test-only local data override; production uses the distribution's packages.
     directory = os.getenv("LOCAL_OCR_TEST_TESSDATA")
     return TesseractDocuments(tessdata_dir=Path(directory) if directory else None)
+
+
+def detailed():
+    with Image.open(BytesIO(printed())) as picture:
+        picture = picture.resize((1800, 540))
+        info = PngImagePlugin.PngInfo()
+        info.add_text("Private", "not for the AI provider")
+        output = BytesIO()
+        picture.save(output, "PNG", pnginfo=info)
+        return output.getvalue()

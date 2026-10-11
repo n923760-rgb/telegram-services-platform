@@ -13,6 +13,7 @@ from app.services.base import ServiceError
 from app.services.registry import registry
 from app.wallet.ledger import balance
 from app.workers.runner import execute_job
+from tests.ocr_fixtures import printed
 from tests.test_foundation import job_for
 from tests.test_ocr_translation_quality import GOOD, SOURCE
 from tests.test_real_services import setup
@@ -23,7 +24,7 @@ def extracted(text=SOURCE):
 
 
 async def create_order(store, price):
-    image = store.save(1, "input.jpg", b"synthetic test image", "image/jpeg")
+    image = store.save(1, "input.jpg", printed(), "image/jpeg")
     inputs = {"images": [image.key]}
     return await submit(
         1,
@@ -59,7 +60,7 @@ async def test_embedded_translation_inputs_rejected_before_reservation(
     tmp_path, monkeypatch, legacy
 ):
     store, provider, delivery, _, price = await setup("image_to_text", [], tmp_path, monkeypatch)
-    image = store.save(1, "input.jpg", b"synthetic", "image/jpeg")
+    image = store.save(1, "input.jpg", printed(), "image/jpeg")
     with pytest.raises(ServiceError):
         await submit(1, "image_to_text", {"images": [image.key], **legacy}, price, "legacy")
     async with sessions() as db:
@@ -126,7 +127,7 @@ async def test_ocr_without_translation_has_one_call_and_keeps_original_numbers(
     assert provider.calls == 1 and delivery.results[0].text == SOURCE
 
 
-@pytest.mark.parametrize("old_version", ["2", "3"])
+@pytest.mark.parametrize("old_version", ["2", "3", "4"])
 async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
     tmp_path, monkeypatch, old_version
 ):
@@ -140,7 +141,7 @@ async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "image_to_text")
-        assert row.version == "4" and row.price_halala == 777 and row.enabled
+        assert row.version == "5" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

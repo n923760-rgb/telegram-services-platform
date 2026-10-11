@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## OCR source detail and native candidate review — 2026-10-11
+
+- OWNER AUTHORITY: Continue automatic AI quality work without customer engine choices; translation independent and optional.
+- BASELINE: Main 462e8b2 / PR #56, no deployment claim.
+- CHANGE: ImageToText v5 retains validated received bytes; metadata-free 2048px evidence, lossless native PNG; automatic production review of confident native text, one correction, maximum four accounted calls. Existing AI fallback gate retained.
+- COMPATIBILITY: No new dependencies, activation, price, payment mode or migration; existing job/usage caps and prepared-result replay. Old unprepared contracts settle through version cancellation.
+- Evidence: [OCR report](REPORTS/2026-10-11-ocr-source-review.md), [quality scope](../docs/AI_QUALITY.md). Exact-head hosted DB/financial/native workflow required before merge.
+- NOT RUN: Real AI review, Arabic uploaded-photo acceptance, VPS/mobile/load. Blurred image restoration remains separate.
+
+
 ## Bot information and per-order Stars navigation — 2026-10-11
 
 - OWNER AUTHORITY: Identify professional AI-supported services in bot information; make Stars payment accessible without a fictitious internal wallet.

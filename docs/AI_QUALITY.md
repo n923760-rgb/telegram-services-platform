@@ -28,8 +28,8 @@ still requires Telegram confirmation.
 This is a same-provider/model content check, not an independent accuracy guarantee.
 It covers production AI.extract paths: translation, editing, summary selection,
 Office/PDF/PowerPoint plans, meeting minutes, optional table labels and AI OCR
-fallback. Native OCR accepted locally, deterministic PDF/image tools, image
-restoration and direct CV formatting are outside this gate. It reviews content
+fallback and native OCR candidates when production AI is configured. Deterministic
+PDF/image tools, image restoration and direct CV formatting are outside this gate. It reviews content
 before rendering, not all rendered pages/slides. No services are activated here.
 
 Real Arabic/English/provider acceptance must measure meaning, names, negation,
@@ -41,3 +41,26 @@ restoration engines remain separate development slices.
 Future design services should use supplied brand/assets, editable text layouts and
 bounded revisions, then validate rendered Arabic/English composition. This gate
 does not register or promise a design service.
+
+
+## Native OCR source review
+
+Image-to-text v5 keeps the validated received image in owner-bound storage. Native
+OCR reads metadata-free PNG evidence up to 2048px per side, without another lossy
+JPEG encoding. AI receives metadata-free 2048px JPEG evidence matching the existing
+adapter contract. Input byte/decoded-pixel/security checks and native subprocess
+limits remain. Images sent as Telegram files retain more source detail than photos;
+this cannot recover detail already removed by Telegram or the camera.
+
+A native candidate accepted at confidence >=0.90 is still reviewed against the
+image in production. One successful review call is typical; at most four calls
+(one verdict schema repair, one candidate correction, one final verdict). Each call
+uses the existing usage ledger/caps. Failed final review stops delivery. Weak native
+results continue through the bounded AI extraction/review path. Translation remains
+a separately confirmed optional service. Native offline qualification with no AI
+is a provider test, not evidence of the production review path.
+
+No model/provider cost defaults, selling prices, activation or payment mode change.
+Version 5 is a real intake contract change: unprepared older jobs settle/cancel via
+existing recovery rules; prepared results are replayed. Operator acceptance must
+verify cost headroom for image review and Arabic/English numeric fidelity.

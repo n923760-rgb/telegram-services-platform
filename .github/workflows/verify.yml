@@ -63,6 +63,7 @@ jobs:
           import asyncio
           import os
           from tests.ocr_fixtures import printed, processor
+          from tests.ocr_fixtures import detailed as detailed_ocr_source
           from tests.word_pdf_fixtures import document, renderer, table_document
           from tests.minutes_fixtures import inputs as minute_inputs, plan as minute_plan
           from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
@@ -115,6 +116,8 @@ jobs:
                           table_service.runtime = SimpleNamespace(storage=storage, tables=CamelotTables(), ai=None)
                           result = await table_service.run({'pdf': source.key, 'mode': 'direct', 'language': language})
                           assert result.continuation['extraction']['tables'][0]['rows'] == rows
+              detailed = await processor().recognize([detailed_ocr_source()], "en")
+              assert detailed.text == "Invoice 00123\nTotal 125.50\nDate 2026-10-09"
               for language, text in [
                   ('en', 'Invoice 00123\nTotal 125.50\nDate 2026-10-09'),
                   ('ar', 'مرحبا بكم\nخدمة قراءة النصوص'),

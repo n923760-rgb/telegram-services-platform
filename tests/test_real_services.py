@@ -17,6 +17,7 @@ from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
 from app.wallet.ledger import balance
 from app.workers.runner import deliver_confirmations, deliver_failures, execute_job
+from tests.ocr_fixtures import printed
 from tests.test_file_layers import Provider
 from tests.test_foundation import fund, job_for
 
@@ -70,7 +71,7 @@ async def test_real_ocr_original_text_and_capture(tmp_path, monkeypatch):
     )
     # JSON requires a leading zero, so use the valid provider response below.
     provider.responses[0] = '{"readable":true,"confidence":0.99,"text":"مرحبا 123"}'
-    file = store.save(1, "input.jpg", b"test image", "image/jpeg")
+    file = store.save(1, "input.jpg", printed(), "image/jpeg")
     oid = await submit(
         1,
         "image_to_text",
@@ -91,7 +92,7 @@ async def test_real_ocr_unreadable_releases_and_notifies(tmp_path, monkeypatch):
     store, provider, delivery, ctx, price = await setup(
         "image_to_text", ['{"readable":false,"confidence":0,"text":""}'], tmp_path, monkeypatch
     )
-    file = store.save(1, "input.jpg", b"test", "image/jpeg")
+    file = store.save(1, "input.jpg", printed(), "image/jpeg")
     oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "bad-image")
     await execute_job(ctx, str(await job_for(oid)))
     await deliver_failures(ctx)
@@ -293,7 +294,7 @@ async def test_long_ocr_delivers_txt_docx_and_deletes_all_files(tmp_path, monkey
         tmp_path,
         monkeypatch,
     )
-    file = store.save(1, "input.jpg", b"test image", "image/jpeg")
+    file = store.save(1, "input.jpg", printed(), "image/jpeg")
     oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "long-ocr")
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
