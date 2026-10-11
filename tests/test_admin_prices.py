@@ -14,7 +14,7 @@ from sqlalchemy.exc import DBAPIError
 from app.bot.main import create_dispatcher
 from app.core.db import sessions
 from app.core.i18n import tr
-from app.core.models import Order, Service, StarPriceChange
+from app.core.models import CostUsage, Job, Order, Service, StarPriceChange
 from app.core.settings import config
 from app.ops.prices import change_stars_price
 from app.services.base import ServiceError
@@ -245,5 +245,70 @@ async def test_setstars_command_writes_audit_with_authenticated_actor(owner):
         async with sessions() as db:
             change = await db.scalar(select(StarPriceChange))
             assert change.actor_id == 7 and change.new_price == 27 and change.old_price is None
+    finally:
+        await app.close()
+
+
+async def test_configuration_panel_refresh_preserves_prices_flags_draft_and_ledgers(owner):
+    app = Conversation()
+    state = app.dp.fsm.get_context(bot=app.bot, chat_id=7, user_id=7)
+    await state.set_state("support")
+    await state.set_data({"key": "draft-owned", "inputs": {"text": "original"}})
+    try:
+        await app.message("/admin")
+        assert any(
+            button.callback_data == "admin:readiness:0"
+            for line in app.transport.messages[-1].reply_markup.inline_keyboard
+            for button in line
+        )
+        await app.callback("admin:readiness:99999")
+        assert tr("admin_readiness_intro") == app.transport.messages[-1].text
+        assert all(
+            button.callback_data != "admin:inspect:local_ocr"
+            for line in app.transport.messages[-1].reply_markup.inline_keyboard
+            for button in line
+        )
+        await app.callback("admin:inspect:image_to_text")
+        assert tr("admin_ai_off") in app.transport.messages[-1].text
+        assert tr("admin_disabled") in app.transport.messages[-1].text
+        assert tr("admin_version_ok", stored="5", source="5") in app.transport.messages[-1].text
+        async with sessions.begin() as db:
+            source = await db.get(Service, "image_to_text")
+            source.enabled = True
+            source.price_stars = 31
+            source.version = "old"
+        await app.callback("admin:inspect:image_to_text")
+        assert "31" in app.transport.messages[-1].text
+        assert tr("admin_enabled") in app.transport.messages[-1].text
+        assert (
+            tr("admin_version_mismatch", stored="old", source="5")
+            in app.transport.messages[-1].text
+        )
+        async with sessions() as db:
+            source = await db.get(Service, "image_to_text")
+            assert source.enabled and source.price_stars == 31 and source.version == "old"
+            for model in (Order, Job, CostUsage, StarPriceChange):
+                assert await db.scalar(select(func.count()).select_from(model)) == 0
+        assert (await state.get_data())["key"] == "draft-owned"
+        assert (await state.get_data())["inputs"] == {"text": "original"}
+        assert await state.get_state() == "support"
+    finally:
+        await app.close()
+
+
+async def test_configuration_callback_rechecks_owner_before_query(owner, monkeypatch):
+    from app.bot import admin_panel
+
+    app = Conversation()
+    try:
+        await app.message("/admin")
+        config().admin_ids = []
+
+        def forbidden():
+            raise AssertionError("Unauthorized report must not query services/provider")
+
+        monkeypatch.setattr(admin_panel, "sessions", forbidden)
+        await app.callback("admin:inspect:image_to_text")
+        await app.callback("admin:readiness:0")
     finally:
         await app.close()
