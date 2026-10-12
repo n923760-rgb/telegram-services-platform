@@ -8,8 +8,10 @@ from app.core.db import sessions
 from app.core.models import Job, Order
 from app.core.settings import config
 from app.orders.engine import submit
+from app.providers.ai.gateway import AI
+from app.providers.storage import OwnedStorage
 from app.services.base import ServiceError
-from app.services.text_summary.schema import Inputs, render, selection_schema
+from app.services.text_summary.schema import Inputs, render, summary_schema
 from app.services.text_summary.test_service import PLAN, SOURCE, values
 from app.wallet.ledger import balance
 from app.workers.runner import execute_job
@@ -27,7 +29,15 @@ async def test_source_points_and_report_capture_once(
         inputs["text"] = (
             "I did not agree to order 00123\nAmount 125.50 on 2026-10-10\nContact a@example.invalid\nBackground"
         )
-    responses = [json.dumps(PLAN)]
+    plan = PLAN
+    if language == "en":
+        plan = {
+            "points": [
+                {"text": "Order 00123 was not approved.", "source_ids": [1]},
+                {"text": "Contact a@example.invalid", "source_ids": [3]},
+            ]
+        }
+    responses = [json.dumps(plan)]
     if repair:
         responses.insert(0, json.dumps({"source_ids": [1, 1]}))
     _, provider, delivery, ctx, price = await setup(
@@ -43,7 +53,7 @@ async def test_source_points_and_report_capture_once(
         assert (funds.available, funds.reserved) == (1000 - price, 0)
         assert (await db.get(Job, jid)).cost_sar == Decimal(".004") * len(responses)
     parsed = Inputs.parse(inputs)
-    expected, report = render(parsed, selection_schema(parsed).model_validate(PLAN))
+    expected, report = render(parsed, summary_schema(parsed).model_validate(plan))
     assert provider.calls == len(responses) and len(delivery.results) == 1
     assert delivery.results[0].text == expected
     assert dict(delivery.files)["summary-source.txt"].decode() == report
@@ -99,7 +109,7 @@ async def test_cached_summary_delivery_does_not_call_provider_again(tmp_path, mo
         provider.calls == 1
         and delivery.results[0].text
         == render(
-            Inputs.parse(values()), selection_schema(Inputs.parse(values())).model_validate(PLAN)
+            Inputs.parse(values()), summary_schema(Inputs.parse(values())).model_validate(PLAN)
         )[0]
     )
     async with sessions() as db:
@@ -131,9 +141,7 @@ async def test_file_save_failure_releases_credit(tmp_path, monkeypatch):
     assert provider.calls == 1 and not delivery.files
 
 
-@pytest.mark.parametrize(
-    "text,disabled", [(" ", False), ("one paragraph", False), ("a\n" * 81, False), (SOURCE, True)]
-)
+@pytest.mark.parametrize("text,disabled", [(" ", False), ("a\n" * 81, False), (SOURCE, True)])
 async def test_rejected_input_or_disabled_ai_reserves_no_credit(
     tmp_path, monkeypatch, text, disabled
 ):
@@ -157,12 +165,12 @@ async def test_rejected_input_or_disabled_ai_reserves_no_credit(
 @pytest.mark.parametrize(
     "response",
     [
-        {"source_ids": [5]},
-        {"source_ids": [1], "text": "Invented result"},
-        {"source_ids": [1, 2, 3, 4]},
+        {"points": [{"text": "unknown", "source_ids": [5]}]},
+        {"points": [{"text": "Amount 999", "source_ids": [2]}]},
+        {"points": [{"text": letter, "source_ids": [1]} for letter in "abcd"]},
     ],
 )
-async def test_unknown_generated_or_full_source_selection_releases(tmp_path, monkeypatch, response):
+async def test_unknown_ungrounded_or_excessive_points_release(tmp_path, monkeypatch, response):
     invalid = json.dumps(response)
     _, provider, delivery, ctx, price = await setup(
         "text_summary", [invalid, invalid], tmp_path, monkeypatch
@@ -174,3 +182,76 @@ async def test_unknown_generated_or_full_source_selection_releases(tmp_path, mon
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
     assert provider.calls == 2 and not delivery.results and not delivery.files
+
+
+DECISIONS = (
+    "Launch was planned for 20-10-2026 with a budget of 3500 SAR. "
+    "It was postponed to 27-10-2026 because quality tests are incomplete. "
+    "A budget increase to 5000 SAR was proposed but rejected.\n"
+    "Khalid must finish tests before 24-10-2026. Sara must prepare the guide before 25-10-2026.\n"
+    "The next meeting is on 26-10-2026."
+)
+FINAL = {
+    "points": [
+        {
+            "text": "Launch postponed to 27-10-2026; budget remains 3500 SAR, increase to 5000 SAR rejected.",
+            "source_ids": [1],
+        },
+        {
+            "text": "Khalid: tests before 24-10-2026; Sara: guide before 25-10-2026.",
+            "source_ids": [2],
+        },
+        {"text": "Next meeting: 26-10-2026.", "source_ids": [3]},
+    ]
+}
+
+
+@pytest.mark.parametrize("defect", ["omission", "meaning", "unsupported_content"])
+@pytest.mark.parametrize("corrected", [True, False])
+async def test_production_review_repairs_or_refuses_semantic_defects(
+    tmp_path, monkeypatch, defect, corrected
+):
+    from copy import deepcopy
+    from types import SimpleNamespace
+
+    bad = deepcopy(FINAL)
+    if defect == "omission":
+        bad["points"].pop()
+    elif defect == "meaning":
+        bad["points"][0]["text"] = "Launch on 20-10-2026; increase to 5000 SAR approved."
+    else:
+        bad["points"][1]["text"] += " Ali is responsible for both tasks."
+    inputs = values(text=DECISIONS, length="standard", language="en")
+    # All three defects pass source-ID/numeric checks; semantic review is necessary.
+    summary_schema(Inputs.parse(inputs)).model_validate(bad)
+    reject = json.dumps({"accepted": False, "issues": [defect]})
+    responses = [
+        json.dumps(bad),
+        reject,
+        json.dumps(FINAL if corrected else bad),
+        '{"accepted":true,"issues":[]}' if corrected else reject,
+    ]
+    store, provider, delivery, ctx, price = await setup(
+        "text_summary", responses, tmp_path, monkeypatch
+    )
+    ctx["runtime_factory"] = lambda jid, uid: SimpleNamespace(
+        ai=AI(provider, jid, uid, quality_review=True), storage=OwnedStorage(store, uid)
+    )
+    oid = await submit(1, "text_summary", inputs, price, "review-summary")
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == ("completed" if corrected else "failed")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if corrected else 1000, 0)
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".016")
+    assert provider.calls == 4
+    if corrected:
+        assert "Next meeting: 26-10-2026." in delivery.results[0].text
+        assert "approved" not in delivery.results[0].text
+        assert dict(delivery.files)["summary-source.txt"].decode().endswith(DECISIONS)
+    else:
+        assert not delivery.results and not delivery.files
+    assert not list(tmp_path.glob("[0-9]*/*/*"))

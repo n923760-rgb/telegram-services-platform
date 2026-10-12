@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from typing import Annotated, Literal
 
 from pydantic import Field, StrictInt, StringConstraints, ValidationError, model_validator
@@ -7,6 +8,8 @@ from app.builders.schema import StrictModel
 from app.core.i18n import tr
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
+from app.services.text_editing.schema import CONTACT_TOKEN
+from app.services.translation import NUMERIC_TOKEN
 
 
 class Inputs(StrictModel):
@@ -19,15 +22,15 @@ class Inputs(StrictModel):
     @model_validator(mode="after")
     def bounded_source(self):
         self.text = DocumentInputs.printable_text(self.text)
-        if not 2 <= len(self.lines()) <= 80:
-            raise ValueError("summary needs 2 to 80 nonempty source paragraphs")
+        if not 1 <= len(self.lines()) <= 80:
+            raise ValueError("summary needs 1 to 80 nonempty source paragraphs")
         return self
 
     def lines(self):
         return [line for line in self.text.split("\n") if line.strip()]
 
     def limit(self):
-        return min({"short": 3, "standard": 7}[self.length], len(self.lines()) - 1)
+        return {"short": 3, "standard": 7}[self.length]
 
     def source(self):
         return json.dumps(
@@ -42,38 +45,76 @@ class Inputs(StrictModel):
                 {key: value for key, value in inputs.items() if not key.startswith("__")}
             )
         except ValidationError:
-            raise ServiceError("input_invalid") from None
+            raise ServiceError("text_summary_invalid") from None
 
 
-class Selection(StrictModel):
-    source_ids: list[Annotated[StrictInt, Field(ge=1, le=80)]] = Field(min_length=1, max_length=7)
+class Point(StrictModel):
+    text: Annotated[str, StringConstraints(strip_whitespace=False)] = Field(
+        min_length=1, max_length=1200
+    )
+    source_ids: list[Annotated[StrictInt, Field(ge=1, le=80)]] = Field(min_length=1, max_length=80)
 
 
-def selection_schema(values):
+class Summary(StrictModel):
+    points: list[Point] = Field(min_length=1, max_length=7)
+
+
+def summary_schema(values):
     count, limit = len(values.lines()), values.limit()
 
-    class SourceSelection(Selection):
+    class SourceSummary(Summary):
         @model_validator(mode="after")
-        def known_unique_bounded_ids(self):
-            ids = self.source_ids
-            if (
-                len(ids) > limit
-                or len(ids) != len(set(ids))
-                or any(number > count for number in ids)
-            ):
-                raise ValueError("select unique known source IDs within requested point limit")
+        def grounded_points(self):
+            if len(self.points) > limit:
+                raise ValueError("summary point limit")
+            seen = set()
+            for point in self.points:
+                ids = point.source_ids
+                if len(ids) != len(set(ids)) or any(number > count for number in ids):
+                    raise ValueError("cite unique known source IDs")
+                DocumentInputs.printable_text(point.text)
+                if "\n" in point.text or "\r" in point.text or point.text.strip() != point.text:
+                    raise ValueError("one clean paragraph per point")
+                if point.text in seen:
+                    raise ValueError("duplicate summary point")
+                seen.add(point.text)
+                cited = "\n".join(values.lines()[number - 1] for number in ids)
+                for pattern in (NUMERIC_TOKEN, CONTACT_TOKEN):
+                    if Counter(pattern.findall(point.text)) - Counter(pattern.findall(cited)):
+                        raise ValueError("summary numbers and contacts must occur in cited source")
+            if sum(len(point.text) for point in self.points) > 6000:
+                raise ValueError("summary output limit")
+            if len(values.text.split()) >= 40 and sum(
+                len(point.text.split()) for point in self.points
+            ) >= len(values.text.split()):
+                raise ValueError("summary must shorten the source")
             return self
 
-    return SourceSelection
+    return SourceSummary
 
 
 def render(values, plan):
-    lines = values.lines()
-    ids = sorted(plan.source_ids)
-    # Only original source strings become customer content; AI supplies IDs, never prose.
-    points = "\n\n".join(f"[{number}] {lines[number - 1]}" for number in ids)
-    heading = tr("text_summary_heading", values.language, selected=len(ids), total=len(lines))
+    points = "\n\n".join(f"• {point.text}" for point in plan.points)
+    heading = tr("text_summary_heading", values.language)
     summary = heading + "\n\n" + points + "\n\n" + tr("text_summary_notice", values.language)
-    source = "\n\n".join(f"[{number}] {line}" for number, line in enumerate(lines, 1))
-    report = summary + "\n\n" + tr("text_summary_source_heading", values.language) + "\n\n" + source
+    citations = "\n".join(
+        f"[{i}] " + ", ".join(str(number) for number in point.source_ids)
+        for i, point in enumerate(plan.points, 1)
+    )
+    source = "\n\n".join(f"[{i}] {line}" for i, line in enumerate(values.lines(), 1))
+    report = (
+        summary
+        + "\n\n"
+        + tr("text_summary_references", values.language)
+        + "\n"
+        + citations
+        + "\n\n"
+        + tr("text_summary_source_heading", values.language)
+        + "\n\n"
+        + source
+        + "\n\n"
+        + tr("text_summary_original", values.language)
+        + "\n\n"
+        + values.text
+    )
     return summary, report

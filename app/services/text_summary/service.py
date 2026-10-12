@@ -2,12 +2,13 @@ from decimal import Decimal
 
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
-from app.services.text_summary.prompt import SELECT
-from app.services.text_summary.schema import Inputs, render, selection_schema
+from app.services.text_summary.prompt import SUMMARIZE
+from app.services.text_summary.schema import Inputs, render, summary_schema
 
 
 class TextSummary(BaseService):
     slug = "text_summary"
+    version = "2"
     category = "text"
     name_ar = tr("text_summary_name")
     name_en = tr("text_summary_name", "en")
@@ -43,7 +44,9 @@ class TextSummary(BaseService):
         if self.runtime.ai is None:
             raise ServiceError("provider_config")
         plan = await self.runtime.ai.extract(
-            selection_schema(values), values.source(), SELECT.format(limit=values.limit())
+            summary_schema(values),
+            values.source(),
+            SUMMARIZE.format(limit=values.limit(), language=values.language),
         )
         summary, report = render(values, plan)
         artifact = self.runtime.storage.save(
