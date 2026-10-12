@@ -65,14 +65,29 @@ class MeetingMinutes(BaseService):
         plan = await self.runtime.ai.extract(schema, source, CLASSIFY)
         # Review before export; task metadata must be quoted from its source note.
         reviews = {}
+        details = {}
         for lang in ("ar", "en"):
             preview = [tr("minutes_review_intro", lang)]
+            complete = [values.title, tr("minutes_review_complete", lang)]
             for category in ("discussion", "decision", "action", "review"):
                 ids = sorted(item.note_id for item in plan.assignments if item.category == category)
                 if ids:
+                    complete.append(tr("minutes_" + category, lang) + f" ({len(ids)})")
                     preview.append(tr("minutes_" + category, lang) + f" ({len(ids)})")
                     preview.append(tr("minutes_source_ids", lang, ids=", ".join(map(str, ids))))
                     tasks = {item.note_id: item for item in plan.assignments}
+                    for number in ids:
+                        complete.append(f"[{number}] {notes[number - 1]}")
+                        if category == "action":
+                            item = tasks[number]
+                            complete.append(
+                                tr(
+                                    "minutes_task_preview",
+                                    lang,
+                                    assignee=item.assignee or tr("minutes_unspecified", lang),
+                                    deadline=item.deadline or tr("minutes_unspecified", lang),
+                                )
+                            )
                     for number in ids[:2]:
                         preview.append(f"[{number}] {notes[number - 1][:120]}")
                         if category == "action":
@@ -86,9 +101,13 @@ class MeetingMinutes(BaseService):
                                 )
                             )
             reviews[lang] = "\n".join(preview)
+            complete.append(tr("minutes_review_complete_end", lang))
+            details[lang] = "\n\n".join(complete)
         return Result(
             preview=reviews[values.language],
             preview_localizations=reviews,
+            review_details=details[values.language],
+            review_details_localizations=details,
             needs_confirmation=True,
             continuation=plan.model_dump(mode="json"),
         )
