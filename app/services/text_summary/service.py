@@ -8,6 +8,7 @@ from app.services.text_summary.schema import Inputs, render, summary_schema
 
 class TextSummary(BaseService):
     slug = "text_summary"
+    menu_order = 30
     version = "2"
     category = "text"
     name_ar = tr("text_summary_name")

@@ -6,10 +6,13 @@ Stars price. It also provides order-status totals, today's Stars report and the
 last five recorded price edits (Riyadh time). Opening controls creates no order,
 reservation or provider call, and preserves customer intake/support state.
 
-### Read-only service configuration checks
+### Manage services and service prices
 
-`/admin` → Service configuration checks → choose a service. Six entries per
-page; retired replacements are omitted. Refresh rereads the current database
+`/admin` → Manage services (إدارة الخدمات) → choose a service. For price editing,
+use Service prices (أسعار الخدمات), or the shortcut inside service details.
+Both lists share the customer category/menu order and registered outcome labels.
+Six entries per page; management shows page count and details show category.
+Retired replacements are omitted. Refresh rereads the current database
 snapshot and local bot configuration. Details show activation, actual menu
 activation/payment-price filters, stored/code versions, global AI enabled/paused
 state and local provider cost-configuration validation, current payment mode

@@ -29,6 +29,7 @@ from app.ops.prices import change_stars_price
 from app.ops.readiness import ai_configuration, checks
 from app.ops.reports import stars_report
 from app.services.base import ServiceError
+from app.services.catalog import CATEGORY_KEYS, ordered
 from app.services.registry import registry
 from app.wallet.ledger import sar
 
@@ -60,8 +61,8 @@ def price_label(price, lang):
 def controls(lang):
     return buttons(
         [
-            (tr("admin_services", lang), "admin:services:0"),
             (tr("admin_readiness", lang), "admin:readiness:0"),
+            (tr("admin_services", lang), "admin:services:0"),
             (tr("admin_activation_history", lang), "admin:activation_history"),
             (tr("admin_orders", lang), "admin:orders"),
             (tr("admin_stars", lang), "admin:stars"),
@@ -74,7 +75,7 @@ def controls(lang):
 async def show_services(message, lang, page):
     async with sessions() as db:
         rows = list((await db.scalars(select(Service).order_by(Service.slug))).all())
-    rows = [row for row in rows if registry.customer_visible(row.slug)]
+    rows = ordered([row for row in rows if registry.customer_visible(row.slug)], registry.types)
     page = min(max(page, 0), max((len(rows) - 1) // PAGE_SIZE, 0))
     items, details = [], []
     for row in rows[page * PAGE_SIZE : (page + 1) * PAGE_SIZE]:
@@ -101,7 +102,7 @@ async def show_services(message, lang, page):
 async def show_readiness(message, lang, page):
     async with sessions() as db:
         rows = list((await db.scalars(select(Service).order_by(Service.slug))).all())
-    rows = [row for row in rows if registry.customer_visible(row.slug)]
+    rows = ordered([row for row in rows if registry.customer_visible(row.slug)], registry.types)
     page = min(max(page, 0), max((len(rows) - 1) // PAGE_SIZE, 0))
     items = [
         (row.name_en if lang == "en" else row.name_ar, f"admin:inspect:{row.slug}")
@@ -112,12 +113,19 @@ async def show_readiness(message, lang, page):
     if (page + 1) * PAGE_SIZE < len(rows):
         items.append((tr("next_page", lang), f"admin:readiness:{page + 1}"))
     items.append((tr("admin_back", lang), "admin:home"))
-    await message.answer(tr("admin_readiness_intro", lang), reply_markup=buttons(items))
+    pages = max(1, (len(rows) + PAGE_SIZE - 1) // PAGE_SIZE)
+    await message.answer(
+        tr("admin_readiness_intro", lang)
+        + "\n\n"
+        + tr("catalog_page", lang, page=page + 1, pages=pages),
+        reply_markup=buttons(items),
+    )
 
 
 def readiness_text(row, evidence, lang):
     lines = [
         row.name_en if lang == "en" else row.name_ar,
+        tr(CATEGORY_KEYS[registry.types[row.slug].category], lang),
         tr("admin_enabled" if evidence["enabled"] else "admin_disabled", lang),
         tr("admin_listed" if evidence["listed"] else "admin_not_listed", lang),
         tr(

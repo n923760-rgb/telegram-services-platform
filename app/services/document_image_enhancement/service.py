@@ -12,6 +12,7 @@ from app.services.document_image_enhancement.schema import Assessment, Inputs
 class DocumentImageEnhancement(BaseService):
     version = "3"
     slug = "document_image_enhancement"
+    menu_order = 20
     category = "images"
     name_ar = tr("document_image_name")
     name_en = tr("document_image_name", "en")

@@ -3,7 +3,7 @@
 import re
 
 from app.core.i18n import tr
-from app.services.catalog import CATEGORY_KEYS
+from app.services.catalog import CATEGORY_KEYS, ordered
 from app.services.registry import registry
 
 SERVICE_PAGE_SIZE = 6
@@ -18,7 +18,7 @@ def parse_callback(data):
 
 def view(rows, lang, *, category=None, page=0):
     groups = {key: [] for key in CATEGORY_KEYS}
-    for service in rows:
+    for service in ordered(rows, registry.types):
         cls = registry.types.get(service.slug)
         if getattr(cls, "replaced_by", None) is not None:
             continue
