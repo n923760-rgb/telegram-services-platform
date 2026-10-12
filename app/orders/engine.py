@@ -81,7 +81,11 @@ async def submit(
                 raise ServiceError("invalid_request")
             return previous.id
         service = await db.scalar(select(Service).where(Service.slug == slug).with_for_update())
-        if not service or not service.enabled or not registry.customer_visible(slug):
+        if (
+            not service
+            or not service.enabled
+            or not registry.can_request(slug, admin=user_id in config().admin_ids)
+        ):
             raise ServiceError("unavailable")
         if mode == "test_credit" and service.price_halala != expected_price:
             raise ServiceError("price_changed")

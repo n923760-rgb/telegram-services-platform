@@ -191,6 +191,7 @@ class BaseService:
     version = "1"
     category = "other"
     menu_order = 100
+    admin_only = False
     slug: str
     name_ar: str
     name_en: str

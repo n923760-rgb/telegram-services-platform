@@ -141,6 +141,8 @@ def readiness_text(row, evidence, lang):
     ]
     if evidence["stars_price_missing"]:
         lines.append(tr("admin_missing_stars_price", lang))
+    if evidence.get("admin_only"):
+        lines.append(tr("admin_private_service", lang))
     lines.append(tr("admin_readiness_limits", lang))
     return "\n\n".join(lines)
 
