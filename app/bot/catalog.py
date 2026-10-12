@@ -16,10 +16,12 @@ def parse_callback(data):
     return match[1], int(match[2])
 
 
-def view(rows, lang, *, category=None, page=0):
+def view(rows, lang, *, category=None, page=0, admin=False):
     groups = {key: [] for key in CATEGORY_KEYS}
     for service in ordered(rows, registry.types):
         cls = registry.types.get(service.slug)
+        if getattr(cls, "admin_only", False) and admin is not True:
+            continue
         if getattr(cls, "replaced_by", None) is not None:
             continue
         key = getattr(cls, "category", "other")

@@ -138,7 +138,13 @@ def create_router():
             slug = registry.customer_slug(callback.data.split(":", 1)[1])
             service = await db.get(Service, slug) if slug else None
         await callback.answer()
-        if not service or not service.enabled:
+        if (
+            not service
+            or not service.enabled
+            or not registry.can_request(
+                service.slug, admin=callback.from_user.id in config().admin_ids
+            )
+        ):
             await callback.message.answer(tr("unavailable", lang))
             return
         if config().stars_enabled and service.price_stars is None:

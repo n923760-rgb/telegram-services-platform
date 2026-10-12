@@ -49,6 +49,8 @@ class Registry:
                     raise ValueError("invalid service category")
                 if type(cls.menu_order) is not int or not 0 <= cls.menu_order <= 1000:
                     raise ValueError("invalid service menu order")
+                if type(cls.admin_only) is not bool:
+                    raise ValueError("invalid service audience")
                 if not re.fullmatch(r"[a-z][a-z0-9_]{0,39}", cls.slug) or not re.fullmatch(
                     r"[A-Za-z0-9_.-]{1,32}", cls.version
                 ):
@@ -90,6 +92,9 @@ class Registry:
     def customer_visible(self, slug):
         cls = self.types.get(slug)
         return cls is not None and getattr(cls, "replaced_by", None) is None
+
+    def can_request(self, slug, *, admin=False):
+        return self.customer_visible(slug) and (not self.types[slug].admin_only or admin is True)
 
     async def sync(self, db):
         from sqlalchemy.dialects.postgresql import insert

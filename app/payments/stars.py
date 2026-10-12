@@ -88,6 +88,7 @@ async def pre_checkout(user_id, invoice_payload, currency, amount, query_id):
             or not service
             or not service.enabled
             or not plugin
+            or not registry.can_request(order.service_slug, admin=user_id in config().admin_ids)
             or service.version != order.service_version
             or plugin.version != order.service_version
             or service.price_stars != amount

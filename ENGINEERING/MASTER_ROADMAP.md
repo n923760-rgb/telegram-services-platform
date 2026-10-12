@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Administrator-only verification service — 2026-10-12
+
+- OWNER AUTHORITY: Remove the verification-only customer category, retaining the tool for administrators.
+- BASELINE: Main 1bf5e0d / PR #62; owner screenshots show updated category/admin labels, not complete runtime qualification.
+- CHANGE: Generic validated admin_only metadata; echo is private. Customer menu/intake/followup/new-order and unpaid Stars pre-checkout recheck authenticated role. Admin management and verification menu remain available. Empty categories disappear dynamically; future public services can still use Other.
+- HISTORY: Existing accepted jobs/results, idempotent replays and receipt/refund reconciliation retained; role change is not retroactive cancellation. No price/default/version/schema/migration/provider changes or payment activation.
+- TESTING: Existing financial tests use echo as an explicit synthetic public plugin fixture, not production access policy; dedicated tests restore production private metadata and check role loss, stale buttons, no reservation, paid continuation and generic future-service restrictions. No assertions or financial cases removed.
+- Evidence: [private verification report](REPORTS/2026-10-12-private-verification.md). Full exact-head hosted financial/native workflow required before merge; VPS/mobile private-menu acceptance separate.
+
+
 ## Consistent service labels and navigation — 2026-10-12
 
 - OWNER AUTHORITY: Correct ambiguous names and simplify customer/admin browsing after editing/summary labels caused confusion.

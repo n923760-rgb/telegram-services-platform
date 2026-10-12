@@ -1,5 +1,12 @@
 # Bot administration and owner-set prices
 
+The internal verification tool is administrator-only. Configured administrators can
+select it through /services → Other services when enabled and listed under the current
+payment mode. Customers do not see it and cannot start new requests from old buttons.
+Empty customer categories disappear automatically; unrelated public services in Other
+remain visible. This is an access restriction, not a free-price or payment-mode change.
+Existing accepted jobs/history are retained; unpaid Stars checkout rechecks current role.
+
 Only configured ADMIN_IDS can open `/admin` or the Admin panel button on their
 home keyboard. The panel shows six services per page, enabled/disabled state and
 Stars price. It also provides order-status totals, today's Stars report and the

@@ -48,7 +48,7 @@ async def available_followups(user_id, order_id, *, delivering=False):
             row = await db.get(Service, action.service)
             if (
                 not target
-                or not registry.customer_visible(action.service)
+                or not registry.can_request(action.service, admin=user_id in config().admin_ids)
                 or not row
                 or not row.enabled
                 or row.version != target.version

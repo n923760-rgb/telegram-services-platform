@@ -54,7 +54,7 @@ def create_router():
         await callback.answer()
         await home(callback.message, state, callback.from_user.id, lang)
 
-    async def show_services(message, state, lang, *, category=None, page=0):
+    async def show_services(message, state, lang, *, user_id, category=None, page=0):
         await leave_support(state)
         async with sessions() as db:
             rows = (
@@ -64,19 +64,21 @@ def create_router():
             ).all()
         if config().stars_enabled:
             rows = [service for service in rows if service.price_stars is not None]
-        text, items = catalog_view(rows, lang, category=category, page=page)
+        text, items = catalog_view(
+            rows, lang, category=category, page=page, admin=user_id in config().admin_ids
+        )
         items.extend(await section_controls(state, lang))
         await message.answer(text, reply_markup=buttons(items))
 
     @router.message(Command("services"))
     @router.message(MenuButton("services"))
     async def services_command(message: Message, state: FSMContext, lang: str = "ar"):
-        await show_services(message, state, lang)
+        await show_services(message, state, lang, user_id=message.from_user.id)
 
     @router.callback_query(F.data == "menu:services")
     async def services_callback(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await callback.answer()
-        await show_services(callback.message, state, lang)
+        await show_services(callback.message, state, lang, user_id=callback.from_user.id)
 
     @router.callback_query(F.data.startswith("catalog:"))
     async def category_callback(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
@@ -85,7 +87,14 @@ def create_router():
             await callback.answer(tr("invalid_request", lang))
             return
         await callback.answer()
-        await show_services(callback.message, state, lang, category=parsed[0], page=parsed[1])
+        await show_services(
+            callback.message,
+            state,
+            lang,
+            user_id=callback.from_user.id,
+            category=parsed[0],
+            page=parsed[1],
+        )
 
     async def show_balance(message, state, user_id, lang):
         await leave_support(state)
