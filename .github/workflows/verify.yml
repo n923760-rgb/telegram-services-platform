@@ -164,6 +164,14 @@ jobs:
                   tracked = await renderer().word_pdf(minute_document(values, classification_schema(values.lines()).model_validate(minute_action_plan(language))))
                   tracked_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(tracked.pdf)).pages)
                   assert tracked_text.count('2026-10-12') == 2
+                  owner = 'د. سام' if language == 'ar' else 'Dr. Sam'
+                  original = 'سام' if language == 'ar' else 'Sam'
+                  titled_values = MinuteInputs.parse({**minute_inputs(language), 'notes': minute_inputs(language)['notes'].replace(original, owner)})
+                  titled_plan = minute_action_plan(language)
+                  titled_plan['assignments'][2]['assignee'] = owner
+                  titled = await renderer().word_pdf(minute_document(titled_values, classification_schema(titled_values.lines()).model_validate(titled_plan)))
+                  titled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(titled.pdf)).pages)
+                  assert titled_text.count('2026-10-12') == titled_text.count('00017') == 2
                   cv = await renderer().word_pdf(CvInputs.parse(cv_inputs(language)).document())
                   pages = PdfReader(BytesIO(cv.pdf)).pages
                   assert len(pages) == 1
@@ -211,6 +219,7 @@ jobs:
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound action register and exact deadline export PASS with network disabled')
+          print('Non-root worker: Arabic/English titled task owner retains source unit and exact deadline PASS with network disabled')
           print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
           print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
           print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')

@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Meeting note name boundaries — 2026-10-13
+
+- OWNER AUTHORITY: Continue the last development conversation; retain earlier verified-development/merge authority, manual acceptance and payment later.
+- BASELINE: Main 5321530 / merged PR #64; VPS source not assumed updated.
+- FIX: MeetingMinutes v3 retains common dotted AR/EN titles, uppercase initials, dotted Latin abbreviations and leading numeric list markers inside their original source unit. Explicit newline boundaries, numeric/date notation, duplicates and input limits retained. Uncertain mixed units remain review candidates.
+- COMPATIBILITY: Unit IDs may change; existing version policy cancels unprepared v1/v2 work including unrendered continuation. Cached artifact delivery replays. Administrator prices/flags retained; no migration, dependency, core/provider/payment-policy changes or activation.
+- PASS locally: 27 schema/preview/DOCX tests, 19 existing pure service cases and three architecture gates, lint/format/diff. Native/DB cases remain enabled in full hosted qualification, required before merge.
+- LIMITS: Lexical protection is conservative, not complete language segmentation. Real provider/Telegram/mobile visual acceptance and deployment NOT RUN; later deployment must resolve unfinished minutes work.
+- Evidence: [name-boundary report](REPORTS/2026-10-13-minutes-name-boundaries.md).
+
 ## Meeting action register and natural notes — 2026-10-12
 
 - OWNER AUTHORITY: Continue development before manual trials; automated qualification required, payment last.

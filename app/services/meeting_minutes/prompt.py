@@ -11,7 +11,8 @@ deadline from that same note in assignee/deadline. Use empty strings when unspec
 non-action notes must have empty metadata. Do not copy a proposed/rejected/superseded
 date as an approved deadline or confuse a speaker with the task owner. Preserve complete
 numeric tokens, leading zeros, date notation and conditions. Do not infer links between
-separate ambiguous notes. Sentence segmentation can split abbreviations or mixed text;
-classify uncertain fragments as review, not approved decisions or invented actions.
+separate ambiguous notes. Source units conservatively retain common dotted names and
+abbreviations; they may still contain mixed statements or unfamiliar fragments. Classify
+uncertain units as review, not approved decisions or invented actions.
 Quality review must check classification, omitted explicit task metadata, correct owner,
 deadline conditions, rejection/negation and faithful quoted spans against all notes."""
