@@ -28,3 +28,11 @@ def plan():
             {"note_id": 4, "category": "review"},
         ]
     }
+
+
+def action_plan(language="ar"):
+    value = plan()
+    value["assignments"][2].update(
+        assignee="سام" if language == "ar" else "Sam", deadline="2026-10-12"
+    )
+    return value

@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Meeting action register and natural notes — 2026-10-12
+
+- OWNER AUTHORITY: Continue development before manual trials; automated qualification required, payment last.
+- BASELINE: Main f0bea18 / PR #63; latest operator VPS report is 1bf5e0d. No deployment assumed.
+- CHANGE: MeetingMinutes v2 separates ordinary punctuation-delimited sentences, retains quoted units/classification, adds same-note quoted assignee/deadline and a localized action register in Word/PDF. Unknowns stay explicit; existing AI production review checks role/date meaning before customer approval.
+- COMPATIBILITY: 80 notes/1200 characters each/12000 total. Prices/flags/payment controls retained; v1 unprepared jobs use existing version policy. Approved v2 continuation renders without another AI call. No dependencies, migration or activation.
+- LIMITS: Abbreviations may split; ambiguous fragments go to review. Source spans/whole numeric tokens prove presence, not semantic assignment. Actual provider/manual visual acceptance deferred.
+- Evidence: [minutes report](REPORTS/2026-10-12-meeting-action-register.md). Full exact-head hosted financial/native workflow required before merge.
+
+
 ## Administrator-only verification service — 2026-10-12
 
 - OWNER AUTHORITY: Remove the verification-only customer category, retaining the tool for administrators.

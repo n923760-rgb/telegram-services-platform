@@ -178,7 +178,7 @@ async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(tmp_pat
 
 async def test_note_limits_before_reservation(tmp_path, monkeypatch):
     _, provider, _, _, price = await prepare(tmp_path, monkeypatch, [])
-    with pytest.raises(ServiceError, match="input_invalid"):
+    with pytest.raises(ServiceError, match="minutes_input_invalid"):
         await submit(
             1, "meeting_minutes", inputs() | {"notes": "line\n" * 81}, price, "minutes-invalid"
         )
@@ -186,3 +186,69 @@ async def test_note_limits_before_reservation(tmp_path, monkeypatch):
         assert await db.scalar(select(func.count(Order.id))) == 0
         assert (await balance(db, 1)).reserved == 0
     assert provider.calls == 0
+
+
+@pytest.mark.parametrize("accepted", [True, False])
+@pytest.mark.parametrize("defect", ["owner", "deadline"])
+async def test_action_metadata_quality_review_repairs_or_refuses_before_export(
+    tmp_path, monkeypatch, accepted, defect
+):
+    from app.providers.ai.gateway import AI
+    from app.providers.storage import OwnedStorage
+    from app.services.meeting_minutes.schema import Inputs, classification_schema
+
+    source = inputs("en") | {
+        "notes": (
+            "Sam reported that Sara must submit report 00017 on 2026-10-12, "
+            "not the earlier proposed 2026-10-10."
+        )
+    }
+    good = {
+        "assignments": [
+            {"note_id": 1, "category": "action", "assignee": "Sara", "deadline": "2026-10-12"}
+        ]
+    }
+    bad = {
+        "assignments": [
+            {
+                **good["assignments"][0],
+                "assignee": "Sam" if defect == "owner" else "Sara",
+                "deadline": "2026-10-10" if defect == "deadline" else "2026-10-12",
+            }
+        ]
+    }
+    # Lexical validation alone cannot prove which quoted owner/date is correct.
+    classification_schema(Inputs.parse(source).lines()).model_validate(bad)
+    reject = '{"accepted":false,"issues":["meaning"]}'
+    responses = [
+        json.dumps(bad),
+        reject,
+        json.dumps(good if accepted else bad),
+        '{"accepted":true,"issues":[]}' if accepted else reject,
+    ]
+    store, provider, delivery, ctx, price = await prepare(tmp_path, monkeypatch, responses)
+    ctx["runtime_factory"] = lambda jid, uid: SimpleNamespace(
+        ai=AI(provider, jid, uid, quality_review=True),
+        storage=OwnedStorage(store, uid),
+        renderer=renderer(),
+    )
+    oid = await submit(1, "meeting_minutes", source, price, "action-review")
+    jid = await review(ctx, oid)
+    assert provider.calls == 4 and not delivery.files
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == (
+            "waiting_confirmation" if accepted else "failed"
+        )
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".016")
+    if accepted:
+        await confirm_structure(oid, 1, True)
+        await execute_job(ctx, str(jid))
+        await execute_job(ctx, str(jid))
+        document = Document(BytesIO(dict(delivery.files)["minutes.docx"]))
+        cells = [cell.text.replace("\u200e", "") for cell in document.tables[0].rows[1].cells]
+        assert cells == ["[1]", "Sara", "2026-10-12"]
+        assert provider.calls == 4 and len(delivery.files) == 2
+    async with sessions() as db:
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if accepted else 1000, 0)
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
