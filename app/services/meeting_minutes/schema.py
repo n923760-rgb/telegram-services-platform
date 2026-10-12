@@ -18,6 +18,27 @@ from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
 from app.services.translation import NUMERIC_TOKEN
 
+_SENTENCE_GAP = re.compile(r"(?<=[.!?؟؛;])\s+(?=\S)")
+_NAME_TITLES = {"dr.", "mr.", "mrs.", "ms.", "prof.", "د.", "م.", "أ.", "ا."}
+
+
+def note_units(line):
+    """Conservatively retain familiar dotted names; explicit newlines stay authoritative."""
+    start = 0
+    for gap in _SENTENCE_GAP.finditer(line):
+        if line[gap.start() - 1] == ".":
+            token = re.search(r"\S+$", line[: gap.start()]).group().lstrip("([{\"'«“‘")
+            if (
+                token.lower() in _NAME_TITLES
+                or re.fullmatch(r"[A-Z]\.", token)
+                or re.fullmatch(r"(?:[A-Za-z]\.){2,}", token)
+                or re.fullmatch(r"\d{1,3}\.", line[start : gap.start()].strip())
+            ):
+                continue
+        yield line[start : gap.start()]
+        start = gap.end()
+    yield line[start:]
+
 
 class Inputs(StrictModel):
     title: str = Field(min_length=1, max_length=200)
@@ -40,13 +61,9 @@ class Inputs(StrictModel):
         return self
 
     def lines(self):
-        # Separate ordinary sentence boundaries, never decimal dots without whitespace.
-        # Segments are quoted verbatim; do not infer relationships across ambiguous units.
+        # Quote original slices; do not infer relationships across ambiguous units.
         return [
-            part
-            for line in self.notes.split("\n")
-            for part in re.split(r"(?<=[.!?؟؛;])\s+(?=\S)", line)
-            if part.strip()
+            part for line in self.notes.split("\n") for part in note_units(line) if part.strip()
         ]
 
     @classmethod

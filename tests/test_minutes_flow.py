@@ -10,7 +10,7 @@ from pypdf import PdfReader
 from sqlalchemy import func, select
 
 from app.core.db import sessions
-from app.core.models import Job, Order
+from app.core.models import Job, Order, Service
 from app.core.settings import config
 from app.orders.engine import confirm_structure, submit
 from app.services.base import ServiceError
@@ -144,7 +144,10 @@ async def test_confirmed_render_failure_releases_credit(tmp_path, monkeypatch):
     assert not delivery.files
 
 
-async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(tmp_path, monkeypatch):
+@pytest.mark.parametrize("old_version", [None, "1", "2"])
+async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(
+    tmp_path, monkeypatch, old_version
+):
     from app.providers.documents.libreoffice import LibreOfficeDocuments
 
     _, provider, delivery, ctx, price = await prepare(tmp_path, monkeypatch, [json.dumps(plan())])
@@ -162,6 +165,8 @@ async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(tmp_pat
         assert len((await db.get(Order, oid)).result["artifacts"]) == 2
         assert (await balance(db, 1)).reserved == price
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
+        if old_version:
+            (await db.get(Order, oid)).service_version = old_version
 
     async def no_render(*args, **kwargs):
         raise AssertionError("prepared minutes must be reused")
@@ -174,6 +179,76 @@ async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(tmp_pat
         assert (await balance(db, 1)).reserved == 0
     assert provider.calls == 1 and len(delivery.files) == 2
     assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+@pytest.mark.parametrize("old_version", ["1", "2"])
+@pytest.mark.parametrize("approved", [False, True])
+async def test_boundary_upgrade_retains_admin_settings_and_cancels_unprepared_old_work(
+    tmp_path, monkeypatch, old_version, approved
+):
+    from app.services.registry import registry
+
+    _, provider, delivery, ctx, price = await prepare(
+        tmp_path, monkeypatch, [json.dumps(plan())] if approved else []
+    )
+    oid = await submit(1, "meeting_minutes", inputs(), price, "minutes-old-boundaries")
+    jid = await job_for(oid)
+    if approved:
+        await review(ctx, oid)
+        await confirm_structure(oid, 1, True)
+    async with sessions.begin() as db:
+        (await db.get(Order, oid)).service_version = old_version
+        row = await db.get(Service, "meeting_minutes")
+        row.version, row.price_halala, row.price_stars = old_version, 777, 42
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        row = await db.get(Service, "meeting_minutes")
+        assert (row.version, row.enabled, row.price_halala, row.price_stars) == ("3", True, 777, 42)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    await deliver_failures(ctx)
+    await deliver_failures(ctx)
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "cancelled"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".004" if approved else "0")
+    assert provider.calls == int(approved) and not delivery.files
+    assert len(delivery.errors) == 1 and delivery.errors[0][2] == "service_changed"
+
+
+@pytest.mark.parametrize("language,name", [("ar", "د. أحمد"), ("en", "Dr. Sam")])
+async def test_titled_action_owner_native_export_after_approval_only(
+    tmp_path, monkeypatch, language, name
+):
+    source = inputs(language) | {"notes": f"{name} sends report 00017 on 2026-10-12."}
+    candidate = {
+        "assignments": [
+            {"note_id": 1, "category": "action", "assignee": name, "deadline": "2026-10-12"}
+        ]
+    }
+    _, provider, delivery, ctx, price = await prepare(
+        tmp_path, monkeypatch, [json.dumps(candidate)]
+    )
+    oid = await submit(1, "meeting_minutes", source, price, "minutes-titled-owner")
+    jid = await review(ctx, oid)
+    assert not delivery.files and name in delivery.confirmations[0][1]
+    await confirm_structure(oid, 1, True)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    doc = Document(BytesIO(dict(delivery.files)["minutes.docx"]))
+    assert [cell.text.replace("\u200e", "") for cell in doc.tables[0].rows[1].cells] == [
+        "[1]",
+        name,
+        "2026-10-12",
+    ]
+    pdf = PdfReader(BytesIO(dict(delivery.files)["minutes.pdf"]))
+    assert "00017" in pdf.pages[0].extract_text() and "2026-10-12" in pdf.pages[0].extract_text()
+    assert provider.calls == 1 and len(delivery.files) == 2
+    async with sessions() as db:
+        funds = await balance(db, 1)
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (funds.available, funds.reserved) == (1000 - price, 0)
 
 
 async def test_note_limits_before_reservation(tmp_path, monkeypatch):

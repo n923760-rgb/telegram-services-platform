@@ -12,7 +12,7 @@ from app.services.meeting_minutes.schema import Inputs, classification_schema, d
 
 class MeetingMinutes(BaseService):
     slug = "meeting_minutes"
-    version = "2"
+    version = "3"
     menu_order = 20
     category = "professional"
     name_ar = tr("minutes_name")
