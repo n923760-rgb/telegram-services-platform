@@ -56,7 +56,8 @@ def test_source_paragraphs_remain_verbatim_with_ids_and_no_generated_facts(langu
     paragraphs = [p.text.replace("\u200e", "") for p in doc.paragraphs]
     for index, source in enumerate(values.lines(), 1):
         assert paragraphs.count(f"[{index}] {source}") == 1
-    assert not doc.tables
+    assert len(doc.tables) == 1
+    assert doc.tables[0].cell(1, 0).text == "[3]"
     assert len(word_plan.sections) == 4
 
 
@@ -73,7 +74,7 @@ def test_source_paragraphs_remain_verbatim_with_ids_and_no_generated_facts(langu
     ids=["empty", "too-many", "too-long", "control", "title", "language"],
 )
 def test_invalid_notes_rejected_before_reservation(patch):
-    with pytest.raises(ServiceError, match="input_invalid"):
+    with pytest.raises(ServiceError, match="minutes_input_invalid"):
         MeetingMinutes.needs_ai(inputs() | patch)
 
 

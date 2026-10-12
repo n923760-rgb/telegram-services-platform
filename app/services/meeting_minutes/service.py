@@ -12,6 +12,7 @@ from app.services.meeting_minutes.schema import Inputs, classification_schema, d
 
 class MeetingMinutes(BaseService):
     slug = "meeting_minutes"
+    version = "2"
     menu_order = 20
     category = "professional"
     name_ar = tr("minutes_name")
@@ -62,7 +63,7 @@ class MeetingMinutes(BaseService):
             ensure_ascii=False,
         )
         plan = await self.runtime.ai.extract(schema, source, CLASSIFY)
-        # Review before export; source IDs are the only AI-produced document values.
+        # Review before export; task metadata must be quoted from its source note.
         reviews = {}
         for lang in ("ar", "en"):
             preview = [tr("minutes_review_intro", lang)]
@@ -71,7 +72,19 @@ class MeetingMinutes(BaseService):
                 if ids:
                     preview.append(tr("minutes_" + category, lang) + f" ({len(ids)})")
                     preview.append(tr("minutes_source_ids", lang, ids=", ".join(map(str, ids))))
-                    preview.extend(f"[{number}] {notes[number - 1][:180]}" for number in ids[:2])
+                    tasks = {item.note_id: item for item in plan.assignments}
+                    for number in ids[:2]:
+                        preview.append(f"[{number}] {notes[number - 1][:120]}")
+                        if category == "action":
+                            item = tasks[number]
+                            preview.append(
+                                tr(
+                                    "minutes_task_preview",
+                                    lang,
+                                    assignee=item.assignee[:40] or tr("minutes_unspecified", lang),
+                                    deadline=item.deadline[:40] or tr("minutes_unspecified", lang),
+                                )
+                            )
             reviews[lang] = "\n".join(preview)
         return Result(
             preview=reviews[values.language],
