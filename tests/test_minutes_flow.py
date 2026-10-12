@@ -18,6 +18,7 @@ from app.wallet.ledger import balance
 from app.workers.runner import deliver_confirmations, deliver_failures, execute_job
 from tests.minutes_fixtures import inputs, plan
 from tests.test_foundation import job_for
+from tests.test_navigation import flow  # noqa: F401
 from tests.test_real_services import setup
 from tests.word_pdf_fixtures import renderer
 
@@ -45,6 +46,106 @@ async def review(ctx, oid):
 
 
 @pytest.mark.parametrize("language", ["ar", "en"])
+async def test_order_details_reopen_all_tasks_in_current_ui_language(
+    flow,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+    language,
+):
+    from app.core.i18n import tr
+    from app.core.users import set_language
+
+    transport, message, callback, _ = flow
+    owner = "المسؤول الكامل " + "أحمد " * 12
+    deadline = "2026-10-12 only after written approval from the full project committee"
+    notes = [f"{owner} sends report {i:05d} by {deadline}." for i in range(1, 13)]
+    candidate = {
+        "assignments": [
+            {"note_id": i, "category": "action", "assignee": owner, "deadline": deadline}
+            for i in range(1, 13)
+        ]
+    }
+    _, provider, delivery, ctx, price = await prepare(
+        tmp_path, monkeypatch, [json.dumps(candidate)]
+    )
+    oid = await submit(
+        1, "meeting_minutes", inputs() | {"notes": "\n".join(notes)}, price, "full-review"
+    )
+    await execute_job(ctx, str(await job_for(oid)))
+    await set_language(1, language)
+    await message("/start")
+    before = len(transport.messages)
+    await callback(f"order:{oid}")
+    rendered = transport.messages[before:]
+    assert len(rendered) > 1
+    text = "".join(msg.text for msg in rendered)
+    assert tr("minutes_review_complete", language) in text
+    for i, note in enumerate(notes, 1):
+        assert text.count(f"[{i}] {note}") == 1
+    assert text.count(tr("minutes_task_preview", language, assignee=owner, deadline=deadline)) == 12
+    assert all(msg.reply_markup is None for msg in rendered[:-1])
+    assert all(len(msg.text.encode("utf-16-le")) // 2 <= 3500 for msg in rendered)
+    assert rendered[-1].reply_markup.inline_keyboard[0][0].callback_data == f"approve:{oid}"
+    assert not delivery.files and provider.calls == 1
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "waiting_confirmation"
+        assert (await balance(db, 1)).reserved == price
+
+
+@pytest.mark.parametrize("approved", [True, False])
+async def test_multipart_review_notification_recovers_without_new_ai_or_early_capture(
+    tmp_path, monkeypatch, approved
+):
+    from unittest.mock import AsyncMock
+
+    from app.providers.delivery import TelegramDelivery
+
+    notes = [f"Source {i:05d} " + "🙂" * 110 for i in range(1, 31)]
+    candidate = {"assignments": [{"note_id": i, "category": "review"} for i in range(1, 31)]}
+    _, provider, delivery, ctx, price = await prepare(
+        tmp_path, monkeypatch, [json.dumps(candidate)]
+    )
+    oid = await submit(
+        1, "meeting_minutes", inputs() | {"notes": "\n".join(notes)}, price, "review-retry"
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    bot = AsyncMock()
+    # The first message succeeds and the next fails; no approval button was delivered.
+    bot.send_message.side_effect = [None, OSError("synthetic transport offline")]
+    notifier = TelegramDelivery(bot)
+    notifier._lang = AsyncMock(return_value="en")
+    await deliver_confirmations({"delivery": notifier})
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == "waiting_confirmation" and not order.confirmation_notified
+        assert (await balance(db, 1)).reserved == price
+    assert bot.send_message.await_args_list[0].kwargs["reply_markup"] is None
+    bot.reset_mock()
+    bot.send_message.side_effect = None
+    await deliver_confirmations({"delivery": notifier})
+    await deliver_confirmations({"delivery": notifier})
+    calls = bot.send_message.await_args_list
+    text = "".join(call.args[1] for call in calls)
+    for i, note in enumerate(notes, 1):
+        assert text.count(f"[{i}] {note}") == 1
+    assert all(call.kwargs["reply_markup"] is None for call in calls[:-1])
+    assert calls[-1].kwargs["reply_markup"].inline_keyboard[0][0].callback_data == f"approve:{oid}"
+    assert provider.calls == 1 and not delivery.files
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).confirmation_notified
+    await confirm_structure(oid, 1, approved)
+    if approved:
+        await execute_job(ctx, str(jid))
+        await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("completed" if approved else "cancelled")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if approved else 1000, 0)
+    assert provider.calls == 1 and len(delivery.files) == (2 if approved else 0)
+
+
+@pytest.mark.parametrize("language", ["ar", "en"])
 async def test_confirmed_source_notes_native_pair_single_capture_and_provider_call(
     tmp_path, monkeypatch, language
 ):
@@ -59,6 +160,8 @@ async def test_confirmed_source_notes_native_pair_single_capture_and_provider_ca
         assert (await balance(db, 1)).reserved == price
         assert await db.scalar(select(func.count(Order.id))) == 1
     assert not delivery.files and len(delivery.confirmations) == 1
+    for i, note in enumerate(source["notes"].split("\n"), 1):
+        assert f"[{i}] {note}" in delivery.confirmations[0][1]
     with pytest.raises(ServiceError, match="not_allowed"):
         await confirm_structure(oid, 2, True)
     await confirm_structure(oid, 1, True)

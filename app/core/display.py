@@ -25,4 +25,10 @@ def message_parts(text, limit=3500):
 
 
 def result_preview(result, language):
+    if result.get("needs_confirmation"):
+        details = result.get("review_details_localizations", {}).get(language) or result.get(
+            "review_details", ""
+        )
+        if details:
+            return details
     return result.get("preview_localizations", {}).get(language, result.get("preview", ""))

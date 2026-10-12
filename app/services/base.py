@@ -146,6 +146,8 @@ class Result(BaseModel):
     prepared_delivery: bool = False
     preview: str = ""
     preview_localizations: dict[Literal["ar", "en"], str] = {}
+    review_details: str = ""
+    review_details_localizations: dict[Literal["ar", "en"], str] = {}
     needs_confirmation: bool = False
     continuation: dict = {}
     cost_sar: Decimal = Decimal("0")
@@ -168,6 +170,8 @@ class Result(BaseModel):
             len(self.text) > 50000
             or len(self.preview) > 3000
             or any(len(value) > 3000 for value in self.preview_localizations.values())
+            or len(self.review_details) > 50000
+            or any(len(value) > 50000 for value in self.review_details_localizations.values())
         ):
             raise ValueError("oversized result")
         return self

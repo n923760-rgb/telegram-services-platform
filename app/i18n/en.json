@@ -237,6 +237,8 @@
   "minutes_action": "Actions",
   "minutes_review": "Items for review",
   "minutes_review_intro": "Proposed organization with counts and samples. IDs refer to source notes after automatic sentence separation. Review categories, owners and deadlines before approving Word/PDF; unknown values remain Not specified.",
+  "minutes_review_complete": "Complete minutes review before Word/PDF creation. Every source note is shown with its category, and every task with its owner and deadline. Quotes are not shortened; Not specified means the source did not identify the value. The review may span several messages; approval buttons appear in the last message.",
+  "minutes_review_complete_end": "Complete review finished. Approve if categories, owners and deadlines are correct. If something is wrong, cancel this order and send corrected notes.",
   "minutes_preview": "Word and PDF minutes using approved organization and an action register. References trace paragraphs and table entries to source; verify decisions, owners and deadlines before sharing.",
   "minutes_source_ids": "Source references: {ids}",
   "minutes_action_register": "Action register",

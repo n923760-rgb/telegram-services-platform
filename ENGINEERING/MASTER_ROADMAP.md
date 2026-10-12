@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Complete minutes review before approval — 2026-10-13
+
+- OWNER AUTHORITY: Continue verified development and merges; runtime/manual/provider acceptance and payment remain later gates.
+- BASELINE: Main 89d1508 / PR #65; no VPS deployment assumed.
+- CHANGE: Optional generic bounded review details retain the 3000-character short preview. MeetingMinutes displays all categorized source units and complete owners/deadline conditions, not only two samples. Current UI language, UTF-16 message splitting and final-message-only approval apply to notification and order details.
+- COMPATIBILITY: Same version 3, input/classification/continuation; cached legacy reviews and artifact replay preserved. No migration, dependency, new AI call, price/flag/activation or financial/provider-policy change.
+- PASS locally: 39 review/schema/preview/DOCX cases, 19 existing pure service cases, three architecture gates and lint/format/diff. Full suite collects 1334; final hosted financial/native qualification required before merge.
+- LIMITS: Long reviews span multiple messages; retry can repeat earlier messages. Real Telegram/mobile/provider acceptance and deployment NOT RUN. Correction uses cancellation/re-entry, without in-place edits.
+- Evidence: [complete-review report](REPORTS/2026-10-13-complete-minutes-review.md).
+
 ## Meeting note name boundaries — 2026-10-13
 
 - OWNER AUTHORITY: Continue the last development conversation; retain earlier verified-development/merge authority, manual acceptance and payment later.
