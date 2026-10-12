@@ -15,10 +15,12 @@ from app.bot.main import create_dispatcher
 from app.bot.middleware import Guard
 from app.core.db import sessions
 from app.core.i18n import tr
+from app.core.models import Service
 from app.core.models import User as UserModel
 from app.core.users import get_language, set_language
 from app.providers.delivery import TelegramDelivery
 from app.services.base import Result
+from app.services.registry import registry
 from tests.test_foundation import fund
 
 
@@ -94,9 +96,12 @@ def feeders(dp, bot, user, transport):
     return message, callback
 
 
-async def test_english_user_gets_localized_menu_and_service_names():
+async def test_english_user_gets_localized_menu_and_service_names(monkeypatch):
+    monkeypatch.setattr(registry.types["echo"], "admin_only", True)
     await fund()
     await set_language(1, "en")
+    async with sessions.begin() as db:
+        (await db.get(Service, "text_translation")).enabled = True
     transport = Session()
     bot = Bot("123456:TEST_TOKEN_ONLY", session=transport)
     dp = create_dispatcher(MemoryStorage(), guard=False)
@@ -106,12 +111,18 @@ async def test_english_user_gets_localized_menu_and_service_names():
     assert transport.messages[-1].text == tr("welcome", "en")
     await callback("menu:services")
     assert transport.messages[-1].text == tr("catalog_choose", "en")
-    await callback("catalog:other:0")
+    assert all(
+        button.callback_data != "catalog:other:0"
+        for row in transport.messages[-1].reply_markup.inline_keyboard
+        for button in row
+    )
+    await callback("catalog:text:0")
     assert tr("choose_service", "en") in transport.messages[-1].text
     button_texts = [
         button.text for row in transport.messages[-1].reply_markup.inline_keyboard for button in row
     ]
-    assert any("Echo demo" in text for text in button_texts)
+    assert tr("text_translation_name", "en") in button_texts
+    assert tr("echo_name", "en") not in button_texts
     await dp.storage.close()
     await bot.session.close()
 
