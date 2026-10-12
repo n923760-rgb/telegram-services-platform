@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Grounded text summaries — 2026-10-12
+
+- OWNER AUTHORITY: Improve the demonstrated near-copy and omitted meeting date; natural single-paragraph intake, automatic AI meaning review, preserved source evidence.
+- BASELINE: Main d9f4ab2. Operator reported deployment/migration 0013 and enabled trials; source changes here are not deployed.
+- CHANGE: text_summary v2 generates concise AR/EN points with known source citations, cited numeric/contact token bounds, duplicate/output/compression bounds and the existing production AI review/one-repair gateway. Full normalized source and references stay in the TXT report; customer message contains the summary only.
+- COMPATIBILITY: No core branching, dependencies, financial policy, prices, flags, migration or payment activation. Old unprepared v1 jobs retain existing version-mismatch settlement; prepared results replay.
+- LIMITS: Numeric/source checks cannot prove meaning. Fixture reviewer decisions exercise orchestration, not model accuracy; actual provider/customer acceptance remains required.
+- Evidence: [summary report](REPORTS/2026-10-12-grounded-summary.md). Exact-head full hosted financial/native workflow required before merge.
+
+
 ## Confirmed administrator activation and durable cancellation — 2026-10-12
 
 - OWNER AUTHORITY: Continue service activation controls with an explicit review of unfinished-order impact; preserve manual prices and professional quality boundaries.

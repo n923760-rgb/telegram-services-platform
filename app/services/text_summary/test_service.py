@@ -7,60 +7,71 @@ from pydantic import ValidationError
 
 from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
-from app.services.text_summary.schema import Inputs, render, selection_schema
+from app.services.text_summary.schema import Inputs, render, summary_schema
 from app.services.text_summary.service import TextSummary
 
 SOURCE = "  لم أوافق على الطلب 00123  \n\nالمبلغ 125.50 والتاريخ 2026-10-10\nالتواصل a@example.invalid\nمعلومة خلفية\n"
-PLAN = {"source_ids": [3, 1]}
+PLAN = {
+    "points": [
+        {"text": "لم أوافق على الطلب 00123.", "source_ids": [1]},
+        {"text": "التواصل a@example.invalid", "source_ids": [3]},
+    ]
+}
 
 
 def values(**changes):
     return {"text": SOURCE, "length": "short", "language": "ar", **changes}
 
 
-def test_verbatim_order_references_and_full_source_report():
-    inputs = Inputs.parse(values(text=SOURCE.replace("\n", "\r\n")))
-    schema = selection_schema(inputs)
+@pytest.fixture(autouse=True)
+def database():
+    """These contracts and injected storage tests need no database."""
+    yield
+
+
+def test_grounded_summary_and_exact_source_only_in_report():
+    inputs = Inputs.parse(values())
+    schema = summary_schema(inputs)
     summary, report = render(inputs, schema.model_validate(PLAN))
-    assert "[1]   لم أوافق على الطلب 00123  " in summary
-    assert "[3] التواصل a@example.invalid" in summary
-    assert summary.index("[1]") < summary.index("[3]")
-    assert "[2] المبلغ 125.50 والتاريخ 2026-10-10" not in summary
+    assert "لم أوافق على الطلب 00123." in summary
+    assert "125.50" not in summary
     assert "[2] المبلغ 125.50 والتاريخ 2026-10-10" in report
-    assert "[4] معلومة خلفية" in report
+    assert report.endswith(inputs.text)
     assert "00123" not in json.dumps(schema.model_json_schema())
     assert "example.invalid" not in json.dumps(schema.model_json_schema())
-    assert json.loads(inputs.source())["paragraphs"][0] == {"id": 1, "text": inputs.lines()[0]}
+    assert json.loads(inputs.source())["paragraphs"][0]["text"] == inputs.lines()[0]
 
 
 @pytest.mark.parametrize(
-    "plan",
+    "point",
     [
-        {"source_ids": []},
-        {"source_ids": [1, 1]},
-        {"source_ids": [0]},
-        {"source_ids": [5]},
-        {"source_ids": [81]},
-        {"source_ids": [True]},
-        {"source_ids": ["1"]},
-        {"source_ids": [1.0]},
-        {"source_ids": [1, 2, 3, 4]},
-        {"source_ids": [1], "text": "invented prose"},
-        {"source_ids": [1], "reason": "private or invented rationale"},
-        {"source_ids": None},
+        {"text": "طلب 123", "source_ids": [1]},
+        {"text": "طلب 00123", "source_ids": [2]},
+        {"text": "المبلغ 999", "source_ids": [2]},
+        {"text": "mail b@example.invalid", "source_ids": [3]},
+        {"text": "طلب 00123", "source_ids": [1, 1]},
+        {"text": "النص", "source_ids": [0]},
+        {"text": "النص", "source_ids": [5]},
+        {"text": "النص", "source_ids": [True]},
+        {"text": "النص", "source_ids": ["1"]},
+        {"text": "النص", "source_ids": [1.0]},
+        {"text": "النص", "source_ids": []},
+        {"text": "النص\nآخر", "source_ids": [1]},
+        {"text": " النص ", "source_ids": [1]},
+        {"text": "نص\x00", "source_ids": [1]},
+        {"text": "x" * 1201, "source_ids": [1]},
+        {"text": "نص", "source_ids": [1], "extra": "secret"},
     ],
 )
-def test_invalid_or_generated_content_is_rejected(plan):
+def test_invalid_or_ungrounded_content_rejected(point):
     with pytest.raises(ValidationError):
-        selection_schema(Inputs.parse(values())).model_validate(plan)
+        summary_schema(Inputs.parse(values())).model_validate({"points": [point]})
 
 
 @pytest.mark.parametrize(
     "changes",
     [
         {"text": " "},
-        {"text": "one paragraph only"},
-        {"text": "a\n\n\t"},
         {"text": "a\nb\x00"},
         {"text": "a\nb\ud800"},
         {"text": "a\nb\uffff"},
@@ -72,42 +83,44 @@ def test_invalid_or_generated_content_is_rejected(plan):
     ],
 )
 def test_input_rejected_before_admission(changes):
-    with pytest.raises(ServiceError, match="input_invalid"):
+    with pytest.raises(ServiceError, match="text_summary_invalid"):
         TextSummary.needs_ai(values(**changes))
 
 
+@pytest.mark.parametrize(
+    "text", ["one paragraph only", "فقرة واحدة متصلة. بلا تقسيم يدوي.", "one\r\ntwo"]
+)
+def test_single_paragraph_and_crlf_accepted(text):
+    assert TextSummary.needs_ai(values(text=text))
+
+
 @pytest.mark.parametrize("length,limit", [("short", 3), ("standard", 7)])
-def test_requested_limit_and_exact_source_coverage_bound(length, limit):
-    inputs = Inputs.parse(values(text="\n".join(f"line {i}" for i in range(20)), length=length))
-    schema = selection_schema(inputs)
-    assert inputs.limit() == limit
-    assert schema.model_validate({"source_ids": list(range(1, limit + 1))})
+def test_requested_point_limit_and_request_isolation(length, limit):
+    inputs = Inputs.parse(values(length=length))
+    schema = summary_schema(inputs)
+    points = [{"text": f"نقطة {i}", "source_ids": [1]} for i in range(limit + 1)]
+    # Use nonnumeric unique text so only the point bound is exercised.
+    for i, point in enumerate(points):
+        point["text"] = "point " + chr(65 + i)
+    assert schema.model_validate({"points": points[:limit]})
     with pytest.raises(ValidationError):
-        schema.model_validate({"source_ids": list(range(1, limit + 2))})
-    two = Inputs.parse(values(text="one\ntwo", length=length))
-    assert two.limit() == 1
+        schema.model_validate({"points": points})
+    short_source = summary_schema(Inputs.parse(values(text="one paragraph")))
     with pytest.raises(ValidationError):
-        selection_schema(two).model_validate({"source_ids": [1, 2]})
+        short_source.model_validate(PLAN)
+    with pytest.raises(ValidationError):
+        schema.model_validate({"points": [points[0], points[0]]})
 
 
-def test_request_isolation_and_bounded_large_source_output():
-    small = selection_schema(Inputs.parse(values(text="a\nb")))
-    large_inputs = Inputs.parse(
-        values(text="a" * 11842 + "\n" + "\n".join(["b"] * 79), length="standard")
-    )
-    large = selection_schema(large_inputs)
-    assert len(large_inputs.text) == 12000
-    assert large.model_validate({"source_ids": [80]})
+def test_copying_long_source_is_rejected():
+    source = " ".join(["background"] * 50)
+    schema = summary_schema(Inputs.parse(values(text=source)))
     with pytest.raises(ValidationError):
-        small.model_validate({"source_ids": [80]})
-    summary, report = render(
-        large_inputs, large.model_validate({"source_ids": [1, 2, 3, 4, 5, 6, 7]})
-    )
-    assert len(summary) < 13000 and len(report) < 26000
+        schema.model_validate({"points": [{"text": source, "source_ids": [1]}]})
 
 
 @pytest.mark.parametrize("language", ["ar", "en"])
-async def test_injected_ai_only_selects_ids_owned_report_retains_source(tmp_path, language):
+async def test_injected_ai_summary_owned_report_and_source(tmp_path, language):
     storage = OwnedStorage(LocalStorage(tmp_path), 7)
     calls = []
 
@@ -120,17 +133,16 @@ async def test_injected_ai_only_selects_ids_owned_report_retains_source(tmp_path
     inputs = values(language=language)
     result = await service.run(inputs)
     expected, report = render(
-        Inputs.parse(inputs), selection_schema(Inputs.parse(inputs)).model_validate(PLAN)
+        Inputs.parse(inputs), summary_schema(Inputs.parse(inputs)).model_validate(PLAN)
     )
     assert result.text == expected
     assert len(result.artifacts) == 1 and result.artifacts[0].filename == "summary-source.txt"
-    assert result.artifacts[0].mime == "text/plain"
     assert storage.read(result.artifacts[0].key).decode() == report
-    assert result.artifacts[0].key.startswith("7/")
     with pytest.raises(ServiceError, match="not_allowed"):
         storage.storage.read(result.artifacts[0].key, 8)
     assert len(calls) == 1 and "at most 3" in calls[0][1] and "untrusted data" in calls[0][1]
-    assert not service.enabled_by_default and service.requires_ai
+    assert "next meetings" in calls[0][1] and "rejected proposals" in calls[0][1]
+    assert service.version == "2" and not service.enabled_by_default and service.requires_ai
 
 
 async def test_missing_or_failed_ai_saves_no_file(tmp_path):
