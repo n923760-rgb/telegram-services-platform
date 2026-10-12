@@ -171,7 +171,7 @@ jobs:
                   titled_plan['assignments'][2]['assignee'] = owner
                   titled = await renderer().word_pdf(minute_document(titled_values, classification_schema(titled_values.lines()).model_validate(titled_plan)))
                   titled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(titled.pdf)).pages)
-                  assert titled_text.count('2026-10-12') == titled_text.count('00017') == 2
+                  assert titled_text.count('2026-10-12') == 2 and titled_text.count('00017') == 1
                   cv = await renderer().word_pdf(CvInputs.parse(cv_inputs(language)).document())
                   pages = PdfReader(BytesIO(cv.pdf)).pages
                   assert len(pages) == 1

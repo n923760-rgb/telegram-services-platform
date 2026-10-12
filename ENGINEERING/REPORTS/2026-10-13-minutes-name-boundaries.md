@@ -41,6 +41,14 @@ v1/v2 cancellation with retained costs/prices and idempotent cached file deliver
 The non-root/network-disabled native worker gate additionally exports titled
 owners with exact source IDs/numbers/deadlines. No existing CI gate is removed.
 
+First hosted run [38320358535](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/38320358535)
+passed 1318 tests (one retained ARQ deprecation warning), lint/format, migrations
+and Compose. Image build passed; the added native assertion incorrectly expected
+the task's report ID twice. It belongs only in the source paragraph; the action
+register repeats the deadline, not the full task. Corrected the expected ID count
+to one, retaining exact ID/date checks. Final updated-head qualification remains
+required before merge; the first run is not a passing workflow.
+
 Real-provider semantic/visual quality, Telegram/iPhone acceptance and VPS update
 remain NOT RUN. Before later deployment, drain or explicitly resolve unfinished
 minutes jobs; trial titled names, rejected dates, repeated notes and leading-zero
