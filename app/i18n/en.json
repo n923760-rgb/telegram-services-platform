@@ -423,6 +423,7 @@
   "stars_help_text": "How to complete a task\n\n1. Choose a service and send your content.\n2. Review the Stars price and terms.\n3. Agree and pay the Telegram invoice.\n4. Execution starts after payment confirmation; receive the result here.\n\nAI and processing tools operate inside the service without an engine selector. No bot wallet top-up is needed.\n\n/orders My orders\n/terms Terms\n/paysupport Payment support\n/support Support\n/menu Home\n\nTemporary files are deleted automatically; save your result when it arrives.",
   "profile_update_failed": "Bot information update was not completed. Some descriptions may have changed; retry /syncprofile.",
   "admin_readiness": "Manage services",
+  "admin_private_service": "Internal admin-only tool; not listed for customers. Normal activation and payment settings still apply.",
   "admin_readiness_intro": "Choose a service to inspect status and settings, then manage activation or price from its details. Opening details changes nothing and does not test result quality.",
   "admin_listed": "Listing: included in the customer menu by the current activation and payment-price filters.",
   "admin_not_listed": "Listing: excluded from the customer menu by the current activation and payment-price filters.",

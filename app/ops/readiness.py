@@ -29,7 +29,10 @@ def checks(row, *, ai_state, stars_enabled):
         "enabled": row.enabled,
         "version_matches": row.version == plugin.version,
         "source_version": plugin.version,
-        "listed": row.enabled and (not stars_enabled or row.price_stars is not None),
+        "listed": row.enabled
+        and not plugin.admin_only
+        and (not stars_enabled or row.price_stars is not None),
+        "admin_only": plugin.admin_only,
         "ai_required": plugin.requires_ai,
         "ai_state": ai_state,
         "stars_enabled": stars_enabled,

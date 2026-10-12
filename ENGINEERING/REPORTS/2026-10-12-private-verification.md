@@ -26,7 +26,8 @@ role; recorded successful receipts and refund recovery remain unchanged.
 
 ## Test evidence and limits
 
-Six local pure audience/menu tests PASS; lint/format/architecture checks PASS.
+Eight local pure audience/menu/inspection tests PASS; lint/format/architecture checks PASS.
+Admin inspection explicitly discloses private audience and does not claim customer listing.
 New PostgreSQL/router cases test non-admin old category and direct callbacks, preserved
 drafts/no orders or reservations, admin execution, revoked confirmation/pre-checkout,
 generic private metadata on a different plugin, and an already-paid job after revocation.

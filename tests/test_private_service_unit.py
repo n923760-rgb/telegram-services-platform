@@ -2,7 +2,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.bot.admin_panel import readiness_text
 from app.bot.catalog import view
+from app.core.i18n import tr
+from app.ops.readiness import checks
 from app.services.echo.service import Echo
 from app.services.registry import Registry, registry
 
@@ -18,6 +21,23 @@ def test_production_verification_is_private_but_admin_can_request():
     assert registry.can_request("echo", admin=True)
     assert registry.customer_visible("echo")  # Still managed and historically resolvable.
     assert not registry.can_request("local_ocr", admin=True)
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+def test_admin_inspection_does_not_claim_private_tool_is_customer_listed(lang):
+    row = SimpleNamespace(
+        slug="echo",
+        name_ar=Echo.name_ar,
+        name_en=Echo.name_en,
+        enabled=True,
+        version=Echo.version,
+        price_stars=20,
+    )
+    evidence = checks(row, ai_state="off", stars_enabled=True)
+    assert evidence["admin_only"] and not evidence["listed"]
+    text = readiness_text(row, evidence, lang)
+    assert tr("admin_private_service", lang) in text
+    assert tr("admin_not_listed", lang) in text
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
