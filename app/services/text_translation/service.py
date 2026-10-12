@@ -8,6 +8,7 @@ from app.services.text_translation.schema import Inputs, render, translation_sch
 
 class TextTranslation(BaseService):
     slug = "text_translation"
+    menu_order = 10
     category = "text"
     name_ar = tr("text_translation_name")
     name_en = tr("text_translation_name", "en")

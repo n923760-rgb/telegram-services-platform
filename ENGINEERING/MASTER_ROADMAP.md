@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Consistent service labels and navigation — 2026-10-12
+
+- OWNER AUTHORITY: Correct ambiguous names and simplify customer/admin browsing after editing/summary labels caused confusion.
+- BASELINE: Main 9cb58fa / PR #61; latest source is not assumed deployed on VPS.
+- CHANGE: Clear AR/EN outcome names, text/images/documents/PDF/data/professional category order and plugin-declared menu priority shared by customer/admin. PDF-to-Word belongs in PDF; intake/execution unchanged. Admin labels distinguish Manage services and Service prices; details show category and browser shows page count.
+- COMPATIBILITY: Stable slugs, input contracts, versions, defaults, prices, Stars gates and financial operations. Registry metadata sync refreshes names without resetting administrator overrides. Future plugins inherit validated presentation priority and generic ordering.
+- Evidence: [navigation report](REPORTS/2026-10-12-service-labels-navigation.md). Full exact-head hosted financial/native workflow required before merge; mobile/VPS acceptance separate.
+
+
 ## Grounded text summaries — 2026-10-12
 
 - OWNER AUTHORITY: Improve the demonstrated near-copy and omitted meeting date; natural single-paragraph intake, automatic AI meaning review, preserved source evidence.

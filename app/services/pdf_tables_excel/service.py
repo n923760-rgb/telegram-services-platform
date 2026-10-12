@@ -19,6 +19,7 @@ from app.services.pdf_tables_excel.schema import (
 class PdfTablesExcel(BaseService):
     version = "2"
     slug = "pdf_tables_excel"
+    menu_order = 20
     category = "data"
     name_ar = tr("pdf_tables_name")
     name_en = tr("pdf_tables_name", "en")

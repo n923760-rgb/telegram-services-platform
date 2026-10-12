@@ -47,6 +47,8 @@ class Registry:
                     raise ValueError("invalid service plugin")
                 if cls.category not in CATEGORY_KEYS:
                     raise ValueError("invalid service category")
+                if type(cls.menu_order) is not int or not 0 <= cls.menu_order <= 1000:
+                    raise ValueError("invalid service menu order")
                 if not re.fullmatch(r"[a-z][a-z0-9_]{0,39}", cls.slug) or not re.fullmatch(
                     r"[A-Za-z0-9_.-]{1,32}", cls.version
                 ):

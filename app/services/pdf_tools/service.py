@@ -8,6 +8,7 @@ from app.services.pdf_tools.schema import Inputs
 
 class PdfTools(BaseService):
     slug = "pdf_tools"
+    menu_order = 30
     category = "pdf"
     version = "1"
     name_ar = tr("pdf_tools_name")

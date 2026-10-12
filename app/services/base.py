@@ -190,6 +190,7 @@ class TextFollowup(BaseModel):
 class BaseService:
     version = "1"
     category = "other"
+    menu_order = 100
     slug: str
     name_ar: str
     name_en: str
