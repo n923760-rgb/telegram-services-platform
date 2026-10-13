@@ -6,9 +6,36 @@ from app.services.cv_formatting.schema import Inputs
 from app.services.document_results import word_pdf_result
 
 
+def english_fields():
+    # Reuse generic nested intake; no CV-specific Telegram adapter or core branch.
+    return [
+        InputField(
+            name=name,
+            prompt_key="cv_english_" + name,
+            max_length=limit,
+            required=name in {"full_name", "contact", "skills"},
+            single_line=name in {"full_name", "headline"},
+        )
+        for name, limit in (
+            ("full_name", 120),
+            ("headline", 120),
+            ("contact", 500),
+            ("summary", 1000),
+            ("experience", 4000),
+            ("education", 2000),
+            ("skills", 1500),
+            ("projects", 2000),
+            ("languages", 500),
+            ("research", 2000),
+            ("publications", 2000),
+            ("additional", 1500),
+        )
+    ]
+
+
 class CvFormatting(BaseService):
     slug = "cv_formatting"
-    version = "2"
+    version = "3"
     worker_requirements = ("office_export",)
     menu_order = 10
     category = "professional"
@@ -23,8 +50,8 @@ class CvFormatting(BaseService):
             InputField(
                 name="language",
                 prompt_key="cv_language",
-                choices=["ar", "en"],
-                choice_keys=["arabic", "english"],
+                choices=["ar", "en", "bilingual"],
+                choice_keys=["arabic", "english", "cv_bilingual"],
             ),
             InputField(
                 name="cv_type",
@@ -65,6 +92,13 @@ class CvFormatting(BaseService):
             ),
             InputField(
                 name="additional", prompt_key="cv_additional", max_length=1500, required=False
+            ),
+            InputField(
+                name="english",
+                kind="form",
+                prompt_key="cv_bilingual",
+                when={"language": ["bilingual"]},
+                fields=english_fields(),
             ),
         ]
     )

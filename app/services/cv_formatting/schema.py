@@ -11,7 +11,7 @@ from app.services.documents import DocumentInputs
 Text = Annotated[str, StringConstraints(strip_whitespace=False)]
 
 
-class Inputs(StrictModel):
+class CvContent(StrictModel):
     language: Literal["ar", "en"]
     cv_type: Literal["professional", "graduate", "career_change", "academic"] = "professional"
     headline: str | None = Field(default=None, min_length=1, max_length=120)
@@ -85,12 +85,7 @@ class Inputs(StrictModel):
         except ValidationError:
             raise ServiceError("input_invalid") from None
 
-    def document(self):
-        sections = [
-            WordSection(
-                paragraphs=([self.headline] if self.headline else []) + self.contact.split("\n")
-            )
-        ]
+    def ordered_names(self):
         orders = {
             "professional": (
                 "summary",
@@ -137,7 +132,16 @@ class Inputs(StrictModel):
                 "additional",
             ),
         }
-        for name in orders[self.cv_type]:
+        return orders[self.cv_type]
+
+    def contact_section(self):
+        return WordSection(
+            paragraphs=([self.headline] if self.headline else []) + self.contact.split("\n")
+        )
+
+    def document(self):
+        sections = [self.contact_section()]
+        for name in self.ordered_names():
             value = getattr(self, name)
             if value is not None:
                 sections.append(
@@ -151,4 +155,43 @@ class Inputs(StrictModel):
             layout="resume",
             sections=sections,
             alignment="right" if self.language == "ar" else "left",
+        )
+
+
+class EnglishContent(CvContent):
+    language: Literal["en"] = "en"
+
+
+class Inputs(CvContent):
+    language: Literal["ar", "en", "bilingual"]
+    english: EnglishContent | None = None
+
+    @model_validator(mode="after")
+    def bilingual_content(self):
+        if (self.language == "bilingual") != (self.english is not None):
+            raise ValueError("English content is required only for bilingual CVs")
+        return self
+
+    def document(self):
+        if self.language != "bilingual":
+            return super().document()
+        # Both bodies are supplied final content, not inferred translations.
+        arabic = CvContent.model_validate(self.model_dump(exclude={"english"}) | {"language": "ar"})
+        english = self.english.model_copy(update={"cv_type": self.cv_type})
+        sections = [arabic.contact_section(), english.contact_section()]
+        for name in arabic.ordered_names():
+            for content in (arabic, english):
+                value = getattr(content, name)
+                if value is not None:
+                    sections.append(
+                        WordSection(
+                            heading=tr("cv_" + name + "_heading", content.language),
+                            paragraphs=value.split("\n"),
+                        )
+                    )
+        return WordDocument(
+            title=arabic.full_name + "\n" + english.full_name,
+            layout="resume",
+            sections=sections,
+            alignment="auto",
         )

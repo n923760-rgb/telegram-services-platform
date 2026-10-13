@@ -43,7 +43,7 @@ async def prepare(tmp_path, monkeypatch):
     return storage, Delivery(storage), price
 
 
-@pytest.mark.parametrize("language", ["ar", "en"])
+@pytest.mark.parametrize("language", ["ar", "en", "bilingual"])
 @pytest.mark.parametrize("cv_type", ["professional", "graduate", "career_change", "academic"])
 async def test_cv_two_native_files_single_capture_zero_ai_usage_and_cleanup(
     tmp_path, monkeypatch, language, cv_type
@@ -56,6 +56,11 @@ async def test_cv_two_native_files_single_capture_zero_ai_usage_and_cleanup(
         "languages": "Arabic | English",
         "research": "Research 00003",
     }
+    source["language"] = language
+    if language == "bilingual":
+        english = inputs("en")
+        english.pop("language")
+        source["english"] = english
     oid = await submit(1, "cv_formatting", source, price, "cv-native")
     jid = await job_for(oid)
     await execute_job({"delivery": delivery}, str(jid))
@@ -68,7 +73,10 @@ async def test_cv_two_native_files_single_capture_zero_ai_usage_and_cleanup(
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000 - price, 0)
     assert [name for name, _ in delivery.files] == ["cv.docx", "cv.pdf"]
-    assert Document(BytesIO(delivery.files[0][1])).paragraphs[0].text == source["full_name"]
+    expected_title = source["full_name"]
+    if language == "bilingual":
+        expected_title += "\n" + source["english"]["full_name"]
+    assert Document(BytesIO(delivery.files[0][1])).paragraphs[0].text == expected_title
     assert "0500123456" in PdfReader(BytesIO(delivery.files[1][1])).pages[0].extract_text()
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
@@ -144,7 +152,16 @@ async def test_cv_delivery_retry_reuses_prepared_pair_and_does_not_capture_early
 
 
 @pytest.mark.parametrize(
-    "patch", [{"experience": None, "education": None}, {"summary": "x" * 1001}]
+    "patch",
+    [
+        {"experience": None, "education": None},
+        {"summary": "x" * 1001},
+        {"language": "bilingual"},
+        {
+            "language": "bilingual",
+            "english": {"full_name": "Example", "contact": "0500123456", "skills": "Excel"},
+        },
+    ],
 )
 async def test_invalid_cv_never_reserves_credit(tmp_path, monkeypatch, patch):
     _, _, price = await prepare(tmp_path, monkeypatch)
