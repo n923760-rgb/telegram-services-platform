@@ -1,6 +1,7 @@
 from decimal import Decimal
 from io import BytesIO
 
+from pydantic import ValidationError
 from pypdf import PdfReader
 
 from app.builders import word
@@ -9,11 +10,11 @@ from app.files.pdf_content import has_image_content
 from app.files.pdf_text import extract_page_text
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.pdf_to_word.prompt import PDF_TO_WORD
-from app.services.pdf_to_word.schema import Inputs, WordPlan
+from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
 
 class PdfToWord(BaseService):
-    version = "3"
+    version = "4"
     slug = "pdf_to_word"
     menu_order = 20
     category = "pdf"
@@ -35,6 +36,7 @@ class PdfToWord(BaseService):
             if reader.is_encrypted or not 1 <= len(reader.pages) <= 200:
                 raise ValueError
             pages = []
+            sources = []
             text_length = 0
             for index, page in enumerate(reader.pages, 1):
                 if has_image_content(page, reader):
@@ -51,6 +53,7 @@ class PdfToWord(BaseService):
                 if text_length > 50000:
                     raise ServiceError("pdf_text_too_long")
                 pages.append(part)
+                sources.append(page_text)
         except ServiceError:
             raise
         except Exception:
@@ -58,7 +61,14 @@ class PdfToWord(BaseService):
         text = "\n\n".join(pages)
         if not pages:
             raise ServiceError("pdf_text_unreadable")
-        plan = await self.runtime.ai.extract(WordPlan, text, PDF_TO_WORD)
+        # Synthetic page markers guide the model but are not customer facts.
+        schema = source_plan_schema("\n\n".join(sources))
+        plan = await self.runtime.ai.extract(schema, text, PDF_TO_WORD)
+        try:
+            # Recheck injected providers too, before any builder/storage writes.
+            plan = schema.model_validate(plan.model_dump(mode="json"))
+        except (ValidationError, ValueError):
+            raise ServiceError("provider_invalid") from None
         if plan.missing_information or plan.document is None:
             raise ServiceError("needs_information")
         content = word.build(plan.document)

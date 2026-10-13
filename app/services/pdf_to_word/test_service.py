@@ -123,6 +123,31 @@ async def test_missing_information_does_not_write_output(tmp_path):
     assert store.storage.usage(1)[1] == 1
 
 
+async def test_injected_plan_must_preserve_source_before_saving(tmp_path):
+    service, artifact, store, ai = configured_service(tmp_path, pdf_bytes())
+    ai.extract.return_value = WordPlan.model_validate(
+        {
+            "document": {
+                "title": "Invoice",
+                "sections": [{"paragraphs": [SOURCE.replace("12345", "54321")]}],
+            }
+        }
+    )
+    with pytest.raises(ServiceError, match="provider_invalid"):
+        await service.run({"pdf": artifact.key})
+    assert store.storage.usage(1)[1] == 1
+
+
+async def test_synthetic_page_number_not_counted_as_source_fact(tmp_path):
+    service, artifact, store, ai = configured_service(tmp_path, pdf_bytes("Invoice 00123"))
+    ai.extract.return_value = WordPlan.model_validate(
+        {"document": {"title": "Invoice", "sections": [{"paragraphs": ["Invoice 00123"]}]}}
+    )
+    result = await service.run({"pdf": artifact.key})
+    assert store.read(result.artifacts[0].key)
+    assert "[Page 1]" in ai.extract.await_args.args[1]
+
+
 async def test_page_count_limit_rejects_before_ai(tmp_path):
     writer = PdfWriter()
     for _ in range(201):

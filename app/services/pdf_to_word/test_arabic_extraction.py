@@ -7,6 +7,7 @@ from app.builders import pdf
 from app.builders.schema import Document
 from app.files.pdf_text import extract_page_text
 from app.services.base import ServiceError
+from app.services.pdf_to_word.schema import WordPlan
 from app.services.pdf_to_word.test_service import configured_service
 
 
@@ -25,6 +26,16 @@ async def test_mixed_arabic_numbers_survive_pdf_extraction(tmp_path):
     # mocked extractor or an uploaded customer fixture.
     assert len(PdfReader(BytesIO(data)).pages) == 1
     service, artifact, _, ai = configured_service(tmp_path, data)
+    ai.extract.return_value = WordPlan.model_validate(
+        {
+            "document": {
+                "title": "اختبار المستند",
+                # The PDF builder includes a real page footer. Unlike the injected
+                # [Page 1] marker, that extracted source number must be retained.
+                "sections": [{"paragraphs": [*lines, "1"]}],
+            }
+        }
+    )
     await service.run({"pdf": artifact.key})
     extracted = ai.extract.await_args.args[1]
     assert extracted.count("00123") == 2
