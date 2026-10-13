@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Provider output token contract — 2026-10-13
+
+- OWNER EVIDENCE: f352c27 deployed; DeepSeek official endpoint/deepseek-flash with 8192 configured output limit. One settled call returned 15532 output tokens above held cost; another hold uncertain. Customer test credit released and provider paused. No automatic recovery authorized by diagnosis.
+- FIX: Validated generic output-limit parameter; auto uses documented max_tokens for the exact official DeepSeek host and retains max_completion_tokens elsewhere. Same cap, bound, reasoning/model/timeouts and accounting; no named-service branching or financial-policy change.
+- PASS LOCALLY: 29 adapter/config/architecture cases; hosted integration checks added for excess accounting/pause and retained uncertain exposure. Full exact-source PostgreSQL/Redis/native CI required before merge.
+- LIMITS: Live API acceptance, deployment, billing reconciliation and operator unpause NOT RUN. Never clear unknown exposure or invent zero provider cost.
+- Evidence: [provider contract report](REPORTS/2026-10-13-provider-token-contract.md).
+
 ## PDF to Word source token fidelity — 2026-10-13
 
 - OWNER AUTHORITY: Accepted the review recommendation to improve current-service content fidelity. Baseline main 914df9d / PR #67.

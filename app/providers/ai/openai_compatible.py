@@ -1,6 +1,7 @@
 import base64
 import json
 from decimal import ROUND_UP, Decimal
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -15,6 +16,18 @@ class OpenAICompatible(AIProvider):
         self.cfg = config()
         self.client = client
         self.max_output_tokens = self.cfg.ai_max_output_tokens
+
+    def output_limit_field(self):
+        selected = self.cfg.ai_token_limit_parameter
+        if selected != "auto":
+            return selected
+        # DeepSeek documents max_tokens, not OpenAI's newer parameter. Match the
+        # exact official host; proxies/custom endpoints require an explicit choice.
+        return (
+            "max_tokens"
+            if urlsplit(self.cfg.ai_base_url).hostname == "api.deepseek.com"
+            else "max_completion_tokens"
+        )
 
     def rates(self):
         cfg = self.cfg
@@ -68,7 +81,7 @@ class OpenAICompatible(AIProvider):
                 {"role": "user", "content": content},
             ],
             "response_format": {"type": "json_object"},
-            "max_completion_tokens": self.max_output_tokens,
+            self.output_limit_field(): self.max_output_tokens,
             "temperature": 0,
         }
         own = self.client is None
