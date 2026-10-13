@@ -1,11 +1,15 @@
 from datetime import date
+from functools import lru_cache
 from io import BytesIO
+from math import ceil
+from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table as ExcelTable
 from openpyxl.worksheet.table import TableStyleInfo
+from PIL import ImageFont
 
 from app.builders.direction import is_rtl
 from app.builders.quality import validate
@@ -13,8 +17,8 @@ from app.builders.schema import Table
 from app.builders.word import safe_text
 
 HEADER_FILL = PatternFill("solid", fgColor="176B55")
-HEADER_FONT = Font(name="DejaVu Sans", bold=True, color="FFFFFF")
-BODY_FONT = Font(name="DejaVu Sans")
+HEADER_FONT = Font(name="DejaVu Sans", size=11, bold=True, color="FFFFFF")
+BODY_FONT = Font(name="DejaVu Sans", size=11)
 THIN = Side(style="thin", color="D9D9D9")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
@@ -27,18 +31,47 @@ def cell_safe(value):
     return value
 
 
-def _display_width(value):
+@lru_cache(maxsize=3)
+def _measurement_font(size, bold):
+    filename = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    for directory in ("/usr/share/fonts/truetype/dejavu", "/usr/share/fonts/dejavu"):
+        path = Path(directory) / filename
+        if path.is_file():
+            # Measure at 3x 96-DPI resolution: 11 points = 44 pixels here.
+            return ImageFont.truetype(str(path), size=round(size * 4))
+    # Retain non-Docker builder compatibility; native visual qualification uses
+    # the declared DejaVu fonts installed in every production image.
+    return None
+
+
+def _text_pixels(text, *, size=11, bold=False):
+    font = _measurement_font(size, bold)
+    if font is None:
+        return max(
+            (
+                sum(2 if ord(c) > 0x2E7F else 1 for c in line) * 7 * size / 11
+                for line in text.split("\n")
+            ),
+            default=0,
+        )
+    return max((font.getlength(line) / 3 for line in text.split("\n")), default=0)
+
+
+def _display_width(value, *, bold=False):
     text = "" if value is None else str(value)
-    return sum(2 if ord(char) > 0x2E7F else 1 for char in text)
+    # Excel column units are based on its default font's digit width (~7px).
+    # Leave a margin for native application/font substitution differences.
+    return _text_pixels(text, bold=bold) * 1.12 / 7
 
 
 def _is_number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def _wrapped_lines(text, width):
+def _wrapped_lines(text, width, *, size=11, bold=False):
+    available = max(1, width * 7 - 12)
     return sum(
-        max(1, -(-_display_width(chunk) // max(1, int(width * 0.9))))
+        max(1, ceil(_text_pixels(chunk, size=size, bold=bold) * 1.12 / available))
         for chunk in str(text or "").split("\n")
     )
 
@@ -125,7 +158,7 @@ def build(data: Table) -> bytes:
                 readingOrder=2 if isinstance(value, str) and is_rtl(value) else 1,
             )
 
-    widths = [_display_width(column) for column in columns]
+    widths = [_display_width(column, bold=True) for column in columns]
     for row in rows:
         for index, value in enumerate(row):
             widths[index] = max(widths[index], _display_width(value))
@@ -135,14 +168,18 @@ def build(data: Table) -> bytes:
     title_width = sum(
         sheet.column_dimensions[get_column_letter(i)].width for i in range(1, len(columns) + 1)
     )
-    sheet.row_dimensions[1].height = min(409, max(48, 25 * _wrapped_lines(data.title, title_width)))
+    sheet.row_dimensions[1].height = min(
+        409, max(48, 25 * _wrapped_lines(data.title, title_width, size=18, bold=True))
+    )
     sheet.row_dimensions[3].height = min(
         409,
         max(
             36,
             16
             * max(
-                _wrapped_lines(value, sheet.column_dimensions[get_column_letter(i)].width)
+                _wrapped_lines(
+                    value, sheet.column_dimensions[get_column_letter(i)].width, bold=True
+                )
                 for i, value in enumerate(columns, 1)
             )
             + 8,
