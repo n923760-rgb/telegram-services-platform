@@ -5,6 +5,12 @@ is a staged product roadmap. SAR prices remain administrator-issued test credits
 Commercial digital sales inside Telegram need the separate Stars design already
 required by project governance. No production activation is implied by source merge.
 
+Owner continuation, 2026-10-13, authorizes developing/enabling all 16 current public
+services through the audited runtime portfolio command in [activation](SERVICE_ACTIVATION.md).
+The private verification utility and retired OCR product are excluded. Configuration
+preflight, tested source and live output acceptance are separate evidence; future
+portfolio candidates below remain unimplemented until their contracts are delivered.
+
 ## Integrated source capabilities
 
 | Capability | Customer deliverable and quality boundary |
@@ -13,7 +19,7 @@ required by project governance. No production activation is implied by source me
 | PowerPoint planning | Editable bounded slide layouts; source-bound native/mobile review remains necessary. |
 | Text PDF | Direct final text or existing AI planning, with Arabic/date checks. |
 | Text PDF to Word | Editable extracted text; no original layout/images/table reconstruction promise. |
-| Image text extraction | v4 is one customer service: internal mixed native recognition then classified AI fallback within the same confirmed price. Original text only; optional independent translation after delivery. No engine/language/style questions during extraction. |
+| Image text extraction | v5 is one customer service: received source detail retained, mixed native recognition with configured-AI source review and bounded fallback within the confirmed price. Original text only; optional independent translation after delivery. No engine/language/style questions during extraction. Real photo/provider acceptance remains separate. |
 | Independent text translation | Arabic/English target and formal/business/academic/casual style. Source-line IDs checked exactly once, numeric tokens checked per line, original blank lines retained; chat text plus UTF-8 TXT. Default disabled pending live meaning/style qualification. |
 | Independent proofreading/rewriting | Arabic/English original language, proofreading only or formal/business/casual rewriting. Per-line numeric/email/URL checks, source coverage/order/blank lines, draft text plus TXT. Structural validation does not prove semantic fidelity. Default disabled. |
 | PDF tables to Excel | Default-disabled v2 `pdf_tables_excel`: bounded image-free text PDFs, internal lattice/stream selection, literal cells and source sheets. Generic/proposed headings are output choices; mandatory confirmation. Camelot metrics are heuristics; representative PDF/mobile Excel acceptance required. |
@@ -22,9 +28,9 @@ required by project governance. No production activation is implied by source me
 | PDF tools | Merge ordered PDFs or extract selected pages, without AI; signatures/forms unsupported. |
 | Word/PDF bundle | Final text, professional template, editable DOCX plus native PDF from the same document. |
 | CV formatting | Structured final career facts, Arabic/English headings, classic single-column Word/PDF; PR #28 passed 545 hosted tests and native CV checks. |
-| Meeting-note organization | Source-bound categories and customer review before Word/PDF; PR #30 passed 598 tests and native export checks. Live AI category accuracy remains unqualified. |
+| Meeting-note organization | v3 quotes source categories, preserves common dotted names, tracks same-note owners/deadlines and displays the complete review before Word/PDF. Unknowns remain explicit; live AI semantic accuracy remains unqualified. |
 | CSV organization/review | Pasted bounded CSV to sortable Excel with original values, stable record references and static blank/duplicate/edge-change audit. v2 adds optional <=200-record lexical candidates with disclosed pair cap and numeric exclusions. No inferred types/totals, row deletion/merging or same-entity confidence claim. |
-| Document image contrast | Default-disabled local contrast/grayscale: unchanged received bytes, enhanced PNG and left/right comparison. No reconstruction, deskew, crop or general OCR improvement promise; native/customer/load acceptance remain distinct. |
+| Document image contrast | v3 retains received bytes, prepares contrast/sharpen candidates and uses configured AI source review to select a useful candidate; no reliable improvement stops delivery. Selected PNG and comparison, without missing-text reconstruction, deskew or general OCR guarantee. Live visual acceptance remains separate. |
 | Images to PDF | Ordered image pages, bounded A4 fit/orientation and received-pixel preservation; PR #29 passed 571 tests and native image checks. |
 
 ## Current integration queue

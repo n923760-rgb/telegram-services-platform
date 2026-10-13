@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 import app.services
 from app.core.models import Service
-from app.services.base import BaseService
+from app.services.base import WORKER_REQUIREMENTS, BaseService
 from app.services.catalog import CATEGORY_KEYS
 from app.wallet.ledger import halalas
 
@@ -51,6 +51,17 @@ class Registry:
                     raise ValueError("invalid service menu order")
                 if type(cls.admin_only) is not bool:
                     raise ValueError("invalid service audience")
+                required, optional = cls.worker_requirements, cls.optional_worker_requirements
+                if (
+                    type(required) is not tuple
+                    or type(optional) is not tuple
+                    or any(
+                        type(value) is not str or value not in WORKER_REQUIREMENTS
+                        for value in required + optional
+                    )
+                    or len(set(required + optional)) != len(required + optional)
+                ):
+                    raise ValueError("invalid worker requirements")
                 if not re.fullmatch(r"[a-z][a-z0-9_]{0,39}", cls.slug) or not re.fullmatch(
                     r"[A-Za-z0-9_.-]{1,32}", cls.version
                 ):

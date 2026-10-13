@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## All-current-service preflight and audited activation — 2026-10-13
+
+- OWNER AUTHORITY: Develop and activate all services. Baseline main 3095ecf / PR #66; no direct server access available here.
+- INVENTORY: 16 public outcomes plus private verification and retired OCR; only public canonical services enter the activation command.
+- CHANGE: Validated plugin worker requirements, fixed environment-stripped native/import probes and read-only worker portfolio report. Explicit enablement reuses configured admin authorization and immutable per-service activation audit/fingerprint checks, retaining prices.
+- SAFETY: All initial blockers prevent writes; later concurrent changes stop with reported partial progress. Existing enabled rows skip audit/reset. Unknown commit outcomes stay unknown. No new ledger/reservation, input/version/default flag, migration, dependency or provider/payment setting changes.
+- PASS locally: Nine pure cases, three architecture gates, lint/format/diff and CLI help. Local worker probes correctly detect missing office/native OCR; Python engines/fonts present. Full suite collects 1357; exact-source hosted financial/native qualification required before merge.
+- LIMITS/NEXT: Actual deployment/all-service activation and provider/mobile quality acceptance NOT RUN. Obtain host source/health/active-order evidence, then prepare verified update and worker activation. Future portfolio contracts remain separate; payment configuration stays last.
+- Evidence: [portfolio activation report](REPORTS/2026-10-13-portfolio-activation.md), [runtime commands](../docs/SERVICE_ACTIVATION.md).
+
 ## Complete minutes review before approval — 2026-10-13
 
 - OWNER AUTHORITY: Continue verified development and merges; runtime/manual/provider acceptance and payment remain later gates.

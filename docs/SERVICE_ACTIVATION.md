@@ -1,9 +1,52 @@
 # Staged service activation and development
 
-Source audit, 2026-10-11. Source qualification is not runtime enablement or a paid
-launch. Keep payment work last. Do not change default enabled flags or DB-owned
-prices/settings to make services appear. Activate only through the administrator
-account after the appropriate trial/acceptance below; do not bulk-enable services.
+Owner update, 2026-10-13: develop and enable all current customer services. The
+registry contains 16 customer outcomes, one private verification utility and one
+retired OCR product. Use the owner-authorized audited portfolio command below;
+source qualification still differs from real deployment, provider/mobile quality
+acceptance and paid launch. Keep payment configuration last. Preserve default
+flags and DB-owned prices; do not bypass activation gates through raw SQL.
+
+## All-current-service inspection and activation
+
+Run these only after deploying the reviewed source and migrating the installation.
+Use the **worker**, because the lean bot/API images do not contain native programs.
+
+```bash
+cd /srv/ai-dev-lab/projects/telegram-services-platform
+docker compose exec -T worker python -m app.ops.service_portfolio
+docker compose exec -T worker python -m app.ops.service_portfolio --enable
+```
+
+The first command is read-only. It lists each public canonical service, source/DB
+versions, existing SAR test-credit/Stars prices, active-order count, local AI state,
+declared worker requirements, blockers and optional-tool warnings. No customer
+content, order IDs, endpoints or credentials are printed. Native probes inspect
+fixed programs/language packs/imports/fonts; they are not output-quality trials.
+
+`--enable` authorizes the sole configured ADMIN_IDS entry automatically. If there
+are multiple administrators, pass `--actor TELEGRAM_ADMIN_ID`; it must already be
+configured. No role is granted. Private/retired plugins are excluded dynamically.
+Each service's immutable audit records its actor and frozen activation snapshot.
+Input/schema mismatch, required AI off/pause/config error, missing worker tools,
+required Stars price or pending cancellation blocks the initial batch with **no
+activation writes**. Native OCR is optional for the configured-AI image-text path;
+an unavailable local engine is disclosed, while existing AI fallback stays bounded.
+Visual review additionally needs its native preview package when configured.
+
+Changes use existing per-service transactions and stale-fingerprint checks. A
+concurrent change can stop after earlier services succeeded: `partial` reports
+those services, not all-or-nothing success. Inspect again before retry. Already
+enabled services are skipped without new audit/reset operations. A DB connection
+failure can leave an unknown commit outcome; the redacted CLI reports `unknown`
+and never claims no writes. The command does not disable services, change prices,
+modify provider/payment flags, reserve/capture balances or generate customer work.
+
+At most 64 public services, 100 active orders/500 receipts per service are inspected.
+`enabled` means the inspected activation operations completed; runtime/configuration
+can change later and new requests still use ordinary admission/financial gates.
+Representative real-provider/mobile acceptance below remains necessary for quality
+claims. Historical staged guidance is retained as the acceptance sequence.
 
 ## Read-only deployed inventory
 
@@ -40,8 +83,9 @@ PY
 
 Use isolated administrator test-credit trials, not customer paid launch. Source
 regression/native gates have run; representative outputs still need review in the
-actual deployed worker and target mobile apps. Enable one candidate at a time,
-retain prices, record its output acceptance, and stop the affected service on failure.
+actual deployed worker and target mobile apps. Exercise one service at a time
+after technical activation, retain prices, record its output acceptance, and stop
+the affected service on failure.
 `/enable SLUG` validates existing activation policy; it is not a quality certificate.
 `/disable SLUG` also cancels unsettled orders, so review their impact before using it.
 
