@@ -13,7 +13,7 @@ def english_fields():
             name=name,
             prompt_key="cv_english_" + name,
             max_length=limit,
-            required=name in {"full_name", "contact", "skills"},
+            required=name in {"full_name", "contact", "education", "skills"},
             single_line=name in {"full_name", "headline"},
         )
         for name, limit in (
@@ -35,7 +35,7 @@ def english_fields():
 
 class CvFormatting(BaseService):
     slug = "cv_formatting"
-    version = "3"
+    version = "4"
     worker_requirements = ("office_export",)
     menu_order = 10
     category = "professional"
@@ -80,9 +80,7 @@ class CvFormatting(BaseService):
             InputField(
                 name="experience", prompt_key="cv_experience", max_length=4000, required=False
             ),
-            InputField(
-                name="education", prompt_key="cv_education", max_length=2000, required=False
-            ),
+            InputField(name="education", prompt_key="cv_education", max_length=2000),
             InputField(name="skills", prompt_key="cv_skills", max_length=1500),
             InputField(name="projects", prompt_key="cv_projects", max_length=2000, required=False),
             InputField(name="languages", prompt_key="cv_languages", max_length=500, required=False),

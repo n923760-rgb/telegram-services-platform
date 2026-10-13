@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Required CV education intake — 2026-10-14
+
+- OWNER AUTHORITY: Necessary fields must not show skip. Baseline e19f746; owner draft showed both education and experience absent in both languages, causing final validation failure.
+- CHANGE: CV v4 requires education in root and English content/input fields, preserving optional experience. Localized prompts explain the requirement; existing generic skip guard reused, no bot/core branch.
+- PASS LOCALLY: 66 pure/plugin/architecture cases, lint/format/diff. Hosted UI cases assert no skip and forged skip rejection without draft mutation; full CI required before merge.
+- SAFETY: No price/activation/provider/template/financial/dependency/migration changes. New deployment and Telegram required-field acceptance NOT RUN.
+- Evidence: [required CV education](REPORTS/2026-10-14-cv-required-education.md).
+
 ## Bilingual CV in one document — 2026-10-14
 
 - OWNER AUTHORITY: Arabic-English in the same file after market-offer verification; implement and merge. Baseline 0d42d1d.

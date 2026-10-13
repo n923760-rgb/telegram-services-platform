@@ -23,7 +23,7 @@ class CvContent(StrictModel):
     contact: Text = Field(min_length=1, max_length=500)
     summary: Text | None = Field(default=None, min_length=1, max_length=1000)
     experience: Text | None = Field(default=None, min_length=1, max_length=4000)
-    education: Text | None = Field(default=None, min_length=1, max_length=2000)
+    education: Text = Field(min_length=1, max_length=2000)
     skills: Text = Field(min_length=1, max_length=1500)
     additional: Text | None = Field(default=None, min_length=1, max_length=1500)
 
@@ -54,8 +54,6 @@ class CvContent(StrictModel):
 
     @model_validator(mode="after")
     def bounded_cv(self):
-        if not self.experience and not self.education:
-            raise ValueError("provide experience or education")
         values = [
             self.full_name,
             self.contact,
