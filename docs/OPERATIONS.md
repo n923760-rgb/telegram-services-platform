@@ -38,6 +38,13 @@ message/file, while ledger settlement and refunds remain idempotent. Never claim
 
 
 Provider cost is computed from returned usage and the configured model rates and exchange rate.
+`AI_TOKEN_LIMIT_PARAMETER=auto` uses `max_tokens` on exact `api.deepseek.com` and
+`max_completion_tokens` elsewhere. Custom gateways may explicitly choose either
+validated name. Requests and reservations use the same `AI_MAX_OUTPUT_TOKENS`.
+Thinking/model settings are unchanged; reported completion usage is never clamped.
+After a cap-contract failure, keep the provider paused until the corrected deployed
+request is verified and billing exposure is reviewed. Do not release uncertain holds
+or automatically resume calls merely because code or readiness checks passed.
 It is not an invoice receipt: discounts, cached-token rates and subsequent billing adjustments are not
 inferred. Configure conservative current prices and reconcile discrepancies against provider billing.
 A timed-out call might have been billed: inspect cost_holds and provider records, then run

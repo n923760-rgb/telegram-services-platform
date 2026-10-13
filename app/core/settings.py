@@ -28,6 +28,7 @@ class Config(BaseSettings):
     ai_base_url: str = "https://api.openai.com/v1"
     ai_image_token_bound: int = 20000
     ai_max_output_tokens: int = 8192
+    ai_token_limit_parameter: Literal["auto", "max_tokens", "max_completion_tokens"] = "auto"
     ai_model: str = "gpt-4.1-mini"
     ai_enabled: bool = False
     document_visual_review: bool = False
