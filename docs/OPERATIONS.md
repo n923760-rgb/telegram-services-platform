@@ -1,5 +1,16 @@
 # Operations
 
+## Private read-only order diagnostics
+
+Run `docker compose exec -T worker python -m app.ops.order_diagnostics C64ECF1E`
+with the customer's eight-character order reference or full UUID. This uses the
+sole configured administrator; when there are multiple admins, pass `--actor ID`.
+Ambiguous short references require the full UUID. Output is a bounded metadata-only
+database snapshot, not provider invoice evidence or a performed recovery action.
+Unknown costs stay null. Pause/cost/ledger states are not changed; no provider call.
+Do not use report success as authorization to unpause or clear unknown exposure.
+Overflow or unavailable state returns a safe error instead of a partial report.
+
 Run `scripts/backup.sh` daily from the project directory, for example a root cron entry:
 `15 2 * * * cd /srv/telegram-services && ./scripts/backup.sh >> /var/log/services-backup.log 2>&1`.
 The script uses pg_dump custom format, restrictive permissions, atomic rename and 7-day retention.

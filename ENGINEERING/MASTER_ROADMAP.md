@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Read-only order diagnostics — 2026-10-13
+
+- OWNER AUTHORITY: Continue development while the provider remains paused and historical cost exposure remains uncertain. Baseline d97c040; operator reports healthy deployment and max_tokens/8192, not a live provider trial.
+- CHANGE: Private owner-authorized CLI, indexed prefix/full-UUID lookup with ambiguity rejection, bounded metadata-only repeatable-read/read-only PostgreSQL snapshot and five-second statement limits. Exact test-credit release evidence, recorded usage/overruns, unknown holds and provider pause/cap configuration; no raw content/customer identities.
+- SAFETY: No provider call, row write, file mutation, financial settlement, automatic unpause or partial report on overflow. Unknown costs stay null. No migration/dependency/service contract/price/activation changes.
+- PASS LOCALLY: 15 focused pure/architecture cases, lint/format/diff. Hosted financial/read-only/ambiguity/privacy cases added; full exact-source PostgreSQL/Redis/native qualification required before merge.
+- LIMITS: Database metadata does not recover missing provider invoices or prove unknown-call billing. Deployment and historical reconciliation NOT RUN for this change.
+- Evidence: [order diagnostics](REPORTS/2026-10-13-order-diagnostics.md).
+
 ## Provider output token contract — 2026-10-13
 
 - OWNER EVIDENCE: f352c27 deployed; DeepSeek official endpoint/deepseek-flash with 8192 configured output limit. One settled call returned 15532 output tokens above held cost; another hold uncertain. Customer test credit released and provider paused. No automatic recovery authorized by diagnosis.
