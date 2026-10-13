@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Bilingual CV in one document — 2026-10-14
+
+- OWNER AUTHORITY: Arabic-English in the same file after market-offer verification; implement and merge. Baseline 0d42d1d.
+- CHANGE: CV v3 third language choice with conditional nested English intake; independently validated final bodies, paired Arabic/English sections in one editable Word/PDF pair. Four purpose profiles and existing compact layout retained.
+- SAFETY: No automatic translation, invented counterparts, new dependency, bot/core branches, price/activation/provider changes. Bounded 9000 characters per language; no forced single-page promise.
+- PASS LOCALLY: 59 focused pure/plugin/architecture cases and eight visually inspected pages across four native bilingual samples, lint/format/diff. Hosted native/zero-AI flow expanded; full CI required before merge.
+- LIMITS: Server deployment, Telegram bilingual acceptance, translation and universal ATS qualification NOT RUN.
+- Evidence: [bilingual CV](REPORTS/2026-10-14-bilingual-cv.md).
+
 ## CV purpose profiles and compact layout — 2026-10-14
 
 - OWNER AUTHORITY: Integrate useful CV tools and research meaningful request choices. Baseline ad569b9.

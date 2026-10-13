@@ -239,3 +239,87 @@ def test_resume_layout_is_opt_in_and_standard_word_stays_unchanged():
     assert standard.styles["Heading 1"].font.size.pt == 14
     assert resume.styles["Heading 1"].font.size.pt == 12
     assert [p.text for p in resume.paragraphs] == [p.text for p in standard.paragraphs]
+
+
+def bilingual_inputs(kind="professional"):
+    english = inputs("en")
+    english.pop("language")
+    return inputs("ar") | {"language": "bilingual", "cv_type": kind, "english": english}
+
+
+@pytest.mark.parametrize("kind", ["professional", "graduate", "career_change", "academic"])
+def test_bilingual_cv_pairs_sections_and_preserves_both_supplied_bodies(kind):
+    from app.core.i18n import tr
+
+    source = bilingual_inputs(kind)
+    CvFormatting.input_schema.validate_inputs(source)
+    assert not CvFormatting.needs_ai(source)
+    plan = Inputs.parse(source).document()
+    assert plan.alignment == "auto" and plan.layout == "resume"
+    assert plan.title == source["full_name"] + "\n" + source["english"]["full_name"]
+    heading_names = []
+    for name in Inputs.parse(source).ordered_names():
+        if source.get(name):
+            heading_names.extend(
+                [tr("cv_" + name + "_heading", "ar"), tr("cv_" + name + "_heading", "en")]
+            )
+    assert [s.heading for s in plan.sections if s.heading] == heading_names
+    doc = Document(BytesIO(build(plan, professional_template=True, format_dates=True)))
+    lines = [line for p in doc.paragraphs for line in p.text.replace("\u200e", "").split("\n")]
+    for content in (source, source["english"]):
+        for name in (
+            "full_name",
+            "contact",
+            "summary",
+            "experience",
+            "education",
+            "skills",
+            "additional",
+        ):
+            assert all(line in lines for line in content[name].split("\n"))
+    assert not doc.tables
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "bilingual"])
+def test_english_nested_intake_is_active_only_for_bilingual_choice(language):
+    from app.services.base import active_field
+
+    fields = [f for f in CvFormatting.input_schema.conversation() if f.name.startswith("english.")]
+    assert len(fields) == 12
+    assert all(active_field(f, {"language": language}) == (language == "bilingual") for f in fields)
+
+
+@pytest.mark.parametrize(
+    "case", ["missing", "monolingual", "no_education", "oversized", "extra", "name_lines"]
+)
+def test_invalid_bilingual_content_is_rejected_before_reservation(case):
+    source = bilingual_inputs()
+    if case == "missing":
+        source.pop("english")
+    elif case == "monolingual":
+        source["language"] = "ar"
+    elif case == "no_education":
+        source["english"].update(education=None, experience=None)
+    elif case == "oversized":
+        source["english"]["summary"] = "x" * 1001
+    elif case == "extra":
+        source["english"]["unexpected"] = "x"
+    else:
+        source["english"]["full_name"] = "Sam\nExample"
+    with pytest.raises(ServiceError, match="input_invalid"):
+        CvFormatting.needs_ai(source)
+
+
+def test_bilingual_optional_sections_are_not_synthesized_or_dropped():
+    source = bilingual_inputs()
+    source["projects"] = "مشروع عربي 00001"
+    source["english"]["publications"] = "English publication 00002"
+    plan = Inputs.parse(source).document()
+    paragraphs = [p for section in plan.sections for p in section.paragraphs]
+    assert paragraphs.count(source["projects"]) == 1
+    assert paragraphs.count(source["english"]["publications"]) == 1
+    assert len([s for s in plan.sections if s.heading == "Publications"]) == 1
+    assert not any(
+        s.heading == "المشاريع والتدريب والتطوع" and "00002" in "".join(s.paragraphs)
+        for s in plan.sections
+    )
