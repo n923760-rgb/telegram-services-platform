@@ -13,6 +13,12 @@ Text = Annotated[str, StringConstraints(strip_whitespace=False)]
 
 class Inputs(StrictModel):
     language: Literal["ar", "en"]
+    cv_type: Literal["professional", "graduate", "career_change", "academic"] = "professional"
+    headline: str | None = Field(default=None, min_length=1, max_length=120)
+    projects: Text | None = Field(default=None, min_length=1, max_length=2000)
+    languages: Text | None = Field(default=None, min_length=1, max_length=500)
+    research: Text | None = Field(default=None, min_length=1, max_length=2000)
+    publications: Text | None = Field(default=None, min_length=1, max_length=2000)
     full_name: str = Field(min_length=1, max_length=120)
     contact: Text = Field(min_length=1, max_length=500)
     summary: Text | None = Field(default=None, min_length=1, max_length=1000)
@@ -22,7 +28,18 @@ class Inputs(StrictModel):
     additional: Text | None = Field(default=None, min_length=1, max_length=1500)
 
     @field_validator(
-        "full_name", "contact", "summary", "experience", "education", "skills", "additional"
+        "full_name",
+        "headline",
+        "contact",
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "additional",
+        "projects",
+        "languages",
+        "research",
+        "publications",
     )
     @classmethod
     def validate_content(cls, value):
@@ -30,10 +47,10 @@ class Inputs(StrictModel):
             return None
         return DocumentInputs.printable_text(value)
 
-    @field_validator("full_name", mode="before")
+    @field_validator("full_name", "headline", mode="before")
     @classmethod
     def single_name(cls, value):
-        return DocumentInputs.printable_title(value)
+        return None if value is None else DocumentInputs.printable_title(value)
 
     @model_validator(mode="after")
     def bounded_cv(self):
@@ -47,6 +64,11 @@ class Inputs(StrictModel):
             self.education,
             self.skills,
             self.additional,
+            self.headline,
+            self.projects,
+            self.languages,
+            self.research,
+            self.publications,
         ]
         if sum(len(value or "") for value in values) > 9000:
             raise ValueError("CV too large")
@@ -64,8 +86,58 @@ class Inputs(StrictModel):
             raise ServiceError("input_invalid") from None
 
     def document(self):
-        sections = [WordSection(paragraphs=self.contact.split("\n"))]
-        for name in ("summary", "experience", "education", "skills", "additional"):
+        sections = [
+            WordSection(
+                paragraphs=([self.headline] if self.headline else []) + self.contact.split("\n")
+            )
+        ]
+        orders = {
+            "professional": (
+                "summary",
+                "experience",
+                "education",
+                "projects",
+                "skills",
+                "languages",
+                "research",
+                "publications",
+                "additional",
+            ),
+            "graduate": (
+                "summary",
+                "education",
+                "projects",
+                "skills",
+                "experience",
+                "languages",
+                "research",
+                "publications",
+                "additional",
+            ),
+            "career_change": (
+                "summary",
+                "skills",
+                "projects",
+                "experience",
+                "education",
+                "languages",
+                "research",
+                "publications",
+                "additional",
+            ),
+            "academic": (
+                "summary",
+                "education",
+                "research",
+                "publications",
+                "experience",
+                "projects",
+                "skills",
+                "languages",
+                "additional",
+            ),
+        }
+        for name in orders[self.cv_type]:
             value = getattr(self, name)
             if value is not None:
                 sections.append(
@@ -76,6 +148,7 @@ class Inputs(StrictModel):
                 )
         return WordDocument(
             title=self.full_name,
+            layout="resume",
             sections=sections,
             alignment="right" if self.language == "ar" else "left",
         )

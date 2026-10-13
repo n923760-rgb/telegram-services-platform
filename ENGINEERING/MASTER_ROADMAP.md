@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## CV purpose profiles and compact layout — 2026-10-14
+
+- OWNER AUTHORITY: Integrate useful CV tools and research meaningful request choices. Baseline ad569b9.
+- CHANGE: CV v2 optional professional/graduate/career-change/academic choices, headline and optional projects/languages/research/publications; source-preserving section ordering. Generic opt-in resume layout reuses existing docxtpl/native Word-PDF path; no imported third-party engine or copied assets.
+- PASS LOCALLY: 45 focused pure/plugin/architecture checks and eight visually reviewed Arabic/English native sample renders, lint/format/diff. Full hosted financial/native regression gates required before merge.
+- LIMITS: New runtime acceptance and ATS qualification NOT RUN. No factual rewriting, translation, date inference, provider/price/activation changes.
+- Evidence: [CV profiles](REPORTS/2026-10-14-cv-profiles.md).
+
+
 ## Excel contact/text print layout — 2026-10-13
 
 - OWNER AUTHORITY: Continue improving the extended PDF-table result. Baseline main d188667; supplied workbook retains all values but telephone/email wrap within a low row in LibreOffice print preview.

@@ -30,6 +30,7 @@ class WordSection(Section):
 
 
 class WordDocument(Document):
+    layout: Literal["standard", "resume"] = "standard"
     alignment: Literal["auto", "left", "right"] = "auto"
     sections: list[WordSection] = Field(min_length=1, max_length=100)
 

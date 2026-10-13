@@ -278,6 +278,18 @@ def build(
             properties.find(qn("w:jc")).set(
                 qn("w:val"), "start" if (data.alignment == "right") == rtl else "end"
             )
+    if data.layout == "resume":
+        # Keep content in the body and retain script-aware runs from the shared builder.
+        normal.paragraph_format.space_after = Pt(4)
+        normal.paragraph_format.line_spacing = 1.08
+        for name, size in (("Title", 20), ("Heading 1", 12)):
+            style = doc.styles[name]
+            style.font.size = Pt(size)
+            style.paragraph_format.space_before = Pt(0 if name == "Title" else 10)
+            style.paragraph_format.space_after = Pt(8 if name == "Title" else 4)
+        for paragraph in doc.paragraphs:
+            if paragraph.style.name == "Heading 1":
+                paragraph.paragraph_format.keep_with_next = True
     _page_number_footer(doc)
     buffer = BytesIO()
     doc.save(buffer)
