@@ -17,7 +17,7 @@ from app.services.pdf_tables_excel.schema import (
 
 
 class PdfTablesExcel(BaseService):
-    version = "2"
+    version = "3"
     slug = "pdf_tables_excel"
     worker_requirements = ("pdf_tables",)
     menu_order = 20
@@ -43,6 +43,14 @@ class PdfTablesExcel(BaseService):
                 choices=["ar", "en"],
                 choice_keys=["arabic", "english"],
             ),
+            InputField(
+                name="arabic_order",
+                prompt_key="pdf_tables_arabic_order",
+                choices=["visual"],
+                choice_keys=["pdf_tables_arabic_visual"],
+                required=False,
+                skip_key="pdf_tables_arabic_preserve",
+            ),
         ]
     )
 
@@ -67,6 +75,7 @@ class PdfTablesExcel(BaseService):
                 prepared.labels,
                 language=values.language,
                 enhanced=values.mode == "labels",
+                visual_arabic=values.arabic_order == "visual",
             )
             artifact = self.runtime.storage.save(
                 "tables.xlsx",
@@ -105,6 +114,8 @@ class PdfTablesExcel(BaseService):
         reviews = {}
         for lang in ("ar", "en"):
             preview = [tr("pdf_tables_review", lang)]
+            if values.arabic_order == "visual":
+                preview.append(tr("pdf_tables_arabic_review", lang))
             for table_labels in sorted(labels.tables, key=lambda table: table.table_id):
                 table = extraction.tables[table_labels.table_id - 1]
                 preview.append(

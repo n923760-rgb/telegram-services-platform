@@ -6,6 +6,7 @@ from io import BytesIO
 from openpyxl import Workbook, load_workbook
 
 from app.builders import excel
+from app.builders.arabic_table_text import has_presentation_forms, recover_visual_arabic
 from app.builders.quality import validate
 from app.builders.schema import Table
 from app.core.i18n import tr
@@ -59,7 +60,7 @@ def append_sheet(book, title, columns, rows, name, note):
     return sheet
 
 
-def build(extraction, labels, *, language, enhanced):
+def build(extraction, labels, *, language, enhanced, visual_arabic=False):
     book = Workbook()
     book.remove(book.active)
     label_map = {table.table_id: table for table in labels.tables}
@@ -73,14 +74,28 @@ def build(extraction, labels, *, language, enhanced):
             tr("pdf_tables_column", language, number=c) for c in range(1, len(table.rows[0]) + 1)
         ]
         rows = [[*row, f"T{number}:R{r}"] for r, row in enumerate(table.rows, 1)]
+        data_rows = rows
+        changed = skipped = 0
+        if visual_arabic:
+            data_rows = []
+            for row in rows:
+                converted = [recover_visual_arabic(cell) for cell in row]
+                changed += sum(a != b for a, b in zip(row, converted, strict=True))
+                skipped += sum(
+                    has_presentation_forms(a) and a == b
+                    for a, b in zip(row, converted, strict=True)
+                )
+                data_rows.append(converted)
         note = tr(
             "pdf_tables_sheet_note",
             language,
             page=table.page,
             mode=tr("pdf_tables_labels" if enhanced else "pdf_tables_direct", language),
         )
+        if visual_arabic:
+            note += "\n" + tr("pdf_tables_arabic_note", language, changed=changed, skipped=skipped)
         append_sheet(
-            book, proposal.title, [*proposal.columns, reference], rows, f"Data{number}", note
+            book, proposal.title, [*proposal.columns, reference], data_rows, f"Data{number}", note
         )
         append_sheet(
             book,

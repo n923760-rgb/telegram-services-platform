@@ -153,3 +153,95 @@ async def test_delivery_retry_uses_saved_workbook(tmp_path, monkeypatch):
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).reserved == 0
     assert len(delivery.files) == 1
+
+
+async def test_native_visual_arabic_confirmed_export_preserves_source_zero_ai(
+    tmp_path, monkeypatch
+):
+    from app.builders.arabic_table_text import recover_visual_arabic
+
+    store, provider, delivery, ctx, price = await prepare(tmp_path, monkeypatch, [])
+    data, rows = table_pdf("ar", visual_arabic=True)
+    file = store.save(1, "source.pdf", data, "application/pdf")
+    oid = await submit(
+        1,
+        "pdf_tables_excel",
+        inputs(pdf=file.key, language="ar", arabic_order="visual"),
+        price,
+        "visual-arabic",
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await deliver_confirmations(ctx)
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "waiting_confirmation"
+    await confirm_structure(oid, 1, True)
+
+    async def forbidden(*args):
+        raise AssertionError("must reuse extraction")
+
+    monkeypatch.setattr(CamelotTables, "extract", forbidden)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    book = load_workbook(BytesIO(delivery.files[0][1]))
+    for r, row in enumerate(rows, 4):
+        for c, value in enumerate(row, 1):
+            assert book["Source1"].cell(r, c).value == value
+            assert book["Data1"].cell(r, c).value == recover_visual_arabic(value)
+    assert book["Data1"]["C5"].value == "مرحبا" and book["Data1"]["A5"].value == "00123"
+    assert provider.calls == 0 and len(delivery.files) == 1
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await balance(db, 1)).available == 1000 - price
+        assert (await balance(db, 1)).reserved == 0
+
+
+@pytest.mark.parametrize("cached", [False, True])
+async def test_arabic_order_upgrade_keeps_prices_gates_and_legacy_cache(
+    tmp_path, monkeypatch, cached
+):
+    from app.core.models import Service
+    from app.services.registry import registry
+
+    store, _, delivery, ctx, price = await prepare(tmp_path, monkeypatch, [])
+    file = store.save(1, "source.pdf", table_pdf()[0], "application/pdf")
+    oid = await submit(1, "pdf_tables_excel", inputs(pdf=file.key), price, "upgrade-arabic")
+    jid = await job_for(oid)
+    original = delivery.send
+    if cached:
+        await execute_job(ctx, str(jid))
+        await confirm_structure(oid, 1, True)
+
+        async def offline(*args):
+            raise ConnectionError("synthetic offline")
+
+        monkeypatch.setattr(delivery, "send", offline)
+        await execute_job(ctx, str(jid))
+    async with sessions.begin() as db:
+        service = await db.get(Service, "pdf_tables_excel")
+        old = {
+            **service.input_schema,
+            "fields": [f for f in service.input_schema["fields"] if f["name"] != "arabic_order"],
+        }
+        service.version, service.input_schema = "2", old
+        service.price_halala, service.price_stars = 777, 25
+        order = await db.get(Order, oid)
+        order.service_version, order.input_schema_snapshot = "2", old
+        (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        service = await db.get(Service, "pdf_tables_excel")
+        assert service.version == "3" and service.enabled
+        assert service.price_halala == 777 and service.price_stars == 25
+
+    async def forbidden(*args):
+        raise AssertionError("upgrade must not reextract")
+
+    monkeypatch.setattr(CamelotTables, "extract", forbidden)
+    monkeypatch.setattr(delivery, "send", original)
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("completed" if cached else "cancelled")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if cached else 1000, 0)
+    assert len(delivery.files) == int(cached)

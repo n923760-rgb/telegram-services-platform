@@ -15,6 +15,7 @@ class Inputs(StrictModel):
     pdf: str = Field(min_length=1, max_length=250)
     mode: Literal["direct", "labels"]
     language: Literal["ar", "en"]
+    arabic_order: Literal["visual"] | None = None
 
     @classmethod
     def parse(cls, inputs):
