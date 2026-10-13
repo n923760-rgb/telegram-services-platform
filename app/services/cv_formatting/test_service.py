@@ -166,3 +166,76 @@ async def test_cv_render_failure_does_not_save_files(tmp_path):
     with pytest.raises(ServiceError, match="document_render_timeout"):
         await service.run(inputs())
     assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+@pytest.mark.parametrize(
+    "kind,first",
+    [
+        ("professional", "experience"),
+        ("graduate", "education"),
+        ("career_change", "skills"),
+        ("academic", "education"),
+    ],
+)
+@pytest.mark.parametrize("language", ["ar", "en"])
+def test_cv_profiles_preserve_fields_and_order_sections(kind, first, language):
+    from app.core.i18n import tr
+
+    source = inputs(language) | {
+        "cv_type": kind,
+        "headline": "Operations 00123",
+        "projects": "Project 00001",
+        "languages": "Arabic | English",
+        "research": "Research 00002",
+        "publications": "Publication 00003 <tag> {{ 7 * 7 }}",
+    }
+    CvFormatting.input_schema.validate_inputs(source)
+    assert not CvFormatting.needs_ai(source)
+    plan = Inputs.parse(source).document()
+    assert plan.layout == "resume"
+    assert plan.sections[2].heading == tr("cv_" + first + "_heading", language)
+    doc = Document(BytesIO(build(plan, professional_template=True, format_dates=True)))
+    paragraphs = [p.text.replace("\u200e", "") for p in doc.paragraphs]
+    for name in (
+        "full_name",
+        "headline",
+        "contact",
+        "summary",
+        "experience",
+        "education",
+        "skills",
+        "additional",
+        "projects",
+        "languages",
+        "research",
+        "publications",
+    ):
+        assert all(line in paragraphs for line in source[name].split("\n"))
+    assert not doc.tables
+    assert doc.styles["Heading 1"].font.size.pt == 12
+    assert doc.styles["Normal"].font.size.pt == 11
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"cv_type": "ats_guaranteed"},
+        {"headline": "two\nlines"},
+        {"publications": "x" * 2001},
+        {"research": "x\n" * 101},
+    ],
+)
+def test_cv_profile_rejects_unknown_types_and_unbounded_fields(patch):
+    with pytest.raises(ServiceError, match="input_invalid"):
+        CvFormatting.needs_ai(inputs() | patch)
+
+
+def test_resume_layout_is_opt_in_and_standard_word_stays_unchanged():
+    plan = Inputs.parse(inputs()).document()
+    resume = Document(BytesIO(build(plan, professional_template=True)))
+    standard = Document(
+        BytesIO(build(plan.model_copy(update={"layout": "standard"}), professional_template=True))
+    )
+    assert standard.styles["Heading 1"].font.size.pt == 14
+    assert resume.styles["Heading 1"].font.size.pt == 12
+    assert [p.text for p in resume.paragraphs] == [p.text for p in standard.paragraphs]

@@ -44,11 +44,18 @@ async def prepare(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("language", ["ar", "en"])
+@pytest.mark.parametrize("cv_type", ["professional", "graduate", "career_change", "academic"])
 async def test_cv_two_native_files_single_capture_zero_ai_usage_and_cleanup(
-    tmp_path, monkeypatch, language
+    tmp_path, monkeypatch, language, cv_type
 ):
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
-    source = inputs(language)
+    source = inputs(language) | {
+        "cv_type": cv_type,
+        "projects": "Project 00001",
+        "publications": "Publication 00002",
+        "languages": "Arabic | English",
+        "research": "Research 00003",
+    }
     oid = await submit(1, "cv_formatting", source, price, "cv-native")
     jid = await job_for(oid)
     await execute_job({"delivery": delivery}, str(jid))
