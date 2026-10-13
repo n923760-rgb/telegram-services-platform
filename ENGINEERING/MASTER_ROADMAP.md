@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Explicit Arabic visual-order PDF table recovery — 2026-10-13
+
+- OWNER AUTHORITY: Continue fixing the operator-confirmed Arabic Excel display defect. Baseline main 4a852dc; actual supplied table output preserves numeric values but carries Arabic presentation forms in visual order.
+- CHANGE: PDF tables v3 optional explicit visual-order recovery for simple Arabic cells in Data only; legacy/skip preserves extraction, Source stays exact, numeric/mixed/normal Arabic cells are untouched. Counts and confirmation disclose the selected transformation and limits.
+- COMPATIBILITY: Existing confirmation/cache flow, prices and gates retained; stale unprepared v2 jobs cancel through existing release. No AI calls for correction, dependencies, migration, activation or provider-pause change.
+- PASS LOCALLY: 57 focused pure/plugin/architecture cases, operator-extraction rebuild and global lint/format/diff; added hosted native/zero-AI/confirmation/upgrade/cache cases. Local Camelot subprocess unavailable; full exact-source CI required before merge.
+- LIMITS: Explicit choice asserts direction, not content correctness; mixed cells intentionally remain unresolved. Server deployment/repeat Telegram acceptance NOT RUN.
+- Evidence: [Arabic PDF table recovery](REPORTS/2026-10-13-pdf-tables-arabic-order.md).
+
 ## Read-only order diagnostics — 2026-10-13
 
 - OWNER AUTHORITY: Continue development while the provider remains paused and historical cost exposure remains uncertain. Baseline d97c040; operator reports healthy deployment and max_tokens/8192, not a live provider trial.

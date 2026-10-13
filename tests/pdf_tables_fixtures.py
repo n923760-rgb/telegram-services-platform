@@ -6,7 +6,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 
-def table_pdf(language="en", *, pages=1, ruled=True):
+def table_pdf(language="en", *, pages=1, ruled=True, visual_arabic=False):
     path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
     if "TableFixture" not in pdfmetrics.getRegisteredFontNames():
         pdfmetrics.registerFont(TTFont("TableFixture", str(path)))
@@ -16,6 +16,11 @@ def table_pdf(language="en", *, pages=1, ruled=True):
     if language == "ar":
         rows[0] = ["رقم", "مبلغ", "بيان"]
         rows[1][2] = "مرحبا"
+    if visual_arabic:
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+
+        rows = [[get_display(arabic_reshaper.reshape(cell)) for cell in row] for row in rows]
     for _ in range(pages):
         pdf.setFont("TableFixture", 12)
         for r, row in enumerate(rows):
