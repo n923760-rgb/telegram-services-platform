@@ -323,3 +323,31 @@ def test_bilingual_optional_sections_are_not_synthesized_or_dropped():
         s.heading == "المشاريع والتدريب والتطوع" and "00002" in "".join(s.paragraphs)
         for s in plan.sections
     )
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "bilingual"])
+def test_education_is_required_but_experience_stays_optional(language):
+    source = bilingual_inputs() if language == "bilingual" else inputs(language)
+    source.pop("experience")
+    if language == "bilingual":
+        source["english"].pop("experience")
+    CvFormatting.input_schema.validate_inputs(source)
+    assert not CvFormatting.needs_ai(source)
+    fields = {f.name: f for f in CvFormatting.input_schema.conversation()}
+    assert fields["education"].required and fields["english.education"].required
+    assert not fields["experience"].required and not fields["english.experience"].required
+
+
+@pytest.mark.parametrize(
+    "language,side",
+    [("ar", "root"), ("en", "root"), ("bilingual", "root"), ("bilingual", "english")],
+)
+def test_missing_education_is_rejected_even_with_experience(language, side):
+    source = bilingual_inputs() if language == "bilingual" else inputs(language)
+    target = source if side == "root" else source["english"]
+    target.pop("education")
+    assert target["experience"]
+    with pytest.raises(ServiceError, match="input_invalid"):
+        CvFormatting.input_schema.validate_inputs(source)
+    with pytest.raises(ServiceError, match="input_invalid"):
+        CvFormatting.needs_ai(source)

@@ -96,6 +96,51 @@ def feeders(dp, bot, user, transport):
     return message, callback
 
 
+@pytest.mark.parametrize(
+    "language,field_name",
+    [
+        ("ar", "education"),
+        ("en", "education"),
+        ("bilingual", "education"),
+        ("bilingual", "english.education"),
+    ],
+)
+async def test_cv_required_education_has_no_skip_button_and_rejects_forged_skip(
+    language, field_name
+):
+    from app.services.cv_formatting.service import CvFormatting
+
+    await fund()
+    transport = Session()
+    bot = Bot("123456:TEST_TOKEN_ONLY", session=transport)
+    dp = create_dispatcher(MemoryStorage(), guard=False)
+    user = TelegramUser(id=1, is_bot=False, first_name="Customer")
+    message, callback = feeders(dp, bot, user, transport)
+    await message("/start")
+    fields = CvFormatting.input_schema.conversation()
+    index = next(i for i, field in enumerate(fields) if field.name == field_name)
+    state = dp.fsm.get_context(bot=bot, chat_id=1, user_id=1)
+    data = {
+        "slug": "cv_formatting",
+        "schema": CvFormatting.input_schema.model_dump(),
+        "inputs": {"language": language},
+        "index": index,
+        "key": "required-cv",
+    }
+    await state.set_state("collect")
+    await state.set_data(data)
+    await callback("draft:resume")
+    buttons = transport.messages[-1].reply_markup.inline_keyboard
+    assert not any(b.callback_data.startswith("skip:") for row in buttons for b in row)
+    before = await state.get_data()
+    await callback(f"skip:required-cv:{index}")
+    assert transport.messages[-1].text == tr("invalid_request", "ar")
+    assert await state.get_data() == before
+    assert await state.get_state() == "collect"
+    await dp.storage.close()
+    await bot.session.close()
+
+
 async def test_english_user_gets_localized_menu_and_service_names(monkeypatch):
     monkeypatch.setattr(registry.types["echo"], "admin_only", True)
     await fund()
