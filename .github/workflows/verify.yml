@@ -93,8 +93,10 @@ jobs:
           from app.providers.storage import LocalStorage, OwnedStorage
           from types import SimpleNamespace
           from tempfile import TemporaryDirectory
+          from app.ops.worker_capabilities import probe_worker
           assert os.getuid() == 10001
           async def verify():
+              assert all((await probe_worker()).values())
               source = picture(1800, 1200, color='white')
               native_pdf = await NativeImagePdf().render([source], 'auto')
               embedded = PdfReader(BytesIO(native_pdf)).pages[0].images[0].image
@@ -214,6 +216,7 @@ jobs:
               assert workbook['Data'].max_row == workbook['Source'].max_row == 8
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
+          print('Non-root worker: declared worker capability preflight PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')

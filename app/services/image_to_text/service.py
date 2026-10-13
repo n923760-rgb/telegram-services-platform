@@ -21,6 +21,7 @@ from app.services.image_to_text.schema import Extracted, Inputs
 class ImageToText(BaseService):
     version = "5"
     slug = "image_to_text"
+    optional_worker_requirements = ("native_ocr",)
     menu_order = 10
     category = "images"
     name_ar = tr("ocr_name")

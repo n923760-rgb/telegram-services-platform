@@ -12,6 +12,7 @@ from app.services.meeting_minutes.schema import Inputs, classification_schema, d
 
 class MeetingMinutes(BaseService):
     slug = "meeting_minutes"
+    worker_requirements = ("office_export",)
     version = "3"
     menu_order = 20
     category = "professional"

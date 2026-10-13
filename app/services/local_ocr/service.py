@@ -16,6 +16,7 @@ from app.services.local_ocr.schema import Inputs
 class LocalOcr(BaseService):
     replaced_by = "image_to_text"
     slug = "local_ocr"
+    worker_requirements = ("native_ocr",)
     category = "images"
     name_ar = tr("local_ocr_name")
     name_en = tr("local_ocr_name", "en")

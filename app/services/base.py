@@ -191,7 +191,22 @@ class TextFollowup(BaseModel):
     label_key: str = Field(pattern=r"^[a-z][a-z0-9_]{0,60}$")
 
 
+WORKER_REQUIREMENTS = frozenset(
+    {
+        "office_export",
+        "pdf_tables",
+        "document_images",
+        "image_pdf",
+        "pdf_previews",
+        "native_ocr",
+        "pdf_font",
+    }
+)
+
+
 class BaseService:
+    worker_requirements: tuple[str, ...] = ()
+    optional_worker_requirements: tuple[str, ...] = ()
     version = "1"
     category = "other"
     menu_order = 100
