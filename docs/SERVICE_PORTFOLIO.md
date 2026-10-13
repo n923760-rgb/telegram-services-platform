@@ -18,7 +18,7 @@ portfolio candidates below remain unimplemented until their contracts are delive
 | Word/Excel planning | Editable documents/tables from source; native Office/source fidelity acceptance remains necessary. |
 | PowerPoint planning | Editable bounded slide layouts; source-bound native/mobile review remains necessary. |
 | Text PDF | Direct final text or existing AI planning, with Arabic/date checks. |
-| Text PDF to Word | Editable extracted text; no original layout/images/table reconstruction promise. |
+| Text PDF to Word | v4 editable extracted text; exact numeric/contact occurrence checks with bounded AI repair/review. These do not prove meaning or names. No original layout/images/table reconstruction promise; updated live acceptance still required. |
 | Image text extraction | v5 is one customer service: received source detail retained, mixed native recognition with configured-AI source review and bounded fallback within the confirmed price. Original text only; optional independent translation after delivery. No engine/language/style questions during extraction. Real photo/provider acceptance remains separate. |
 | Independent text translation | Arabic/English target and formal/business/academic/casual style. Source-line IDs checked exactly once, numeric tokens checked per line, original blank lines retained; chat text plus UTF-8 TXT. Default disabled pending live meaning/style qualification. |
 | Independent proofreading/rewriting | Arabic/English original language, proofreading only or formal/business/casual rewriting. Per-line numeric/email/URL checks, source coverage/order/blank lines, draft text plus TXT. Structural validation does not prove semantic fidelity. Default disabled. |

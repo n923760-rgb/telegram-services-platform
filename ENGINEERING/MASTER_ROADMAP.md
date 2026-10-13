@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## PDF to Word source token fidelity — 2026-10-13
+
+- OWNER AUTHORITY: Accepted the review recommendation to improve current-service content fidelity. Baseline main 914df9d / PR #67.
+- CHANGE: PDF-to-Word v4 request-local numeric/contact multiset validation across title/headings/body/bullets; preserve real source footers, exclude synthetic page markers, validate printable content and recheck injected plans before output writes. Existing bounded repair/content review reused.
+- COMPATIBILITY: Same inputs/default gate; registry retains administrator prices/activation. Old unprepared v3 cancels via existing settlement; cached artifacts replay without regeneration. No migration/dependency/financial/provider/payment configuration changes.
+- PASS LOCALLY: 46 focused source/plugin/Arabic-extraction/architecture cases, lint/format/diff. Full hosted PostgreSQL/Redis/native qualification required before merge.
+- LIMITS: Token counts do not prove semantic associations, name/prose fidelity or original layout/table reconstruction. Deployment and representative live-provider acceptance NOT RUN for this change.
+- Evidence: [source-fidelity report](REPORTS/2026-10-13-pdf-word-source-fidelity.md).
+
 ## All-current-service preflight and audited activation — 2026-10-13
 
 - OWNER AUTHORITY: Develop and activate all services. Baseline main 3095ecf / PR #66; no direct server access available here.
