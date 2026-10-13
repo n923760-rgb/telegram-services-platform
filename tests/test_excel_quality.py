@@ -134,3 +134,32 @@ def test_excel_large_table_retains_all_rows_and_long_notes_without_extra_sheets(
     assert sheet["A1003"].value == "00999" and sheet["B1003"].value == note.rstrip()
     assert sheet.row_dimensions[4].height > 120
     assert all(c.alignment.wrap_text for row in sheet.iter_rows(min_row=4) for c in row)
+
+
+def test_proportional_font_layout_keeps_literal_contact_values_and_fits_wide_glyphs():
+    table = Table(
+        title="Contacts",
+        columns=["Phone", "Email", "Wide", "Narrow"],
+        rows=[
+            ["+966500000000", "a@example.invalid", "W" * 17, "i" * 17],
+            ["00123", "first\nsecond", "W" * 200, "Short"],
+        ],
+    )
+    sheet = load_workbook(BytesIO(excel.build(table))).active
+    assert sheet["A4"].value == "'+966500000000" and sheet["A5"].value == "00123"
+    assert sheet["B4"].value == "a@example.invalid" and sheet["B5"].value == "first\nsecond"
+    assert sheet.column_dimensions["C"].width > sheet.column_dimensions["D"].width
+    assert 10 <= sheet.column_dimensions["C"].width <= 60
+    assert sheet.row_dimensions[5].height > sheet.row_dimensions[4].height
+    assert sheet.row_dimensions[5].height <= 409
+    assert sheet["B4"].font.sz == sheet["B3"].font.sz == 11
+    assert not any(c.data_type == "f" for row in sheet for c in row)
+
+
+def test_missing_measurement_font_retains_supported_builder_output(monkeypatch):
+    monkeypatch.setattr(excel, "_measurement_font", lambda *args: None)
+    sheet = load_workbook(
+        BytesIO(excel.build(Table(title="Data", columns=["Note"], rows=[["Line\nSecond line"]])))
+    ).active
+    assert sheet["A4"].value == "Line\nSecond line"
+    assert sheet.row_dimensions[4].height > 22

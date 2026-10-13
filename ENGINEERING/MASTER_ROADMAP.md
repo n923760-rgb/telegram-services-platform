@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Excel contact/text print layout — 2026-10-13
+
+- OWNER AUTHORITY: Continue improving the extended PDF-table result. Baseline main d188667; supplied workbook retains all values but telephone/email wrap within a low row in LibreOffice print preview.
+- CHANGE: Shared Excel layout measures installed DejaVu glyphs with explicit font sizes, separate bold/title metrics and bounded spacing estimates. Cache holds fonts only; missing-font fallback retained. No value/type/formula/table/reference/service-contract/payment/provider changes.
+- PASS LOCALLY: 136 focused Excel/CSV/PDF-table/Arabic/architecture cases; global lint/format/diff. Rebuilt operator extraction has identical values in all five sheets; all LibreOffice print previews inspected and telephone/email fit on one line.
+- LIMITS: Font substitution and existing column/row caps still limit general layout guarantees. Full exact-source hosted qualification required before merge; actual server re-export NOT RUN.
+- Evidence: [Excel text layout](REPORTS/2026-10-13-excel-text-layout.md).
+
 ## Explicit Arabic visual-order PDF table recovery — 2026-10-13
 
 - OWNER AUTHORITY: Continue fixing the operator-confirmed Arabic Excel display defect. Baseline main 4a852dc; actual supplied table output preserves numeric values but carries Arabic presentation forms in visual order.
