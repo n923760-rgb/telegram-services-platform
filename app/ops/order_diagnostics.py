@@ -13,6 +13,7 @@ from sqlalchemy import select, text
 from app.core.db import sessions
 from app.core.models import CostHold, CostUsage, Job, JobAttempt, Ledger, Order, Setting, StarCharge
 from app.ops.service_portfolio import owner_actor
+from app.providers.ai.usage_audit import diagnostic_audit
 from app.providers.runtime import provider
 from app.services.base import ServiceError
 
@@ -117,6 +118,7 @@ async def inspect(reference, actor_id=None):
                     CostUsage.cost_sar,
                     CostUsage.input_tokens,
                     CostUsage.output_tokens,
+                    CostUsage.rate_snapshot,
                 )
                 .outerjoin(CostUsage, CostUsage.hold_id == CostHold.id)
                 .where(CostHold.job_id == job.id)
@@ -152,6 +154,7 @@ async def inspect(reference, actor_id=None):
                 "recorded_sar": str(row.cost_sar) if row.cost_sar is not None else None,
                 "input_tokens": row.input_tokens,
                 "output_tokens": row.output_tokens,
+                "cost_audit": diagnostic_audit(row.rate_snapshot),
                 "recorded_overrun": row.cost_sar > row.amount if row.cost_sar is not None else None,
             }
             for row in holds

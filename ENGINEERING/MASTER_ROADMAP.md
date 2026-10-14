@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Provider usage audit and independent output cap — 2026-10-14
+
+- OWNER AUTHORITY: Review supplied billing export and continue provider recovery improvements. Baseline/operator deployment 624c853 (#80), healthy with provider pause retained; backup EvFsFgt1.
+- FACT: Two platform holds in the supplied hour; aggregate provider export has two requests. Calculated internal rates differ from exported hour rates/cache billing. Aggregate data does not identify exact per-attempt billed costs; unknown hold remains retained.
+- CHANGE: Bounded cache/request/cap metadata in existing rate_snapshot JSON; calculations explicitly distinguished from invoices. Independent gateway cap breach pause after full usage settlement even within monetary bound. Historical records not rewritten.
+- PREPARATION: Owner-only, read-only synthetic cap preflight (<=128 output tokens) prepares request/body hash/bound; no provider call, order, reservation, customer content or unpause.
+- PASS LOCALLY: 60 focused audit/adapter/diagnostic/architecture tests; lint/format/diff. Hosted financial/lifecycle/native workflow required before merge.
+- BLOCKED LIVE: Actual cap qualification still requires a separately controlled budgeted operational probe; preparation is not cap proof. No current pricing changes, invoice settlement, estimated unknown-cost reconciliation, secret changes or global resume.
+- Evidence: [usage audit and cap guard](REPORTS/2026-10-14-provider-usage-audit.md).
+
 ## Smart Word and Text PDF source fidelity — 2026-10-14
 
 - OWNER AUTHORITY: Continue improving all existing services with selective AI; baseline b2a41b6. #79 server deployment not confirmed; latest operator deployment remains #78.
