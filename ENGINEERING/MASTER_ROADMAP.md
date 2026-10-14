@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Optional Word/PDF content and design improvement — 2026-10-14
+
+- OWNER AUTHORITY: Continue service quality work with selective AI. Baseline 9f22e97; operator confirms deployment, CV v5/PPTX v3 and retained provider pause.
+- CHANGE: Word/PDF v2 optional direct/smart choice; omission/skip remains literal. Single source intake, ordered complete source IDs and per-ID numeric/contact fidelity; typed native design/section/block planning and existing bounded semantic review/repair.
+- GENERIC FIX: Word prose direction excludes inline date/ASCII contact identifiers; trusted LTR runs/formatting marks keep embedded email/URLs readable without changing source characters.
+- PASS LOCALLY: 89 focused service/policy/template/native/architecture cases and all six final rendered Arabic/English fixture pages; global lint/format/diff. Hosted lifecycle and native worker gates required before merge.
+- SAFETY: Administrator prices/gates, dependencies/migrations, financial rules and provider pause unchanged. Live AI/mobile output quality, new deployment and historical invoice reconciliation remain unverified.
+- Evidence: [optional Word/PDF improvement](REPORTS/2026-10-14-word-pdf-ai-improvement.md).
+
 ## Public service audit and source safety — 2026-10-14
 
 - OWNER AUTHORITY: Review/improve all existing public services, permitting AI where useful. Baseline 995f03a, 16 customer services; private verification/retired OCR excluded.

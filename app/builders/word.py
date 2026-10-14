@@ -18,7 +18,12 @@ from app.builders.word_template import render
 
 BODY_FONT = "DejaVu Sans"
 DARK = RGBColor(0, 0, 0)
-DATE_TOKEN = re.compile(r"(?<!\d)(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})(?!\d)")
+DATE_PATTERN = r"(?<!\d)(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})(?!\d)"
+DATE_TOKEN = re.compile("(" + DATE_PATTERN + ")")
+INLINE_LTR = re.compile(
+    "(" + DATE_PATTERN + r"|https?://[^\s<>]+|www\.[^\s<>]+|[a-z0-9.+_-]+@[a-z0-9.-]+\.[a-z0-9-]+)",
+    re.IGNORECASE,
+)
 
 
 def safe_text(value):
@@ -26,12 +31,15 @@ def safe_text(value):
 
 
 def _direction(paragraph, rtl):
-    # Isolate dates in LTR runs rather than forcing their separators into Arabic
+    # Isolate dates and ASCII contacts in LTR runs rather than forcing them into Arabic
     # ordering. Preserve the exact characters and existing formatting properties.
+    # A long email/URL is an identifier, not evidence that Arabic prose is English.
+    if INLINE_LTR.search(paragraph.text):
+        rtl = is_rtl(INLINE_LTR.sub("", paragraph.text))
     if rtl:
         for run in list(paragraph.runs):
-            if DATE_TOKEN.search(run.text):
-                for text in DATE_TOKEN.split(run.text):
+            if INLINE_LTR.search(run.text):
+                for text in INLINE_LTR.split(run.text):
                     if text:
                         element = deepcopy(run._r)
                         run._r.addprevious(element)
@@ -59,7 +67,7 @@ def _direction(paragraph, rtl):
         if rtl_el is None:
             rtl_el = OxmlElement("w:rtl")
             rpr.append(rtl_el)
-        rtl_el.set(qn("w:val"), "1" if rtl and not DATE_TOKEN.fullmatch(run.text) else "0")
+        rtl_el.set(qn("w:val"), "1" if rtl and not INLINE_LTR.fullmatch(run.text) else "0")
 
 
 def _heading(doc, text, level):
@@ -293,7 +301,7 @@ def build(
             bidi = properties.find(qn("w:bidi")) if properties is not None else None
             if bidi is not None and bidi.get(qn("w:val")) == "1":
                 for run in paragraph.runs:
-                    if DATE_TOKEN.fullmatch(run.text):
+                    if INLINE_LTR.fullmatch(run.text):
                         # Strong LTR boundaries are portable to Word and LibreOffice.
                         # Only professional mode adds these invisible formatting marks.
                         run.text = "\u200e" + run.text + "\u200e"
@@ -387,7 +395,7 @@ def _design(doc, design):
             if design.theme == "modern" and name in {"Title", "Subtitle"}:
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
         if name == "List Bullet":
-            rtl = is_rtl(paragraph.text)
+            rtl = is_rtl(INLINE_LTR.sub("", paragraph.text))
             paragraph.paragraph_format.left_indent = Cm(0 if rtl else 0.45)
             paragraph.paragraph_format.right_indent = Cm(0.45 if rtl else 0)
             paragraph.paragraph_format.first_line_indent = Cm(-0.22)

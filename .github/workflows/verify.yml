@@ -66,6 +66,9 @@ jobs:
           from tests.ocr_fixtures import printed, processor
           from tests.ocr_fixtures import detailed as detailed_ocr_source
           from tests.word_pdf_fixtures import document, renderer, table_document
+          from tests.word_pdf_ai_fixtures import inputs as smart_document_inputs, revision as smart_document_revision
+          from docx import Document as Word
+          from app.services.text_to_word_pdf.schema import Inputs as SmartDocumentInputs, revision_schema as smart_document_schema, refined_document
           from tests.minutes_fixtures import inputs as minute_inputs, plan as minute_plan
           from tests.minutes_fixtures import action_plan as minute_action_plan
           from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
@@ -190,6 +193,17 @@ jobs:
                       for token in ('00123', '125.50', '00017'):
                           assert len(re.findall(r'(?<!\d)' + re.escape(token) + r'(?!\d)', text)) == 1
               for language in ('ar', 'en'):
+                  source = smart_document_inputs(language)
+                  for theme in ('modern', 'classic', 'editorial'):
+                      plan = smart_document_schema(SmartDocumentInputs.parse(source)).model_validate(smart_document_revision(source, theme))
+                      pair = await renderer().word_pdf(refined_document(plan))
+                      assert len(PdfReader(BytesIO(pair.pdf)).pages) == 1
+                      paragraphs = [p.text for p in Word(BytesIO(pair.docx)).paragraphs]
+                      assert source['text'].splitlines()[1] in paragraphs
+                      text = PdfReader(BytesIO(pair.pdf)).pages[0].extract_text()
+                      assert '0500123456' in text and 'sample@example.invalid' in text
+                      for token in ('00123', '125.50', '2026-10-14'):
+                          assert len(re.findall(r'(?<!\d)' + re.escape(token) + r'(?!\d)', text)) == 1
                   for method in ('lattice', 'stream'):
                       data, rows = table_pdf(language, ruled=method == 'lattice')
                       result = await CamelotTables().extract(data, method)
@@ -228,6 +242,7 @@ jobs:
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
           print('Non-root worker: declared worker capability preflight PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
+          print('Non-root worker: source-bound AI Word/PDF fixtures in Arabic and English across three designs PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
           print('Non-root worker: single-entry AI CV response fixtures, three named bilingual Word/PDF designs and fresh English page PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
