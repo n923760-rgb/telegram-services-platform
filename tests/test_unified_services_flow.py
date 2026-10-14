@@ -80,7 +80,10 @@ async def test_retired_service_cannot_be_sold_or_enabled_but_settings_remain():
         assert (await balance(db, 1)).reserved == 0
 
 
-async def test_legacy_selection_opens_canonical_draft_with_current_price(flow):
+async def test_legacy_selection_opens_canonical_draft_with_current_price(flow, monkeypatch):
+    from app.core.settings import config
+
+    monkeypatch.setattr(config(), "ai_enabled", True)
     transport, message, callback, state = flow
     await fund()
     async with sessions.begin() as db:

@@ -16,7 +16,7 @@ def parse_callback(data):
     return match[1], int(match[2])
 
 
-def view(rows, lang, *, category=None, page=0, admin=False):
+def view(rows, lang, *, category=None, page=0, admin=False, ai_available=True):
     groups = {key: [] for key in CATEGORY_KEYS}
     for service in ordered(rows, registry.types):
         cls = registry.types.get(service.slug)
@@ -26,13 +26,26 @@ def view(rows, lang, *, category=None, page=0, admin=False):
             continue
         key = getattr(cls, "category", "other")
         groups[key if key in groups else "other"].append(service)
+
+    def notice(values):
+        return (
+            "\n\n" + tr("catalog_ai_notice", lang)
+            if not ai_available
+            and any(getattr(registry.types.get(s.slug), "requires_ai", False) for s in values)
+            else ""
+        )
+
     if category is None:
         items = [
             (tr(CATEGORY_KEYS[key], lang), f"catalog:{key}:0")
             for key, values in groups.items()
             if values
         ]
-        return tr("catalog_choose" if items else "no_services", lang), items
+        return (
+            tr("catalog_choose" if items else "no_services", lang)
+            + notice([s for values in groups.values() for s in values]),
+            items,
+        )
     if category not in groups:
         raise ValueError("invalid category")
     values = groups[category]
@@ -48,6 +61,7 @@ def view(rows, lang, *, category=None, page=0, admin=False):
         + tr(CATEGORY_KEYS[category] + "_description", lang)
     )
     text += "\n\n" + tr("choose_service", lang)
+    text += notice(values)
     if pages > 1:
         text += "\n\n" + tr("catalog_page", lang, page=page + 1, pages=pages)
         if page:

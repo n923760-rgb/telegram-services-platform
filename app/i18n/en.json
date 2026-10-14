@@ -493,5 +493,7 @@
   "excel_source_reference": "Source reference",
   "excel_source_title": "Original source",
   "excel_source_text": "Text",
-  "excel_source_part": "Part"
+  "excel_source_part": "Part",
+  "catalog_ai_notice": "Some services are temporarily unavailable. Direct conversion services remain available; selecting a paused service shows a notice.",
+  "service_ai_unavailable": "This service is temporarily unavailable. No order was created or credit reserved. Choose a direct conversion service or try again later. Any existing draft is preserved."
 }

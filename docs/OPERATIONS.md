@@ -1,5 +1,21 @@
 # Operations
 
+## Customer behavior during provider pause
+
+Catalog browsing shows a localized notice for categories containing required-AI
+services while AI is disabled or provider pause is set. Buttons/names/categories,
+admin ownership and Stars price visibility remain intact. Selecting or explicitly
+resuming a required-AI service shows an availability notice before a new prompt;
+any prior draft remains unchanged. Source-bound result followups requiring AI are
+hidden and stale callbacks are rejected while unavailable.
+
+Direct/mixed services remain browsable: do not infer a customer's mode from
+fabricated inputs or disable direct work due to provider pause. Final submission
+still checks actual needs_ai(inputs) before reservation/invoice, including a pause
+race after intake. Existing mid-collection drafts are not deleted or automatically
+rerouted; these UI hints do not certify credentials, budgets, provider or output
+quality and never toggle pause/admin service gates.
+
 ## Provider cache/cap audit and synthetic preflight
 
 New compatible-provider calls preserve safe request IDs, requested wire limits,
