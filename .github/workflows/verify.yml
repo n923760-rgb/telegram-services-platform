@@ -67,6 +67,10 @@ jobs:
           from tests.ocr_fixtures import detailed as detailed_ocr_source
           from tests.word_pdf_fixtures import document, renderer, table_document
           from tests.word_pdf_ai_fixtures import inputs as smart_document_inputs, revision as smart_document_revision
+          from tests.excel_source_fixtures import inputs as source_excel_inputs, plan as source_excel_plan
+          from app.services.text_to_office.schema import Inputs as SourceOfficeInputs
+          from app.services.text_to_office.excel_source import source_excel_schema
+          from app.builders.excel_source import build as source_excel
           from docx import Document as Word
           from app.services.text_to_word_pdf.schema import Inputs as SmartDocumentInputs, revision_schema as smart_document_schema, refined_document
           from tests.minutes_fixtures import inputs as minute_inputs, plan as minute_plan
@@ -100,6 +104,18 @@ jobs:
           assert os.getuid() == 10001
           async def verify():
               assert all((await probe_worker()).values())
+              for language in ('ar','en'):
+                  values = SourceOfficeInputs.parse(source_excel_inputs(language))
+                  plan = source_excel_schema(values).model_validate(source_excel_plan(language))
+                  content = source_excel(plan.table, values.lines(), [row.source_id for row in plan.evidence], [row.quotes for row in plan.evidence])
+                  book = load_workbook(BytesIO(content))
+                  assert book.sheetnames == ['Data','Source']
+                  assert book['Data']['A4'].value == '00123' and book['Data']['A4'].data_type == 's'
+                  assert book['Data']['C4'].value == 125.5 and book['Data']['C4'].number_format == '#,##0.00'
+                  assert book['Data']['E4'].value == .125 and book['Data']['E4'].number_format == '0.0%'
+                  assert book['Data']['G4'].value == 'L001' and book['Data'].tables['Records'].ref == 'A3:G6'
+                  assert [book['Source'].cell(r,3).value for r in range(4,7)] == values.lines()
+                  assert not any(c.data_type == 'f' or c.hyperlink for sheet in book for row in sheet for c in row)
               source = picture(1800, 1200, color='white')
               native_pdf = await NativeImagePdf().render([source], 'auto')
               embedded = PdfReader(BytesIO(native_pdf)).pages[0].images[0].image
@@ -243,6 +259,7 @@ jobs:
           print('Non-root worker: declared worker capability preflight PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: source-bound AI Word/PDF fixtures in Arabic and English across three designs PASS with network disabled')
+          print('Non-root worker: source-bound Excel records, typed conversions, precision and sortable references PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
           print('Non-root worker: single-entry AI CV response fixtures, three named bilingual Word/PDF designs and fresh English page PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')

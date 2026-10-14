@@ -15,38 +15,47 @@ from app.services.text_to_office.service import TextToOffice
 async def test_professional_excel_has_native_table_typed_cells_and_source_review_notes(tmp_path):
     from openpyxl import load_workbook
 
+    from app.services.text_to_office.excel_source import source_excel_schema, source_json
     from app.services.text_to_office.prompt import EXCEL
-    from app.services.text_to_office.schema import ExcelPlan
+    from app.services.text_to_office.schema import Inputs
 
-    plan = ExcelPlan.model_validate(
-        {
-            "table": {
-                "title": "الطلبات",
-                "columns": ["الرقم", "المبلغ", "التاريخ"],
-                "column_formats": [{"kind": kind} for kind in ("text", "number", "date")],
-                "rows": [
-                    ["00123", 125.5, "2026-10-08"],
-                    ["00123", 125.5, "2026-10-08"],
-                    ["00124", 0, None],
-                ],
-            }
-        }
-    )
+    payload = {
+        "table": {
+            "title": "الطلبات",
+            "columns": ["الرقم", "المبلغ", "التاريخ"],
+            "column_formats": [{"kind": kind} for kind in ("text", "number", "date")],
+            "rows": [
+                ["00123", 125.5, "2026-10-08"],
+                ["00123", 125.5, "2026-10-08"],
+                ["00124", 0, None],
+            ],
+        },
+        "evidence": [
+            {"source_id": 1, "quotes": ["00123", "125.50", "2026-10-08"]},
+            {"source_id": 2, "quotes": ["00123", "125.50", "2026-10-08"]},
+            {"source_id": 3, "quotes": ["00124", "0", None]},
+        ],
+    }
+    inputs = {
+        "text": "00123 125.50 2026-10-08\n00123 125.50 2026-10-08\n00124 0",
+        "target": "excel",
+    }
+    plan = source_excel_schema(Inputs.parse(inputs)).model_validate(payload)
     store = OwnedStorage(LocalStorage(tmp_path), 1)
     ai = SimpleNamespace(extract=AsyncMock(return_value=plan))
     service = TextToOffice()
     service.runtime = SimpleNamespace(storage=store, ai=ai)
-    inputs = {"text": "الطلبات مؤكدة", "target": "excel"}
     result = await service.run(inputs)
-    ai.extract.assert_awaited_once_with(ExcelPlan, inputs["text"], EXCEL)
+    assert ai.extract.await_args.args[0].__name__ == "SourceExcelPlan"
+    assert ai.extract.await_args.args[1:] == (source_json(Inputs.parse(inputs)), EXCEL)
     assert "1 خلية فارغة" in result.preview and "1 صف مكرر" in result.preview
     sheet = load_workbook(BytesIO(store.read(result.artifacts[0].key))).active
-    assert sheet.tables["Records"].ref == "A3:C6" and sheet["A4"].value == "00123"
+    assert sheet.tables["Records"].ref == "A3:D6" and sheet["A4"].value == "00123"
     assert sheet["B6"].value == 0 and sheet["C6"].value is None
     assert not result.needs_confirmation
 
 
-async def test_excel_confirmed_legacy_plan_does_not_require_another_provider_call(tmp_path):
+async def test_excel_confirmed_source_plan_does_not_require_another_provider_call(tmp_path):
     from openpyxl import load_workbook
 
     from app.services.text_to_office.schema import ExcelPlan
@@ -58,9 +67,8 @@ async def test_excel_confirmed_legacy_plan_does_not_require_another_provider_cal
     ai = SimpleNamespace(extract=AsyncMock())
     service = TextToOffice()
     service.runtime = SimpleNamespace(storage=store, ai=ai)
-    result = await service.run(
-        {"text": "Data", "target": "excel", "__continuation": plan.model_dump(mode="json")}
-    )
+    payload = plan.model_dump(mode="json") | {"evidence": [{"source_id": 1, "quotes": ["00123"]}]}
+    result = await service.run({"text": "00123", "target": "excel", "__continuation": payload})
     ai.extract.assert_not_awaited()
     assert load_workbook(BytesIO(store.read(result.artifacts[0].key))).active["A4"].value == "00123"
 

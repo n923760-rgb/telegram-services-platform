@@ -1,14 +1,18 @@
 from decimal import Decimal
 
-from app.builders import excel, word
+from pydantic import ValidationError
+
+from app.builders import word
+from app.builders.excel_source import build as source_workbook
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.services.text_to_office.excel_source import source_excel_schema, source_json
 from app.services.text_to_office.prompt import EXCEL, WORD
-from app.services.text_to_office.schema import ExcelPlan, Inputs, WordPlan
+from app.services.text_to_office.schema import Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "5"
+    version = "6"
     slug = "text_to_office"
     menu_order = 10
     category = "documents"
@@ -36,17 +40,29 @@ class TextToOffice(BaseService):
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
-        schema = WordPlan if values.target == "word" else ExcelPlan
+        schema = WordPlan if values.target == "word" else source_excel_schema(values)
         continuation = inputs.get("__continuation")
-        plan = (
-            WordPlan(document=values.document().model_dump())
-            if values.mode == "direct"
-            else schema.model_validate(continuation)
-            if continuation
-            else await self.runtime.ai.extract(
-                schema, values.text, WORD if values.target == "word" else EXCEL
+        if values.mode != "direct" and not continuation and self.runtime.ai is None:
+            raise ServiceError("provider_config")
+        try:
+            plan = (
+                WordPlan(document=values.document().model_dump())
+                if values.mode == "direct"
+                else schema.model_validate(continuation)
+                if continuation
+                else await self.runtime.ai.extract(
+                    schema,
+                    values.text if values.target == "word" else source_json(values),
+                    WORD if values.target == "word" else EXCEL,
+                )
             )
-        )
+        except ValidationError:
+            raise ServiceError("provider_invalid") from None
+        if values.target == "excel":
+            try:
+                plan = schema.model_validate(plan.model_dump(mode="json"))
+            except (ValidationError, ValueError):
+                raise ServiceError("provider_invalid") from None
         if plan.missing_information:
             raise ServiceError("needs_information")
         reviews = {}
@@ -84,6 +100,9 @@ class TextToOffice(BaseService):
                         "excel_data_notes", lang, missing=missing, repeated=repeated
                     )
                 preview += "\n" + tr("excel_usage", lang)
+                preview = (
+                    tr("excel_source_review", lang, context=len(plan.context_ids)) + "\n" + preview
+                )
             preview = preview[:1400]
             reviews[lang] = preview
         preview = reviews["ar"]
@@ -110,7 +129,12 @@ class TextToOffice(BaseService):
             name = "result.docx"
             mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         else:
-            content = excel.build(plan.table)
+            content = source_workbook(
+                plan.table,
+                values.lines(),
+                [row.source_id for row in plan.evidence],
+                [row.quotes for row in plan.evidence],
+            )
             name = "result.xlsx"
             mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         artifact = self.runtime.storage.save(name, content, mime)

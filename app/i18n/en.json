@@ -87,7 +87,7 @@
   "ocr_document_title": "Extracted text",
   "office_name": "Create Word or Excel",
   "office_description": "Editable files from your request",
-  "office_text": "Send the content and name the document type if important: report, letter, or memo. Word is organized and formatted automatically. To preserve the text verbatim, put Keep text unchanged on the first line, followed by your text on subsequent lines. Excel uses AI organization.",
+  "office_text": "Send the content and name the document type if important: report, letter, or memo. Word is organized and formatted automatically. To preserve the text verbatim, put Keep text unchanged on the first line, followed by your text on subsequent lines. Excel uses AI organization. For Excel, put each record on a separate line: up to 200 nonempty lines and 4,000 characters per line within the text limit. Ambiguous dates and identifiers remain text.",
   "word_professional_preview": "Organized document plan.\nTitle: {title}\nSections: {headings}\nTables: {tables}",
   "document_mode": "Choose the content outcome: preserve the text without rewriting, or organize the content. Both options have the same service price.",
   "document_direct": "Preserve text",
@@ -488,5 +488,10 @@
   "word_pdf_mode": "How should the document be prepared? Preserve text uses no AI. Improvement edits wording, organizes paragraphs and selects a design without translation or new facts. Skip preserves text.",
   "word_pdf_direct": "Preserve text unchanged",
   "word_pdf_smart": "Improve content and design with AI",
-  "word_pdf_smart_preview": "Word and PDF prepared with improved wording, organization and design. Review meaning, names, data and page layout before use; this is not independent fact verification."
+  "word_pdf_smart_preview": "Word and PDF prepared with improved wording, organization and design. Review meaning, names, data and page layout before use; this is not independent fact verification.",
+  "excel_source_review": "Each row has a source reference; all original nonempty source lines is in Source. Context lines outside data rows: {context}. Review context classification and column association; these checks do not certify meaning.",
+  "excel_source_reference": "Source reference",
+  "excel_source_title": "Original source",
+  "excel_source_text": "Text",
+  "excel_source_part": "Part"
 }

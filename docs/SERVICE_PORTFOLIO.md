@@ -15,7 +15,7 @@ portfolio candidates below remain unimplemented until their contracts are delive
 
 | Capability | Customer deliverable and quality boundary |
 | --- | --- |
-| Word/Excel planning | Editable documents/tables from source; native Office/source fidelity acceptance remains necessary. |
+| Word/Excel planning | v6 Excel rows have ordered source IDs and exact cell quotes with conservative number/date/percent/boolean conversions. Native Data references and all nonempty source lines in Source, with retained numeric precision and explicit context counts. One record per source line, <=200 lines/4000 characters each within 12000 total; no formulas/totals. Word modes retained. Context/column/unit meaning and live native/mobile acceptance remain necessary. |
 | PowerPoint planning | Editable bounded slide layouts; source-bound native/mobile review remains necessary. |
 | Text PDF | Direct final text or existing AI planning, with Arabic/date checks. |
 | Text PDF to Word | v4 editable extracted text; exact numeric/contact occurrence checks with bounded AI repair/review. These do not prove meaning or names. No original layout/images/table reconstruction promise; updated live acceptance still required. |
