@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Public service audit and source safety — 2026-10-14
+
+- OWNER AUTHORITY: Review/improve all existing public services, permitting AI where useful. Baseline 995f03a, 16 customer services; private verification/retired OCR excluded.
+- REVIEW: Nine required-AI, three conditional-AI and four direct contracts. Existing structured review/cost/cache controls retained; source review is not live output or deployment certification. Service-by-service gaps and ordered qualification documented.
+- CHANGE: PowerPoint v3 source validation before admission, numeric/contact anti-invention counters, revalidated continuations and no-provider cached approval. Generic invalid-encoding/JSON digest returns safe input error before DB work; valid request hashes unchanged.
+- PASS LOCALLY: 91 focused source/native-structure/policy/architecture cases; lint/format/diff. Full hosted financial/concurrency/native gates required before merge.
+- SAFETY: No price/gate/dependency/migration/renderer/provider-pause changes. Last supplied server source remains 288d044; CV v5 deployment and real AI acceptance unconfirmed.
+- NEXT: Source-bound optional Word/PDF improvement, then smart document/Excel/PPTX provenance and real OCR/text/minutes/image acceptance. No blanket AI toggles or silent unknown-cost clearing.
+- Evidence: [public service quality review](REPORTS/2026-10-14-service-quality-audit.md).
+
 ## Single-entry AI CV content and design — 2026-10-14
 
 - OWNER AUTHORITY: Improve the poor CV output, allow AI editing/translation/design, enter the career details once, and later improve other services selectively. Baseline 288d044.

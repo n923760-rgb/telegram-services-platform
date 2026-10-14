@@ -154,7 +154,7 @@ async def test_office_confirmation_localizes_ui_and_preserves_source_title_quest
     plugin.runtime = SimpleNamespace(
         ai=SimpleNamespace(extract=extract), storage=OwnedStorage(LocalStorage(tmp_path), 1)
     )
-    request = {"text": "نص العميل"}
+    request = {"text": f"{title}\n{question}\nقيمة 125.50"}
     if kind == "word":
         request["target"] = "word"
     elif kind == "pdf":

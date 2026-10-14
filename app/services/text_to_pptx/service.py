@@ -1,14 +1,16 @@
 from decimal import Decimal
 
+from pydantic import ValidationError
+
 from app.builders import pptx
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.text_to_pptx.prompt import DECK
-from app.services.text_to_pptx.schema import DeckPlan, Inputs
+from app.services.text_to_pptx.schema import Inputs, source_plan_schema
 
 
 class TextToPptx(BaseService):
-    version = "2"
+    version = "3"
     slug = "text_to_pptx"
     menu_order = 40
     category = "documents"
@@ -20,15 +22,28 @@ class TextToPptx(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(fields=[InputField(name="text", prompt_key="pptx_text")])
 
+    @classmethod
+    def needs_ai(cls, inputs):
+        Inputs.parse(inputs)
+        return "__continuation" not in inputs
+
     async def run(self, inputs):
-        clean = {k: v for k, v in inputs.items() if not k.startswith("__")}
-        values = Inputs.model_validate(clean)
+        values = Inputs.parse(inputs)
+        schema = source_plan_schema(values.text)
         continuation = inputs.get("__continuation")
-        plan = (
-            DeckPlan.model_validate(continuation)
-            if continuation
-            else await self.runtime.ai.extract(DeckPlan, values.text, DECK)
-        )
+        if "__continuation" in inputs:
+            try:
+                plan = schema.model_validate(continuation)
+            except ValidationError:
+                raise ServiceError("provider_invalid") from None
+        else:
+            if self.runtime.ai is None:
+                raise ServiceError("provider_config")
+            plan = await self.runtime.ai.extract(schema, values.text, DECK)
+            try:
+                plan = schema.model_validate(plan.model_dump(mode="json"))
+            except (ValidationError, ValueError):
+                raise ServiceError("provider_invalid") from None
         if plan.missing_information:
             raise ServiceError("needs_information")
         reviews = {}
