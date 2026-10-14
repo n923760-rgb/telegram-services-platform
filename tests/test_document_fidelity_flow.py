@@ -34,9 +34,15 @@ async def prepare(slug, responses, tmp_path, monkeypatch):
     ctx["runtime_factory"] = lambda jid, uid: SimpleNamespace(
         ai=AI(provider, jid, uid, quality_review=True), storage=OwnedStorage(store, uid)
     )
-    inputs = {"text": SOURCE, "mode": "smart"}
+    inputs = {"text": SOURCE}
     if slug == "text_to_office":
         inputs["target"] = "word"
+    else:
+        inputs["mode"] = "smart"
+    # Match the actual public intake before exercising the database lifecycle.
+    from app.services.registry import registry
+
+    registry.types[slug].input_schema.validate_inputs(inputs)
     return provider, delivery, ctx, price, inputs
 
 
