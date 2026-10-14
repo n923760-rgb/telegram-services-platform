@@ -10,23 +10,7 @@ from pydantic import ValidationError
 
 from app.builders import excel
 from app.builders.schema import Table
-
-
-def typed_table():
-    return Table.model_validate(
-        {
-            "title": "سجل الطلبات",
-            "columns": ["المعرّف", "العميل", "المبلغ (ريال)", "التاريخ", "النسبة", "مؤكد"],
-            "column_formats": [
-                {"kind": kind} for kind in ("text", "text", "number", "date", "percent", "boolean")
-            ],
-            "rows": [
-                ["00123", "أحمد", 125.5, "2026-10-08", 0.125, True],
-                ["00124", "Example", 0, None, 0, False],
-                ["00123", "أحمد", 125.5, "2026-10-08", 0.125, True],
-            ],
-        }
-    )
+from tests.excel_source_fixtures import typed_table
 
 
 def test_native_excel_table_preserves_types_missing_zero_duplicates_and_layout():
