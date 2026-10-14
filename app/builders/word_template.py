@@ -47,6 +47,18 @@ def _template_bytes() -> bytes:
         ("{{ title }}", "Title"),
         ("{%p endif %}", None),
         ("{%p for section in sections %}", None),
+        ("{%p if section.alignment_marker %}", None),
+        ("{{ section.alignment_marker }}", None),
+        ("{%p endif %}", None),
+        ("{%p if section.break_marker %}", None),
+        ("{{ section.break_marker }}", None),
+        ("{%p endif %}", None),
+        ("{%p if section.title %}", None),
+        ("{{ section.title }}", "Title"),
+        ("{%p endif %}", None),
+        ("{%p if section.subtitle %}", None),
+        ("{{ section.subtitle }}", "Subtitle"),
+        ("{%p endif %}", None),
         ("{%p if section.heading %}", None),
         ("{{ section.heading }}", "Heading 1"),
         ("{%p endif %}", None),
@@ -55,6 +67,15 @@ def _template_bytes() -> bytes:
         ("{%p endfor %}", None),
         ("{%p for bullet in section.bullets %}", None),
         ("{{ bullet }}", "List Bullet"),
+        ("{%p endfor %}", None),
+        ("{%p for block in section.blocks %}", None),
+        ("{%p if block.kind == 'lead' %}", None),
+        ("{{ block.text }}", "Heading 2"),
+        ("{%p elif block.kind == 'bullet' %}", None),
+        ("{{ block.text }}", "List Bullet"),
+        ("{%p else %}", None),
+        ("{{ block.text }}", None),
+        ("{%p endif %}", None),
         ("{%p endfor %}", None),
         ("{%p for marker in section.markers %}", None),
         ("{{ marker }}", None),
@@ -72,12 +93,25 @@ def _template_bytes() -> bytes:
 def render(data: WordDocument, *, include_title: bool):
     sections, slots = [], {}
     for section in data.sections:
+        alignment_marker = uuid4().hex if any(s.alignment != "auto" for s in data.sections) else ""
+        if alignment_marker:
+            slots[alignment_marker] = section.alignment
+        break_marker = uuid4().hex if section.page_break_before else ""
+        if break_marker:
+            slots[break_marker] = None
         markers = []
         for table in section.tables:
             marker = uuid4().hex
             markers.append(marker)
             slots[marker] = table
-        sections.append({**section.model_dump(), "markers": markers})
+        sections.append(
+            {
+                **section.model_dump(),
+                "markers": markers,
+                "break_marker": break_marker,
+                "alignment_marker": alignment_marker,
+            }
+        )
     template = DocxTemplate(BytesIO(_template_bytes()))
     template.render(
         {"title": data.title, "include_title": include_title, "sections": sections},

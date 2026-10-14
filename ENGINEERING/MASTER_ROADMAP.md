@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Single-entry AI CV content and design — 2026-10-14
+
+- OWNER AUTHORITY: Improve the poor CV output, allow AI editing/translation/design, enter the career details once, and later improve other services selectively. Baseline 288d044.
+- CHANGE: CV v5 removes duplicate English intake, edits/translates source-bound career segments, synthesizes an optional grounded summary, and uses the existing bounded semantic review/repair. Model selects source-owned typography, density, section order and native lead/bullet presentation. Complete Arabic body followed by English on a fresh page in one Word/PDF pair.
+- GENERIC FOUNDATION: Opt-in typed Word design, mixed ordered blocks, section alignment and titled page breaks; standard document defaults retained. No service branches in bot/core/financial policy.
+- PASS LOCALLY: 105 pure/source/builder/native regression checks and all eight rendered QA pages across three bilingual designs, a graduate and an academic fixture. Hosted PostgreSQL/financial/native workflow required before merge.
+- LIMITS: Provider remains paused for the unresolved cost incident; no live AI calls, invoice reconciliation, deployment or customer/mobile acceptance claimed. Prices/default service gates, unrelated AI flags, dependencies and migrations unchanged.
+- NEXT: After source qualification/deployment, reconcile the old uncertain exposure and qualify a real CV response. Later selective AI rounds use the shared needs_ai/review/cost/replay contracts, preserving direct tools where useful.
+- Evidence: [single-entry AI CV](REPORTS/2026-10-14-cv-ai-single-entry.md).
+
 ## Required CV education intake — 2026-10-14
 
 - OWNER AUTHORITY: Necessary fields must not show skip. Baseline e19f746; owner draft showed both education and experience absent in both languages, causing final validation failure.

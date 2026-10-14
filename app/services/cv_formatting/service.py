@@ -1,41 +1,15 @@
 from decimal import Decimal
 
 from app.core.i18n import tr, translations
-from app.services.base import BaseService, InputField, InputSchema
-from app.services.cv_formatting.schema import Inputs
+from app.services.base import BaseService, InputField, InputSchema, ServiceError
+from app.services.cv_formatting.prompt import REFINE
+from app.services.cv_formatting.schema import Inputs, document, revision_schema
 from app.services.document_results import word_pdf_result
-
-
-def english_fields():
-    # Reuse generic nested intake; no CV-specific Telegram adapter or core branch.
-    return [
-        InputField(
-            name=name,
-            prompt_key="cv_english_" + name,
-            max_length=limit,
-            required=name in {"full_name", "contact", "education", "skills"},
-            single_line=name in {"full_name", "headline"},
-        )
-        for name, limit in (
-            ("full_name", 120),
-            ("headline", 120),
-            ("contact", 500),
-            ("summary", 1000),
-            ("experience", 4000),
-            ("education", 2000),
-            ("skills", 1500),
-            ("projects", 2000),
-            ("languages", 500),
-            ("research", 2000),
-            ("publications", 2000),
-            ("additional", 1500),
-        )
-    ]
 
 
 class CvFormatting(BaseService):
     slug = "cv_formatting"
-    version = "4"
+    version = "5"
     worker_requirements = ("office_export",)
     menu_order = 10
     category = "professional"
@@ -43,7 +17,7 @@ class CvFormatting(BaseService):
     name_en = tr("cv_name", "en")
     description_ar = tr("cv_description")
     price_sar = Decimal("5.00")
-    requires_ai = False
+    requires_ai = True
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
@@ -91,26 +65,22 @@ class CvFormatting(BaseService):
             InputField(
                 name="additional", prompt_key="cv_additional", max_length=1500, required=False
             ),
-            InputField(
-                name="english",
-                kind="form",
-                prompt_key="cv_bilingual",
-                when={"language": ["bilingual"]},
-                fields=english_fields(),
-            ),
         ]
     )
 
     @classmethod
     def needs_ai(cls, inputs):
         Inputs.parse(inputs)
-        return False
+        return True
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
+        if self.runtime.ai is None:
+            raise ServiceError("provider_config")
+        revision = await self.runtime.ai.extract(revision_schema(values), values.source(), REFINE)
         return await word_pdf_result(
             self.runtime,
-            values.document(),
+            document(values, revision),
             filename="cv",
             preview=tr("cv_preview"),
             preview_localizations=translations("cv_preview"),

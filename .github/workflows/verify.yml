@@ -79,8 +79,7 @@ jobs:
           from app.providers.tables.camelot import CamelotTables
           from app.services.pdf_tables_excel.schema import direct_labels
           from app.builders.pdf_tables import build as tables_excel
-          from tests.cv_fixtures import inputs as cv_inputs
-          from app.services.cv_formatting.schema import Inputs as CvInputs
+          from tests.cv_fixtures import inputs as cv_inputs, planned as cv_planned
           from pypdf import PdfReader
           from io import BytesIO
           from PIL import Image
@@ -174,11 +173,20 @@ jobs:
                   titled = await renderer().word_pdf(minute_document(titled_values, classification_schema(titled_values.lines()).model_validate(titled_plan)))
                   titled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(titled.pdf)).pages)
                   assert titled_text.count('2026-10-12') == 2 and titled_text.count('00017') == 1
-                  cv = await renderer().word_pdf(CvInputs.parse(cv_inputs(language)).document())
+                  cv = await renderer().word_pdf(cv_planned(cv_inputs(language)))
                   pages = PdfReader(BytesIO(cv.pdf)).pages
                   assert len(pages) == 1
                   text = pages[0].extract_text()
                   assert '0500123456' in text and 'sample@example.invalid' in text
+              for theme in ('modern', 'classic', 'editorial'):
+                  bilingual = await renderer().word_pdf(cv_planned(cv_inputs() | {'language': 'bilingual'}, theme=theme))
+                  pages = PdfReader(BytesIO(bilingual.pdf)).pages
+                  assert len(pages) == 2
+                  assert 'Sam Example' not in pages[0].extract_text() and 'Sam Example' in pages[1].extract_text()
+                  for page in pages:
+                      text = page.extract_text()
+                      assert text.count('0500123456') == text.count('sample@example.invalid') == 1
+                      assert text.count('00123') == text.count('125.50') == text.count('00017') == 1
               for language in ('ar', 'en'):
                   for method in ('lattice', 'stream'):
                       data, rows = table_pdf(language, ruled=method == 'lattice')
@@ -219,6 +227,7 @@ jobs:
           print('Non-root worker: declared worker capability preflight PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: Arabic and English CV PASS with network disabled')
+          print('Non-root worker: single-entry AI CV response fixtures, three named bilingual Word/PDF designs and fresh English page PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound action register and exact deadline export PASS with network disabled')

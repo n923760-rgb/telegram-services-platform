@@ -105,3 +105,67 @@ async def test_template_service_requires_one_plan_and_checks_file_before_storage
     await service.run({"text": "الطلبات", "target": "word"})
     ai.extract.assert_awaited_once()
     assert seen == ["تقرير الطلبات"]
+
+
+@pytest.mark.parametrize("template", [False, True])
+def test_named_design_mixed_blocks_and_section_alignment_preserve_order(template):
+    value = WordDocument.model_validate(
+        {
+            "title": "العربية",
+            "layout": "resume",
+            "design": {"theme": "classic", "density": "comfortable"},
+            "sections": [
+                {
+                    "alignment": "right",
+                    "heading": "التعليم",
+                    "blocks": [
+                        {"text": "دبلوم إدارة", "kind": "lead"},
+                        {"text": "2023", "kind": "paragraph"},
+                        {"text": "مهمة فعلية 00123", "kind": "bullet"},
+                    ],
+                },
+                {
+                    "title": "English",
+                    "page_break_before": True,
+                    "alignment": "left",
+                    "blocks": [
+                        {"text": "Diploma", "kind": "lead"},
+                        {"text": "2023", "kind": "paragraph"},
+                    ],
+                },
+            ],
+        }
+    )
+    doc = Document(BytesIO(word.build(value, professional_template=template)))
+    assert [p.text for p in doc.paragraphs] == [
+        "العربية",
+        "التعليم",
+        "دبلوم إدارة",
+        "2023",
+        "مهمة فعلية 00123",
+        "English",
+        "Diploma",
+        "2023",
+    ]
+    assert [p.style.name for p in doc.paragraphs[2:5]] == ["Heading 2", "Normal", "List Bullet"]
+    assert doc.paragraphs[3]._p.pPr.find(qn("w:jc")).get(qn("w:val")) == "end"
+    assert doc.paragraphs[3]._p.pPr.find(qn("w:bidi")).get(qn("w:val")) == "0"
+    assert doc.paragraphs[5].paragraph_format.page_break_before
+    assert doc.paragraphs[7]._p.pPr.find(qn("w:jc")).get(qn("w:val")) == "start"
+    assert doc.styles["Subtitle"].element.rPr.find(qn("w:iCs")).get(qn("w:val")) == "0"
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"design": {"theme": "/tmp/arbitrary-font"}},
+        {"sections": [{"heading": "Section", "blocks": [{"text": "invalid\x00"}]}]},
+        {"sections": [{"page_break_before": True, "paragraphs": ["untitled"]}]},
+        {"sections": [{"heading": "Section", "blocks": [{"text": "data", "kind": "execute"}]}]},
+    ],
+)
+def test_word_design_and_blocks_reject_executable_or_invalid_shapes(patch):
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        WordDocument.model_validate(plan().model_dump() | patch)

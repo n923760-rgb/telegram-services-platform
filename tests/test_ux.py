@@ -102,7 +102,6 @@ def feeders(dp, bot, user, transport):
         ("ar", "education"),
         ("en", "education"),
         ("bilingual", "education"),
-        ("bilingual", "english.education"),
     ],
 )
 async def test_cv_required_education_has_no_skip_button_and_rejects_forged_skip(
