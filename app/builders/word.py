@@ -217,9 +217,19 @@ def build(
     section.right_margin = Cm(2.5)
 
     if professional_template:
+        alignment = "auto"
         for paragraph in list(doc.paragraphs):
             if paragraph.text in slots:
                 table = slots.pop(paragraph.text)
+                if isinstance(table, str):
+                    alignment = table
+                    doc.element.body.remove(paragraph._p)
+                    continue
+                if table is None:
+                    following = paragraph._p.getnext()
+                    following.get_or_add_pPr().append(OxmlElement("w:pageBreakBefore"))
+                    doc.element.body.remove(paragraph._p)
+                    continue
                 previous = paragraph._p.getprevious()
                 if not table.caption and previous is not None and previous.tag == qn("w:tbl"):
                     spacer = doc.add_paragraph()
@@ -235,19 +245,37 @@ def build(
                 doc.element.body.remove(paragraph._p)
             else:
                 _direction(paragraph, is_rtl(paragraph.text))
+                _align(paragraph, alignment)
         if slots:
             raise ValueError("unfilled professional table slots")
     elif include_title:
         _heading(doc, data.title, 0)
     for part in [] if professional_template else data.sections:
+        paragraph_start = len(doc.paragraphs)
+        first = None
+        if part.title:
+            first = _heading(doc, part.title, 0)
+        if part.subtitle:
+            subtitle = _body(doc, part.subtitle, style="Subtitle")
+            first = first or subtitle
         if part.heading:
-            _heading(doc, part.heading, 1)
+            heading = _heading(doc, part.heading, 1)
+            first = first or heading
+        if part.page_break_before:
+            first.paragraph_format.page_break_before = True
         for paragraph in part.paragraphs:
             _body(doc, paragraph)
         for bullet in part.bullets:
             _body(doc, bullet, style="List Bullet")
+        for block in part.blocks:
+            if block.kind == "lead":
+                _heading(doc, block.text, 2)
+            else:
+                _body(doc, block.text, style="List Bullet" if block.kind == "bullet" else None)
         for table in part.tables:
             _table(doc, table)
+        for paragraph in doc.paragraphs[paragraph_start:]:
+            _align(paragraph, part.alignment)
 
     if format_dates:
         paragraphs = [
@@ -290,7 +318,121 @@ def build(
         for paragraph in doc.paragraphs:
             if paragraph.style.name == "Heading 1":
                 paragraph.paragraph_format.keep_with_next = True
-    _page_number_footer(doc)
+    if data.design is not None:
+        _design(doc, data.design)
+    else:
+        _page_number_footer(doc)
     buffer = BytesIO()
     doc.save(buffer)
     return validate(buffer.getvalue(), "docx")
+
+
+def _design(doc, design):
+    """Generic source-owned typography; all content remains editable body paragraphs."""
+    compact = design.density == "compact"
+    sizes = {"modern": (28, 12), "classic": (24, 12), "editorial": (26, 11)}
+    title_size, heading_size = sizes[design.theme]
+    normal = doc.styles["Normal"]
+    normal.font.size = Pt(11)
+    normal.paragraph_format.space_after = Pt(3 if compact else 5)
+    normal.paragraph_format.line_spacing = 1.08 if compact else 1.15
+    for name, size in (
+        ("Title", title_size),
+        ("Heading 1", heading_size),
+        ("Heading 2", 11),
+        ("Subtitle", 12),
+    ):
+        style = doc.styles[name]
+        style.font.name = BODY_FONT
+        style.font.size = Pt(size)
+        style.font.color.rgb = DARK
+        style.font.bold = name != "Subtitle"
+        style.font.italic = False
+        properties = style.element.get_or_add_rPr()
+        for tag, value in (
+            ("szCs", str(size * 2)),
+            ("bCs", "0" if name == "Subtitle" else "1"),
+            ("iCs", "0"),
+        ):
+            item = properties.find(qn("w:" + tag))
+            if item is None:
+                item = OxmlElement("w:" + tag)
+                properties.append(item)
+            item.set(qn("w:val"), value)
+        style.paragraph_format.keep_with_next = True
+        style.paragraph_format.space_before = Pt(
+            0 if name != "Heading 1" else 10 if compact else 14
+        )
+        style.paragraph_format.space_after = Pt(5 if name == "Title" else 4)
+    doc.styles["List Bullet"].paragraph_format.space_after = Pt(3 if compact else 5)
+    doc.styles["List Bullet"].paragraph_format.line_spacing = 1.08 if compact else 1.15
+    for section in doc.sections:
+        section.top_margin = section.bottom_margin = Cm(1.9)
+        section.left_margin = section.right_margin = Cm(2.1)
+    bullet_ids = {rtl: _bullet_numbering(doc, rtl) for rtl in (False, True)}
+    in_header = True
+    for paragraph in doc.paragraphs:
+        name = paragraph.style.name
+        if name == "Title":
+            in_header = True
+        elif name == "Heading 1":
+            in_header = False
+        if design.theme == "modern" and in_header:
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if name in {"Title", "Heading 1", "Heading 2", "Subtitle"}:
+            for run in paragraph.runs:
+                # Also replace direct formatting from the non-template authoring path.
+                run.font.size = doc.styles[name].font.size
+                run.font.color.rgb = DARK
+            if design.theme == "modern" and name in {"Title", "Subtitle"}:
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if name == "List Bullet":
+            rtl = is_rtl(paragraph.text)
+            paragraph.paragraph_format.left_indent = Cm(0 if rtl else 0.45)
+            paragraph.paragraph_format.right_indent = Cm(0.45 if rtl else 0)
+            paragraph.paragraph_format.first_line_indent = Cm(-0.22)
+            num = paragraph._p.get_or_add_pPr().get_or_add_numPr()
+            num.get_or_add_ilvl().val = 0
+            num.get_or_add_numId().val = bullet_ids[rtl]
+
+
+def _align(paragraph, alignment):
+    if alignment == "auto":
+        return
+    properties = paragraph._p.get_or_add_pPr()
+    rtl = properties.find(qn("w:bidi")).get(qn("w:val")) == "1"
+    properties.find(qn("w:jc")).set(
+        qn("w:val"), "start" if (alignment == "right") == rtl else "end"
+    )
+
+
+def _bullet_numbering(doc, rtl):
+    """Request-local native bullets with an explicit space after the glyph."""
+    root = doc.part.numbering_part.element
+    abstract_id = (
+        max(int(n.get(qn("w:abstractNumId"))) for n in root.findall(qn("w:abstractNum"))) + 1
+    )
+    num_id = max(int(n.get(qn("w:numId"))) for n in root.findall(qn("w:num"))) + 1
+    abstract = OxmlElement("w:abstractNum")
+    abstract.set(qn("w:abstractNumId"), str(abstract_id))
+    level = OxmlElement("w:lvl")
+    level.set(qn("w:ilvl"), "0")
+    for tag, value in (
+        ("start", "1"),
+        ("numFmt", "bullet"),
+        ("lvlText", "•"),
+        ("lvlJc", "right" if rtl else "left"),
+        ("suff", "space"),
+    ):
+        item = OxmlElement("w:" + tag)
+        item.set(qn("w:val"), value)
+        level.append(item)
+    abstract.append(level)
+    root.append(abstract)
+    number = OxmlElement("w:num")
+    number.set(qn("w:numId"), str(num_id))
+    link = OxmlElement("w:abstractNumId")
+    link.set(qn("w:val"), str(abstract_id))
+    number.append(link)
+    root.append(number)
+    return num_id

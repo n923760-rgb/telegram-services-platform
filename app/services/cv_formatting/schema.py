@@ -1,12 +1,18 @@
+import json
+import re
+from collections import Counter
 from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints, ValidationError, field_validator, model_validator
 
+from app.builders.direction import is_rtl
 from app.builders.schema import StrictModel
-from app.builders.word_schema import WordDocument, WordSection
+from app.builders.word_schema import WordDesign, WordDocument, WordSection
 from app.core.i18n import tr
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
+from app.services.text_editing.schema import CONTACT_TOKEN
+from app.services.translation import NUMERIC_TOKEN
 
 Text = Annotated[str, StringConstraints(strip_whitespace=False)]
 
@@ -132,64 +138,193 @@ class CvContent(StrictModel):
         }
         return orders[self.cv_type]
 
-    def contact_section(self):
-        return WordSection(
-            paragraphs=([self.headline] if self.headline else []) + self.contact.split("\n")
-        )
-
-    def document(self):
-        sections = [self.contact_section()]
-        for name in self.ordered_names():
-            value = getattr(self, name)
-            if value is not None:
-                sections.append(
-                    WordSection(
-                        heading=tr("cv_" + name + "_heading", self.language),
-                        paragraphs=value.split("\n"),
-                    )
-                )
-        return WordDocument(
-            title=self.full_name,
-            layout="resume",
-            sections=sections,
-            alignment="right" if self.language == "ar" else "left",
-        )
-
-
-class EnglishContent(CvContent):
-    language: Literal["en"] = "en"
-
 
 class Inputs(CvContent):
     language: Literal["ar", "en", "bilingual"]
-    english: EnglishContent | None = None
+
+    def targets(self):
+        return ("ar", "en") if self.language == "bilingual" else (self.language,)
+
+    def segments(self):
+        return {
+            f"{name}:{index}": {"field": name, "text": line}
+            for name in ("headline", "contact", *self.ordered_names())
+            if (value := getattr(self, name)) is not None
+            for index, line in enumerate(value.split("\n"), 1)
+            if line.strip()
+        }
+
+    def source(self):
+        return json.dumps(
+            {
+                "full_name": self.full_name,
+                "targets": self.targets(),
+                "cv_type": self.cv_type,
+                "segments": self.segments(),
+            },
+            ensure_ascii=False,
+        )
 
     @model_validator(mode="after")
-    def bilingual_content(self):
-        if (self.language == "bilingual") != (self.english is not None):
-            raise ValueError("English content is required only for bilingual CVs")
+    def total_lines(self):
+        if len(self.segments()) > 160:
+            raise ValueError("CV source segment limit")
         return self
 
-    def document(self):
-        if self.language != "bilingual":
-            return super().document()
-        # Both bodies are supplied final content, not inferred translations.
-        arabic = CvContent.model_validate(self.model_dump(exclude={"english"}) | {"language": "ar"})
-        english = self.english.model_copy(update={"cv_type": self.cv_type})
-        sections = [arabic.contact_section(), english.contact_section()]
-        for name in arabic.ordered_names():
-            for content in (arabic, english):
-                value = getattr(content, name)
-                if value is not None:
-                    sections.append(
-                        WordSection(
-                            heading=tr("cv_" + name + "_heading", content.language),
-                            paragraphs=value.split("\n"),
+
+SectionName = Literal[
+    "summary",
+    "experience",
+    "education",
+    "projects",
+    "skills",
+    "languages",
+    "research",
+    "publications",
+    "additional",
+]
+
+
+class RevisedSegment(StrictModel):
+    id: str = Field(min_length=1, max_length=40)
+    text: str = Field(min_length=1, max_length=4000)
+    presentation: Literal["paragraph", "bullet", "lead"]
+
+
+class ProfileSummary(StrictModel):
+    text: str = Field(min_length=1, max_length=500)
+    source_ids: list[str] = Field(min_length=1, max_length=12)
+
+
+class CvBody(StrictModel):
+    language: Literal["ar", "en"]
+    full_name: str = Field(min_length=1, max_length=120)
+    segments: list[RevisedSegment] = Field(min_length=1, max_length=160)
+    summary: ProfileSummary | None = None
+
+
+class CvRevision(StrictModel):
+    design: WordDesign
+    section_order: list[SectionName] = Field(min_length=1, max_length=9)
+    bodies: list[CvBody] = Field(min_length=1, max_length=2)
+
+
+DOMAIN_TOKEN = re.compile(r"(?<![\w@])(?:[\w-]+\.)+[a-zA-Z]{2,}(?:/[^\s<>]*)?")
+PHONE_TOKEN = re.compile(r"(?<!\w)\+?\d[\d ()-]{6,}\d(?!\w)")
+
+
+def protected(text):
+    identifiers = (
+        CONTACT_TOKEN.findall(text) + DOMAIN_TOKEN.findall(text) + PHONE_TOKEN.findall(text)
+    )
+    return Counter(NUMERIC_TOKEN.findall(text)), Counter(identifiers)
+
+
+def revision_schema(values):
+    source = values.segments()
+    names = {segment["field"] for segment in source.values()} - {"contact", "headline"}
+    if values.summary is None:
+        names.add("summary")
+
+    class SourceCv(CvRevision):
+        @model_validator(mode="after")
+        def fidelity(self):
+            if len(self.section_order) != len(names) or set(self.section_order) != names:
+                raise ValueError("order every supplied section exactly once")
+            if [body.language for body in self.bodies] != list(values.targets()):
+                raise ValueError("return requested languages exactly once in requested order")
+            for body in self.bodies:
+                DocumentInputs.printable_title(body.full_name)
+                if protected(body.full_name) != protected(values.full_name):
+                    raise ValueError("preserve name identifiers")
+                if (
+                    is_rtl(values.full_name) == (body.language == "ar")
+                    and body.full_name != values.full_name
+                ):
+                    raise ValueError("preserve the original-script name verbatim")
+                ids = [segment.id for segment in body.segments]
+                if len(ids) != len(source) or set(ids) != set(source):
+                    raise ValueError("rewrite every source ID exactly once")
+                for segment in body.segments:
+                    original = source[segment.id]
+                    DocumentInputs.printable_text(segment.text)
+                    if any(char in segment.text for char in "\n\r"):
+                        raise ValueError("one complete line per source ID")
+                    if protected(segment.text) != protected(original["text"]):
+                        raise ValueError("preserve per-source numeric, phone, email and URL tokens")
+                    if (
+                        original["field"] in {"contact", "headline", "summary"}
+                        and segment.presentation != "paragraph"
+                    ):
+                        raise ValueError("header and profile text must remain paragraphs")
+                    if original["field"] == "headline" and len(segment.text) > 120:
+                        raise ValueError("headline limit")
+                if values.summary is not None and body.summary is not None:
+                    raise ValueError("do not duplicate the supplied summary")
+                if values.summary is None:
+                    summary = body.summary
+                    if summary is None:
+                        raise ValueError("supply a short grounded professional summary")
+                    DocumentInputs.printable_text(summary.text)
+                    if any(char in summary.text for char in "\n\r"):
+                        raise ValueError("single summary paragraph")
+                    if len(set(summary.source_ids)) != len(summary.source_ids) or any(
+                        key not in source or source[key]["field"] in {"contact", "headline"}
+                        for key in summary.source_ids
+                    ):
+                        raise ValueError("summary requires actual career source references")
+                    if any(protected(summary.text)):
+                        raise ValueError(
+                            "summary must not introduce or duplicate numeric/contact claims"
                         )
-                    )
-        return WordDocument(
-            title=arabic.full_name + "\n" + english.full_name,
-            layout="resume",
-            sections=sections,
-            alignment="auto",
+                if (
+                    sum(len(s.text) for s in body.segments)
+                    + len(body.summary.text if body.summary else "")
+                    > 15000
+                ):
+                    raise ValueError("CV output character limit")
+            return self
+
+    return SourceCv
+
+
+def document(values, revision):
+    # Revalidate even injected runtimes; a forged typed/model_copy result cannot bypass fidelity.
+    revision = revision_schema(values).model_validate(revision.model_dump())
+    source = values.segments()
+    sections = []
+    for index, body in enumerate(revision.bodies):
+        edited = {segment.id: segment for segment in body.segments}
+        header = WordSection(
+            alignment="right" if body.language == "ar" else "left",
+            title=body.full_name if index else "",
+            subtitle=" ".join(
+                edited[key].text for key in source if source[key]["field"] == "headline"
+            ),
+            paragraphs=[edited[key].text for key in source if source[key]["field"] == "contact"],
+            page_break_before=bool(index),
         )
+        sections.append(header)
+        for name in revision.section_order:
+            segments = [edited[key] for key in source if source[key]["field"] == name]
+            if not segments and name == "summary":
+                segments = [
+                    RevisedSegment(id="summary", text=body.summary.text, presentation="paragraph")
+                ]
+            # Preserve mixed lead/body/bullet order within each source field.
+            sections.append(
+                WordSection(
+                    alignment="right" if body.language == "ar" else "left",
+                    heading=tr("cv_" + name + "_heading", body.language),
+                    blocks=[
+                        {"text": segment.text, "kind": segment.presentation} for segment in segments
+                    ],
+                )
+            )
+    return WordDocument(
+        title=revision.bodies[0].full_name,
+        sections=sections,
+        layout="resume",
+        design=revision.design,
+        alignment="auto",
+    )

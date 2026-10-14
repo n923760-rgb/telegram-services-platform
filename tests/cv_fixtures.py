@@ -20,3 +20,79 @@ def inputs(language="ar"):
         "skills": "Excel | تنظيم المواعيد | التواصل",
         "additional": "العربية والإنجليزية\nالشهادة 00017",
     }
+
+
+def revision(source=None, *, theme="modern", density="comfortable"):
+    """Explicit model response fixture, never evidence of live AI translation quality."""
+    from app.services.cv_formatting.schema import Inputs
+
+    source = source or inputs()
+    values = Inputs.parse(source)
+    originals = values.segments()
+    names = [name for name in values.ordered_names() if getattr(values, name)]
+    if values.summary is None:
+        names.insert(0, "summary")
+    baseline = Inputs.parse(
+        inputs("ar" if values.full_name == inputs()["full_name"] else "en")
+    ).segments()
+    bodies = []
+    for language in values.targets():
+        known = Inputs.parse(inputs(language)).segments()
+        segments = []
+        for key, item in originals.items():
+            text = item["text"]
+            other = known.get(key)
+            # Translate only the reviewed default fixture; custom data stays literal.
+
+            if other and key in baseline and baseline[key]["text"] == text:
+                text = other["text"]
+            if language == "en":
+                text = {
+                    "منسق عمليات": "Operations Coordinator",
+                    "مشروع أرشفة السجلات 00001": "Records Archive Project 00001",
+                    "تنظيم سجلات المشروع ومتابعة الأعمال.": "Organized project records and followed up on tasks.",
+                }.get(text, text)
+            name = item["field"]
+            presentation = "paragraph"
+            if name in {
+                "experience",
+                "education",
+                "projects",
+                "research",
+                "publications",
+            } and key.endswith(":1"):
+                presentation = "lead"
+            elif name in {"skills", "additional"} or (name == "experience" and key.endswith(":3")):
+                presentation = "bullet"
+            segments.append({"id": key, "text": text, "presentation": presentation})
+        summary = None
+        if values.summary is None:
+            summary = {
+                "text": "Administrative diploma holder with scheduling and spreadsheet skills."
+                if language == "en"
+                else "حاصل على دبلوم إدارة مع مهارات تنظيم المواعيد واستخدام الجداول.",
+                "source_ids": ["education:1", "skills:1"],
+            }
+        bodies.append(
+            {
+                "language": language,
+                "full_name": inputs(language)["full_name"]
+                if values.full_name in {inputs()["full_name"], inputs("en")["full_name"]}
+                else values.full_name,
+                "segments": segments,
+                "summary": summary,
+            }
+        )
+    return {
+        "design": {"theme": theme, "density": density},
+        "section_order": names,
+        "bodies": bodies,
+    }
+
+
+def planned(source=None, **design):
+    from app.services.cv_formatting.schema import Inputs, document, revision_schema
+
+    source = source or inputs()
+    values = Inputs.parse(source)
+    return document(values, revision_schema(values).model_validate(revision(source, **design)))
