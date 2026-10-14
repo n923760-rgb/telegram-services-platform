@@ -110,7 +110,7 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
         "text_to_office",
         [
             '{"document":{"title":"تقرير","sections":[{"paragraphs":["بيانات مؤكدة"]}]}}',
-            '{"table":{"title":"مبيعات","columns":["المنتج","العدد"],"rows":[["تفاح",12]]}}',
+            '{"table":{"title":"مبيعات","columns":["المنتج","العدد"],"rows":[["تفاح",12]]},"evidence":[{"source_id":1,"quotes":["تفاح","12"]}]}',
         ],
         tmp_path,
         monkeypatch,
@@ -120,7 +120,7 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
             1,
             "text_to_office",
             {
-                "text": "المعلومات",
+                "text": "تفاح 12" if target == "excel" else "المعلومات",
                 "target": target,
             },
             price,
@@ -252,7 +252,7 @@ async def test_ambiguity_cancel_releases(tmp_path, monkeypatch):
     _, _, delivery, ctx, price = await setup(
         "text_to_office",
         [
-            '{"ambiguous":true,"question":"هل تعتمد؟","table":{"title":"جدول","columns":["عنصر"],"rows":[["نص"]]}}'
+            '{"ambiguous":true,"question":"هل تعتمد؟","table":{"title":"جدول","columns":["عنصر"],"rows":[["نص"]]},"evidence":[{"source_id":1,"quotes":["نص"]}]}'
         ],
         tmp_path,
         monkeypatch,

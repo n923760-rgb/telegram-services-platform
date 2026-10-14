@@ -29,7 +29,14 @@ class Inputs(DocumentInputs):
     def supported_mode(self):
         if self.target == "excel" and self.mode != "smart":
             raise ValueError("direct Excel is not supported")
+        if self.target == "excel" and (
+            len(self.lines()) > 200 or any(len(line) > 4000 for line in self.lines())
+        ):
+            raise ValueError("Excel source line limit")
         return self
+
+    def lines(self):
+        return [line for line in self.text.split("\n") if line.strip()]
 
 
 class WordPlan(StrictModel):

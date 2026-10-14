@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Source-bound Excel records and precision — 2026-10-14
+
+- OWNER AUTHORITY: Continue office quality improvement after operator-confirmed #78 deployment, with provider pause retained. Baseline 63d2587.
+- CHANGE: Office v6 Excel source IDs, verbatim cell quotes and conservative typed conversion checks; complete row/context accounting, revalidated continuations and original nonempty source lines in a separate worksheet. Word modes/intake retained.
+- OUTPUT: Sortable native source references, quote-derived decimal precision, literal phone/formula-like strings and print padding. Source long lines split into exact reconstructable parts. No generated totals/formulas or extra AI calls during cached approval/delivery.
+- PASS LOCALLY: 122 focused service/source/builder/policy/architecture checks and four final Arabic/English native Calc print pages; lint/format/diff. Full hosted lifecycle/native gates required before merge.
+- LIMITS: Context/column/unit meaning and live provider/mobile quality remain unverified; no universal identifier, sorting, layout or output-capacity certification. Prices/gates, dependencies/migrations, financial policy and provider pause unchanged.
+- Evidence: [Excel record source and precision](REPORTS/2026-10-14-excel-source-provenance.md).
+
 ## Optional Word/PDF content and design improvement — 2026-10-14
 
 - OWNER AUTHORITY: Continue service quality work with selective AI. Baseline 9f22e97; operator confirms deployment, CV v5/PPTX v3 and retained provider pause.

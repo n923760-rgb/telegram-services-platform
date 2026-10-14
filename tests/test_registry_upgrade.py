@@ -99,7 +99,7 @@ async def test_office_upgrade_preserves_admin_settings_and_releases_old_job(
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "text_to_office")
-        assert row.version == "5" and row.enabled and row.price_halala == 777
+        assert row.version == "6" and row.enabled and row.price_halala == 777
         assert row.input_schema == registry.types["text_to_office"].input_schema.model_dump()
         assert (await db.get(Service, "text_to_pdf")).version == "3"
     await execute_job({"delivery": Delivery()}, str(await job_for(oid)))
