@@ -63,7 +63,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "6" if slug == "text_to_office" else "3"
+    version = "7" if slug == "text_to_office" else "4"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -194,7 +194,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
         await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
-        assert row.version == "3" and row.enabled and row.price_halala == 700
+        assert row.version == "4" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
     )

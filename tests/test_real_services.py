@@ -465,7 +465,7 @@ async def test_real_pdf_output(tmp_path, monkeypatch):
         tmp_path,
         monkeypatch,
     )
-    oid = await submit(1, "text_to_pdf", {"text": "المعلومات", "mode": "smart"}, price, "pdf")
+    oid = await submit(1, "text_to_pdf", {"text": "بيانات 123", "mode": "smart"}, price, "pdf")
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"

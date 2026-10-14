@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Smart Word and Text PDF source fidelity — 2026-10-14
+
+- OWNER AUTHORITY: Continue improving all existing services with selective AI; baseline b2a41b6. #79 server deployment not confirmed; latest operator deployment remains #78.
+- CHANGE: Office v7 smart Word and Text PDF v4 validate numeric/contact occurrence counters across all visible titles/sections/paragraphs/bullets/blocks/tables. Request-local schema applies existing bounded repair; injected responses and continuations revalidated before output writes.
+- PASS LOCALLY: 103 focused source/service/template/architecture checks; global lint/format/diff. Full hosted lifecycle and native worker gates required before merge.
+- LIMITS: Token checks do not prove semantics, names, correct field association or instruction/fact distinction. Direct literal modes, Excel provenance, prices/gates, dependencies/migrations and provider pause retained. No live provider or visual redesign claimed.
+- Evidence: [smart document fidelity](REPORTS/2026-10-14-smart-document-fidelity.md).
+
 ## Source-bound Excel records and precision — 2026-10-14
 
 - OWNER AUTHORITY: Continue office quality improvement after operator-confirmed #78 deployment, with provider pause retained. Baseline 63d2587.

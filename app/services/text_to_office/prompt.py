@@ -14,6 +14,10 @@ factual statements. Do not silently summarize away material content or translate
 content unless requested. Preserve the supplied language of each section.
 Do not add facts, dates, citations, recipients, calculations, totals, commitments or signatures
 that were not supplied. Do not add decorative slogans, filler or claims of professional quality.
+Preserve every numeric token and email/URL verbatim with the same occurrence count across
+the complete visible document, including titles, headings, paragraphs, bullets and table cells.
+Do not duplicate body values in headings or summaries; do not generate numeric list labels.
+Keep signs, leading zeros, separators, date notation, percent signs and decimal precision.
 Set missing_information=true only if essential source facts for the requested task are absent;
 empty placeholders are allowed only if the customer explicitly asks for a reusable template.
 Set ambiguous=true only when materially different interpretations exist, propose a sensible

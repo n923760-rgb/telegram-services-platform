@@ -106,7 +106,8 @@ async def test_professional_word_uses_structured_plan_and_native_table(tmp_path)
     }
     assert service.needs_ai(inputs)
     result = await service.run(inputs)
-    ai.extract.assert_awaited_once_with(WordPlan, inputs["text"], WORD)
+    assert ai.extract.await_args.args[0].__name__ == "SourceDocumentPlan"
+    assert ai.extract.await_args.args[1:] == (inputs["text"], WORD)
     doc = Document(BytesIO(store.read(result.artifacts[0].key)))
     assert doc.paragraphs[0].text == "مذكرة الطلب"
     assert len(doc.tables) == 1

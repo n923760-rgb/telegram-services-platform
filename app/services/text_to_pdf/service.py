@@ -1,14 +1,17 @@
 from decimal import Decimal
 
+from pydantic import ValidationError
+
 from app.builders import pdf
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.services.document_fidelity import source_document_schema
 from app.services.text_to_pdf.prompt import PDF
 from app.services.text_to_pdf.schema import Inputs, PdfPlan
 
 
 class TextToPdf(BaseService):
-    version = "3"
+    version = "4"
     slug = "text_to_pdf"
     worker_requirements = ("pdf_font",)
     menu_order = 20
@@ -47,13 +50,21 @@ class TextToPdf(BaseService):
     async def run(self, inputs):
         values = Inputs.parse(inputs)
         continuation = inputs.get("__continuation")
-        plan = (
-            PdfPlan(document=values.document())
-            if values.mode == "direct"
-            else PdfPlan.model_validate(continuation)
-            if continuation
-            else await self.runtime.ai.extract(PdfPlan, values.text, PDF)
-        )
+        schema = source_document_schema(PdfPlan, values.text)
+        if values.mode != "direct" and not continuation and self.runtime.ai is None:
+            raise ServiceError("provider_config")
+        try:
+            plan = (
+                PdfPlan(document=values.document())
+                if values.mode == "direct"
+                else schema.model_validate(continuation)
+                if continuation
+                else await self.runtime.ai.extract(schema, values.text, PDF)
+            )
+            if values.mode != "direct":
+                plan = schema.model_validate(plan.model_dump(mode="json"))
+        except (ValidationError, ValueError):
+            raise ServiceError("provider_invalid") from None
         if plan.missing_information:
             raise ServiceError("needs_information")
         reviews = {}
