@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import ValidationError
 
+from app.bot.availability import ai_admission_available
 from app.core.db import sessions
 from app.core.models import Order, Service
 from app.core.settings import config
@@ -53,7 +54,7 @@ async def available_followups(user_id, order_id, *, delivering=False):
                 or not row.enabled
                 or row.version != target.version
                 or row.input_schema != target.input_schema.model_dump()
-                or (target.requires_ai and not config().ai_enabled)
+                or (target.requires_ai and not await ai_admission_available(db))
                 or (config().stars_enabled and row.price_stars is None)
             ):
                 continue

@@ -552,6 +552,7 @@ async def test_negative_choice_index_is_rejected():
 
 
 async def test_malformed_done_callback_is_rejected(monkeypatch):
+    monkeypatch.setattr(config(), "ai_enabled", True)
     import app.files.telegram as telegram_module
 
     async def fake_receive(message, kind, user_id, *, preserve_image=False):

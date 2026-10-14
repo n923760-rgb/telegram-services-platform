@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
 
+from app.bot.availability import mandatory_ai_unavailable
 from app.bot.ui import buttons, home_keyboard, leave_support, menu
 from app.core.db import sessions
 from app.core.display import order_reference
@@ -110,6 +111,9 @@ def create_router():
     async def start_draft(message, state, service, lang, *, inputs=None, index=0):
         from app.payments.stars import terms_hash
 
+        if await mandatory_ai_unavailable(service.slug):
+            await message.answer(tr("service_ai_unavailable", lang), reply_markup=menu(lang))
+            return
         await state.set_state("collect")
         await state.set_data(
             {
@@ -418,6 +422,11 @@ def create_router():
         if not data.get("key") or "schema" not in data:
             await callback.message.answer(tr("resume_none", lang), reply_markup=menu(lang))
             return
+        if await mandatory_ai_unavailable(data["slug"]):
+            await callback.message.answer(
+                tr("service_ai_unavailable", lang), reply_markup=menu(lang)
+            )
+            return
         await ask(callback.message, state, lang)
 
     @router.message(Command("resume"))
@@ -426,6 +435,9 @@ def create_router():
         data = await state.get_data()
         if not data.get("key") or "schema" not in data:
             await message.answer(tr("resume_none", lang))
+            return
+        if await mandatory_ai_unavailable(data["slug"]):
+            await message.answer(tr("service_ai_unavailable", lang), reply_markup=menu(lang))
             return
         await ask(message, state, lang)
 

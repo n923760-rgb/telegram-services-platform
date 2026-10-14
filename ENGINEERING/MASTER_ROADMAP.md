@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Provider-paused customer intake — 2026-10-14
+
+- OWNER AUTHORITY: Continue existing service review/improvement after #81 source merge. Baseline af8b118; #81 deployment not confirmed, latest operator runtime remains #80 (624c853).
+- FACT: Required-AI selection/resume could collect a long draft before final submission rejected provider pause; translation followups checked AI-off but not global pause.
+- CHANGE: Generic metadata-based required-AI early gate for new/resumed drafts, read-only pause hint in category browsing, and authoritative paused followup suppression. Existing drafts preserved; direct/mixed services remain browsable.
+- PASS LOCALLY: 35 focused availability/catalog/order/architecture cases; lint/format/diff. Full hosted dispatcher/financial/native workflow required before merge.
+- LIMITS: UI hint is not live-provider readiness. Mixed mode and pause races still checked by existing submit gate before reservation/invoice; no engine/ledger/rate/config/service-version/price/gate changes or unpause. Mid-collection pause does not discard inputs.
+- Evidence: [paused intake UX](REPORTS/2026-10-14-provider-paused-intake.md).
+
 ## Provider usage audit and independent output cap — 2026-10-14
 
 - OWNER AUTHORITY: Review supplied billing export and continue provider recovery improvements. Baseline/operator deployment 624c853 (#80), healthy with provider pause retained; backup EvFsFgt1.

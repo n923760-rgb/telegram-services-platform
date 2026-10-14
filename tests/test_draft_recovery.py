@@ -158,6 +158,7 @@ async def test_failed_choice_prompt_recovers():
 
 
 async def test_failed_more_files_prompt_recovers(monkeypatch):
+    monkeypatch.setattr(config(), "ai_enabled", True)
     import app.files.telegram as telegram_module
 
     async def fake_receive(message, kind, user_id, *, preserve_image=False):
@@ -207,6 +208,7 @@ async def test_resume_rerenders_current_prompt():
 
 
 async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
+    monkeypatch.setattr(config(), "ai_enabled", True)
     """A distinct image B arriving while A's more_files acknowledgement is pending must not be
     consumed: an explicit notice says it was not applied and only A is retained."""
     import app.files.telegram as telegram_module

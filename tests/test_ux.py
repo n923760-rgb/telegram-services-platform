@@ -105,9 +105,12 @@ def feeders(dp, bot, user, transport):
     ],
 )
 async def test_cv_required_education_has_no_skip_button_and_rejects_forged_skip(
-    language, field_name
+    language, field_name, monkeypatch
 ):
+    from app.core.settings import config
     from app.services.cv_formatting.service import CvFormatting
+
+    monkeypatch.setattr(config(), "ai_enabled", True)
 
     await fund()
     transport = Session()
@@ -154,7 +157,9 @@ async def test_english_user_gets_localized_menu_and_service_names(monkeypatch):
     await message("/start")
     assert transport.messages[-1].text == tr("welcome", "en")
     await callback("menu:services")
-    assert transport.messages[-1].text == tr("catalog_choose", "en")
+    assert transport.messages[-1].text == (
+        tr("catalog_choose", "en") + "\n\n" + tr("catalog_ai_notice", "en")
+    )
     assert all(
         button.callback_data != "catalog:other:0"
         for row in transport.messages[-1].reply_markup.inline_keyboard

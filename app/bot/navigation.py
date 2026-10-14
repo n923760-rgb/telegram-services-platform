@@ -9,6 +9,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 
+from app.bot.availability import ai_admission_available
 from app.bot.catalog import parse_callback
 from app.bot.catalog import view as catalog_view
 from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, section_controls
@@ -62,10 +63,16 @@ def create_router():
                     select(Service).where(Service.enabled.is_(True)).order_by(Service.slug)
                 )
             ).all()
+            ai_available = await ai_admission_available(db)
         if config().stars_enabled:
             rows = [service for service in rows if service.price_stars is not None]
         text, items = catalog_view(
-            rows, lang, category=category, page=page, admin=user_id in config().admin_ids
+            rows,
+            lang,
+            category=category,
+            page=page,
+            admin=user_id in config().admin_ids,
+            ai_available=ai_available,
         )
         items.extend(await section_controls(state, lang))
         await message.answer(text, reply_markup=buttons(items))
