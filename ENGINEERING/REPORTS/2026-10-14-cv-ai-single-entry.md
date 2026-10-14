@@ -55,6 +55,12 @@
   raises `provider_config` for paused/off AI. Corrected that exact expectation, asserted
   AI is enabled and added zero-cost-hold verification; no production policy was changed.
   Full workflow required on the corrected tree, not a rerun of the failed source.
+- SECOND HOSTED RUN: `38503229162`, job `115654752197`, merge tree
+  `8038ec6fa4684314060b080c8f3f8b1b37abb935`: 1552 passed, existing ARQ warning,
+  lint/format/migrations/drift/Compose PASS. The added container assertion used a raw
+  substring count for `00123`, also counting the unchanged phone `0500123456`.
+  Corrected to exact numeric-token boundaries, matching existing native CV checks;
+  no renderer/content changes or removal of native qualification. Final workflow required.
 - NOT RUN: Live provider response, real translation/factual fidelity, native/mobile customer
   acceptance, server deployment, ATS compatibility or employment outcomes.
 - FACT: Model responses in tests/visual samples are explicit fixtures, not live AI evidence.

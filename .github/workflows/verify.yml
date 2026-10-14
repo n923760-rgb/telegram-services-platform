@@ -62,6 +62,7 @@ jobs:
           docker run --rm -i --network none --entrypoint python services-document-worker - <<'PY'
           import asyncio
           import os
+          import re
           from tests.ocr_fixtures import printed, processor
           from tests.ocr_fixtures import detailed as detailed_ocr_source
           from tests.word_pdf_fixtures import document, renderer, table_document
@@ -186,7 +187,8 @@ jobs:
                   for page in pages:
                       text = page.extract_text()
                       assert text.count('0500123456') == text.count('sample@example.invalid') == 1
-                      assert text.count('00123') == text.count('125.50') == text.count('00017') == 1
+                      for token in ('00123', '125.50', '00017'):
+                          assert len(re.findall(r'(?<!\d)' + re.escape(token) + r'(?!\d)', text)) == 1
               for language in ('ar', 'en'):
                   for method in ('lattice', 'stream'):
                       data, rows = table_pdf(language, ruled=method == 'lattice')
