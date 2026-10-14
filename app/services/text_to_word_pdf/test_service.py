@@ -43,7 +43,7 @@ async def test_service_preserves_text_uses_injected_renderer_and_saves_two_files
     [
         {"text": ""},
         {"text": "x", "title": "two\nlines"},
-        {"text": "x", "mode": "smart"},
+        {"text": "x", "mode": "unknown"},
         {"text": "x", "upload": "foreign.docx"},
         {"text": "x" * 12001},
     ],
@@ -74,6 +74,16 @@ async def test_render_failures_never_save_partial_artifacts(tmp_path, key, trans
     assert error.value.key == ("input_invalid" if key == "document_render_limit" else key)
     assert error.value.transient == transient
     assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+async def test_smart_mode_requires_provider_before_render(tmp_path):
+    service = TextToWordPdf()
+    renderer = Renderer()
+    service.runtime = SimpleNamespace(ai=None, renderer=renderer)
+    assert service.needs_ai({"text": "Source", "mode": "smart"})
+    with pytest.raises(ServiceError, match="provider_config"):
+        await service.run({"text": "Source", "mode": "smart"})
+    assert not renderer.calls
 
 
 async def test_second_save_failure_deletes_first_artifact(tmp_path, monkeypatch):

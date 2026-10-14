@@ -194,8 +194,8 @@
   "local_ocr_unavailable": "The local text processor is unavailable or could not process the image; this request did not complete.",
   "local_ocr_preview": "Automatically recognized text without translation. Errors can occur even at high confidence; check text and numbers against the original images.",
   "word_pdf_name": "Create Word and PDF",
-  "word_pdf_description": "Format supplied text unchanged and deliver editable Word plus a PDF export of the same document.",
-  "word_pdf_text": "Send the final text as it should appear; formatting does not rewrite or translate it. Maximum 12,000 characters and 50 output pages.",
+  "word_pdf_description": "Editable Word and matching PDF; preserve supplied text or improve wording and document design with AI.",
+  "word_pdf_text": "Send the text once. Preserve mode: up to 12,000 characters. Improvement: up to 9,000 characters and 80 nonempty lines, up to 4,000 characters per line. Do not embed instructions; text is treated as document content.",
   "word_pdf_title": "Send an optional document title (one line, up to 200 characters), or tap Skip.",
   "word_pdf_preview": "Word and PDF are ready from the same document. Text was preserved without rewriting. Review pages before printing.",
   "document_render_busy": "The document processor is busy; this request will be retried automatically.",
@@ -484,5 +484,9 @@
   "cv_languages_heading": "Languages",
   "cv_research_heading": "Research interests and experience",
   "cv_publications_heading": "Publications",
-  "cv_bilingual": "Arabic–English in one document"
+  "cv_bilingual": "Arabic–English in one document",
+  "word_pdf_mode": "How should the document be prepared? Preserve text uses no AI. Improvement edits wording, organizes paragraphs and selects a design without translation or new facts. Skip preserves text.",
+  "word_pdf_direct": "Preserve text unchanged",
+  "word_pdf_smart": "Improve content and design with AI",
+  "word_pdf_smart_preview": "Word and PDF prepared with improved wording, organization and design. Review meaning, names, data and page layout before use; this is not independent fact verification."
 }
