@@ -34,6 +34,12 @@ CASES = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def database():
+    # Pure policy checks must not inherit the lifecycle fixture's public Echo override.
+    yield
+
+
 @pytest.mark.parametrize("slug,inputs,expected", CASES)
 def test_public_service_ai_policy_is_explicit_and_pure(slug, inputs, expected):
     plugin = registry.types[slug]
