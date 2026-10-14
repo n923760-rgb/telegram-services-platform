@@ -21,7 +21,7 @@ budget-controlled operation available. No settings repair or write is performed.
 
 ## Verification
 
-PASS LOCALLY: 27 pure pause/UI/architecture cases, global lint/format and diff
+PASS LOCALLY: 46 pure pause/UI/readiness/architecture cases, global lint/format and diff
 checks. Hosted workflow required before merge; no PostgreSQL flow result claimed
 locally. New hosted tests cover four malformed stored values at submission,
 Stars stale pre-checkout and concurrent job-scoped gateway admission. Assert no
@@ -33,3 +33,9 @@ LIMITS: No migrations, dependencies, price/service contract/gate, rates or env
 changes. No actual provider call or cap qualification. A live probe must not bypass
 the operational pause or existing job budget gateway. Historical unknown costs
 are not settled or inferred. This source update still needs operator deployment.
+
+Initial hosted run 38649278446: 1804 passed, seven fixture failures. Six readiness
+tests still mocked the removed generic reader; now mock the shared pause reader.
+The correction fixture used ORM JSON assignment of zero to false, which Python
+equality treated as unchanged; now explicit SQL update plus strict readback models
+the operator correction. No production guard was weakened. Full rerun required.

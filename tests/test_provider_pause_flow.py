@@ -3,7 +3,7 @@ from decimal import Decimal
 from unittest.mock import AsyncMock
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from app.builders.schema import StrictModel
 from app.core.db import sessions
@@ -110,7 +110,13 @@ async def test_malformed_pause_blocks_concurrent_gateway_calls_and_preserves_unk
         assert (await balance(db, 1)).reserved == 100
     # An explicit operator correction permits new reservations, never clears old exposure.
     async with sessions.begin() as db:
-        (await db.get(Setting, "PROVIDER_PAUSED")).value = {"value": False}
+        # Assigning JSON 0 -> false through ORM dirty comparison sees equal Python
+        # dictionaries (0 == False). Model an explicit operator SQL correction.
+        await db.execute(
+            update(Setting).where(Setting.key == "PROVIDER_PAUSED").values(value={"value": False})
+        )
+    async with sessions() as db:
+        assert (await db.get(Setting, "PROVIDER_PAUSED")).value["value"] is False
     new_hold = await reserve_call(jid, 1, Decimal(".001"))
     async with sessions() as db:
         assert (await db.get(CostHold, new_hold)).status == "open"
