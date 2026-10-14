@@ -224,9 +224,11 @@ async def test_cv_provider_pause_blocks_before_reservation(tmp_path, monkeypatch
     _, _, price, provider = await prepare(tmp_path, monkeypatch)
     async with sessions.begin() as db:
         db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
-    with pytest.raises(ServiceError, match="provider_paused"):
+    assert config().ai_enabled  # Exercise the pause branch rather than AI-off admission.
+    with pytest.raises(ServiceError, match="provider_config"):
         await submit(1, "cv_formatting", inputs(), price, "cv-ai-paused")
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
         assert (await balance(db, 1)).reserved == 0
     assert provider.calls == 0

@@ -49,6 +49,12 @@
 - HOSTED CHECKS: Required before merge: full PostgreSQL lifecycle, AI cost/review/failure,
   provider pause admission, capture/release/replay, native worker and other-service regression.
   The non-root network-disabled worker gate now also checks three bilingual design fixtures.
+- FIRST HOSTED RUN: `38491586305`, job `115617783098`, tested merge tree
+  `29ea0e854ae61c17c2af6f7970452419145ee07f`: 1551 passed, one failed, existing ARQ warning.
+  The new pause test incorrectly expected `provider_paused`; existing admission correctly
+  raises `provider_config` for paused/off AI. Corrected that exact expectation, asserted
+  AI is enabled and added zero-cost-hold verification; no production policy was changed.
+  Full workflow required on the corrected tree, not a rerun of the failed source.
 - NOT RUN: Live provider response, real translation/factual fidelity, native/mobile customer
   acceptance, server deployment, ATS compatibility or employment outcomes.
 - FACT: Model responses in tests/visual samples are explicit fixtures, not live AI evidence.
