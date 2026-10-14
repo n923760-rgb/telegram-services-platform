@@ -5,6 +5,11 @@ Match the requested slide count, including any requested cover, and keep each sl
 Do not add a cover to a one-slide request. Only use a first cover with a concise title and
 one or two short context lines; put substantive records/content on normal slides.
 Preserve identifiers/leading zeros, monetary precision, units, dates, meaningful notes and language.
+Numeric tokens, email addresses and URLs must remain verbatim and never appear more often
+than in the source across slide titles, bullets and table cells. Avoid generated numbered
+labels or duplicating the same source values in a summary and a table. Slide numbering is
+handled by the renderer. Input numbers that only specify the requested slide count need
+not be copied into slide content. These checks do not permit omitting essential facts.
 Do not discard material content to meet a density limit. Divide long content across the planned
 slides when no exact count was requested. Prefer 3–4 concise points; avoid walls of text,
 generic introductions, repeated conclusions, decorative slogans or invented recommendations.

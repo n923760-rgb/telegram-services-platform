@@ -15,6 +15,15 @@ from app.services.base import InputSchema, Result, ServiceError
 from app.services.registry import registry
 
 
+def input_digest(inputs):
+    # Keep valid request hashes byte-identical; reject invalid encodings before DB work.
+    try:
+        content = json.dumps(inputs, sort_keys=True, ensure_ascii=False).encode()
+    except (UnicodeEncodeError, TypeError, ValueError):
+        raise ServiceError("input_invalid") from None
+    return hashlib.sha256(content).hexdigest()
+
+
 @transaction_retry
 async def register(user_id: int):
     if user_id <= 0:
@@ -54,9 +63,7 @@ async def submit(
         raise ServiceError("payment_changed")
     if mode == "test_credit" and (terms_version is not None or expected_terms_hash is not None):
         raise ServiceError("payment_changed")
-    digest = hashlib.sha256(
-        json.dumps(inputs, sort_keys=True, ensure_ascii=False).encode()
-    ).hexdigest()
+    digest = input_digest(inputs)
     async with sessions.begin() as db:
         user = await db.scalar(select(User).where(User.id == user_id).with_for_update())
         if user is None or user.banned:
