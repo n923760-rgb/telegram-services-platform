@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 
-from app.ops.costs import reserve_call, settle_call, uncertain_call
+from app.ops.costs import pause_provider, reserve_call, settle_call, uncertain_call
 from app.services.base import ServiceError
 
 
@@ -141,6 +141,11 @@ class AI:
                 model=response.usage.model,
                 rates=response.usage.rates,
             )
+            if response.usage.rates.get("output_limit_exceeded") is True:
+                # A token contract breach can fit a generous monetary reservation.
+                # Record full usage first, then stop admission without clamping it.
+                await pause_provider()
+                raise ServiceError("provider_usage")
             try:
                 return schema.model_validate_json(response.content)
             except (ValidationError, ValueError):

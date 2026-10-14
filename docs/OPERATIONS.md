@@ -1,5 +1,30 @@
 # Operations
 
+## Provider cache/cap audit and synthetic preflight
+
+New compatible-provider calls preserve safe request IDs, requested wire limits,
+cap breach flags and consistent cache hit/miss counts in cost_usage.rate_snapshot.
+Missing/invalid optional cache data stays explicitly unknown/invalid; complete
+reported prompt/output totals are still costed using the configured full rates.
+No automatic cached-input discount or claim that calculated SAR is a paid invoice.
+Output above the request cap is recorded fully and pauses future admission even
+when its cost fits the monetary reservation. No token clamping or hidden usage.
+
+`docker compose exec -T worker python -m app.ops.provider_cap_preflight` prepares
+an owner-authorized synthetic request with <=128 output tokens, its body hash and
+conservative reservation bound. Pass `--actor ID` for multiple configured admins.
+It reads pause state in a bounded read-only transaction; performs no network call,
+reservation, order, delivery, reconciliation, configuration change or resume.
+`prepared` means the wire request was prepared; it does not verify the provider's
+actual cap behavior. The global pause still blocks live calls; do not bypass the
+job-scoped budget gateway to turn this preparation into an unaccounted API call.
+
+Hourly billing exports cannot allocate per-call cache charges or identify calls
+without independent request/key evidence. Keep individual unknown exposure held;
+never reconcile it with an assumed zero, an estimated range or by subtracting a
+conservative calculated cost from an aggregate paid amount. Invoice adjustments
+and live recovery remain separately reviewed operational actions.
+
 ## Private read-only order diagnostics
 
 Run `docker compose exec -T worker python -m app.ops.order_diagnostics C64ECF1E`

@@ -15,6 +15,14 @@ from app.services.base import ServiceError
 UNIT = Decimal(".000001")
 
 
+@transaction_retry
+async def pause_provider():
+    from app.core.models import Setting
+
+    async with sessions.begin() as db:
+        await db.merge(Setting(key="PROVIDER_PAUSED", value={"value": True}))
+
+
 def keys(user_id, day=None):
     day = day or datetime.now(ZoneInfo("Asia/Riyadh")).date().isoformat()
     return f"global:{day}", f"user:{user_id}:{day}"
@@ -137,10 +145,7 @@ async def settle_call(
         )
     if cost > info.amount:
         # A provider/model pricing contract changed: stop future calls, preserve the actual charge.
-        from app.core.models import Setting
-
-        async with sessions.begin() as db:
-            await db.merge(Setting(key="PROVIDER_PAUSED", value={"value": True}))
+        await pause_provider()
         raise ServiceError("provider_usage")
 
 
