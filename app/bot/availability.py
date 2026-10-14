@@ -1,16 +1,15 @@
 """Read-only UI admission hints; order submission remains authoritative."""
 
 from app.core.db import sessions
-from app.core.models import Setting
 from app.core.settings import config
+from app.ops.settings import provider_paused
 from app.services.registry import registry
 
 
 async def ai_admission_available(db):
     if not config().ai_enabled:
         return False
-    row = await db.get(Setting, "PROVIDER_PAUSED")
-    return row is None or (isinstance(row.value, dict) and row.value.get("value") is False)
+    return not await provider_paused(db)
 
 
 async def mandatory_ai_unavailable(slug):

@@ -104,11 +104,11 @@ async def submit(
             raise ServiceError("service_changed")
         InputSchema.model_validate(service.input_schema).validate_inputs(inputs)
         from app.ops.costs import check_admission
-        from app.ops.settings import setting
+        from app.ops.settings import provider_paused, setting
 
         await check_admission(db, user_id)
         if registry.types[slug].needs_ai(inputs):
-            if not config().ai_enabled or await setting(db, "PROVIDER_PAUSED", default=False):
+            if not config().ai_enabled or await provider_paused(db):
                 raise ServiceError("provider_config")
         active = await db.scalar(
             select(func.count(Order.id)).where(

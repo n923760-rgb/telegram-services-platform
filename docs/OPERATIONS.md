@@ -16,6 +16,13 @@ race after intake. Existing mid-collection drafts are not deleted or automatical
 rerouted; these UI hints do not certify credentials, budgets, provider or output
 quality and never toggle pause/admin service gates.
 
+All admission paths use the same strict pause reader: a missing setting retains
+the existing default, and only JSON `{"value": false}` explicitly permits calls.
+Malformed values (including zero/null/strings/arrays or a missing `value`) block AI
+submission, Stars pre-checkout and provider reservations, and readiness reports
+paused. Direct modes remain available. Nothing repairs the setting automatically
+or changes historical holds; correcting it remains an operator action.
+
 ## Provider cache/cap audit and synthetic preflight
 
 New compatible-provider calls preserve safe request IDs, requested wire limits,
