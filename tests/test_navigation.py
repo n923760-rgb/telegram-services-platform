@@ -156,7 +156,7 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
             assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
         else:
             assert set(order.inputs) == {"text", "target"}
-        assert order.service_version == ("6" if slug == "text_to_office" else "3")
+        assert order.service_version == ("7" if slug == "text_to_office" else "4")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])

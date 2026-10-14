@@ -6,13 +6,14 @@ from app.builders import word
 from app.builders.excel_source import build as source_workbook
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.services.document_fidelity import source_document_schema
 from app.services.text_to_office.excel_source import source_excel_schema, source_json
 from app.services.text_to_office.prompt import EXCEL, WORD
 from app.services.text_to_office.schema import Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "6"
+    version = "7"
     slug = "text_to_office"
     menu_order = 10
     category = "documents"
@@ -40,7 +41,11 @@ class TextToOffice(BaseService):
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
-        schema = WordPlan if values.target == "word" else source_excel_schema(values)
+        schema = (
+            source_document_schema(WordPlan, values.text)
+            if values.target == "word"
+            else source_excel_schema(values)
+        )
         continuation = inputs.get("__continuation")
         if values.mode != "direct" and not continuation and self.runtime.ai is None:
             raise ServiceError("provider_config")
@@ -58,7 +63,7 @@ class TextToOffice(BaseService):
             )
         except ValidationError:
             raise ServiceError("provider_invalid") from None
-        if values.target == "excel":
+        if values.mode != "direct":
             try:
                 plan = schema.model_validate(plan.model_dump(mode="json"))
             except (ValidationError, ValueError):

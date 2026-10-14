@@ -69,6 +69,10 @@ jobs:
           from tests.word_pdf_ai_fixtures import inputs as smart_document_inputs, revision as smart_document_revision
           from tests.excel_source_fixtures import inputs as source_excel_inputs, plan as source_excel_plan
           from app.services.text_to_office.schema import Inputs as SourceOfficeInputs
+          from app.services.document_fidelity import source_document_schema
+          from app.services.text_to_office.schema import WordPlan
+          from app.services.text_to_pdf.schema import PdfPlan
+          from app.builders import pdf as text_pdf
           from app.services.text_to_office.excel_source import source_excel_schema
           from app.builders.excel_source import build as source_excel
           from docx import Document as Word
@@ -104,6 +108,26 @@ jobs:
           assert os.getuid() == 10001
           async def verify():
               assert all((await probe_worker()).values())
+              source_text = 'Order 00123 total 125.50 email sample@example.invalid'
+              candidate = {'document': {'title': 'Report', 'sections': [{'paragraphs': [source_text]}]}}
+              for model in (WordPlan, PdfPlan):
+                  schema = source_document_schema(model, source_text)
+                  source_plan = schema.model_validate(candidate)
+                  if model is WordPlan:
+                      rendered = await renderer().word_pdf(source_plan.document)
+                      assert '00123' in Word(BytesIO(rendered.docx)).paragraphs[1].text
+                      data = rendered.pdf
+                  else:
+                      data = text_pdf.build(source_plan.document)
+                  text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(data)).pages)
+                  assert text.count('00123') == text.count('125.50') == text.count('sample@example.invalid') == 1
+                  try:
+                      schema.model_validate({'document': {'title': 'Invented 999', 'sections': [{'paragraphs': [source_text]}]}})
+                  except ValueError:
+                      pass
+                  else:
+                      raise AssertionError('unbound document accepted')
+              print('Non-root worker: smart Word/PDF source fidelity and native output PASS with network disabled')
               for language in ('ar','en'):
                   values = SourceOfficeInputs.parse(source_excel_inputs(language))
                   plan = source_excel_schema(values).model_validate(source_excel_plan(language))

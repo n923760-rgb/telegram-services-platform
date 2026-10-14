@@ -102,7 +102,7 @@ async def test_template_service_requires_one_plan_and_checks_file_before_storage
         return Artifact(key="1/" + "a" * 32 + "/result.docx", filename=name, mime=mime)
 
     storage.save = save
-    await service.run({"text": "الطلبات", "target": "word"})
+    await service.run({"text": "00123 2026-10-09 125.50 00123 00124", "target": "word"})
     ai.extract.assert_awaited_once()
     assert seen == ["تقرير الطلبات"]
 
