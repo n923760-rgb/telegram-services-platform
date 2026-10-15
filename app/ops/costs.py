@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 from app.core.db import sessions
 from app.core.models import CostBudget, CostHold, CostUsage, Job
 from app.core.transactions import transaction_retry
-from app.ops.settings import decimal_setting, setting
+from app.ops.settings import decimal_setting, provider_paused
 from app.services.base import ServiceError
 
 UNIT = Decimal(".000001")
@@ -54,7 +54,7 @@ async def reserve_call(job_id: UUID, user_id: int, bound: Decimal) -> UUID:
     if bound <= 0:
         raise ServiceError("provider_config")
     async with sessions.begin() as db:
-        if await setting(db, "PROVIDER_PAUSED", default=False):
+        if await provider_paused(db):
             raise ServiceError("provider_usage")
         global_key, user_key = keys(user_id)
         global_budget = await locked_budget(db, global_key)

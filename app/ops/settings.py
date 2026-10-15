@@ -4,6 +4,12 @@ from app.core.models import Setting
 from app.core.settings import config
 
 
+async def provider_paused(db):
+    """Only a missing row or explicit JSON false permits provider admission."""
+    row = await db.get(Setting, "PROVIDER_PAUSED")
+    return row is not None and not (isinstance(row.value, dict) and row.value.get("value") is False)
+
+
 async def setting(db, key, default=None):
     row = await db.get(Setting, key)
     return (

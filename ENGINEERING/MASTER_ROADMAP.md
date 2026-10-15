@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Strict provider pause across admission paths — 2026-10-14
+
+- OWNER AUTHORITY: Continue existing review and provider recovery preparation after #82. Source baseline 0576026; deployment of #81/#82 unconfirmed, last supplied operator runtime remains #80.
+- FACT: UI pause hint was strict, but submit/Stars/provider reservation/readiness used generic truthiness; malformed falsey values could allow AI or raise an unclassified exception.
+- CHANGE: One read-only pause reader reused by UI, order submission, Stars pre-checkout, budget reservation and readiness. Only absent row or explicit boolean false allows admission; malformed state blocks AI. Direct modes and legacy missing-setting default retained.
+- PASS LOCALLY: 46 focused pure pause/UI/readiness/architecture tests and lint/format/diff. Hosted financial, concurrency, migration and native qualification required before merge.
+- LIMITS: No live probe, pause bypass, financial reconciliation, rate/env/price/service/gate/dependency/migration changes. Unknown exposure stays held. Live cap verification remains blocked by operational pause and unresolved billing evidence.
+- Evidence: [strict pause admission](REPORTS/2026-10-14-strict-provider-pause.md).
+
 ## Provider-paused customer intake — 2026-10-14
 
 - OWNER AUTHORITY: Continue existing service review/improvement after #81 source merge. Baseline af8b118; #81 deployment not confirmed, latest operator runtime remains #80 (624c853).

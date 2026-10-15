@@ -75,7 +75,7 @@ def test_retired_or_unknown_plugins_are_not_exposed(slug):
 async def test_provider_probe_is_local_only_and_suppresses_error_details(monkeypatch, state):
     monkeypatch.setattr(readiness, "config", lambda: SimpleNamespace(ai_enabled=state != "off"))
     paused = AsyncMock(return_value=state == "paused")
-    monkeypatch.setattr(readiness, "setting", paused)
+    monkeypatch.setattr(readiness, "provider_paused", paused)
     adapter = SimpleNamespace(
         upper_bound=Mock(
             return_value=1, side_effect=ValueError("private") if state == "invalid" else None
@@ -95,7 +95,7 @@ async def test_provider_probe_is_local_only_and_suppresses_error_details(monkeyp
 @pytest.mark.parametrize("value", [0, -1])
 async def test_nonpositive_provider_exposure_is_not_configured(monkeypatch, value):
     monkeypatch.setattr(readiness, "config", lambda: SimpleNamespace(ai_enabled=True))
-    monkeypatch.setattr(readiness, "setting", AsyncMock(return_value=False))
+    monkeypatch.setattr(readiness, "provider_paused", AsyncMock(return_value=False))
     monkeypatch.setattr(
         readiness, "provider", lambda: SimpleNamespace(upper_bound=lambda *a: value)
     )

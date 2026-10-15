@@ -98,12 +98,10 @@ async def pre_checkout(user_id, invoice_payload, currency, amount, query_id):
         if checkout.query_id is not None and checkout.query_id != query_id:
             raise ServiceError("payment_invalid")
         from app.ops.costs import check_admission
-        from app.ops.settings import setting
+        from app.ops.settings import provider_paused
 
         await check_admission(db, user_id)
-        if plugin.needs_ai(order.inputs) and (
-            not config().ai_enabled or await setting(db, "PROVIDER_PAUSED", default=False)
-        ):
+        if plugin.needs_ai(order.inputs) and (not config().ai_enabled or await provider_paused(db)):
             raise ServiceError("provider_config")
         checkout.query_id = query_id
         return order.id

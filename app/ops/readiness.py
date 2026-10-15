@@ -1,7 +1,7 @@
 """Read-only configuration evidence, not runtime or customer-quality certification."""
 
 from app.core.settings import config
-from app.ops.settings import setting
+from app.ops.settings import provider_paused
 from app.providers.runtime import provider
 from app.services.base import ServiceError
 from app.services.registry import registry
@@ -10,7 +10,7 @@ from app.services.registry import registry
 async def ai_configuration(db):
     if not config().ai_enabled:
         return "off"
-    if await setting(db, "PROVIDER_PAUSED", default=False):
+    if await provider_paused(db):
         return "paused"
     try:
         if provider().upper_bound({}, "", "", []) <= 0:
