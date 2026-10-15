@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Isolated all-service live acceptance — 2026-10-15
+
+- OWNER AUTHORITY: Test all services now; historical cost reconciliation is not a prerequisite. Baseline c3a61f3 deployed/healthy/paused. Real synthetic C6F5D1AD succeeded: 458 input/93 output <=128, calculated SAR .000934, one settled hold; no universal/provider-quality/invoice claim.
+- CHANGE: Default read-only plan and guarded isolated test execution for 28 cases across all 16 public services, normal job/budget/review/confirmation/replay paths, native artifact/readback checks and per-case safe reports.
+- ISOLATION: Fresh uniquely named test DB, synthetic subject/test credit, dedicated files; no production pause/gate/ledger/price/history mutations. Conservative whole-run call-bound allowance SAR 5/96 calls plus DB limits. Failed/unknown usage retained; direct cases continue after AI block.
+- PASS LOCALLY: 15 focused pure/architecture cases, lint/format/plan/Bash syntax. Hosted financial/native checks required before merge. Operator full live sweep and output review NOT RUN.
+- Evidence: [isolated acceptance](REPORTS/2026-10-15-isolated-service-acceptance.md).
+
 ## Strict provider pause across admission paths — 2026-10-14
 
 - OWNER AUTHORITY: Continue existing review and provider recovery preparation after #82. Source baseline 0576026; deployment of #81/#82 unconfirmed, last supplied operator runtime remains #80.

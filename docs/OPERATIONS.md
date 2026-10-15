@@ -1,5 +1,32 @@
 # Operations
 
+## Isolated synthetic all-service acceptance
+
+After owner authorization for live testing, run `bash scripts/service-acceptance.sh`
+from clean main while production provider pause is true. The wrapper uses a fresh
+uniquely named PostgreSQL acceptance database and dedicated shared-volume storage;
+it does not stop production containers or modify their pause, users, credit, gates
+or prices. Synthetic credit funds 28 cases across 16 services only inside that DB.
+The configured provider/key is inherited in-process without printing credentials;
+normal job-scoped cost reservation, schema/content review, native builders and
+confirmation/replay paths remain active. No real Telegram/Stars transactions.
+
+Default `python -m app.ops.service_acceptance` prints the pure plan without live
+calls. Execution requires the wrapper's explicit isolated environment. The run
+reserves at most SAR 5 in cumulative conservative call bounds and permits at most
+96 calls, with further DB budget guards. A provider contract breach can still
+exceed a calculated reservation; actual reported usage is preserved and blocks
+further AI. Transient failures are not autonomously retried by the worker; unknown
+exposure remains held. Production's old unknown holds are not touched.
+
+The wrapper prints a private backup directory, separate DB name and results ZIP;
+review report.json and the files individually. Exit 1 can mean REVIEW_REQUIRED,
+not that all cases failed. Partial artifacts/reports and the test DB are retained
+for investigation; no automatic DB deletion. The dump contains test accounting
+and safe request audit metadata. Keep it private with the outputs. Opening files
+and preserving fixture tokens do not certify visual polish, factual semantics,
+mobile UX, every mode/boundary, provider vision support, paid invoices or Stars.
+
 ## Customer behavior during provider pause
 
 Catalog browsing shows a localized notice for categories containing required-AI
