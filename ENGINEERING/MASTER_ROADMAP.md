@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Complete portfolio review and accurate AI presentation — 2026-10-16
+
+- FACT: Reverified official main ad1d2c1 and reviewed all 16 public contracts, catalog/admin/inventory, source policy tests and available acceptance evidence. Nine required AI, four conditional, three direct. CV v7 operator AR/EN PASS, bilingual provider_usage FAIL; new report/artifacts not supplied, no inferred root cause.
+- CHANGE: Explicit optional-AI presentation metadata for four mixed plugins; shared required/conditional/none classification, registry validation, accurate no-AI admin text, paused mixed-option catalog notices and inventory warnings. Admission/activation/needs_ai, contracts, prices, versions, ledger, retries/caps and production pause unchanged.
+- PLAN: Preserve six registry categories; diagnose current CV incident, then explicit document mode/unified Word/PDF entry, richer CV/PPTX/Excel and real image/PDF/text semantic acceptance. Preserve old contracts and reconcile differing admin prices before consolidation. No blanket activation or new unapproved services.
+- PASS LOCALLY: focused policy/readiness/private/inventory tests; lint/format/diff. New DB flow coverage requires hosted full CI before merge; no new provider or production execution here.
+- Evidence: [full review and phased plan](REPORTS/2026-10-16-service-portfolio-review.md).
+
 ## Resume visual hierarchy — 2026-10-16
 
 - FACT: Operator CV v6 English acceptance passed: three calls, calculated SAR .070128, settled holds, no test active orders/reserved credit; production pause retained. Uploaded hashes matched, Word/PDF sample inspected. Review needed one JSON repair; this is one synthetic sample, not universal qualification.

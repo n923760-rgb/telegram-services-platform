@@ -135,7 +135,14 @@ def readiness_text(row, evidence, lang):
             source=evidence["source_version"],
         ),
         tr("admin_ai_" + evidence["ai_state"], lang),
-        tr("admin_ai_required" if evidence["ai_required"] else "admin_ai_input_dependent", lang),
+        tr(
+            {
+                "required": "admin_ai_required",
+                "conditional": "admin_ai_input_dependent",
+                "none": "admin_ai_none",
+            }[evidence["ai_policy"]],
+            lang,
+        ),
         tr("admin_stars_mode" if evidence["stars_enabled"] else "admin_test_credit_mode", lang),
         tr("admin_readiness_price", lang, price=price_label(row.price_stars, lang)),
     ]

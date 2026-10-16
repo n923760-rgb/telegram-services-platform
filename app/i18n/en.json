@@ -449,6 +449,7 @@
   "admin_ai_configured": "AI configuration: local cost calculation is configured; connection, balance and model quality have not been tested.",
   "admin_ai_required": "This service requires AI configuration. Disabling or pausing it blocks requests that need it.",
   "admin_ai_input_dependent": "AI is not mandatory for every request; some options or paths may need it depending on inputs.",
+  "admin_ai_none": "This service runs without AI; pausing AI does not block its direct execution.",
   "admin_stars_mode": "Current payment mode: Telegram Stars per order.",
   "admin_test_credit_mode": "Current payment mode: test credit; Stars is disabled.",
   "admin_readiness_price": "Stars selling price: {price}",
@@ -494,6 +495,6 @@
   "excel_source_title": "Original source",
   "excel_source_text": "Text",
   "excel_source_part": "Part",
-  "catalog_ai_notice": "Some services are temporarily unavailable. Direct conversion services remain available; selecting a paused service shows a notice.",
+  "catalog_ai_notice": "Some services or improvement options are temporarily unavailable. Direct paths that do not need AI remain available.",
   "service_ai_unavailable": "This service is temporarily unavailable. No order was created or credit reserved. Choose a direct conversion service or try again later. Any existing draft is preserved."
 }

@@ -21,6 +21,7 @@ class TextToWordPdf(BaseService):
     description_ar = tr("word_pdf_description")
     price_sar = Decimal("3.00")
     requires_ai = False
+    optional_ai = True
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[

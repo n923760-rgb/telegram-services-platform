@@ -33,21 +33,30 @@ portfolio candidates below remain unimplemented until their contracts are delive
 | Document image contrast | v3 retains received bytes, prepares contrast/sharpen candidates and uses configured AI source review to select a useful candidate; no reliable improvement stops delivery. Selected PNG and comparison, without missing-text reconstruction, deskew or general OCR guarantee. Live visual acceptance remains separate. |
 | Images to PDF | Ordered image pages, bounded A4 fit/orientation and received-pixel preservation; PR #29 passed 571 tests and native image checks. |
 
-## Current integration queue
+## Current review and development order
 
-| Priority | Service | Value and acceptance required |
+The complete 16-service contract/UX/quality review and ordered work plan is in
+[the 2026-10-16 portfolio review](../ENGINEERING/REPORTS/2026-10-16-service-portfolio-review.md).
+Keep the six populated registry categories. Consolidating overlapping Word/PDF entry
+points is proposed work, not an already shipped service merge or a price change.
+
+| Current source policy | Services | Operational meaning |
 | --- | --- | --- |
-| Current | Extract key points | Owner continuation, 2026-10-10. First extractive summary slice: 2–80 nonempty source lines / 12000 characters. Not a comprehensive abstractive summary or study question generator; validate usefulness before paid launch. |
-| Merged | Independent proofreading/rewriting | Added after owner continuation, 2026-10-10. Bounded original-language pasted text; customer reviews draft. Real-provider names/negation/claims/style acceptance required. |
-| Merged | Independent text translation | Added on owner request, 2026-10-10. Bounded pasted text only; no uploaded-document layout reconstruction, certified translation or claim that structural checks prove semantic accuracy. |
-| Merged source | Professional CV | One set of actual details, four purpose profiles, AI editing/translation and controlled document design. Requires configured, unpaused provider, source-bound semantic and native/mobile acceptance; no ATS/job outcome guarantee. |
-| 2 | Images to PDF (merged, disabled) | Ordered pages, EXIF orientation, consistent A4 layout and original aspect ratio. Quality bounded by uploaded image resolution; no OCR or scan-enhancement promise. |
-| 3 | Meeting-note organization (merged, disabled) | Decisions/actions grouped from source notes with traceable references, no invented assignees/deadlines. Requires source-bound extraction/schema repair and real-provider semantic qualification. |
-| 4 | CSV organization/review (current slice) | Preserve original IDs, blanks, zero/duplicates; explicit delimiter/edge rules, original sheet, stable record references and audit sheet. No inferred totals/data deletion or executable customer formulas. Native Excel/mobile acceptance required. |
-| Implemented source | CV writing/translation | Integrated into the single CV service v7. Operator CV v6 English sample completed and its Word/PDF output was reviewed; generation valid, one invalid-JSON review repaired and accepted. New v7 live acceptance and broader real-CV quality remain unverified. |
-| 6 | Study revision pack | Source-bound summary, revision questions and answers with references. Requires omission/fact checks; never fabricate external sources. |
-| 7 | Business document packs | Brief/report/proposal from actual supplied facts, consistent Word/PDF. Define each contract and verification before adding a plugin. |
-| Later | Searchable scanned PDF, background removal, compression | Qualify resource/model/component licenses and actual output improvement separately before installing tools. |
+| Required AI | 9 | Requires configured, unpaused provider and actual admission checks. |
+| Conditional AI | 4 | Office, Text PDF, Word/PDF and PDF-table headings; direct paths remain usable when AI is paused. Office Excel uses AI. |
+| No AI | 3 | CSV review, images to PDF and PDF merge/extraction. |
+
+`optional_ai` is presentation metadata; `needs_ai(inputs)` remains execution authority.
+Default-disabled declarations describe installation defaults, not the current database.
+Administrator prices/activation and deployed versions require runtime inspection.
+
+Latest operator CV v7 isolated result: Arabic and English PASS, bilingual FAIL with
+provider_usage; production pause retained, no active test orders or reserved credit.
+The new archive has not been inspected. Prior v6 English output review and older
+all-service acceptance do not establish v7 bilingual quality. Next: diagnose that
+report, make document mode explicit and unify entry points safely, then richer
+CV/PPTX/Excel, image/PDF and text semantic acceptance. No new inventory is needed
+before these improvements.
 
 ## Suggested next paid deliverables
 

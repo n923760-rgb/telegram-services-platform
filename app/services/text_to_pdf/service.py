@@ -21,6 +21,7 @@ class TextToPdf(BaseService):
     description_ar = tr("pdf_description")
     price_sar = Decimal("5.00")
     requires_ai = False  # Direct PDF can be enabled without a provider.
+    optional_ai = True
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[

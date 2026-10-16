@@ -1,9 +1,15 @@
 """Public initial-intake AI decisions; no provider, storage, DB or Telegram access."""
 
+from collections import Counter
+from types import SimpleNamespace
+
 import pytest
 
+from app.bot.catalog import view
+from app.core.i18n import tr
 from app.ops.service_portfolio import customer_slugs
-from app.services.registry import registry
+from app.services.base import ai_policy
+from app.services.registry import Registry, registry
 from tests.csv_review_fixtures import inputs as csv_inputs
 from tests.cv_fixtures import inputs as cv_inputs
 from tests.minutes_fixtures import inputs as minutes_inputs
@@ -51,3 +57,41 @@ def test_public_service_ai_policy_is_explicit_and_pure(slug, inputs, expected):
 def test_policy_cases_cover_exactly_the_customer_portfolio_not_private_services():
     assert {case[0] for case in CASES} == set(customer_slugs())
     assert len(customer_slugs()) == 16
+
+
+def test_declared_policies_cover_real_initial_request_decisions_without_invoking_plugins(
+    monkeypatch,
+):
+    policies = {slug: ai_policy(registry.types[slug]) for slug in customer_slugs()}
+    assert Counter(policies.values()) == {"required": 9, "conditional": 4, "none": 3}
+    for slug, _inputs, expected in CASES:
+        if policies[slug] != "conditional":
+            assert expected == (policies[slug] == "required")
+
+    def forbidden(*args):
+        raise AssertionError("Presentation must not execute customer validation")
+
+    for plugin in registry.types.values():
+        monkeypatch.setattr(plugin, "needs_ai", forbidden)
+    assert {slug: ai_policy(registry.types[slug]) for slug in customer_slugs()} == policies
+
+
+@pytest.mark.parametrize("required,optional", [(True, True), (1, False), (False, None), (False, 1)])
+def test_invalid_or_conflicting_ai_metadata_is_rejected(monkeypatch, required, optional):
+    plugin = registry.types["echo"]
+    monkeypatch.setattr(plugin, "requires_ai", required)
+    monkeypatch.setattr(plugin, "optional_ai", optional)
+    with pytest.raises(ValueError, match="invalid service AI metadata"):
+        Registry().discover()
+
+
+@pytest.mark.parametrize("slug", ["csv_review", "text_to_word_pdf", "cv_formatting"])
+@pytest.mark.parametrize("lang", ["ar", "en"])
+def test_paused_catalog_warns_for_optional_ai_but_keeps_direct_paths_listed(slug, lang):
+    row = SimpleNamespace(slug=slug, name_ar=slug, name_en=slug)
+    category = registry.types[slug].category
+    paused, items = view([row], lang, category=category, ai_available=False)
+    available, normal_items = view([row], lang, category=category, ai_available=True)
+    assert items == normal_items
+    assert (tr("catalog_ai_notice", lang) in paused) == (ai_policy(registry.types[slug]) != "none")
+    assert tr("catalog_ai_notice", lang) not in available
