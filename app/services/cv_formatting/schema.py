@@ -418,7 +418,13 @@ def document(values, revision):
                     alignment="right" if body.language == "ar" else "left",
                     heading=tr("cv_" + name + "_heading", body.language),
                     blocks=[
-                        {"text": segment.text, "kind": segment.presentation} for segment in segments
+                        {
+                            "text": segment.text,
+                            "kind": "paragraph"
+                            if name in {"skills", "languages"}
+                            else segment.presentation,
+                        }
+                        for segment in segments
                     ],
                 )
             )
