@@ -40,6 +40,20 @@ settlement and bounded repair behavior is reused without extra calls. The report
 also totals `calculated_usage_sar`; cumulative conservative reservation bounds
 are a separate allowance, and neither amount proves the provider invoice.
 
+Trusted response schemas can declare a `diagnostic_categories` class-level mapping
+of fixed custom validation codes to fixed labels. Only identifier-shaped labels
+of at most 48 characters are accepted; built-in categories cannot be overridden.
+Never derive this metadata from customer input. CV v6 uses this for distinctions
+such as `cv_source_tokens`, `cv_section_order` and `cv_summary_sources`. Unregistered
+types still collapse to `schema_type`; no raw messages, input, context or locations
+are reported. This observer remains isolated-test-only, not production logging.
+
+The wrapper mounts operational modules, not changed service implementations.
+After a service-code update, build the worker image before its acceptance run:
+`docker compose build worker`, then `bash scripts/service-acceptance.sh cv_en`.
+Building a new image does not replace running production containers; full production
+deployment and updated live output acceptance remain separate steps.
+
 ## Customer behavior during provider pause
 
 Catalog browsing shows a localized notice for categories containing required-AI

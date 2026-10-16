@@ -137,6 +137,18 @@ class DiagnosticAI(AI):
                         "extra_forbidden": "extra_field",
                         "value_error": "constraint",
                     }
+                    # Trusted schemas may declare fixed categories; never copy raw error types.
+                    declared = getattr(schema, "diagnostic_categories", {})
+                    if isinstance(declared, dict):
+                        for code, label in declared.items():
+                            if (
+                                isinstance(code, str)
+                                and isinstance(label, str)
+                                and code not in labels
+                                and re.fullmatch(r"[a-z][a-z0-9_]{0,47}", code)
+                                and re.fullmatch(r"[a-z][a-z0-9_]{0,47}", label)
+                            ):
+                                labels[code] = label
                     diagnostics.append(
                         event
                         | {
