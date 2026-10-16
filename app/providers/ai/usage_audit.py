@@ -2,6 +2,10 @@
 
 import re
 
+FINISH_REASONS = frozenset(
+    {"stop", "length", "content_filter", "tool_calls", "insufficient_system_resource"}
+)
+
 
 def count(value, maximum):
     return type(value) is int and 0 <= value <= maximum
@@ -43,7 +47,27 @@ def cache_details(usage):
     }
 
 
-def response_audit(data, usage, limit, limit_field):
+def completion_details(data, usage, thinking_mode=None):
+    choices = data.get("choices")
+    choice = choices[0] if isinstance(choices, list) and choices else None
+    reason = choice.get("finish_reason") if isinstance(choice, dict) else None
+    if not isinstance(reason, str) or reason not in FINISH_REASONS:
+        reason = None
+    details = usage.get("completion_tokens_details")
+    present = "completion_tokens_details" in usage and (
+        not isinstance(details, dict) or "reasoning_tokens" in details
+    )
+    tokens = details.get("reasoning_tokens") if isinstance(details, dict) else None
+    valid = count(tokens, usage["completion_tokens"])
+    return {
+        "finish_reason": reason,
+        "reasoning_state": "reported" if valid else "invalid" if present else "not_reported",
+        "reasoning_tokens": tokens if valid else None,
+        "requested_thinking": thinking_mode if thinking_mode in ("enabled", "disabled") else None,
+    }
+
+
+def response_audit(data, usage, limit, limit_field, *, thinking_mode=None):
     identifier = data.get("id")
     identifier = (
         identifier
@@ -59,6 +83,7 @@ def response_audit(data, usage, limit, limit_field):
         "requested_output_limit": limit,
         "output_limit_field": limit_field,
         "output_limit_exceeded": usage["completion_tokens"] > limit,
+        "completion": completion_details(data, usage, thinking_mode),
     }
 
 
@@ -87,4 +112,17 @@ def diagnostic_audit(snapshot):
     result["requested_output_limit"] = limit if type(limit) is int and limit > 0 else None
     exceeded = snapshot.get("output_limit_exceeded")
     result["output_limit_exceeded"] = exceeded if type(exceeded) is bool else None
+    completion = snapshot.get("completion")
+    if isinstance(completion, dict):
+        # Reapply the fixed enum/count allowlist to stored data, not raw response content.
+        tokens = completion.get("reasoning_tokens")
+        reason = completion.get("finish_reason")
+        result["finish_reason"] = (
+            reason if isinstance(reason, str) and reason in FINISH_REASONS else None
+        )
+        result["reasoning_tokens"] = tokens if type(tokens) is int and tokens >= 0 else None
+        mode = completion.get("requested_thinking")
+        result["requested_thinking"] = mode if mode in ("enabled", "disabled") else None
+    else:
+        result.update(finish_reason=None, reasoning_tokens=None, requested_thinking=None)
     return result

@@ -146,6 +146,13 @@ class AI:
                 # Record full usage first, then stop admission without clamping it.
                 await pause_provider()
                 raise ServiceError("provider_usage")
+            completion = response.usage.rates.get("completion")
+            if isinstance(completion, dict) and completion.get("finish_reason") == "length":
+                # A truncated candidate is incomplete even if it happens to be valid JSON.
+                # Spend only the existing schema-repair allowance; do not pause on equality.
+                if attempt == attempts - 1:
+                    raise ServiceError("provider_invalid")
+                continue
             try:
                 return schema.model_validate_json(response.content)
             except (ValidationError, ValueError):

@@ -191,3 +191,35 @@ No registry credentials or image publication are required. See
 https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/.
 Registry outages must be resolved and the full workflow rerun; do not skip financial tests
 or the non-root, network-disabled native worker qualification to obtain a passing check.
+
+## Explicit DeepSeek completion mode
+
+For the exact official `api.deepseek.com` host and documented `deepseek-flash` /
+`deepseek-v4-pro` models, the adapter now sends an explicit `thinking.type`.
+`AI_DEEPSEEK_THINKING=disabled` is the default for bounded JSON service work;
+`enabled` is an operator opt-in requiring separate budget/output-quality acceptance.
+No vendor thinking field is sent to other hosts, proxies or unknown models. The
+existing token-limit parameter selection remains. Real .env files are not rewritten.
+
+DeepSeek documentation checked 2026-10-17 says thinking is enabled with high effort
+by default. Earlier requests omitted the field. That mismatch is observed in source;
+it is a plausible contributor to long generations, not proof of the uninspected
+bilingual provider_usage incident. Official references:
+https://api-docs.deepseek.com/guides/thinking_mode/ and
+https://api-docs.deepseek.com/api/create-chat-completion/ .
+
+Usage snapshots add fixed finish-reason enums, optional validated reasoning-token
+counts and the requested thinking mode; never reasoning text. Historical missing
+fields stay unknown. All returned completion tokens remain in the calculated cost;
+reasoning counts are not subtracted or billed twice. A `length` finish reason is
+settled before rejecting the incomplete candidate and using only the existing bounded
+repair allowance. A valid JSON fragment with `length` is not accepted as complete.
+Actual overrun/cap breach still records full usage and pauses admission. No pause is
+automatically cleared and no unknown hold is fabricated as zero.
+
+Build a new worker image before isolated acceptance; copying only ops files cannot
+update installed adapter code. Keep production paused and test synthetic CV AR/EN/
+bilingual in a fresh test DB using `scripts/service-acceptance.sh`. Inspect completion
+metadata and actual artifacts. A successful run qualifies that sample, not future
+provider uptime, invoice accuracy or all-service quality. Historical invoice
+reconciliation is not a prerequisite for these isolated development tests.
