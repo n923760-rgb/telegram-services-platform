@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Resume visual hierarchy — 2026-10-16
+
+- FACT: Operator CV v6 English acceptance passed: three calls, calculated SAR .070128, settled holds, no test active orders/reserved credit; production pause retained. Uploaded hashes matched, Word/PDF sample inspected. Review needed one JSON repair; this is one synthetic sample, not universal qualification.
+- CHANGE: CV v7 opts into a smaller name/header hierarchy, muted contact text, restrained section accents, lighter long qualification leads, and plain skills/language blocks. Native editable text, existing language pages and source safeguards retained. Standard Word designs unchanged.
+- PASS LOCALLY: 34 focused contract/layout checks including two dense Arabic/English native exports; 75 existing CV regressions; lint/format/diff. Nine three-language/theme fixtures plus the prior live short content rendered (13 pages); visual review found no clipping/overlap in these fixtures. Hosted full workflow required before merge.
+- LIMITS: Typography improvement only; no new structured employer/date fields, provider calls, retry/cap/financial/price/gate/dependency/migration changes or production deployment. New v7 live quality NOT RUN.
+- Evidence: [resume hierarchy](REPORTS/2026-10-16-cv-visual-hierarchy.md).
+
 ## Request-specific CV generation contract — 2026-10-16
 
 - FACT: Targeted operator cv_en rerun failed twice in generation with generic constraint errors, before content review. Test orders/credit closed cleanly; production pause retained. The exact custom rule is not recoverable from that report.

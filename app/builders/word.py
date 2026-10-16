@@ -328,11 +328,62 @@ def build(
                 paragraph.paragraph_format.keep_with_next = True
     if data.design is not None:
         _design(doc, data.design)
+        if data.layout == "resume":
+            _resume_design(doc, data.design)
     else:
         _page_number_footer(doc)
     buffer = BytesIO()
     doc.save(buffer)
     return validate(buffer.getvalue(), "docx")
+
+
+def _resume_design(doc, design):
+    """Resume-only hierarchy; retain native text, source order and script direction."""
+    compact = design.density == "compact"
+    accent = RGBColor.from_string("243B53" if design.theme != "classic" else "000000")
+    muted = RGBColor.from_string("404B56")
+    sizes = {"Title": 22, "Subtitle": 11.5, "Heading 1": 11, "Heading 2": 11}
+    header = True
+    for paragraph in doc.paragraphs:
+        name = paragraph.style.name
+        if name == "Title":
+            header = True
+        elif name == "Heading 1":
+            header = False
+        paragraph.paragraph_format.widow_control = True
+        if name in sizes:
+            paragraph.paragraph_format.space_before = Pt(
+                (10 if compact else 12) if name == "Heading 1" else 0
+            )
+            paragraph.paragraph_format.space_after = Pt(3 if name != "Heading 1" else 5)
+            paragraph.paragraph_format.keep_with_next = True
+            for run in paragraph.runs:
+                run.font.size = Pt(sizes[name])
+                run.font.color.rgb = accent if name == "Heading 1" else DARK
+                # Long qualification lines must not compete with section headings.
+                run.bold = name in {"Title", "Heading 1"} or (
+                    name == "Heading 2" and len(paragraph.text) <= 70
+                )
+                props = run._r.get_or_add_rPr()
+                for tag, value in (
+                    ("szCs", str(int(sizes[name] * 2))),
+                    ("bCs", "1" if run.bold else "0"),
+                ):
+                    item = props.find(qn("w:" + tag))
+                    if item is None:
+                        item = OxmlElement("w:" + tag)
+                        props.append(item)
+                    item.set(qn("w:val"), value)
+        if header:
+            paragraph.paragraph_format.keep_with_next = True
+            if name not in {"Title", "Subtitle"}:
+                paragraph.paragraph_format.space_after = Pt(2)
+                for run in paragraph.runs:
+                    run.font.size = Pt(10)
+                    run.font.color.rgb = muted
+        if name == "Subtitle":
+            for run in paragraph.runs:
+                run.font.color.rgb = muted
 
 
 def _design(doc, design):
