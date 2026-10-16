@@ -135,6 +135,9 @@ async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
 
 async def test_existing_test_subject_aborts_before_seed_or_provider(tmp_path, monkeypatch):
     configure(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        acceptance, "cases", lambda assets: pytest.fail("fixtures prepared before freshness guard")
+    )
     async with sessions.begin() as db:
         db.add(User(id=123))
     with pytest.raises(ServiceError, match="acceptance_fresh_database_required"):

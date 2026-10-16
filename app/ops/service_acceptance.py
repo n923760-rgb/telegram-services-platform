@@ -418,12 +418,12 @@ async def execute(case_names=None):
     output = root / "results"
     if output.exists():
         raise ServiceError("acceptance_fresh_run_required")
-    templates = selected_cases(cases(ASSETS), case_names)
     adapter = AcceptanceProvider()
     adapter.rates()
     async with sessions() as db:
         if any([await db.scalar(select(func.count(cls.id))) for cls in (User, Order, CostHold)]):
             raise ServiceError("acceptance_fresh_database_required")
+    templates = selected_cases(cases(ASSETS), case_names)
     output.mkdir(parents=True)
     async with sessions.begin() as db:
         await registry.sync(db)
