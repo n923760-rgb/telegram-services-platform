@@ -42,8 +42,9 @@ async def prepare(tmp_path, monkeypatch, slug):
 def direct_inputs(slug):
     if slug == "text_to_office":
         return {
-            "text": "بدون تعديل النص\n  محتوى 00123\n\nEnglish <tag> & data 456  ",
+            "text": "  محتوى 00123\n\nEnglish <tag> & data 456  ",
             "target": "word",
+            "mode": "direct",
         }
     return {
         "text": "  محتوى 00123\n\nEnglish <tag> & data 456  ",
@@ -63,7 +64,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "7" if slug == "text_to_office" else "4"
+    version = "8" if slug == "text_to_office" else "4"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -84,7 +85,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     assert not list(tmp_path.glob("[0-9]*/*/*"))
     if slug == "text_to_office":
         doc = Document(BytesIO(delivery.files[0][1]))
-        assert "\n".join(p.text for p in doc.paragraphs) == inputs["text"].partition("\n")[2]
+        assert "\n".join(p.text for p in doc.paragraphs) == inputs["text"]
 
 
 @pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
@@ -92,7 +93,7 @@ async def test_smart_mode_still_blocked_before_reserve_without_ai(tmp_path, monk
     price = await prepare(tmp_path, monkeypatch, slug)
     inputs = {
         "text": "المحتوى",
-        **({"mode": "smart"} if slug == "text_to_pdf" else {}),
+        "mode": "smart",
         **({"target": "word"} if slug == "text_to_office" else {}),
     }
     with pytest.raises(ServiceError, match="provider_config"):
@@ -107,6 +108,20 @@ async def test_excel_still_requires_provider(tmp_path, monkeypatch):
     price = await prepare(tmp_path, monkeypatch, "text_to_office")
     with pytest.raises(ServiceError, match="provider_config"):
         await submit(1, "text_to_office", {"text": "بيانات", "target": "excel"}, price, "excel")
+
+
+@pytest.mark.parametrize("mode", [None, "automatic"])
+async def test_word_mode_required_before_any_order_or_reservation(tmp_path, monkeypatch, mode):
+    price = await prepare(tmp_path, monkeypatch, "text_to_office")
+    inputs = {"target": "word", "text": "Content"}
+    if mode is not None:
+        inputs["mode"] = mode
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(1, "text_to_office", inputs, price, "missing-mode")
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
 
 
 @pytest.mark.parametrize("failure", ["build", "delivery"])

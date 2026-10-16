@@ -24,7 +24,7 @@ async def test_structural_quality_failure_releases_credit_without_delivery(tmp_p
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "00123 2026-10-09 125.50 00123 00124", "target": "word"},
+        {"mode": "smart", "text": "00123 2026-10-09 125.50 00123 00124", "target": "word"},
         price,
         "bad-file",
     )

@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Explicit Word intake before content — 2026-10-17
+
+- FACT: Official main eeb33c1 includes qualified provider completion safeguards (#90); new live CV evidence is still unavailable. Office v7 exposed direct Word through a first-line directive rather than a visible choice.
+- CHANGE: Office v8 asks file type, then required direct/smart choice for Word, then content. Excel skips the Word-only field and retains its AI contract. New direct requests preserve every supplied line; legacy internal parser/default behavior remains unchanged.
+- SAFETY: Existing version/snapshot guards handle old drafts/jobs; upgrade regression covers v7 cancellation/release and administrator price/activation preservation. No core branching, renderer, service consolidation, price, provider, payment, dependency, migration, cap/retry or production setting change.
+- PASS LOCALLY: Focused schema/routing/source fidelity/acceptance checks and existing Office service regressions, lint/format/diff. Dispatcher, lifecycle and upgrade flows require hosted full CI before merge; no new live-provider, visual redesign or production qualification.
+- Evidence: [explicit Office Word mode](REPORTS/2026-10-17-explicit-office-word-mode.md).
+
 ## Explicit DeepSeek completion mode and truncation handling — 2026-10-17
 
 - FACT: Official DeepSeek docs now state thinking/high effort defaults on; earlier adapter omitted a switch. Latest bilingual provider_usage remains unclassified without its archive. PR #89 is separate review-only work, preserved.

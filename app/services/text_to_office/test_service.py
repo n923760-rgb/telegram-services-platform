@@ -270,7 +270,6 @@ async def test_first_line_literal_directive_preserves_body_without_ai(tmp_path, 
     service.runtime = SimpleNamespace(storage=store, ai=None)
     body = "  نص 00123\n\nEnglish 125.50  "
     inputs = {"target": "word", "text": directive + "\r\n" + body}
-    service.input_schema.validate_inputs(inputs)
     assert not service.needs_ai(inputs)
     result = await service.run(inputs)
     doc = Document(BytesIO(store.read(result.artifacts[0].key)))
@@ -292,8 +291,12 @@ def test_empty_literal_body_is_rejected_before_reservation(text):
         TextToOffice.needs_ai({"target": "word", "text": text})
 
 
-def test_office_intake_only_asks_content_and_format():
-    assert [field.name for field in TextToOffice.input_schema.conversation()] == ["text", "target"]
+def test_office_intake_asks_format_and_word_mode_before_content():
+    assert [field.name for field in TextToOffice.input_schema.conversation()] == [
+        "target",
+        "mode",
+        "text",
+    ]
     assert TextToOffice.needs_ai({"target": "word", "text": "نص"})
 
 
@@ -303,7 +306,6 @@ async def test_direct_word_without_title_preserves_body_once(tmp_path):
     service.runtime = SimpleNamespace(storage=store, ai=None)
     text = "  نص 00123\n\nEnglish 125.50  "
     inputs = {"text": "بدون تعديل النص\n" + text, "target": "word"}
-    TextToOffice.input_schema.validate_inputs(inputs)
     assert not service.needs_ai(inputs)
     result = await service.run(inputs)
     doc = Document(BytesIO(store.read(result.artifacts[0].key)))

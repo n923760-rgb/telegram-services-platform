@@ -15,7 +15,7 @@ portfolio candidates below remain unimplemented until their contracts are delive
 
 | Capability | Customer deliverable and quality boundary |
 | --- | --- |
-| Word/Excel planning | v7 adds complete visible smart Word numeric/contact occurrence checks before rendering and on continuation. Excel rows have ordered source IDs and exact cell quotes with conservative number/date/percent/boolean conversions. Native Data references and all nonempty source lines in Source, with retained numeric precision and explicit context counts. One record per source line, <=200 lines/4000 characters each within 12000 total; no formulas/totals. Word modes retained. Context/column/unit meaning and live native/mobile acceptance remain necessary. |
+| Word/Excel planning | v8 asks file type first, then requires an explicit Word choice (preserve text / improve wording and organization) before content. Excel skips that question. Legacy internal first-line directive parsing remains; explicit choices treat every line as content. v7 added complete visible smart Word numeric/contact occurrence checks before rendering and on continuation. Excel rows have ordered source IDs and exact cell quotes with conservative number/date/percent/boolean conversions. Native Data references and all nonempty source lines in Source, with retained numeric precision and explicit context counts. One record per source line, <=200 lines/4000 characters each within 12000 total; no formulas/totals. Word modes retained. Context/column/unit meaning and live native/mobile acceptance remain necessary. |
 | PowerPoint planning | Editable bounded slide layouts; source-bound native/mobile review remains necessary. |
 | Text PDF | v4 preserves complete visible AI-plan numeric/contact occurrence counts before rendering and on continuation; direct final text remains provider-free. Meaning/names/live layout still require acceptance. |
 | Text PDF to Word | v4 editable extracted text; exact numeric/contact occurrence checks with bounded AI repair/review. These do not prove meaning or names. No original layout/images/table reconstruction promise; updated live acceptance still required. |
@@ -54,7 +54,7 @@ Latest operator CV v7 isolated result: Arabic and English PASS, bilingual FAIL w
 provider_usage; production pause retained, no active test orders or reserved credit.
 The new archive has not been inspected. Prior v6 English output review and older
 all-service acceptance do not establish v7 bilingual quality. Next: diagnose that
-report, make document mode explicit and unify entry points safely, then richer
+report with the explicit provider mode now merged; Word mode is explicit in v8. Next unify document entry points safely, then richer
 CV/PPTX/Excel, image/PDF and text semantic acceptance. No new inventory is needed
 before these improvements.
 
