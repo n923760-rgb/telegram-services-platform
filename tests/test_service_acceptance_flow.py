@@ -52,10 +52,13 @@ async def test_direct_acceptance_native_outputs_and_single_capture_without_provi
             Case("direct", "text_to_pdf", {"text": "Invoice 00123", "mode": "direct"}, ("00123",))
         ],
     )
-    assert await acceptance.execute() == 0
+    assert await acceptance.execute(["direct"]) == 0
     result = json.loads((path / "report.json").read_text())
     assert result["status"] == "PASS" and result["passed"] == 1 and result["provider_calls"] == 0
     assert result["active_orders"] == result["wallet_reserved_halala"] == 0
+    assert result["selected_cases"] == ["direct"]
+    assert result["calculated_usage_sar"] == "0"
+    assert result["cases"][0]["diagnostics"] == []
     assert (path / "direct" / "result.pdf").is_file()
     call.assert_not_awaited()
     async with sessions() as db:
@@ -111,6 +114,10 @@ async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
     assert report["active_orders"] == report["wallet_reserved_halala"] == 0
     assert report["cases"][1]["status"] == "PASS"
     assert report["provider_calls"] == (2 if failure == "none" else 1)
+    if failure == "none":
+        assert [e["stage"] for e in report["cases"][0]["diagnostics"]] == ["generation", "review"]
+        assert report["cases"][0]["diagnostics"][-1]["accepted"] is True
+        assert Decimal(report["calculated_usage_sar"]) > 0
     async with sessions() as db:
         assert await db.scalar(select(func.count(User.id))) == 1
         assert await db.scalar(select(func.count(Order.id))) == 2

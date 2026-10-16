@@ -5,6 +5,12 @@ umask 077
 cd "$(dirname "$0")/.."
 test "$(git branch --show-current)" = main
 test -z "$(git status --porcelain)"
+acceptance_cases=$(python3 - "$@" <<'PY'
+import json
+import sys
+print(json.dumps(sys.argv[1:]))
+PY
+)
 acceptance_sql() {
   docker compose exec -T postgres sh -c \
     'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1 -c "$1"' sh "$1" </dev/null
@@ -25,10 +31,12 @@ docker compose exec -T postgres sh -c \
 acceptance_rc=0
 docker compose run --rm --no-deps -T \
   -e ACCEPTANCE_DATABASE="$acceptance_db" -e ACCEPTANCE_RUN="$acceptance_id" \
+  -e ACCEPTANCE_CASES="$acceptance_cases" \
   -v "$PWD/app/ops/service_acceptance.py:/opt/app/app/ops/service_acceptance.py:ro" \
   -v "$PWD/app/ops/acceptance_cases.py:/opt/app/app/ops/acceptance_cases.py:ro" \
   worker python - <<'PY' || acceptance_rc=$?
 import os
+import json
 import re
 import sys
 from pathlib import Path
@@ -53,12 +61,16 @@ os.environ.update({
     'MAX_JOB_COST_SAR': '.75',
 })
 config.cache_clear()
-from app.ops.service_acceptance import isolated, main
+from app.ops.service_acceptance import ASSETS, cases, isolated, main, selected_cases
 isolated()  # Refuse wrong targets before migrations or seeding.
+selection = json.loads(os.environ['ACCEPTANCE_CASES'])
+selected_cases(cases(ASSETS), selection or None)
 from alembic import command
 from alembic.config import Config
 command.upgrade(Config('alembic.ini'), 'head')
 sys.argv = ['service_acceptance', '--execute']
+for name in selection:
+    sys.argv.extend(['--case', name])
 raise SystemExit(main())
 PY
 
