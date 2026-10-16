@@ -80,6 +80,9 @@ class InputSchema(BaseModel):
         return self
 
     def validate_inputs(self, inputs):
+        if not isinstance(inputs, dict) or any(not isinstance(key, str) for key in inputs):
+            raise ServiceError("input_invalid")
+
         def known_fields(fields, values):
             if not isinstance(values, dict) or set(values) - {field.name for field in fields}:
                 raise ServiceError("input_invalid")
