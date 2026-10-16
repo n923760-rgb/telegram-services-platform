@@ -40,6 +40,15 @@ class OpenAICompatible(AIProvider):
             raise ServiceError("provider_config")
         return cfg.ai_input_usd_per_million, cfg.ai_output_usd_per_million
 
+    def thinking_mode(self):
+        # Only the exact official endpoint and documented models accept this extension.
+        if urlsplit(self.cfg.ai_base_url).hostname == "api.deepseek.com" and self.cfg.ai_model in {
+            "deepseek-flash",
+            "deepseek-v4-pro",
+        }:
+            return self.cfg.ai_deepseek_thinking
+        return None
+
     def cost(self, inputs, outputs):
         input_rate, output_rate = self.rates()
         return (
@@ -74,7 +83,7 @@ class OpenAICompatible(AIProvider):
             }
             for image in images
         )
-        return {
+        body = {
             "model": self.cfg.ai_model,
             "messages": [
                 {"role": "system", "content": system},
@@ -84,6 +93,11 @@ class OpenAICompatible(AIProvider):
             self.output_limit_field(): self.max_output_tokens,
             "temperature": 0,
         }
+        if (mode := self.thinking_mode()) is not None:
+            body["thinking"] = {"type": mode}
+            if mode == "enabled":
+                body.pop("temperature")  # Documented as ignored in thinking mode.
+        return body
 
     async def call(self, schema, text, prompt, images):
         self.rates()
@@ -141,7 +155,11 @@ class OpenAICompatible(AIProvider):
                         "usd_to_sar": str(self.cfg.usd_to_sar),
                         "basis": "returned_tokens",
                         **response_audit(
-                            data, usage, self.max_output_tokens, self.output_limit_field()
+                            data,
+                            usage,
+                            self.max_output_tokens,
+                            self.output_limit_field(),
+                            thinking_mode=self.thinking_mode(),
                         ),
                     },
                 ),

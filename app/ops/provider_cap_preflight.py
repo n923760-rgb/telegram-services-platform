@@ -47,6 +47,7 @@ async def prepare(actor_id=None):
         "model": body["model"],
         "limit_field": adapter.output_limit_field(),
         "probe_output_limit": adapter.max_output_tokens,
+        "thinking_mode": body.get("thinking", {}).get("type"),
         "calculated_reservation_bound_sar": str(bound),
         "body_sha256": sha256(json.dumps(body, sort_keys=True).encode()).hexdigest(),
         "live_execution": "not_performed",

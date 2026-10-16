@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Explicit DeepSeek completion mode and truncation handling — 2026-10-17
+
+- FACT: Official DeepSeek docs now state thinking/high effort defaults on; earlier adapter omitted a switch. Latest bilingual provider_usage remains unclassified without its archive. PR #89 is separate review-only work, preserved.
+- CHANGE: Default explicit thinking.disabled for exact official Flash/Pro, validated operator override, fixed completion audit including finish reason and optional reasoning count (never text). Length-truncated JSON settles then uses the existing bounded repair; actual overrun accounting/pause retained.
+- SAFETY: No new provider call, retry loop, cap/price/activation/service contract/migration/dependency change, historical rewrite, unknown-hold clearance or unpause. Other vendors/proxies/models untouched. Old billing is not a prerequisite for isolated development tests.
+- PASS LOCALLY: 88 focused pure tests and lint/format/diff. New accounting flows and legacy DB-backed adapter checks require hosted full CI. New live provider/visual/production qualification NOT RUN; no permanent-reliability claim.
+- Evidence: [provider completion contract](REPORTS/2026-10-17-provider-completion-contract.md).
+
 ## Complete portfolio review and accurate AI presentation — 2026-10-16
 
 - FACT: Reverified official main ad1d2c1 and reviewed all 16 public contracts, catalog/admin/inventory, source policy tests and available acceptance evidence. Nine required AI, four conditional, three direct. CV v7 operator AR/EN PASS, bilingual provider_usage FAIL; new report/artifacts not supplied, no inferred root cause.

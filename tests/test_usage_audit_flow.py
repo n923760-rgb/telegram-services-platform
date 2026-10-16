@@ -16,6 +16,60 @@ from tests.test_operations import running
 from tests.test_provider_contract_flow import Outcome
 
 
+@pytest.mark.parametrize("recover", [True, False])
+async def test_truncation_retains_each_billable_call_without_global_pause(monkeypatch, recover):
+    _, jid = await running()
+    cfg = config()
+    for key, value in {
+        "ai_enabled": True,
+        "ai_api_key": SecretStr("test-only-secret"),
+        "ai_base_url": "https://api.deepseek.com",
+        "ai_model": "deepseek-flash",
+        "ai_input_usd_per_million": Decimal("1"),
+        "ai_output_usd_per_million": Decimal("1"),
+    }.items():
+        monkeypatch.setattr(cfg, key, value)
+    old = await reserve_call(jid, 1, Decimal(".01"))
+    await uncertain_call(old)
+    calls = []
+
+    def transport(request):
+        import json
+
+        assert json.loads(request.content)["thinking"] == {"type": "disabled"}
+        calls.append(1)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop" if recover and len(calls) == 2 else "length",
+                        "message": {"content": '{"ok":true}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 20},
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(transport)) as client:
+        ai = AI(OpenAICompatible(client), jid, 1)
+        if recover:
+            assert (await ai.extract(Outcome, "source", "extract")).ok
+        else:
+            with pytest.raises(ServiceError, match="provider_invalid"):
+                await ai.extract(Outcome, "source", "extract")
+    async with sessions() as db:
+        usages = list(await db.scalars(select(CostUsage).where(CostUsage.job_id == jid)))
+        holds = list(await db.scalars(select(CostHold).where(CostHold.job_id == jid)))
+        assert len(calls) == len(usages) == 2
+        assert sorted(h.status for h in holds) == ["settled", "settled", "uncertain"]
+        assert (await db.get(CostHold, old)).status == "uncertain"
+        budget = await db.get(CostBudget, keys(1)[0])
+        assert budget.reserved == Decimal(".01")
+        assert budget.spent == sum(u.cost_sar for u in usages)
+        assert await db.get(Setting, "PROVIDER_PAUSED") is None
+
+
 @pytest.mark.parametrize("excess", [False, True])
 async def test_token_contract_breach_pauses_even_below_cost_bound_and_retains_old_unknown(
     monkeypatch, excess
