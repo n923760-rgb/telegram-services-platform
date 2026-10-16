@@ -1,9 +1,17 @@
 import json
 import re
 from collections import Counter
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
-from pydantic import Field, StringConstraints, ValidationError, field_validator, model_validator
+from pydantic import (
+    Field,
+    StringConstraints,
+    ValidationError,
+    create_model,
+    field_validator,
+    model_validator,
+)
+from pydantic_core import PydanticCustomError
 
 from app.builders.direction import is_rtl
 from app.builders.schema import StrictModel
@@ -212,6 +220,25 @@ class CvRevision(StrictModel):
 DOMAIN_TOKEN = re.compile(r"(?<![\w@])(?:[\w-]+\.)+[a-zA-Z]{2,}(?:/[^\s<>]*)?")
 PHONE_TOKEN = re.compile(r"(?<!\w)\+?\d[\d ()-]{6,}\d(?!\w)")
 
+# Fixed, content-free categories: never derive codes or diagnostic labels from inputs.
+CV_VALIDATION_CODES = (
+    "cv_section_order",
+    "cv_target_languages",
+    "cv_name_identifiers",
+    "cv_name_script",
+    "cv_source_ids",
+    "cv_single_line",
+    "cv_source_tokens",
+    "cv_paragraph_role",
+    "cv_headline_limit",
+    "cv_summary_duplicate",
+    "cv_summary_missing",
+    "cv_summary_line",
+    "cv_summary_sources",
+    "cv_summary_tokens",
+    "cv_output_limit",
+)
+
 
 def protected(text):
     identifiers = (
@@ -226,63 +253,137 @@ def revision_schema(values):
     if values.summary is None:
         names.add("summary")
 
+    SourceSegment = create_model(
+        "CvSourceSegment",
+        __base__=RevisedSegment,
+        id=(Literal[tuple(source)], Field(description="Use each allowed source ID exactly once.")),
+    )
+    summary_refs = tuple(
+        key for key, item in source.items() if item["field"] not in {"headline", "contact"}
+    )
+    SourceSummary = create_model(
+        "CvSourceSummary",
+        __base__=ProfileSummary,
+        source_ids=(
+            list[Literal[summary_refs]],
+            Field(
+                min_length=1,
+                max_length=min(12, len(summary_refs)),
+                json_schema_extra={"uniqueItems": True},
+            ),
+        ),
+    )
+    SourceBody = create_model(
+        "CvSourceBody",
+        __base__=CvBody,
+        segments=(list[SourceSegment], Field(min_length=len(source), max_length=len(source))),
+        language=(Literal[tuple(values.targets())], ...),
+        summary=(
+            SourceSummary,
+            Field(
+                description="Required factual profile using career references only; no numbers, dates, contacts or URLs."
+            ),
+        )
+        if values.summary is None
+        else (type(None), None),
+    )
+
     class SourceCv(CvRevision):
+        diagnostic_categories: ClassVar[dict[str, str]] = {
+            code: code for code in CV_VALIDATION_CODES
+        }
+        section_order: list[Literal[tuple(sorted(names))]] = Field(
+            min_length=len(names),
+            max_length=len(names),
+            description="Order every allowed section exactly once; do not add absent sections.",
+            json_schema_extra={"uniqueItems": True},
+        )
+        bodies: list[SourceBody] = Field(
+            min_length=len(values.targets()),
+            max_length=len(values.targets()),
+            description="Return bodies in exactly this language order: "
+            + ", ".join(values.targets()),
+        )
+
         @model_validator(mode="after")
         def fidelity(self):
             if len(self.section_order) != len(names) or set(self.section_order) != names:
-                raise ValueError("order every supplied section exactly once")
+                raise PydanticCustomError(
+                    "cv_section_order", "order every supplied section exactly once"
+                )
             if [body.language for body in self.bodies] != list(values.targets()):
-                raise ValueError("return requested languages exactly once in requested order")
+                raise PydanticCustomError(
+                    "cv_target_languages",
+                    "return requested languages exactly once in requested order",
+                )
             for body in self.bodies:
                 DocumentInputs.printable_title(body.full_name)
                 if protected(body.full_name) != protected(values.full_name):
-                    raise ValueError("preserve name identifiers")
+                    raise PydanticCustomError("cv_name_identifiers", "preserve name identifiers")
                 if (
                     is_rtl(values.full_name) == (body.language == "ar")
                     and body.full_name != values.full_name
                 ):
-                    raise ValueError("preserve the original-script name verbatim")
+                    raise PydanticCustomError(
+                        "cv_name_script", "preserve the original-script name verbatim"
+                    )
                 ids = [segment.id for segment in body.segments]
                 if len(ids) != len(source) or set(ids) != set(source):
-                    raise ValueError("rewrite every source ID exactly once")
+                    raise PydanticCustomError(
+                        "cv_source_ids", "rewrite every source ID exactly once"
+                    )
                 for segment in body.segments:
                     original = source[segment.id]
                     DocumentInputs.printable_text(segment.text)
                     if any(char in segment.text for char in "\n\r"):
-                        raise ValueError("one complete line per source ID")
+                        raise PydanticCustomError(
+                            "cv_single_line", "one complete line per source ID"
+                        )
                     if protected(segment.text) != protected(original["text"]):
-                        raise ValueError("preserve per-source numeric, phone, email and URL tokens")
+                        raise PydanticCustomError(
+                            "cv_source_tokens",
+                            "preserve per-source numeric, phone, email and URL tokens",
+                        )
                     if (
                         original["field"] in {"contact", "headline", "summary"}
                         and segment.presentation != "paragraph"
                     ):
-                        raise ValueError("header and profile text must remain paragraphs")
+                        raise PydanticCustomError(
+                            "cv_paragraph_role", "header and profile text must remain paragraphs"
+                        )
                     if original["field"] == "headline" and len(segment.text) > 120:
-                        raise ValueError("headline limit")
+                        raise PydanticCustomError("cv_headline_limit", "headline limit")
                 if values.summary is not None and body.summary is not None:
-                    raise ValueError("do not duplicate the supplied summary")
+                    raise PydanticCustomError(
+                        "cv_summary_duplicate", "do not duplicate the supplied summary"
+                    )
                 if values.summary is None:
                     summary = body.summary
                     if summary is None:
-                        raise ValueError("supply a short grounded professional summary")
+                        raise PydanticCustomError(
+                            "cv_summary_missing", "supply a short grounded professional summary"
+                        )
                     DocumentInputs.printable_text(summary.text)
                     if any(char in summary.text for char in "\n\r"):
-                        raise ValueError("single summary paragraph")
+                        raise PydanticCustomError("cv_summary_line", "single summary paragraph")
                     if len(set(summary.source_ids)) != len(summary.source_ids) or any(
                         key not in source or source[key]["field"] in {"contact", "headline"}
                         for key in summary.source_ids
                     ):
-                        raise ValueError("summary requires actual career source references")
+                        raise PydanticCustomError(
+                            "cv_summary_sources", "summary requires actual career source references"
+                        )
                     if any(protected(summary.text)):
-                        raise ValueError(
-                            "summary must not introduce or duplicate numeric/contact claims"
+                        raise PydanticCustomError(
+                            "cv_summary_tokens",
+                            "summary must not introduce or duplicate numeric/contact claims",
                         )
                 if (
                     sum(len(s.text) for s in body.segments)
                     + len(body.summary.text if body.summary else "")
                     > 15000
                 ):
-                    raise ValueError("CV output character limit")
+                    raise PydanticCustomError("cv_output_limit", "CV output character limit")
             return self
 
     return SourceCv

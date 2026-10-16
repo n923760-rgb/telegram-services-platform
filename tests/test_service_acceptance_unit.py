@@ -232,3 +232,111 @@ def test_targeted_plan_and_invalid_selection_do_not_execute(monkeypatch, capsys)
     monkeypatch.setattr(sys, "argv", ["service_acceptance", "--execute", "--case", "unknown"])
     assert acceptance.main() == 1
     assert json.loads(capsys.readouterr().out)["error"] == "acceptance_case_invalid"
+
+
+async def test_cv_constraint_diagnostics_are_specific_and_content_free(monkeypatch):
+    import json
+
+    from app.providers.ai import gateway
+    from app.providers.ai.base import AIResponse, Usage
+    from app.services.cv_formatting.schema import Inputs, revision_schema
+    from tests.cv_fixtures import inputs, revision
+
+    source = inputs("en")
+    payload = revision(source)
+    payload["bodies"][0]["segments"][0]["text"] += " 99999"
+
+    class Provider:
+        calls = 0
+
+        def upper_bound(self, *args):
+            return Decimal(".01")
+
+        async def extract_from_text(self, *args):
+            self.calls += 1
+            return AIResponse(json.dumps(payload), Usage(1, 2, Decimal(".001")))
+
+    async def reserve(*args):
+        return 1
+
+    async def settle(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(gateway, "reserve_call", reserve)
+    monkeypatch.setattr(gateway, "settle_call", settle)
+    provider, events = Provider(), []
+    ai = acceptance.DiagnosticAI(provider, 1, 1, quality_review=True, diagnostics=events)
+    with pytest.raises(ServiceError, match="provider_invalid"):
+        await ai.extract(revision_schema(Inputs.parse(source)), Inputs.parse(source).source())
+    assert provider.calls == 2
+    assert [e["categories"] for e in events] == [["cv_source_tokens"], ["cv_source_tokens"]]
+    assert all(e["stage"] == "generation" and e["outcome"] == "invalid" for e in events)
+    for value in ("99999", "sample@example.invalid", "0500123456", "Sam Example"):
+        assert value not in json.dumps(events)
+
+
+@pytest.mark.parametrize(
+    "declaration",
+    [
+        None,
+        [],
+        {"secret field": "raw data"},
+        {"private_code": "private data"},
+        {"value_error": "override_label"},
+    ],
+)
+async def test_diagnostic_category_metadata_cannot_copy_raw_errors(monkeypatch, declaration):
+    from typing import ClassVar
+
+    from pydantic import model_validator
+    from pydantic_core import PydanticCustomError
+
+    from app.builders.schema import StrictModel
+    from app.providers.ai import gateway
+    from app.providers.ai.base import AIResponse, Usage
+
+    class Candidate(StrictModel):
+        diagnostic_categories: ClassVar = declaration
+        value: str
+
+        @model_validator(mode="after")
+        def reject(self):
+            code = (
+                "value_error"
+                if declaration == {"value_error": "override_label"}
+                else "private_code"
+            )
+            raise PydanticCustomError(code, "private error text", {"secret": self.value})
+
+    class Provider:
+        calls = 0
+
+        def upper_bound(self, *args):
+            return Decimal(".01")
+
+        async def extract_from_text(self, *args):
+            self.calls += 1
+            return AIResponse('{"value":"private value"}', Usage(1, 2, Decimal(".001")))
+
+    async def reserve(*args):
+        return 1
+
+    async def settle(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(gateway, "reserve_call", reserve)
+    monkeypatch.setattr(gateway, "settle_call", settle)
+    events = []
+    ai = acceptance.DiagnosticAI(Provider(), 1, 1, diagnostics=events)
+    with pytest.raises(ServiceError, match="provider_invalid"):
+        await ai._extract(Candidate, "private source", attempts=1)
+    assert events == [
+        {
+            "call": 1,
+            "stage": "generation",
+            "outcome": "invalid",
+            "categories": [
+                "constraint" if declaration == {"value_error": "override_label"} else "schema_type"
+            ],
+        }
+    ]

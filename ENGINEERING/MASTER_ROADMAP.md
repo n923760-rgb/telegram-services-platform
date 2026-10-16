@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Request-specific CV generation contract — 2026-10-16
+
+- FACT: Targeted operator cv_en rerun failed twice in generation with generic constraint errors, before content review. Test orders/credit closed cleanly; production pause retained. The exact custom rule is not recoverable from that report.
+- CHANGE: CV v6 exposes request-specific IDs, sections/counts, target language/count and summary presence/reference requirements in provider JSON schema. Existing fidelity checks remain; fixed custom codes make isolated diagnostics more useful without retaining content.
+- SAFETY: No retry/cap increase, gateway/financial/renderer/dependency/migration/price/activation changes. One career intake and existing design preserved. A new worker image is needed for the service-code test; production containers need not be replaced for isolated acceptance.
+- PASS LOCALLY: 69 focused contract/redaction/review/architecture checks and 56 existing CV input/fidelity/profile regressions; lint/format/diff/Bash syntax. Full hosted workflow required before merge. New live CV result NOT RUN; no claim of a proven English CV fix.
+- Evidence: [CV generation contract](REPORTS/2026-10-16-cv-source-contract.md).
+
 ## Live output review and targeted acceptance diagnostics — 2026-10-16
 
 - FACT: Uploaded #84 archive reviewed: all 40 artifact hashes match, 27/28 cases passed, 41 settled holds, calculated SAR .253417 versus cumulative call bounds 1.979355; production pause retained per operator.

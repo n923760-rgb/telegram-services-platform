@@ -9,7 +9,7 @@ from app.services.document_results import word_pdf_result
 
 class CvFormatting(BaseService):
     slug = "cv_formatting"
-    version = "5"
+    version = "6"
     worker_requirements = ("office_export",)
     menu_order = 10
     category = "professional"
