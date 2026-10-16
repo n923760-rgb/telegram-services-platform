@@ -16,7 +16,7 @@ UNKNOWN: The original report contains no generation/review stage, JSON validatio
 
 ## Native and content review
 
-Read all text responses, Word paragraphs/tables, spreadsheet values/types and slide text. Rendered all 14 supplied PDF pages, all nine Word export pages, all eleven Calc print pages and the one PowerPoint slide; inspected image enhancement outputs. Spreadsheet artifact previews were cross-checked with native Calc because the preview importer displayed text identifiers as numbers. Stored values and Calc retain 00123/00017 and 125.50.
+Read all text responses, Word paragraphs/tables, spreadsheet values/types and slide text. Rendered all 14 supplied PDF pages, all nine Word documents (ten rendered pages), all eleven Calc print pages and the one PowerPoint slide; inspected image enhancement outputs. Spreadsheet artifact previews were cross-checked with native Calc because the preview importer displayed text identifiers as numbers. Stored values and Calc retain 00123/00017 and 125.50.
 
 | Service | Supplied evidence | Quality finding / remaining boundary |
 | --- | --- | --- |
