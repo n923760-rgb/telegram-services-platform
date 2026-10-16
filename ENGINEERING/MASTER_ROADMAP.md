@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Live output review and targeted acceptance diagnostics — 2026-10-16
+
+- FACT: Uploaded #84 archive reviewed: all 40 artifact hashes match, 27/28 cases passed, 41 settled holds, calculated SAR .253417 versus cumulative call bounds 1.979355; production pause retained per operator.
+- QUALITY: Native output inspection confirms small fixtures are readable. CV English standalone failed; exact validation stage unknown. CV/PPTX design remains basic; PDF-to-Word does not reconstruct the table grid. Long/dense Arabic and reverse translation need richer acceptance fixtures.
+- CHANGE: Exact-case reruns, isolated-only content-free generation/review validation diagnostics, and separate calculated usage total. Original schema, bounded repair, budgets and production code/gates retained.
+- PASS LOCALLY: 21 pure/architecture checks, lint/format/diff/Bash syntax. Hosted full qualification required. Targeted live rerun NOT RUN; no claim that CV failure is fixed.
+- Evidence: [output review](REPORTS/2026-10-16-acceptance-output-review.md).
+
 ## Isolated all-service live acceptance — 2026-10-15
 
 - OWNER AUTHORITY: Test all services now; historical cost reconciliation is not a prerequisite. Baseline c3a61f3 deployed/healthy/paused. Real synthetic C6F5D1AD succeeded: 458 input/93 output <=128, calculated SAR .000934, one settled hold; no universal/provider-quality/invoice claim.

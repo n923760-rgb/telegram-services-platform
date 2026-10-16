@@ -15,6 +15,7 @@ from docx import Document
 from openpyxl import load_workbook
 from PIL import Image
 from pptx import Presentation
+from pydantic import ValidationError
 from pypdf import PdfReader
 from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
@@ -38,6 +39,7 @@ from app.orders.engine import confirm_structure, fail_locked, register, submit
 from app.orders.locking import lock_order
 from app.providers.ai.gateway import AI
 from app.providers.ai.openai_compatible import OpenAICompatible
+from app.providers.ai.review import QualityReview
 from app.providers.runtime import runtime_for, storage
 from app.providers.storage import OwnedStorage
 from app.services.base import ServiceError
@@ -96,6 +98,67 @@ class AcceptanceProvider(OpenAICompatible):
             raise ServiceError("acceptance_cost_cap")
         self.calls += 1
         return await super().call(*args)
+
+
+class DiagnosticAI(AI):
+    """Observe validation in isolated acceptance only; never retain model/source text."""
+
+    def __init__(self, *args, diagnostics, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.diagnostics = diagnostics
+
+    async def _extract(self, schema, *args, **kwargs):
+        stage = "review" if schema is QualityReview else "generation"
+        diagnostics, provider = self.diagnostics, self.provider
+
+        class ObservedSchema:
+            @staticmethod
+            def model_json_schema():
+                return schema.model_json_schema()
+
+            @staticmethod
+            def model_validate_json(content):
+                event = {"call": provider.calls, "stage": stage}
+                try:
+                    candidate = schema.model_validate_json(content)
+                except ValueError as error:
+                    # Do not retain messages, locations, input, context or custom error types.
+                    kinds = (
+                        {
+                            e["type"]
+                            for e in error.errors(include_input=False, include_context=False)
+                        }
+                        if isinstance(error, ValidationError)
+                        else {"value_error"}
+                    )
+                    labels = {
+                        "json_invalid": "invalid_json",
+                        "missing": "missing_field",
+                        "extra_forbidden": "extra_field",
+                        "value_error": "constraint",
+                    }
+                    diagnostics.append(
+                        event
+                        | {
+                            "outcome": "invalid",
+                            "categories": sorted({labels.get(k, "schema_type") for k in kinds}),
+                        }
+                    )
+                    raise
+                diagnostics.append(event | {"outcome": "valid"})
+                if stage == "review":
+                    diagnostics[-1].update(accepted=candidate.accepted, issues=candidate.issues)
+                return candidate
+
+        return await super()._extract(ObservedSchema, *args, **kwargs)
+
+
+def selected_cases(templates, names=None):
+    if names is None:
+        return templates
+    if not names or len(set(names)) != len(names) or set(names) - {c.name for c in templates}:
+        raise ServiceError("acceptance_case_invalid")
+    return [case for case in templates if case.name in names]
 
 
 def inspect_output(name, data, case):
@@ -230,6 +293,7 @@ async def run_case(case, adapter, backend, output):
     oid = None
     error = None
     approvals = 0
+    diagnostics = []
     delivery = Delivery(output / case.name, backend, case)
     before = adapter.calls
     try:
@@ -247,7 +311,9 @@ async def run_case(case, adapter, backend, output):
                 job_id, user_id, needs_ai=registry.types[case.slug].needs_ai(case.inputs)
             )
             if value.ai is not None:
-                value.ai = AI(adapter, job_id, user_id, quality_review=True)
+                value.ai = DiagnosticAI(
+                    adapter, job_id, user_id, quality_review=True, diagnostics=diagnostics
+                )
             return value
 
         ctx = {"delivery": delivery, "runtime_factory": runtime}
@@ -331,6 +397,7 @@ async def run_case(case, adapter, backend, output):
             "error": error or (order.error_key if order else None),
             "request": str(oid) if oid else None,
             "provider_calls": adapter.calls - before,
+            "diagnostics": diagnostics,
             "approvals": approvals,
             "artifacts": delivery.files,
             "usage": [
@@ -346,7 +413,7 @@ async def run_case(case, adapter, backend, output):
         }
 
 
-async def execute():
+async def execute(case_names=None):
     root = isolated()
     output = root / "results"
     if output.exists():
@@ -356,7 +423,7 @@ async def execute():
     async with sessions() as db:
         if any([await db.scalar(select(func.count(cls.id))) for cls in (User, Order, CostHold)]):
             raise ServiceError("acceptance_fresh_database_required")
-    templates = cases(ASSETS)
+    templates = selected_cases(cases(ASSETS), case_names)
     output.mkdir(parents=True)
     async with sessions.begin() as db:
         await registry.sync(db)
@@ -381,6 +448,7 @@ async def execute():
     report = {
         "status": "RUNNING",
         "cases": [],
+        "selected_cases": [case.name for case in templates],
         "services": len({case.slug for case in templates}),
         "host": urlsplit(config().ai_base_url).hostname,
         "model": config().ai_model,
@@ -421,6 +489,12 @@ async def execute():
             test_provider_paused=bool(pause and pause.value.get("value")),
         )
     report["passed"] = sum(row["status"] == "PASS" for row in report["cases"])
+    report["calculated_usage_sar"] = str(
+        sum(
+            (Decimal(u["calculated_sar"]) for row in report["cases"] for u in row.get("usage", [])),
+            Decimal("0"),
+        )
+    )
     report["failed"] = len(templates) - report["passed"]
     report["status"] = (
         "PASS" if not report["failed"] and not active and funds.reserved == 0 else "REVIEW_REQUIRED"
@@ -437,6 +511,7 @@ async def execute():
                     "failed",
                     "provider_calls",
                     "conservative_call_bounds_sar",
+                    "calculated_usage_sar",
                     "active_orders",
                     "wallet_reserved_halala",
                 )
@@ -449,9 +524,14 @@ async def execute():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--case", action="append", dest="case_names")
     args = parser.parse_args()
+    try:
+        values = selected_cases(cases(ASSETS), args.case_names)
+    except ServiceError as error:
+        print(json.dumps({"status": "BLOCKED", "error": error.key}))
+        return 1
     if not args.execute:
-        values = cases(ASSETS)
         print(
             json.dumps(
                 {
@@ -466,7 +546,7 @@ def main():
         )
         return 0
     try:
-        return asyncio.run(execute())
+        return asyncio.run(execute(args.case_names))
     except ServiceError as error:
         print(json.dumps({"status": "BLOCKED", "error": error.key}))
         return 1

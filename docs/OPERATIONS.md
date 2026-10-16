@@ -27,6 +27,19 @@ and safe request audit metadata. Keep it private with the outputs. Opening files
 and preserving fixture tokens do not certify visual polish, factual semantics,
 mobile UX, every mode/boundary, provider vision support, paid invoices or Stars.
 
+For a targeted rerun, pass exact case names, for example
+`bash scripts/service-acceptance.sh cv_ar cv_en cv_bilingual`. The CLI equivalent
+for a pure plan is `python -m app.ops.service_acceptance --case cv_en` (no call).
+Omitting case names retains the full sweep; duplicates and unknown names fail.
+Each execution still requires a fresh isolated database and output prefix.
+Diagnostics identify generation versus review, JSON/schema/constraint rejection,
+and valid semantic review verdicts using bounded codes only. They retain no raw
+model output, customer text, validation locations/messages or prompts. A rejection
+category is not an explanation of which source fact failed. Existing budget,
+settlement and bounded repair behavior is reused without extra calls. The report
+also totals `calculated_usage_sar`; cumulative conservative reservation bounds
+are a separate allowance, and neither amount proves the provider invoice.
+
 ## Customer behavior during provider pause
 
 Catalog browsing shows a localized notice for categories containing required-AI

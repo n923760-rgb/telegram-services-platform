@@ -107,3 +107,128 @@ def test_provider_whole_run_bound_is_never_refunded(monkeypatch):
     adapter.calls = acceptance.CALLS
     with pytest.raises(ServiceError):
         adapter.upper_bound({}, "", "", [])
+
+
+def test_selected_case_subset_is_explicit_complete_and_canonical():
+    templates = cases(acceptance.ASSETS)
+    assert acceptance.selected_cases(templates) is templates
+    assert [c.name for c in acceptance.selected_cases(templates, ["cv_en", "cv_ar"])] == [
+        "cv_ar",
+        "cv_en",
+    ]
+    for invalid in ([], ["cv_en", "cv_en"], ["missing"], ["cv_en", "missing"]):
+        with pytest.raises(ServiceError, match="acceptance_case_invalid"):
+            acceptance.selected_cases(templates, invalid)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ['{"private-source":"secret"', '{"private-source":"secret"}', '{"accepted":false,"issues":[]}'],
+)
+async def test_diagnostics_preserve_contract_and_bounded_repair_without_content(monkeypatch, bad):
+    import json
+
+    from app.providers.ai import gateway
+    from app.providers.ai.base import AIResponse, Usage
+    from app.providers.ai.review import QualityReview
+
+    class Provider:
+        calls = 0
+        schemas = []
+
+        def upper_bound(self, schema, *args):
+            self.schemas.append(schema)
+            return Decimal(".01")
+
+        async def extract_from_text(self, *args):
+            self.calls += 1
+            return AIResponse(
+                bad if self.calls == 1 else '{"accepted":true,"issues":[]}',
+                Usage(1, 2, Decimal(".001")),
+            )
+
+    async def reserve(*args):
+        return 1
+
+    async def settle(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(gateway, "reserve_call", reserve)
+    monkeypatch.setattr(gateway, "settle_call", settle)
+    provider = Provider()
+    events = []
+    ai = acceptance.DiagnosticAI(provider, 1, 1, diagnostics=events)
+    result = await ai._extract(QualityReview, "private-source")
+    assert type(result) is QualityReview and result.accepted
+    assert provider.calls == 2
+    assert provider.schemas == [QualityReview.model_json_schema()] * 2
+    assert events[0]["stage"] == "review" and events[0]["outcome"] == "invalid"
+    assert events[1] == {
+        "call": 2,
+        "stage": "review",
+        "outcome": "valid",
+        "accepted": True,
+        "issues": [],
+    }
+    assert "secret" not in json.dumps(events) and "private-source" not in json.dumps(events)
+
+
+async def test_diagnostics_distinguish_generation_and_semantic_rejection(monkeypatch):
+    from app.builders.schema import StrictModel
+    from app.providers.ai import gateway
+    from app.providers.ai.base import AIResponse, Usage
+
+    class Candidate(StrictModel):
+        value: str
+
+    replies = iter(
+        [
+            '{"value":"private-source"}',
+            '{"accepted":false,"issues":["omission"]}',
+            '{"value":"private-source"}',
+            '{"accepted":true,"issues":[]}',
+        ]
+    )
+
+    class Provider:
+        calls = 0
+
+        def upper_bound(self, *args):
+            return Decimal(".01")
+
+        async def extract_from_text(self, *args):
+            self.calls += 1
+            return AIResponse(next(replies), Usage(1, 2, Decimal(".001")))
+
+    async def reserve(*args):
+        return 1
+
+    async def settle(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(gateway, "reserve_call", reserve)
+    monkeypatch.setattr(gateway, "settle_call", settle)
+    provider, events = Provider(), []
+    ai = acceptance.DiagnosticAI(provider, 1, 1, quality_review=True, diagnostics=events)
+    assert (await ai.extract(Candidate, "private-source")).value == "private-source"
+    assert [(e["stage"], e["outcome"]) for e in events] == [
+        ("generation", "valid"),
+        ("review", "valid"),
+        ("generation", "valid"),
+        ("review", "valid"),
+    ]
+    assert events[1]["issues"] == ["omission"] and events[1]["accepted"] is False
+    assert provider.calls == 4 and "private-source" not in str(events)
+
+
+def test_targeted_plan_and_invalid_selection_do_not_execute(monkeypatch, capsys):
+    import json
+    import sys
+
+    monkeypatch.setattr(acceptance, "execute", lambda *args: pytest.fail("execution forbidden"))
+    monkeypatch.setattr(sys, "argv", ["service_acceptance", "--case", "cv_en"])
+    assert acceptance.main() == 0
+    assert json.loads(capsys.readouterr().out)["cases"] == ["cv_en"]
+    monkeypatch.setattr(sys, "argv", ["service_acceptance", "--execute", "--case", "unknown"])
+    assert acceptance.main() == 1
+    assert json.loads(capsys.readouterr().out)["error"] == "acceptance_case_invalid"
