@@ -27,6 +27,7 @@ class PdfTablesExcel(BaseService):
     description_ar = tr("pdf_tables_description")
     price_sar = Decimal("5.00")
     requires_ai = False
+    optional_ai = True
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[

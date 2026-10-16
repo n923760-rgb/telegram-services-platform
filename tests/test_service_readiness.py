@@ -65,6 +65,17 @@ def test_mixed_plugin_does_not_guess_ai_need_from_empty_input(monkeypatch):
     assert tr("admin_ai_input_dependent") in readiness_text(source, evidence, "ar")
 
 
+@pytest.mark.parametrize("slug", ["csv_review", "images_to_pdf", "pdf_tools"])
+@pytest.mark.parametrize("lang", ["ar", "en"])
+def test_direct_services_are_not_misreported_as_conditional_ai(slug, lang):
+    source = row(slug)
+    evidence = readiness.checks(source, ai_state="paused", stars_enabled=False)
+    assert evidence["ai_policy"] == "none" and evidence["listed"]
+    text = readiness_text(source, evidence, lang)
+    assert tr("admin_ai_none", lang) in text
+    assert tr("admin_ai_input_dependent", lang) not in text
+
+
 @pytest.mark.parametrize("slug", ["local_ocr", "missing"])
 def test_retired_or_unknown_plugins_are_not_exposed(slug):
     with pytest.raises(ServiceError, match="unavailable"):

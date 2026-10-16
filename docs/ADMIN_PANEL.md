@@ -28,7 +28,9 @@ Stars mode. An Edit Stars price shortcut reuses the existing audited price flow.
 
 This is not a service readiness certificate: no AI/network calls, native tool
 probes, worker-container inspection, remaining-budget checks, or customer output
-acceptance occur. A listing is not admission approval. Mixed-input services are
+acceptance occur. A listing is not admission approval. AI presentation separates required, conditional and no-AI services using declared
+plugin metadata. Conditional options are disclosed as unavailable when paused,
+without blocking direct paths in the inventory. Mixed-input services are
 not tested using fabricated inputs: their actual admission still checks
 `needs_ai(inputs)`. Provider error details, endpoint and credentials are not shown.
 The snapshot can change after rendering. Inspection does not activate a service,
