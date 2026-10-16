@@ -10,9 +10,9 @@
 
 FACT: 27/28 cases completed across all 16 public services, 41 provider calls, all 41 holds settled, zero remaining active orders and zero reserved test credit. Calculated usage totals SAR 0.253417; SAR 1.979355 is the cumulative conservative call-bound allowance used, not the bill. No recorded output-limit breach. Operator confirmed production pause remains true. Historical unknown exposure is untouched.
 
-FACT: Single-language English CV failed with provider_invalid after three calls. Its third call returned 8192 output tokens, equal to the requested cap. The successful bilingual CV also used one 8192-token call. Equality is allowed and is not a cap breach.
+FACT: Single-language English CV failed with provider_invalid after three calls. One of its calls returned 8192 output tokens, equal to the requested cap. The successful bilingual CV also used one 8192-token call. Equality is allowed and is not a cap breach.
 
-UNKNOWN: The original report contains no generation/review stage, JSON validation category, finish reason or raw output. Three calls alone do not distinguish creation repair, invalid review JSON or semantic rejection. Reaching the cap does not prove truncation. The exact CV defect cannot be reconstructed from this archive; do not weaken fidelity validation or increase retries/caps on that evidence.
+UNKNOWN: The original report contains no generation/review stage, JSON validation category, finish reason or raw output. The old usage query has no explicit ordering, so array position is not chronological proof. Three calls alone do not distinguish creation repair, invalid review JSON or semantic rejection. Reaching the cap does not prove truncation. The exact CV defect cannot be reconstructed from this archive; do not weaken fidelity validation or increase retries/caps on that evidence.
 
 ## Native and content review
 
