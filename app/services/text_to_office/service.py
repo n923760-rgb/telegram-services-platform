@@ -13,7 +13,7 @@ from app.services.text_to_office.schema import Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "7"
+    version = "8"
     slug = "text_to_office"
     menu_order = 10
     category = "documents"
@@ -26,13 +26,20 @@ class TextToOffice(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
-            InputField(name="text", prompt_key="office_text"),
             InputField(
                 name="target",
                 prompt_key="office_target",
                 choices=["word", "excel"],
                 choice_keys=["word", "excel"],
             ),
+            InputField(
+                name="mode",
+                prompt_key="office_word_mode",
+                choices=["direct", "smart"],
+                choice_keys=["office_word_direct", "office_word_smart"],
+                when={"target": ["word"]},
+            ),
+            InputField(name="text", prompt_key="office_text"),
         ]
     )
 

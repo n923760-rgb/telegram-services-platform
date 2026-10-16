@@ -46,7 +46,7 @@ async def test_legacy_service_snapshots_upgrade_without_cancelling_unchanged_ord
         assert (funds.available, funds.reserved) == (900, 0)
 
 
-@pytest.mark.parametrize("old_version", ["3", "4"])
+@pytest.mark.parametrize("old_version", ["3", "4", "7"])
 async def test_office_upgrade_preserves_admin_settings_and_releases_old_job(
     monkeypatch,
     old_version,
@@ -58,6 +58,8 @@ async def test_office_upgrade_preserves_admin_settings_and_releases_old_job(
     async with sessions.begin() as db:
         row = await db.get(Service, "text_to_office")
         old = deepcopy(row.input_schema)
+        old["fields"] = [field for field in old["fields"] if field["name"] != "mode"]
+        old["fields"].sort(key=lambda field: field["name"] != "text")
         old["fields"].extend(
             [
                 InputField(
@@ -80,11 +82,13 @@ async def test_office_upgrade_preserves_admin_settings_and_releases_old_job(
                 ).model_dump(),
             ]
         )
+        if old_version == "7":
+            old["fields"] = old["fields"][:2]
         row.enabled, row.price_halala = True, 777
     oid = await submit(
         1,
         "text_to_office",
-        {"target": "word", "text": "unchanged"},
+        {"mode": "smart", "target": "word", "text": "unchanged"},
         777,
         "old-office",
     )
@@ -94,12 +98,14 @@ async def test_office_upgrade_preserves_admin_settings_and_releases_old_job(
         row.version, row.input_schema = old_version, old
         order = await db.get(Order, oid)
         order.service_version, order.input_schema_snapshot = old_version, old
+        if old_version == "7":
+            order.inputs = {key: value for key, value in order.inputs.items() if key != "mode"}
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "text_to_office")
-        assert row.version == "7" and row.enabled and row.price_halala == 777
+        assert row.version == "8" and row.enabled and row.price_halala == 777
         assert row.input_schema == registry.types["text_to_office"].input_schema.model_dump()
         assert (await db.get(Service, "text_to_pdf")).version == "4"
     await execute_job({"delivery": Delivery()}, str(await job_for(oid)))

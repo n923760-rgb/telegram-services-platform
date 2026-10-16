@@ -116,11 +116,11 @@ async def test_language_switch_resends_current_question_without_losing_inputs(fl
         (await db.get(Service, "text_to_office")).enabled = True
     await message("/start")
     await callback("service:text_to_office")
-    await message("محتوى العميل")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     saved = await state.get_data()
     await callback("lang:en")
     assert await state.get_data() == saved
-    assert transport.messages[-1].text.endswith(tr("office_target", "en"))
+    assert transport.messages[-1].text.endswith(tr("office_word_mode", "en"))
     assert "Step 2" in transport.messages[-1].text
     assert transport.sent_methods[-2].reply_markup.keyboard[0][0].text == tr("services", "en")
 
@@ -136,12 +136,17 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
     await set_service(slug, enabled=True)
     await message("/start")
     await callback(f"service:{slug}")
-    text = (
-        "بدون تعديل النص\n" if slug == "text_to_office" else ""
-    ) + "  نص جاهز 00123\n\nEnglish & <tag>  "
-    await message(text)
+    text = "  نص جاهز 00123\n\nEnglish & <tag>  "
     if slug == "text_to_office":
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+        assert transport.messages[-1].text.endswith(tr("office_word_mode", lang))
+        assert not any(
+            b.callback_data.startswith("skip:")
+            for row in transport.messages[-1].reply_markup.inline_keyboard
+            for b in row
+        )
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    await message(text)
     if slug == "text_to_pdf":
         assert transport.messages[-1].text.endswith(tr("document_mode", lang))
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
@@ -155,8 +160,9 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
         if slug == "text_to_pdf":
             assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
         else:
-            assert set(order.inputs) == {"text", "target"}
-        assert order.service_version == ("7" if slug == "text_to_office" else "4")
+            assert order.inputs["mode"] == "direct"
+            assert set(order.inputs) == {"text", "target", "mode"}
+        assert order.service_version == ("8" if slug == "text_to_office" else "4")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
@@ -202,14 +208,34 @@ async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
     await set_service("text_to_office", enabled=True)
     await message("/start")
     await callback("service:text_to_office")
-    await message("نص العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + ":1")
+    await message("نص العميل")
     assert await state.get_state() == "confirm"
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     assert transport.messages[-1].text == tr("provider_config")
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
         assert (await balance(db, 1)).reserved == 0
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_excel_intake_skips_word_mode_and_preserves_source(flow, lang):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await set_language(1, lang)
+    await set_service("text_to_office", enabled=True)
+    await message("/start")
+    await callback("service:text_to_office")
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + ":1")
+    assert transport.messages[-1].text.endswith(tr("office_text", lang))
+    text = "00123 | Sample | 125.50"
+    await message(text)
+    assert await state.get_state() == "confirm"
+    assert (await state.get_data())["inputs"] == {"target": "excel", "text": text}
 
 
 async def test_navigation_preserves_pending_prompt_recovery(flow):

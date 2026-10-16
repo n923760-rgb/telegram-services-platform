@@ -34,7 +34,7 @@ async def prepare(slug, responses, tmp_path, monkeypatch):
     ctx["runtime_factory"] = lambda jid, uid: SimpleNamespace(
         ai=AI(provider, jid, uid, quality_review=True), storage=OwnedStorage(store, uid)
     )
-    inputs = {"text": SOURCE}
+    inputs = {"text": SOURCE, "mode": "smart"}
     if slug == "text_to_office":
         inputs["target"] = "word"
     else:

@@ -541,7 +541,6 @@ async def test_negative_choice_index_is_rejected():
     await message("/start")
     await callback("menu:services")
     await callback("service:text_to_office")
-    await message("المحتوى")
     valid = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
     malicious = ":".join(valid.split(":")[:-1] + ["-1"])
     await callback(malicious)

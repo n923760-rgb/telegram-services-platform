@@ -153,10 +153,15 @@ def cases(assets):
         Case(
             "word_direct",
             "text_to_office",
-            {"text": "keep text unchanged\n" + text, "target": "word"},
+            {"text": text, "target": "word", "mode": "direct"},
             ("00123",),
         ),
-        Case("word_smart", "text_to_office", {"text": text, "target": "word"}, ("00123",)),
+        Case(
+            "word_smart",
+            "text_to_office",
+            {"text": text, "target": "word", "mode": "smart"},
+            ("00123",),
+        ),
         Case(
             "excel_smart",
             "text_to_office",
