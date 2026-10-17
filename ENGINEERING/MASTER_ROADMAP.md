@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Editing comparison reports — 2026-10-17
+
+- OWNER: Continue service improvements/testing/merging without repeated approval; defer production deployment until development is complete. Official main a898e82 includes source-owned PDF table headings (#95).
+- CHANGE: Text editing v2 keeps clean edited chat text and revision.txt, adding a deterministic changes.txt. It shows changed physical lines with exact before/after text and a full normalized-original appendix for context, including an explicit no-change result. Report labels follow source direction; no extra AI/schema/repair calls.
+- PASS LOCALLY: 84 comparison/source-policy/existing-service/architecture checks; global lint/format/diff. Tests cover AR/EN, blank lines, CRLF, complete bounds, exact source/contact/zero preservation and partial-save cleanup. Full hosted lifecycle/cost/native worker qualification required before merge.
+- SAFETY: Same inputs/price/activation, provider limits and financial policy. v1 upgrade cancels/releases unprepared work and replays historical one-file results without generating a report. New cached results replay both files. A failed second save attempts first-file deletion; existing TTL handles unreferenced files if deletion fails. No dependencies, migrations or production change.
+- LIMITS: Literal line comparison is not a semantic/style/grammar assessment or a Microsoft Word tracked-changes file. Original context is present in the customer-owned report and follows existing retention. Live provider/Telegram quality NOT RUN; deployment remains deferred by owner.
+- Evidence: [editing comparison report](REPORTS/2026-10-17-editing-change-report.md).
+
 ## Source-owned PDF table headers — 2026-10-17
 
 - FACT: Official main 6d3a39f includes whole-word Excel sizing (#94). PDF-table direct export still uses generic columns and retains the source header as a data record; the portfolio review calls for an explicit source-first-row choice.

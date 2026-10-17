@@ -112,9 +112,11 @@ async def test_service_uses_injected_ai_and_owned_utf8_file(tmp_path):
     service = TextEditing()
     service.runtime = SimpleNamespace(storage=storage, ai=SimpleNamespace(extract=extract))
     result = await service.run({"text": SOURCE, "mode": "rewrite", "tone": "business"})
-    assert result.text == GOOD and len(result.artifacts) == 1
+    assert result.text == GOOD and len(result.artifacts) == 2
     assert storage.read(result.artifacts[0].key).decode() == GOOD
     assert result.artifacts[0].filename == "revision.txt"
+    assert result.artifacts[1].filename == "changes.txt"
+    assert SOURCE in storage.read(result.artifacts[1].key).decode()
     assert len(calls) == 1 and "rewrite" in calls[0][1] and "business" in calls[0][1]
     assert not service.enabled_by_default and service.requires_ai
 
