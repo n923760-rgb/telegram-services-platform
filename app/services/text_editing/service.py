@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+from app.builders.direction import is_rtl
+from app.builders.text_changes import build as change_report
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.text_editing.prompt import EDIT
@@ -7,6 +9,7 @@ from app.services.text_editing.schema import Inputs, render, revision_schema
 
 
 class TextEditing(BaseService):
+    version = "2"
     slug = "text_editing"
     menu_order = 20
     category = "text"
@@ -50,8 +53,17 @@ class TextEditing(BaseService):
             EDIT.format(mode=values.mode, tone=values.tone),
         )
         text = render(values, plan)
+        report = change_report(values.text, text, language="ar" if is_rtl(values.text) else "en")
         artifact = self.runtime.storage.save("revision.txt", text.encode("utf-8"), "text/plain")
-        return Result(text=text, artifacts=[artifact])
+        try:
+            changes = self.runtime.storage.save("changes.txt", report.encode("utf-8"), "text/plain")
+        except BaseException:
+            try:
+                self.runtime.storage.delete(artifact.key)
+            except Exception:
+                pass  # Existing TTL cleanup expires unreferenced files; retain the original error.
+            raise
+        return Result(text=text, artifacts=[artifact, changes])
 
 
 SERVICE = TextEditing

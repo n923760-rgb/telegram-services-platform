@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 
 from app.core.db import sessions
-from app.core.models import Job, Order
+from app.core.models import Job, Order, Service
 from app.core.settings import config
 from app.orders.engine import submit
 from app.services.base import ServiceError
@@ -60,6 +60,8 @@ async def test_editing_delivers_all_lines_then_captures_once(
     assert provider.calls == len(responses) and len(delivery.results) == 1
     assert delivery.results[0].text == expected
     assert dict(delivery.files)["revision.txt"].decode() == expected
+    assert set(dict(delivery.files)) == {"revision.txt", "changes.txt"}
+    assert source in dict(delivery.files)["changes.txt"].decode()
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -109,18 +111,27 @@ async def test_cached_editing_delivery_does_not_call_provider_again(tmp_path, mo
     monkeypatch.setattr(delivery, "send", send)
     await execute_job(ctx, str(jid))
     assert provider.calls == 1 and delivery.results[0].text == GOOD
+    assert set(dict(delivery.files)) == {"revision.txt", "changes.txt"}
+    assert SOURCE in dict(delivery.files)["changes.txt"].decode()
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).reserved == 0
 
 
-async def test_file_save_failure_releases_credit(tmp_path, monkeypatch):
+@pytest.mark.parametrize("failed_save", [1, 2])
+async def test_file_save_failure_releases_credit(tmp_path, monkeypatch, failed_save):
     store, provider, delivery, ctx, price = await setup(
         "text_editing", [json.dumps(PLAN)], tmp_path, monkeypatch
     )
 
+    original, calls = store.save, 0
+
     def fail(*args, **kwargs):
-        raise ServiceError("storage_quota")
+        nonlocal calls
+        calls += 1
+        if calls == failed_save:
+            raise ServiceError("storage_quota")
+        return original(*args, **kwargs)
 
     monkeypatch.setattr(store, "save", fail)
     oid = await submit(
@@ -136,6 +147,60 @@ async def test_file_save_failure_releases_credit(tmp_path, monkeypatch):
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
     assert provider.calls == 1 and not delivery.files
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+@pytest.mark.parametrize("cached", [False, True])
+async def test_upgrade_preserves_legacy_single_file_cache_and_admin_price(
+    tmp_path, monkeypatch, cached
+):
+    from app.services.registry import registry
+    from app.services.text_editing.service import TextEditing
+
+    store, provider, delivery, ctx, price = await setup(
+        "text_editing", [json.dumps(PLAN)], tmp_path, monkeypatch
+    )
+    oid = await submit(1, "text_editing", {"text": SOURCE, "mode": "proofread"}, price, "upgrade")
+    jid = await job_for(oid)
+    original = delivery.send
+    extra = None
+    if cached:
+
+        async def unavailable(*args):
+            raise ConnectionError("synthetic delivery failure")
+
+        monkeypatch.setattr(delivery, "send", unavailable)
+        await execute_job(ctx, str(jid))
+    async with sessions.begin() as db:
+        service = await db.get(Service, "text_editing")
+        service.version, service.price_halala, service.price_stars = "1", 777, 25
+        order = await db.get(Order, oid)
+        order.service_version = "1"
+        if cached:
+            legacy = json.loads(json.dumps(order.result))
+            extra = legacy["artifacts"].pop()["key"]
+            order.result = legacy
+        (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
+    if extra:
+        store.delete(extra, 1)  # Fixture now represents the historical one-file result.
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        service = await db.get(Service, "text_editing")
+        assert service.version == "2" and service.enabled
+        assert (service.price_halala, service.price_stars) == (777, 25)
+
+    async def forbidden(*args):
+        raise AssertionError("upgrade must not regenerate either file")
+
+    monkeypatch.setattr(TextEditing, "run", forbidden)
+    monkeypatch.setattr(delivery, "send", original)
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("completed" if cached else "cancelled")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if cached else 1000, 0)
+    assert provider.calls == int(cached)
+    assert [name for name, _ in delivery.files] == (["revision.txt"] if cached else [])
 
 
 @pytest.mark.parametrize("disabled", [False, True])

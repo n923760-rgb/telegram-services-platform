@@ -325,7 +325,7 @@
   "text_translation_input": "Send text to translate: up to 12000 characters and 80 nonempty lines.",
   "text_translation_language": "Which language should the text be translated into?",
   "text_editing_name": "Text editing",
-  "text_editing_description": "Proofread or rewrite in the original language, with numeric, email and URL checks. Draft text and TXT for your review.",
+  "text_editing_description": "Proofread or rewrite in the original language with numeric/contact checks. Edited text, UTF-8 TXT and a line-by-line changes report for your review.",
   "text_editing_input": "Send Arabic or English text: up to 12000 characters and 80 nonempty lines. Review the draft against the original before use.",
   "text_editing_mode": "Choose proofreading only or rewriting.",
   "text_editing_proofread": "Proofreading only",
@@ -507,5 +507,13 @@
   "service_ai_unavailable": "This service is temporarily unavailable. No order was created or credit reserved. Choose a direct conversion service or try again later. Any existing draft is preserved.",
   "pdf_tables_source_headers": "Use first row as headings",
   "pdf_tables_source_headers_review": "You selected the first row of every table as headings, without translation or suggestions. Review every heading below: the first row will not repeat in Data records and stays intact in Source with its R1 reference. This choice does not prove that the first row really is a header.",
-  "pdf_tables_source_headers_note": "Data headings come from extracted row R1; records start at R2. Source keeps the first row, and original row references are not renumbered."
+  "pdf_tables_source_headers_note": "Data headings come from extracted row R1; records start at R2. Source keeps the first row, and original row references are not renumbered.",
+  "editing_changes_title": "Text changes review",
+  "editing_changes_summary": "Changed lines: {changed} of {total} original lines, including blank lines.",
+  "editing_changes_scope": "The changes section shows only literal differences, followed by the complete original for context. Line numbers count blanks. Line endings are normalized; this is not an assessment of meaning or style.",
+  "editing_changes_none": "No literal differences after line-ending normalization.",
+  "editing_changes_line": "=== Line {number} ===",
+  "editing_changes_before": "Before editing:",
+  "editing_changes_after": "After editing:",
+  "editing_changes_source": "=== Complete original text for reference ==="
 }
