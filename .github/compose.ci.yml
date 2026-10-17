@@ -1,0 +1,22 @@
+# Disposable GitHub-hosted CI resources only; production Compose is separate.
+services:
+  postgres:
+    image: ${CI_POSTGRES_IMAGE:-docker.io/library/postgres:16-bookworm}
+    environment:
+      POSTGRES_USER: services
+      POSTGRES_PASSWORD: test-only-password
+      POSTGRES_DB: services_test
+    ports: ['127.0.0.1:5432:5432']
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U services -d services_test']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: ${CI_REDIS_IMAGE:-docker.io/library/redis:7-alpine}
+    ports: ['127.0.0.1:6379:6379']
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 20
