@@ -6,7 +6,7 @@ import pytest
 from openpyxl import load_workbook
 
 from app.core.db import sessions
-from app.core.models import Job, Order
+from app.core.models import Job, Order, Setting
 from app.orders.engine import confirm_structure, submit
 from app.providers.tables.camelot import CamelotTables
 from app.services.base import ServiceError
@@ -34,7 +34,7 @@ async def prepare(tmp_path, monkeypatch, responses):
 
 
 @pytest.mark.parametrize("language", ["ar", "en"])
-@pytest.mark.parametrize("mode", ["direct", "labels"])
+@pytest.mark.parametrize("mode", ["direct", "source", "labels"])
 async def test_native_confirmation_capture_once_and_preserved_cells(
     tmp_path, monkeypatch, language, mode
 ):
@@ -71,15 +71,22 @@ async def test_native_confirmation_capture_once_and_preserved_cells(
     assert len(delivery.files) == 1
     book = load_workbook(BytesIO(delivery.files[0][1]))
     for name in ("Data1", "Source1"):
-        assert [[book[name].cell(r, c).value for c in range(1, 4)] for r in range(4, 7)] == rows
-        assert book[name]["C5"].data_type == "s"
+        expected = rows[1:] if mode == "source" and name == "Data1" else rows
+        assert [
+            [book[name].cell(r, c).value for c in range(1, 4)] for r in range(4, 4 + len(expected))
+        ] == expected
+        assert book[name]["C4"].data_type == "s"
+    if mode == "source":
+        assert [book["Data1"].cell(3, c).value for c in range(1, 4)] == rows[0]
+        assert book["Data1"]["D4"].value == "T1:R2"
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-async def test_rejected_review_releases_without_export(tmp_path, monkeypatch):
+@pytest.mark.parametrize("mode", ["direct", "source"])
+async def test_rejected_review_releases_without_export(tmp_path, monkeypatch, mode):
     store, provider, delivery, ctx, price = await prepare(tmp_path, monkeypatch, [])
     file = store.save(1, "source.pdf", table_pdf()[0], "application/pdf")
-    oid = await submit(1, "pdf_tables_excel", inputs(pdf=file.key), price, "reject")
+    oid = await submit(1, "pdf_tables_excel", inputs(pdf=file.key, mode=mode), price, "reject")
     await execute_job(ctx, str(await job_for(oid)))
     await confirm_structure(oid, 1, False)
     async with sessions() as db:
@@ -87,6 +94,44 @@ async def test_rejected_review_releases_without_export(tmp_path, monkeypatch):
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
     assert not delivery.files and provider.calls == 0
+
+
+async def test_source_headers_work_with_provider_paused(tmp_path, monkeypatch):
+    store, provider, _, ctx, price = await prepare(tmp_path, monkeypatch, [])
+    async with sessions.begin() as db:
+        db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
+    file = store.save(1, "source.pdf", table_pdf()[0], "application/pdf")
+    oid = await submit(1, "pdf_tables_excel", inputs(pdf=file.key, mode="source"), price, "paused")
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "waiting_confirmation"
+        assert (await db.get(Setting, "PROVIDER_PAUSED")).value == {"value": True}
+    assert provider.calls == 0
+
+
+async def test_invalid_source_headers_release_credit_without_export(tmp_path, monkeypatch):
+    from app.services.pdf_tables_excel.test_service import extraction
+
+    store, provider, delivery, ctx, price = await prepare(tmp_path, monkeypatch, [])
+    invalid = extraction()
+    invalid.tables[0].rows[0][0] = ""
+
+    async def extract(*args):
+        return invalid
+
+    monkeypatch.setattr(CamelotTables, "extract", extract)
+    file = store.save(1, "source.pdf", b"synthetic", "application/pdf")
+    oid = await submit(
+        1, "pdf_tables_excel", inputs(pdf=file.key, mode="source"), price, "bad-headers"
+    )
+    await execute_job(ctx, str(await job_for(oid)))
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == "failed" and order.error_key == "input_invalid"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+    assert provider.calls == 0 and not delivery.files
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
 @pytest.mark.parametrize("repair", [True, False])
@@ -122,12 +167,13 @@ async def test_invalid_pdf_releases_and_notifies_once(tmp_path, monkeypatch):
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-async def test_delivery_retry_uses_saved_workbook(tmp_path, monkeypatch):
+@pytest.mark.parametrize("mode", ["direct", "source"])
+async def test_delivery_retry_uses_saved_workbook(tmp_path, monkeypatch, mode):
     from app.services.pdf_tables_excel import service
 
     store, _, delivery, ctx, price = await prepare(tmp_path, monkeypatch, [])
     file = store.save(1, "source.pdf", table_pdf()[0], "application/pdf")
-    oid = await submit(1, "pdf_tables_excel", inputs(pdf=file.key), price, "retry")
+    oid = await submit(1, "pdf_tables_excel", inputs(pdf=file.key, mode=mode), price, "retry")
     jid = await job_for(oid)
     await execute_job(ctx, str(jid))
     await confirm_structure(oid, 1, True)
@@ -197,8 +243,9 @@ async def test_native_visual_arabic_confirmed_export_preserves_source_zero_ai(
 
 
 @pytest.mark.parametrize("cached", [False, True])
+@pytest.mark.parametrize("old_version", ["2", "3"])
 async def test_arabic_order_upgrade_keeps_prices_gates_and_legacy_cache(
-    tmp_path, monkeypatch, cached
+    tmp_path, monkeypatch, cached, old_version
 ):
     from app.core.models import Service
     from app.services.registry import registry
@@ -221,17 +268,25 @@ async def test_arabic_order_upgrade_keeps_prices_gates_and_legacy_cache(
         service = await db.get(Service, "pdf_tables_excel")
         old = {
             **service.input_schema,
-            "fields": [f for f in service.input_schema["fields"] if f["name"] != "arabic_order"],
+            "fields": [
+                dict(f)
+                for f in service.input_schema["fields"]
+                if old_version != "2" or f["name"] != "arabic_order"
+            ],
         }
-        service.version, service.input_schema = "2", old
+        for field in old["fields"]:
+            if field["name"] == "mode":
+                field["choices"] = ["direct", "labels"]
+                field["choice_keys"] = ["pdf_tables_direct", "pdf_tables_labels"]
+        service.version, service.input_schema = old_version, old
         service.price_halala, service.price_stars = 777, 25
         order = await db.get(Order, oid)
-        order.service_version, order.input_schema_snapshot = "2", old
+        order.service_version, order.input_schema_snapshot = old_version, old
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "pdf_tables_excel")
-        assert service.version == "3" and service.enabled
+        assert service.version == "4" and service.enabled
         assert service.price_halala == 777 and service.price_stars == 25
 
     async def forbidden(*args):

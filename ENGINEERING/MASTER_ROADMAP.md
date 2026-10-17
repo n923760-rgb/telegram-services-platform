@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Source-owned PDF table headers — 2026-10-17
+
+- FACT: Official main 6d3a39f includes whole-word Excel sizing (#94). PDF-table direct export still uses generic columns and retains the source header as a data record; the portfolio review calls for an explicit source-first-row choice.
+- CHANGE: PDF tables v4 adds a provider-free first-row heading choice for every extracted table. Data uses that row as native headers and starts at original R2; Source retains all cells and R1. Complete bilingual review shows every heading. Blank/duplicate/multiline/oversized or edge-whitespace headings are rejected rather than silently renamed. Existing optional visual Arabic recovery applies to Data headings only with explicit consent.
+- PASS LOCALLY: 87 focused contract/native/source/Arabic/provider/architecture checks, global lint/format and diff checks. Native provider tests cover AR/EN ruled/unruled extraction; full DB lifecycle/upgrade and non-root worker source-heading export require hosted CI before merge.
+- SAFETY: Existing direct/proposed modes retained; source mode never calls AI. Price/activation overrides and prepared-file replay retained; v2/v3 upgrade regression covers cancellation/release versus cached delivery. No dependency, migration, financial policy, provider pause, cap/retry or production change.
+- LIMITS: The customer must decide whether every first row is really a header; merged/multiline/blank headers and per-table mixed choices are unsupported. Workbook readback is not native/mobile visual acceptance. Actual server deployment remains UNKNOWN pending operator output.
+- Evidence: [source-owned table headers](REPORTS/2026-10-17-pdf-source-headers.md).
+
 ## Excel whole-word row sizing — 2026-10-17
 
 - FACT: Official main f056e92 includes PowerPoint visual hierarchy (#93). Excel row sizing divided total text width by available width, underestimating paragraphs where whole words leave unused space at line ends.

@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import Field, StrictInt, ValidationError, model_validator
 
+from app.builders.arabic_table_text import recover_visual_arabic
 from app.builders.schema import StrictModel
 from app.core.i18n import tr
 from app.providers.tables.base import Extraction
@@ -13,7 +14,7 @@ from app.services.translation import NUMERIC_TOKEN
 
 class Inputs(StrictModel):
     pdf: str = Field(min_length=1, max_length=250)
-    mode: Literal["direct", "labels"]
+    mode: Literal["direct", "source", "labels"]
     language: Literal["ar", "en"]
     arabic_order: Literal["visual"] | None = None
 
@@ -37,7 +38,7 @@ class TableLabels(StrictModel):
         for text in [self.title, *self.columns]:
             DocumentInputs.printable_text(text)
             if len(text) > 100 or any(c in text for c in "\r\n\u2028\u2029"):
-                raise ValueError("single-line descriptive labels only, without numbers")
+                raise ValueError("single-line labels only")
         if len({name.casefold() for name in self.columns}) != len(self.columns):
             raise ValueError("unique column labels")
         return self
@@ -89,6 +90,17 @@ def direct_labels(extraction, language):
             for i, table in enumerate(extraction.tables, 1)
         ]
     )
+
+
+def source_labels(extraction, language, *, visual_arabic=False):
+    labels = direct_labels(extraction, language)
+    tables = []
+    for table, generic in zip(extraction.tables, labels.tables, strict=True):
+        columns = [recover_visual_arabic(cell) if visual_arabic else cell for cell in table.rows[0]]
+        if any(not name.strip() or name != name.strip() for name in columns):
+            raise ValueError("source headers must be nonblank without edge whitespace")
+        tables.append(TableLabels(table_id=generic.table_id, title=generic.title, columns=columns))
+    return Labels(tables=tables)
 
 
 class Prepared(StrictModel):

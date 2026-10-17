@@ -345,15 +345,15 @@
   "text_summary_original": "Original text",
   "text_summary_source_heading": "Full source — paragraph references",
   "pdf_tables_name": "PDF tables to Excel",
-  "pdf_tables_description": "Extract text PDF tables to Excel with extracted source values and page references; optional AI-proposed headings.",
+  "pdf_tables_description": "Extract text PDF tables to Excel with source values and page references; generic, first-row or proposed headings.",
   "pdf_tables_file": "Send an unencrypted text-only PDF without images: up to 5 pages and 10 MiB, with a table on each page. Extracted tables need review; PDF layout is not reconstructed.",
   "pdf_tables_method": "Choose the table layout in the source.",
   "pdf_tables_lattice": "Ruled table",
   "pdf_tables_stream": "Unruled columns",
-  "pdf_tables_mode": "Choose generic columns or proposed headings for review. All extracted rows and cells remain unchanged.",
+  "pdf_tables_mode": "Choose generic, first-row or proposed headings. First-row mode promotes the first row of every table into Data headings and keeps it in Source. Headers must be unique and nonblank, without edge whitespace or line breaks, and at most 100 characters each; otherwise use generic columns.",
   "pdf_tables_direct": "Generic column names",
   "pdf_tables_labels": "Suggest headings",
-  "pdf_tables_language": "Choose the heading/review language. Extracted values are not translated.",
+  "pdf_tables_language": "Choose the review and generic/proposed heading language. Source headings and extracted values are not translated.",
   "pdf_tables_arabic_order": "Does extracted Arabic appear reversed? Recovery is only for Arabic stored in visual order using presentation forms, not ordinary Arabic. Cells mixed with numbers, English or symbols stay unchanged; compare with the source.",
   "pdf_tables_arabic_visual": "Recover visual-order Arabic",
   "pdf_tables_arabic_preserve": "Keep extracted text",
@@ -504,5 +504,8 @@
   "excel_source_text": "Text",
   "excel_source_part": "Part",
   "catalog_ai_notice": "Some services or improvement options are temporarily unavailable. Direct paths that do not need AI remain available.",
-  "service_ai_unavailable": "This service is temporarily unavailable. No order was created or credit reserved. Choose a direct conversion service or try again later. Any existing draft is preserved."
+  "service_ai_unavailable": "This service is temporarily unavailable. No order was created or credit reserved. Choose a direct conversion service or try again later. Any existing draft is preserved.",
+  "pdf_tables_source_headers": "Use first row as headings",
+  "pdf_tables_source_headers_review": "You selected the first row of every table as headings, without translation or suggestions. Review every heading below: the first row will not repeat in Data records and stays intact in Source with its R1 reference. This choice does not prove that the first row really is a header.",
+  "pdf_tables_source_headers_note": "Data headings come from extracted row R1; records start at R2. Source keeps the first row, and original row references are not renumbered."
 }

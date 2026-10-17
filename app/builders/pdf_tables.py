@@ -60,13 +60,21 @@ def append_sheet(book, title, columns, rows, name, note):
     return sheet
 
 
-def build(extraction, labels, *, language, enhanced, visual_arabic=False):
+def build(extraction, labels, *, language, enhanced, visual_arabic=False, source_headers=False):
+    if source_headers and enhanced:
+        raise ValueError("source headers and proposed headers are separate choices")
     book = Workbook()
     book.remove(book.active)
     label_map = {table.table_id: table for table in labels.tables}
     audit = []
     for number, table in enumerate(extraction.tables, 1):
         proposal = label_map[number]
+        if source_headers:
+            expected = [
+                recover_visual_arabic(cell) if visual_arabic else cell for cell in table.rows[0]
+            ]
+            if proposal.columns != expected:
+                raise ValueError("headers must match the first extracted row")
         reference = tr("pdf_tables_reference", language)
         while reference.casefold() in {label.casefold() for label in proposal.columns}:
             reference += "_"
@@ -90,8 +98,18 @@ def build(extraction, labels, *, language, enhanced, visual_arabic=False):
             "pdf_tables_sheet_note",
             language,
             page=table.page,
-            mode=tr("pdf_tables_labels" if enhanced else "pdf_tables_direct", language),
+            mode=tr(
+                "pdf_tables_source_headers"
+                if source_headers
+                else "pdf_tables_labels"
+                if enhanced
+                else "pdf_tables_direct",
+                language,
+            ),
         )
+        if source_headers:
+            note += "\n" + tr("pdf_tables_source_headers_note", language)
+            data_rows = data_rows[1:]
         if visual_arabic:
             note += "\n" + tr("pdf_tables_arabic_note", language, changed=changed, skipped=skipped)
         append_sheet(

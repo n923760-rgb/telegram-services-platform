@@ -89,7 +89,7 @@ jobs:
           from openpyxl import load_workbook
           from tests.pdf_tables_fixtures import table_pdf
           from app.providers.tables.camelot import CamelotTables
-          from app.services.pdf_tables_excel.schema import direct_labels
+          from app.services.pdf_tables_excel.schema import direct_labels, source_labels
           from app.builders.pdf_tables import build as tables_excel
           from tests.cv_fixtures import inputs as cv_inputs, planned as cv_planned
           from pypdf import PdfReader
@@ -253,6 +253,14 @@ jobs:
                       for name in ('Data1', 'Source1'):
                           assert [[book[name].cell(r, c).value for c in range(1, 4)] for r in range(4, 7)] == rows
                           assert book[name]['C5'].data_type == 's'
+                      headed = tables_excel(result, source_labels(result, language), language=language, enhanced=False, source_headers=True)
+                      book = load_workbook(BytesIO(headed))
+                      assert [book['Data1'].cell(3,c).value for c in range(1,4)] == rows[0]
+                      assert [[book['Data1'].cell(r,c).value for c in range(1,4)] for r in range(4,6)] == rows[1:]
+                      assert book['Data1']['D4'].value == 'T1:R2'
+                      assert [book['Source1'].cell(4,c).value for c in range(1,4)] == rows[0]
+                      assert book['Source1']['D4'].value == 'T1:R1'
+                      assert not any(cell.data_type == 'f' or cell.hyperlink for sheet in book for row in sheet for cell in row)
           pages = PdfReader(BytesIO(images_pdf([picture(), picture(240, 120, color='blue')]))).pages
           assert len(pages) == 2
           assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
@@ -292,6 +300,7 @@ jobs:
           print('Non-root worker: Arabic/English titled task owner retains source unit and exact deadline PASS with network disabled')
           print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
           print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
+          print('Non-root worker: Arabic/English first-row PDF headers and original row references PASS with network disabled')
           print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
           print('Non-root worker: document image contrast/grayscale and numeric OCR fixture PASS with network disabled')
           print('Non-root worker: Arabic/English lexical CSV candidates, numeric exclusions and literal source retention PASS with network disabled')
