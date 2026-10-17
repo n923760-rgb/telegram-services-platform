@@ -59,6 +59,12 @@ def test_backgrounds_table_borders_and_all_original_values_are_native():
             assert all(
                 cell._tc.tcPr.find(qn("a:ln" + edge)) is not None for edge in ("L", "R", "T", "B")
             )
+            children = list(cell._tc.tcPr)
+            fill_index = children.index(cell._tc.tcPr.find(qn("a:solidFill")))
+            assert all(
+                children.index(cell._tc.tcPr.find(qn("a:ln" + edge))) < fill_index
+                for edge in ("L", "R", "T", "B")
+            )
     assert not any(shape.shape_type == 13 for slide in prs.slides for shape in slide.shapes)
     assert_editable_structure()
 

@@ -117,7 +117,7 @@ def _table(slide, item, layout):
                 color.set("val", "FFFFFF" if row_index == 0 else "DFE8E4")
                 fill.append(color)
                 border.append(fill)
-                cell._tc.get_or_add_tcPr().append(border)
+                cell._tc.get_or_add_tcPr().insert_element_before(border, "a:solidFill")
             rtl = is_rtl(value)
             _paragraph(
                 cell.text_frame.paragraphs[0],
