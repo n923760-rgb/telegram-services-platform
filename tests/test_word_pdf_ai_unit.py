@@ -20,7 +20,7 @@ def database():
 
 
 def test_mode_choice_discloses_ai_and_safe_skip_default():
-    field = TextToWordPdf.input_schema.fields[0]
+    field = TextToWordPdf.input_schema.fields[1]
     assert field.name == "mode" and field.choices == ["direct", "smart"]
     assert not field.required and field.skip_key == "word_pdf_direct"
     assert not TextToWordPdf.needs_ai({"text": "Literal"})

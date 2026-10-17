@@ -13,6 +13,7 @@ from app.services.translation import NUMERIC_TOKEN
 
 class Inputs(DocumentInputs):
     mode: Literal["direct", "smart"] = "direct"
+    output_format: Literal["word", "pdf", "both"] = "both"
 
     @model_validator(mode="after")
     def explicit_title(self):

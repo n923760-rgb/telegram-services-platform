@@ -37,13 +37,20 @@ async def setup(tmp_path, monkeypatch, slug="text_to_word_pdf", inputs=None):
             ai=None, storage=OwnedStorage(store, uid), renderer=renderer, previews=PdfPreviews()
         ),
     }
-    oid = await submit(1, slug, inputs or {"text": "Invoice 00123"}, price, "visual")
+    oid = await submit(
+        1, slug, inputs or {"text": "Invoice 00123", "output_format": "both"}, price, "visual"
+    )
     return oid, await job_for(oid), ctx, renderer, store, price
 
 
 @pytest.mark.parametrize("approved", [True, False])
-async def test_prepared_visual_review_approval_or_cancellation(tmp_path, monkeypatch, approved):
-    oid, jid, ctx, renderer, store, price = await setup(tmp_path, monkeypatch)
+@pytest.mark.parametrize("output_format", ["word", "pdf", "both"])
+async def test_prepared_visual_review_approval_or_cancellation(
+    tmp_path, monkeypatch, approved, output_format
+):
+    oid, jid, ctx, renderer, store, price = await setup(
+        tmp_path, monkeypatch, inputs={"text": "Invoice 00123", "output_format": output_format}
+    )
     await execute_job(ctx, str(jid))
     async with sessions() as db:
         order = await db.get(Order, oid)
@@ -63,7 +70,13 @@ async def test_prepared_visual_review_approval_or_cancellation(tmp_path, monkeyp
     if approved:
         await execute_job(ctx, str(jid))
         await execute_job(ctx, str(jid))
-        assert [data for _, data in ctx["delivery"].files] == prepared[:2]
+        expected = 2 if output_format == "both" else 1
+        assert [data for _, data in ctx["delivery"].files] == prepared[:expected]
+        assert [name for name, _ in ctx["delivery"].files] == (
+            {"word": ["result.docx"], "pdf": ["result.pdf"], "both": ["result.docx", "result.pdf"]}[
+                output_format
+            ]
+        )
     else:
         await cleanup_order_files(oid)
     assert renderer.word_pdf.await_count == 1
@@ -90,8 +103,13 @@ async def test_expired_visual_review_releases_and_deletes_all_files(tmp_path, mo
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-async def test_delivery_retry_uses_same_prepared_files_without_new_render(tmp_path, monkeypatch):
-    oid, jid, ctx, renderer, _, _ = await setup(tmp_path, monkeypatch)
+@pytest.mark.parametrize("output_format", ["word", "pdf", "both"])
+async def test_delivery_retry_uses_same_prepared_files_without_new_render(
+    tmp_path, monkeypatch, output_format
+):
+    oid, jid, ctx, renderer, _, _ = await setup(
+        tmp_path, monkeypatch, inputs={"text": "Invoice 00123", "output_format": output_format}
+    )
     await execute_job(ctx, str(jid))
     await confirm_structure(oid, 1, True)
     original = ctx["delivery"].send
@@ -103,7 +121,7 @@ async def test_delivery_retry_uses_same_prepared_files_without_new_render(tmp_pa
     ctx["delivery"].send = original
     await execute_job(ctx, str(jid))
     assert renderer.word_pdf.await_count == 1
-    assert len(ctx["delivery"].files) == 2
+    assert len(ctx["delivery"].files) == (2 if output_format == "both" else 1)
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
 

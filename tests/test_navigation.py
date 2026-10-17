@@ -238,6 +238,34 @@ async def test_excel_intake_skips_word_mode_and_preserves_source(flow, lang):
     assert (await state.get_data())["inputs"] == {"target": "excel", "text": text}
 
 
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("selected,output_format", [(0, "both"), (1, "word"), (2, "pdf")])
+async def test_document_format_choice_is_retained_through_purchase(
+    flow, lang, selected, output_format
+):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    await set_service("text_to_word_pdf", enabled=True)
+    await message("/start")
+    await callback("service:text_to_word_pdf")
+    assert transport.messages[-1].text.endswith(tr("document_output_format", lang))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + f":{selected}")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
+    await message("Source 00123")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
+    assert await state.get_state() == "confirm"
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
+    async with sessions() as db:
+        order = await db.scalar(select(Order))
+        assert order.inputs == {"output_format": output_format, "text": "Source 00123"}
+        assert order.service_version == "3"
+        assert (await balance(db, 1)).reserved == order.price_halala
+
+
 async def test_navigation_preserves_pending_prompt_recovery(flow):
     transport, message, callback, state = flow
     await message("/start")
