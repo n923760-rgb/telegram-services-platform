@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Provider-free selected PDF page rotation — 2026-10-17
+
+- FACT: Official main a4a307d includes translation contact fidelity (#98), qualified by 2081 tests and 20 native worker checks before merge. PDF utilities previously offered merge/extract only.
+- CHANGE: PDF tools v2 adds selected-page rotation by an explicit additional clockwise 90/180/270 degrees. Keeps every source page in original order; modifies only selected rotation flags, normalizes modulo 360, retains text/content streams/images/page boxes. Conditional angle field and AR/EN prompts explain additive rotation versus extraction order.
+- PASS LOCALLY: 55 native builder/contract/injected-service and existing merge/extract tests; three architecture gates; global lint/format/diff. New hosted flows cover no-AI cost/capture, invalid admission, failure/release/ownership, prepared retry and v1 upgrade/admin overrides. Non-root network-disabled worker qualification adds an image/page/order preservation check. Full hosted workflow required before merge.
+- SAFETY: Existing limits, encrypted/form/signature rejection, price/activation, financial policy and dependencies retained. Prepared v1 files replay; unprepared v1 jobs cancel/release through existing guards. No new service, AI call, migration or production setting change. Owner confirms development first and one production deployment later; no server action.
+- LIMITS: Rotation changes page display, not OCR, deskew, cropping, compression or original-layout reconstruction. Outlines/metadata remain unsupported as disclosed; signed/form PDFs stay rejected. Structural/native fixture evidence is not universal mobile-viewer acceptance.
+- Evidence: [selected PDF rotation](REPORTS/2026-10-17-pdf-page-rotation.md).
+
 ## Translation email and URL fidelity — 2026-10-17
 
 - FACT: Official main 94147fa includes editing reports (#96) and CI image fallback (#97), qualified by 2051 tests and 20 native worker checks before merge. A baseline reproduction accepts changed@example.invalid for source@example.invalid in independent text translation despite prompt instructions.

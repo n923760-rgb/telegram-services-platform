@@ -14,12 +14,16 @@ class PdfToolError(ValueError):
         super().__init__(key)
 
 
-def build(files: list[bytes], *, operation: str, pages: str | None = None) -> bytes:
+def build(
+    files: list[bytes], *, operation: str, pages: str | None = None, rotation: str | None = None
+) -> bytes:
     if (
-        operation not in {"merge", "extract"}
+        operation not in {"merge", "extract", "rotate"}
         or not 1 <= len(files) <= 5
         or (operation == "merge" and (len(files) < 2 or pages is not None))
-        or (operation == "extract" and (len(files) != 1 or pages is None))
+        or (operation in {"extract", "rotate"} and (len(files) != 1 or pages is None))
+        or (operation == "rotate" and rotation not in {"90", "180", "270"})
+        or (operation != "rotate" and rotation is not None)
     ):
         raise PdfToolError("input_invalid")
     if any(not data or len(data) > 10 * 1024 * 1024 for data in files):
@@ -59,8 +63,16 @@ def build(files: list[bytes], *, operation: str, pages: str | None = None) -> by
                 raise PdfToolError("pdf_page_selection") from None
             if max(selected) > len(readers[0].pages):
                 raise PdfToolError("pdf_page_selection")
-            for number in selected:
-                writer.add_page(readers[0].pages[number - 1])
+            if operation == "extract":
+                for number in selected:
+                    writer.add_page(readers[0].pages[number - 1])
+            else:
+                selected = set(selected)
+                for number, page in enumerate(readers[0].pages, 1):
+                    copied = writer.add_page(page)
+                    if number in selected:
+                        copied.rotate(int(rotation))
+                        copied.rotation %= 360
         buffer = BytesIO()
         writer.write(buffer)
         return validate(buffer.getvalue(), "pdf")
