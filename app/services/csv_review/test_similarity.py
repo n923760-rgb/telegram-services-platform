@@ -38,7 +38,7 @@ def test_report_candidates_have_source_references_and_preserve_all_cells(languag
         "shown_pairs": 2,
         "omitted_pairs": 0,
     }
-    assert book.sheetnames == ["Data", "Source", "Review", "Similarities"]
+    assert book.sheetnames == ["Data", "Source", "Review", "Columns", "Similarities"]
     sheet = book["Similarities"]
     candidates = list(sheet.iter_rows(min_row=4, values_only=True))
     assert [(row[0], row[1], row[3]) for row in candidates] == [(1, 2, "2"), (2, 4, "2")]
@@ -116,7 +116,7 @@ def test_legacy_inputs_default_off_and_allow_500_records():
     assert Inputs.parse(values).similarity is None
     SERVICE.input_schema.validate_inputs(values)
     book, counts = exported(values)
-    assert book.sheetnames == ["Data", "Source", "Review"]
+    assert book.sheetnames == ["Data", "Source", "Review", "Columns"]
     assert counts["rows"] == 500 and "similar_pairs" not in counts
     with pytest.raises(ServiceError, match="input_invalid"):
         SERVICE.needs_ai({**values, "similarity": "conservative"})

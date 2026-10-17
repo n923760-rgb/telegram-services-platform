@@ -25,7 +25,7 @@ def exported(values):
 def test_source_values_counts_native_tables_and_row_references(language):
     book, counts, _ = exported(inputs(language))
     assert counts == {"rows": 4, "blanks": 2, "duplicates": 1, "changes": 1}
-    assert book.sheetnames == ["Data", "Source", "Review"]
+    assert book.sheetnames == ["Data", "Source", "Review", "Columns"]
     assert book["Data"]["A4"].value == "00123"
     assert book["Data"]["C4"].value == "125.50"
     assert book["Data"]["C5"].value == "0" and book["Data"]["B5"].value is None
@@ -34,7 +34,7 @@ def test_source_values_counts_native_tables_and_row_references(language):
     assert [c.value for c in book["Review"][4]] == [1, None, None, "2"]
     assert [c.value for c in book["Review"][5]] == [2, "2, 4", None, None]
     assert [c.value for c in book["Review"][6]] == [3, None, 1, None]
-    for name in book.sheetnames:
+    for name in ("Data", "Source", "Review"):
         sheet = book[name]
         assert sheet.max_row == 7 and sheet.freeze_panes == "A4"
         assert len(sheet.tables) == 1

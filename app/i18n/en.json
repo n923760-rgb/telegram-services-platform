@@ -257,7 +257,7 @@
   "minutes_task_preview": "Assignee: {assignee} | Deadline: {deadline}",
   "minutes_input_invalid": "Send a single-line title up to 200 characters and notes up to 12000 characters, 80 notes and 1200 characters per note after sentence separation. Use Arabic/English without invalid control characters.",
   "csv_review_name": "Clean and review CSV",
-  "csv_review_description": "Pasted CSV to sortable Excel with original values, blank/duplicate review and optional lexical similarity report. No deletion, merging or inferred types.",
+  "csv_review_description": "Pasted CSV to sortable Excel with original values, a column quality summary, blank/duplicate review and optional lexical similarity report. No deletion, merging or inferred types.",
   "csv_review_language": "Choose review heading language (your data is not translated):",
   "csv_review_delimiter": "Choose the delimiter used in the CSV:",
   "csv_review_comma": "Comma ,",
@@ -521,5 +521,15 @@
   "pdf_tools_rotation_90": "90 degrees clockwise",
   "pdf_tools_rotation_180": "180 degrees",
   "pdf_tools_rotation_270": "270 degrees clockwise",
-  "pdf_tools_rotation_preview": "PDF ready. Selected pages received the additional clockwise rotation. All pages remain in their original order; document outlines and metadata are not transferred."
+  "pdf_tools_rotation_preview": "PDF ready. Selected pages received the additional clockwise rotation. All pages remain in their original order; document outlines and metadata are not transferred.",
+  "csv_columns_title": "Column quality summary",
+  "csv_columns_number": "Column number",
+  "csv_columns_original": "Original heading",
+  "csv_columns_normalized": "Data heading",
+  "csv_columns_filled": "Nonempty cells",
+  "csv_columns_blank": "Empty cells",
+  "csv_columns_distinct": "Distinct nonempty values",
+  "csv_columns_changes": "Edge-trimmed cells",
+  "csv_columns_rules": "Source columns only, after the selected whitespace rule. Empty means a zero-length string; preserved spaces are nonempty. Distinct values use exact case-sensitive equality, without numeric/date conversion. Counts include duplicate records and exclude the added record-reference column. These are static counts at file creation and do not update after workbook edits.",
+  "csv_columns_preview": "The Columns sheet summarizes each column: nonempty, empty and distinct values, plus edge-trimmed cells."
 }

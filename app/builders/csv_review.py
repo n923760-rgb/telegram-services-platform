@@ -79,7 +79,46 @@ def build(headers, rows, *, trim, language, similarity=False):
         ],
         audit,
     )
-    donors = [(source, "Source"), (report, "Review")]
+    profile_rows = []
+    for column, (original, normalized) in enumerate(zip(headers, columns, strict=True)):
+        values = [row[column] for row in clean]
+        nonempty = [value for value in values if value != ""]
+        profile_rows.append(
+            [
+                column + 1,
+                original,
+                normalized,
+                len(nonempty),
+                len(values) - len(nonempty),
+                len(set(nonempty)),
+                sum(
+                    before[column] != after[column]
+                    for before, after in zip(rows, clean, strict=True)
+                ),
+            ]
+        )
+    profile = _sheet(
+        tr("csv_columns_title", language),
+        [
+            tr(key, language)
+            for key in (
+                "csv_columns_number",
+                "csv_columns_original",
+                "csv_columns_normalized",
+                "csv_columns_filled",
+                "csv_columns_blank",
+                "csv_columns_distinct",
+                "csv_columns_changes",
+            )
+        ],
+        profile_rows,
+    )
+    # Customer-owned headings remain exact literal text; computed counts stay native integers.
+    for index, row in enumerate(profile_rows, 4):
+        for column in (2, 3):
+            cell = profile.active.cell(index, column, row[column - 1])
+            cell.data_type, cell.number_format = "s", "@"
+    donors = [(source, "Source"), (report, "Review"), (profile, "Columns")]
     if similarity:
         candidates = similarity_review(clean)
         counts.update(
@@ -148,6 +187,11 @@ def build(headers, rows, *, trim, language, similarity=False):
     review["A2"].alignment = copy(review["A1"].alignment)
     review.merge_cells("A2:D2")
     review.row_dimensions[2].height = 120
+    profile = book["Columns"]
+    profile["A2"] = tr("csv_columns_rules", language)
+    profile["A2"].alignment = copy(profile["A1"].alignment)
+    profile.merge_cells("A2:G2")
+    profile.row_dimensions[2].height = 90
     if similarity:
         sheet = book["Similarities"]
         sheet["A2"] = tr("csv_similarity_summary", language, **counts)
