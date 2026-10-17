@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Source-owned CSV column summaries — 2026-10-18
+
+- FACT: Official main 40aa7fa includes provider-free PDF rotation (#99), qualified by 2124 tests and 21 native worker checks before merge. CSV review had row-level audit but no compact per-column quality view.
+- CHANGE: CSV v3 adds a native Columns sheet with source/Data headings and nonempty/empty/distinct-nonempty/trimmed counts for each original column. Uses exact case-sensitive post-rule values, includes duplicate records, excludes generated references, and explains static counts and literal emptiness in AR/EN. Customer headings remain exact literal text; counts are native integers, never formulas.
+- PASS LOCALLY: 69 focused profile/CSV/similarity/whole-word-layout tests; three architecture gates, global lint/format/diff. Added/extended hosted flows cover zero-AI capture, cached retry and v1/v2 upgrades/admin overrides, including a historical workbook without Columns. Native worker qualification gains bilingual column-count checks. Full exact-head hosted workflow required before merge.
+- SAFETY: Same inputs, price/activation, source rows/order/cell values, one artifact, similarity limits, provider/financial policy and dependencies. Existing version guards cancel/release unprepared legacy jobs and reuse prepared legacy files. No production action; owner requests one deployment after improvements.
+- LIMITS: Counts describe literal values at creation, not business correctness, inferred missing data or spreadsheet formulas that recalculate. Native structure/readback is separate from mobile appearance acceptance.
+- Evidence: [CSV column summaries](REPORTS/2026-10-18-csv-column-profile.md).
+
 ## Provider-free selected PDF page rotation — 2026-10-17
 
 - FACT: Official main a4a307d includes translation contact fidelity (#98), qualified by 2081 tests and 20 native worker checks before merge. PDF utilities previously offered merge/extract only.
