@@ -76,6 +76,7 @@ jobs:
           from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
           from tests.images_pdf_fixtures import picture
           from app.builders.images_pdf import build as images_pdf
+          from app.builders.pdf_tools import build as pdf_tools
           from app.providers.documents.images_pdf import NativeImagePdf
           from tests.csv_review_fixtures import inputs as csv_inputs
           from app.services.csv_review.schema import Inputs as CsvInputs
@@ -255,10 +256,16 @@ jobs:
                       assert [book['Source1'].cell(4,c).value for c in range(1,4)] == rows[0]
                       assert book['Source1']['D4'].value == 'T1:R1'
                       assert not any(cell.data_type == 'f' or cell.hyperlink for sheet in book for row in sheet for cell in row)
-          pages = PdfReader(BytesIO(images_pdf([picture(), picture(240, 120, color='blue')]))).pages
+          image_document = images_pdf([picture(), picture(240, 120, color='blue')])
+          pages = PdfReader(BytesIO(image_document)).pages
           assert len(pages) == 2
           assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
           assert pages[1].images[0].image.getpixel((0, 0)) == (0, 0, 255)
+          rotated = PdfReader(BytesIO(pdf_tools([image_document], operation='rotate', pages='2', rotation='90'))).pages
+          assert len(rotated) == 2 and [page.rotation for page in rotated] == [0, 90]
+          assert [page.images[0].data for page in rotated] == [page.images[0].data for page in pages]
+          assert [page.mediabox for page in rotated] == [page.mediabox for page in pages]
+          print('Non-root worker: selected PDF page rotation retains source order, images and page boxes PASS with network disabled')
           for language in ('ar', 'en'):
               values = CsvInputs.parse(csv_inputs(language))
               headers, rows = values.records()
