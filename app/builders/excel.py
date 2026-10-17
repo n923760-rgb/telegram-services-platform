@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from functools import lru_cache
 from io import BytesIO
@@ -70,10 +71,30 @@ def _is_number(value):
 
 def _wrapped_lines(text, width, *, size=11, bold=False):
     available = max(1, width * 7 - 12)
-    return sum(
-        max(1, ceil(_text_pixels(chunk, size=size, bold=bold) * 1.12 / available))
-        for chunk in str(text or "").split("\n")
-    )
+    total = 0
+    measured = {}
+    for chunk in ("" if text is None else str(text)).split("\n"):
+        lines, used, gap = 1, 0, 0
+        for token in re.findall(r"\s+|\S+", chunk):
+            if token not in measured:
+                measured[token] = _text_pixels(token, size=size, bold=bold) * 1.12
+            pixels = measured[token]
+            if token.isspace():
+                gap += pixels
+                continue
+            # Native Excel wraps whole words before splitting long unbroken text.
+            # Dividing total text width alone misses the unused space on each line.
+            if used and used + gap + pixels > available:
+                lines += 1
+                used, gap = 0, 0
+            used += gap + pixels
+            if used > available:
+                extra = ceil(used / available) - 1
+                lines += extra
+                used -= extra * available
+            gap = 0
+        total += lines
+    return total
 
 
 def build(data: Table) -> bytes:

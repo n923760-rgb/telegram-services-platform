@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Excel whole-word row sizing — 2026-10-17
+
+- FACT: Official main f056e92 includes PowerPoint visual hierarchy (#93). Excel row sizing divided total text width by available width, underestimating paragraphs where whole words leave unused space at line ends.
+- CHANGE: Shared Excel measurement now counts word boundaries, explicit blank lines and long unbroken values, with a request-local token measurement cache. CSV review, PDF-table workbooks and source-bound Office workbooks reuse this layout helper; cells, types, source references and native table ownership are unchanged.
+- PASS LOCALLY: 41 focused wrapping/source tests; global lint/format/diff and three architecture gates. Arabic/English native workbook readback verifies six wide words receive at least six lines; exact values and the 409-point row-height ceiling survive. Full hosted CI/native worker qualification required before merge.
+- LIMITS: This is a bounded sizing estimate, not Microsoft Excel/mobile visual certification. Very long cells still reach Excel's row-height ceiling; full text remains in the editable cell. No input/schema/service-version, provider-call, price/gate, dependency, migration or payment changes. Prepared files stay reusable. Owner now authorizes deployments after successful checks; no direct server connection is available here.
+- Evidence: [Excel whole-word sizing](REPORTS/2026-10-17-excel-word-wrap.md).
+
 ## PowerPoint contrast and Arabic date display — 2026-10-17
 
 - FACT: Official main aa58e16 includes selected document formats (#92). Native slide preview exposed reversed ISO-date components inside Arabic paragraphs despite intact source strings.
