@@ -16,6 +16,8 @@ PASS LOCALLY: 78 focused pure contract and injected-service tests, including exi
 
 Added hosted integration tests cover Arabic/English direct valid output and successful one-repair output, one capture across duplicate execution, calculated provider cost, persistent email/HTTP(S)/www changes exhausting exactly one repair then releasing all reserved credit without files, and v1 upgrade behavior for prepared/unprepared work with administrator prices preserved. PostgreSQL/Redis and native worker qualification are NOT RUN locally; require the exact-head complete hosted workflow before merge.
 
+Initial hosted run [39040459248](https://github.com/n923760-rgb/telegram-services-platform/actions/runs/39040459248) failed: 2072 passed, nine new integration cases rejected at admission because their fixtures omitted required style. The new fixtures now supply formal explicitly, matching Telegram intake; production validation remains unchanged. Full hosted qualification must run again on the corrected head.
+
 ## Limits
 
 Token equality is a structural safeguard, not a claim about translated meaning, names or style. The reused matcher recognizes email addresses and HTTP(S)/www URLs rather than every contact notation; bare domains and other URI schemes are outside this change. It is conservative about adjacent URL punctuation and preserves its original bytes/case; legitimate punctuation relocation can require the existing repair or fail safely. No matcher redesign or semantic certification is claimed. Prepared historical translations are reused as previously approved, not retroactively regenerated or revalidated. Live provider/Telegram tests and production deployment are NOT RUN.

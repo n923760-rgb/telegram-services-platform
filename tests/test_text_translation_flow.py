@@ -171,7 +171,11 @@ async def test_contact_fidelity_uses_existing_repair_and_captures_once(
         "text_translation", responses, tmp_path, monkeypatch
     )
     oid = await submit(
-        1, "text_translation", {"text": source, "language": language}, price, "contacts"
+        1,
+        "text_translation",
+        {"text": source, "language": language, "style": "formal"},
+        price,
+        "contacts",
     )
     jid = await job_for(oid)
     await execute_job(ctx, str(jid))
@@ -197,7 +201,11 @@ async def test_contact_changes_after_one_repair_fail_without_delivery(
         "text_translation", [bad, bad, "unused"], tmp_path, monkeypatch
     )
     oid = await submit(
-        1, "text_translation", {"text": contact, "language": "en"}, price, "bad-contact"
+        1,
+        "text_translation",
+        {"text": contact, "language": "en", "style": "formal"},
+        price,
+        "bad-contact",
     )
     jid = await job_for(oid)
     await execute_job(ctx, str(jid))
@@ -218,7 +226,13 @@ async def test_upgrade_preserves_prepared_v1_translation_and_admin_settings(
     _, provider, delivery, ctx, price = await setup(
         "text_translation", [json.dumps(PLAN)], tmp_path, monkeypatch
     )
-    oid = await submit(1, "text_translation", {"text": SOURCE, "language": "en"}, price, "upgrade")
+    oid = await submit(
+        1,
+        "text_translation",
+        {"text": SOURCE, "language": "en", "style": "formal"},
+        price,
+        "upgrade",
+    )
     jid = await job_for(oid)
     send = delivery.send
     if cached:
