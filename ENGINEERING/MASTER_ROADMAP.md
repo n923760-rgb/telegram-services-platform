@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## PowerPoint contrast and Arabic date display — 2026-10-17
+
+- FACT: Official main aa58e16 includes selected document formats (#92). Native slide preview exposed reversed ISO-date components inside Arabic paragraphs despite intact source strings.
+- CHANGE: PPTX v4 uses a dark cover/light text, restrained paper content background and explicit native table borders. Arabic paragraphs wrap ISO dates in display-only LTR marks; exact date characters retained, English unchanged. Existing measured geometry/font sizes/density rejection remain.
+- PASS LOCALLY: Focused palette/native editability/service tests, lint/format/diff and architecture. Eight AR/EN fixture slides rendered in LibreOffice and inspected; Arabic cover/content rerendered after date fix and display order checked. Hosted full CI required before merge.
+- LIMITS: No new AI schema/call, price/gate, retry/cap, dependency, migration or production change. Native shapes/text/tables remain editable. Preview is LibreOffice evidence, not Microsoft PowerPoint/mobile/provider semantic certification.
+- Evidence: [PowerPoint visual hierarchy](REPORTS/2026-10-17-pptx-visual-hierarchy.md).
+
 ## Document delivery formats — 2026-10-17
 
 - FACT: Official main 4098b7d qualifies explicit Office Word mode (#91). The existing Word/PDF bundle still always delivers two files while separate document entry prices remain DB-owned.

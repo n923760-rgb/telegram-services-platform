@@ -117,20 +117,21 @@ async def test_pptx_delivery_retry_reuses_native_file_before_single_capture(tmp_
     assert any(s.has_table for s in Presentation(BytesIO(delivery.files[0][1])).slides[2].shapes)
 
 
+@pytest.mark.parametrize("old_version", ["1", "3"])
 async def test_pptx_version_upgrade_keeps_admin_settings_and_releases_old_pending_job(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, old_version
 ):
     _, provider, delivery, ctx, price = await setup("text_to_pptx", [], tmp_path, monkeypatch)
     oid = await submit(1, "text_to_pptx", {"text": "Content"}, price, "old-pptx")
     async with sessions.begin() as db:
         row = await db.get(Service, "text_to_pptx")
-        row.version, row.price_halala, row.enabled = "1", 777, True
-        (await db.get(Order, oid)).service_version = "1"
+        row.version, row.price_halala, row.enabled = old_version, 777, True
+        (await db.get(Order, oid)).service_version = old_version
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "text_to_pptx")
-        assert row.version == "3" and row.price_halala == 777 and row.enabled
+        assert row.version == "4" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:

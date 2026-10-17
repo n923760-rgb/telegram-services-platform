@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 
 from pptx import Presentation
@@ -13,8 +14,12 @@ from app.builders.schema import Deck
 from app.builders.word import safe_text
 
 ACCENT = RGBColor(0x17, 0x6B, 0x55)
-DARK = RGBColor(0x33, 0x33, 0x33)
-MUTED = RGBColor(0x66, 0x66, 0x66)
+DARK = RGBColor(0x22, 0x36, 0x3D)
+MUTED = RGBColor(0x58, 0x68, 0x6D)
+PAPER = RGBColor(0xF7, 0xFA, 0xF8)
+COVER = RGBColor(0x14, 0x2D, 0x36)
+COVER_TEXT = RGBColor(0xFF, 0xFF, 0xFF)
+COVER_MUTED = RGBColor(0xD6, 0xE5, 0xE0)
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
 
@@ -33,7 +38,13 @@ def _style_run(run, size, bold, color):
 
 
 def _paragraph(paragraph, text, rtl, align, size, bold, color, *, bullet=False):
-    paragraph.text = safe_text(text)
+    visible = safe_text(text)
+    # Direction marks affect display only; keep every ISO date's original characters.
+    if rtl:
+        visible = re.sub(
+            r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)", lambda match: "\u200e" + match[0] + "\u200e", visible
+        )
+    paragraph.text = visible
     paragraph.alignment = align
     properties = paragraph._p.get_or_add_pPr()
     properties.set("rtl", "1" if rtl else "0")
@@ -98,6 +109,15 @@ def _table(slide, item, layout):
                 if row_index % 2
                 else RGBColor(0xFF, 0xFF, 0xFF)
             )
+            for edge in ("L", "R", "T", "B"):
+                border = OxmlElement("a:ln" + edge)
+                border.set("w", "9525")  # 0.75pt native cell borders.
+                fill = OxmlElement("a:solidFill")
+                color = OxmlElement("a:srgbClr")
+                color.set("val", "FFFFFF" if row_index == 0 else "DFE8E4")
+                fill.append(color)
+                border.append(fill)
+                cell._tc.get_or_add_tcPr().append(border)
             rtl = is_rtl(value)
             _paragraph(
                 cell.text_frame.paragraphs[0],
@@ -123,6 +143,9 @@ def build(data: Deck) -> bytes:
         slide = prs.slides.add_slide(blank)
         layout = plan_slide(item, cover_candidate=index == 0 and len(data.slides) > 1)
         cover = layout.kind == "cover"
+        # Native fills keep every foreground item editable and require no image assets.
+        slide.background.fill.solid()
+        slide.background.fill.fore_color.rgb = COVER if cover else PAPER
         title_frame = _textbox(
             slide, "Slide title", 0.85, 1.55 if cover else 0.45, 11.6, 1.6 if cover else 1.3
         )
@@ -134,7 +157,7 @@ def build(data: Deck) -> bytes:
             PP_ALIGN.CENTER if cover else PP_ALIGN.RIGHT if rtl else PP_ALIGN.LEFT,
             layout.title_size,
             True,
-            ACCENT,
+            COVER_TEXT if cover else ACCENT,
         )
         if item.table is not None:
             _table(slide, item, layout)
@@ -152,7 +175,7 @@ def build(data: Deck) -> bytes:
                     PP_ALIGN.CENTER if cover else PP_ALIGN.RIGHT if rtl else PP_ALIGN.LEFT,
                     layout.body_size,
                     False,
-                    MUTED if cover else DARK,
+                    COVER_MUTED if cover else DARK,
                     bullet=not cover,
                 )
                 if cover:
@@ -168,7 +191,7 @@ def build(data: Deck) -> bytes:
             PP_ALIGN.RIGHT,
             12,
             False,
-            MUTED,
+            COVER_MUTED if cover else MUTED,
         )
 
     buffer = BytesIO()
