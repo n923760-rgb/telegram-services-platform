@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Document delivery formats — 2026-10-17
+
+- FACT: Official main 4098b7d qualifies explicit Office Word mode (#91). The existing Word/PDF bundle still always delivers two files while separate document entry prices remain DB-owned.
+- CHANGE: Document v3 offers Word, PDF or both before one content intake; preserves direct/smart choices and optional title. Shared preparation stores only requested files and discloses selected output in both normal and visual review. Existing CV/minutes helper calls keep paired delivery unchanged.
+- SAFETY: Same service price/admin activation, unchanged AI calls/bounds and rendering/source fidelity. Legacy internal inputs default to both; existing version guards handle old unprepared jobs. No retiring/rerouting other services or silently reconciling their prices, no financial/provider/migration/dependency changes or production action.
+- PASS LOCALLY: 117 focused output/AI/source-policy/acceptance and existing bundle-service tests; lint/format/diff and architecture. New native/dispatcher/prepared-delivery/retry/upgrade flows require hosted full CI. Live provider/Telegram/production qualification NOT RUN.
+- Evidence: [document delivery formats](REPORTS/2026-10-17-document-delivery-formats.md).
+
 ## Explicit Word intake before content — 2026-10-17
 
 - FACT: Official main eeb33c1 includes qualified provider completion safeguards (#90); new live CV evidence is still unavailable. Office v7 exposed direct Word through a first-line directive rather than a visible choice.

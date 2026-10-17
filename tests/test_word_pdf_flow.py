@@ -42,12 +42,17 @@ async def prepare(tmp_path, monkeypatch):
     return storage, Delivery(storage), price
 
 
+@pytest.mark.parametrize("output_format", ["word", "pdf", "both"])
 async def test_actual_word_and_pdf_delivered_before_single_capture_no_ai_cost_and_cleanup(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, output_format
 ):
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     oid = await submit(
-        1, "text_to_word_pdf", {"text": TEXT, "title": "تقرير الطلبات"}, price, "word-pdf"
+        1,
+        "text_to_word_pdf",
+        {"output_format": output_format, "text": TEXT, "title": "تقرير الطلبات"},
+        price,
+        "word-pdf",
     )
     jid = await job_for(oid)
     await execute_job({"delivery": delivery}, str(jid))
@@ -59,13 +64,21 @@ async def test_actual_word_and_pdf_delivered_before_single_capture_no_ai_cost_an
         assert await db.scalar(select(func.count(CostHold.id))) == 0
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000 - price, 0)
-    assert [name for name, _ in delivery.files] == ["result.docx", "result.pdf"]
-    doc = Document(BytesIO(delivery.files[0][1]))
-    assert [p.text.replace("\u200e", "") for p in doc.paragraphs] == [
-        "تقرير الطلبات",
-        *TEXT.splitlines(),
-    ]
-    assert PdfReader(BytesIO(delivery.files[1][1])).pages[0].extract_text().count("00123") == 2
+    files = dict(delivery.files)
+    assert (
+        list(files)
+        == {"word": ["result.docx"], "pdf": ["result.pdf"], "both": ["result.docx", "result.pdf"]}[
+            output_format
+        ]
+    )
+    if "result.docx" in files:
+        doc = Document(BytesIO(files["result.docx"]))
+        assert [p.text.replace("\u200e", "") for p in doc.paragraphs] == [
+            "تقرير الطلبات",
+            *TEXT.splitlines(),
+        ]
+    if "result.pdf" in files:
+        assert PdfReader(BytesIO(files["result.pdf"])).pages[0].extract_text().count("00123") == 2
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -100,7 +113,9 @@ async def test_word_pdf_failure_releases_credit_with_no_partial_delivery(
             raise DocumentError(failure)
 
         monkeypatch.setattr(LibreOfficeDocuments, "word_pdf", fail)
-    oid = await submit(1, "text_to_word_pdf", {"text": TEXT}, price, "word-pdf-failure")
+    oid = await submit(
+        1, "text_to_word_pdf", {"output_format": "both", "text": TEXT}, price, "word-pdf-failure"
+    )
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     await deliver_failures({"delivery": delivery})
     await deliver_failures({"delivery": delivery})
@@ -121,7 +136,9 @@ async def test_word_pdf_delivery_retry_reuses_both_files_without_rerendering(
     from app.providers.documents.libreoffice import LibreOfficeDocuments
 
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
-    oid = await submit(1, "text_to_word_pdf", {"text": TEXT}, price, "word-pdf-retry")
+    oid = await submit(
+        1, "text_to_word_pdf", {"output_format": "both", "text": TEXT}, price, "word-pdf-retry"
+    )
     jid = await job_for(oid)
     original = delivery.send
 
@@ -155,7 +172,9 @@ async def test_word_pdf_busy_retry_keeps_credit_then_completes(tmp_path, monkeyp
     from app.providers.documents.libreoffice import LibreOfficeDocuments
 
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
-    oid = await submit(1, "text_to_word_pdf", {"text": TEXT}, price, "word-pdf-busy")
+    oid = await submit(
+        1, "text_to_word_pdf", {"output_format": "both", "text": TEXT}, price, "word-pdf-busy"
+    )
     jid = await job_for(oid)
     original = LibreOfficeDocuments.word_pdf
 
@@ -181,7 +200,11 @@ async def test_invalid_word_pdf_input_never_reserves_credit(tmp_path, monkeypatc
     _, _, price = await prepare(tmp_path, monkeypatch)
     with pytest.raises(ServiceError, match="input_single_line"):
         await submit(
-            1, "text_to_word_pdf", {"text": TEXT, "title": "line\nline"}, price, "invalid-word-pdf"
+            1,
+            "text_to_word_pdf",
+            {"output_format": "both", "text": TEXT, "title": "line\nline"},
+            price,
+            "invalid-word-pdf",
         )
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0

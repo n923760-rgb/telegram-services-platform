@@ -13,7 +13,7 @@ def inputs(language="ar"):
         "Contact 0500123456 or sample@example.invalid.\n"
         "Execution depends on completing the review and obtaining the owner's approval."
     )
-    return {"text": text, "mode": "smart"}
+    return {"text": text, "mode": "smart", "output_format": "both"}
 
 
 def revision(source=None, theme="classic"):

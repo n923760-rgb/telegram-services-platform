@@ -11,7 +11,7 @@ from app.services.text_to_word_pdf.schema import Inputs, refined_document, revis
 
 
 class TextToWordPdf(BaseService):
-    version = "2"
+    version = "3"
     slug = "text_to_word_pdf"
     worker_requirements = ("office_export",)
     menu_order = 30
@@ -25,6 +25,12 @@ class TextToWordPdf(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
+            InputField(
+                name="output_format",
+                prompt_key="document_output_format",
+                choices=["both", "word", "pdf"],
+                choice_keys=["document_output_both", "document_output_word", "document_output_pdf"],
+            ),
             InputField(
                 name="mode",
                 prompt_key="word_pdf_mode",
@@ -64,6 +70,7 @@ class TextToWordPdf(BaseService):
                 refined_document(revision),
                 preview=tr("word_pdf_smart_preview"),
                 preview_localizations=translations("word_pdf_smart_preview"),
+                output_format=values.output_format,
             )
         return await word_pdf_result(
             self.runtime,
@@ -71,6 +78,7 @@ class TextToWordPdf(BaseService):
             include_title=values.title is not None,
             preview=tr("word_pdf_preview"),
             preview_localizations=translations("word_pdf_preview"),
+            output_format=values.output_format,
         )
 
 

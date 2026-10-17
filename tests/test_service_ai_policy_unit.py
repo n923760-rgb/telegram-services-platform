@@ -35,8 +35,8 @@ CASES = [
     ("text_to_pdf", {"text": "Source", "mode": "direct"}, False),
     ("text_to_pdf", {"text": "Source", "mode": "smart"}, True),
     ("text_to_pptx", {"text": "Source"}, True),
-    ("text_to_word_pdf", {"text": "Source"}, False),
-    ("text_to_word_pdf", {"text": "Source", "mode": "smart"}, True),
+    ("text_to_word_pdf", {"text": "Source", "output_format": "both"}, False),
+    ("text_to_word_pdf", {"text": "Source", "mode": "smart", "output_format": "both"}, True),
     ("text_translation", {"text": "Source", "language": "ar", "style": "formal"}, True),
 ]
 
