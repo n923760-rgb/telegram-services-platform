@@ -1,0 +1,73 @@
+{
+  "status": "DRAFT_LIVE_VERIFICATION_REQUIRED",
+  "governance_source": "https://github.com/n923760-rgb/engineering-governance",
+  "project_name": "Telegram Services Platform",
+  "repository": "n923760-rgb/telegram-services-platform",
+  "repository_url": "https://github.com/n923760-rgb/telegram-services-platform",
+  "default_branch": "main",
+  "official_branch": "main",
+  "repository_authority_file": "AGENTS.md",
+  "project_baseline": "6415e57da8cec22d198c4bd941d4ffa864dc3c98",
+  "architecture_guides": [
+    "AGENTS.md",
+    "docs/GOVERNANCE.md",
+    "PROJECT-SOURCES.md"
+  ],
+  "subsystem_contracts": [
+    "AGENTS.md",
+    "docs/OPERATIONS.md",
+    "docs/OUTPUT_QUALITY.md"
+  ],
+  "master_roadmap": "ENGINEERING/MASTER_ROADMAP.md",
+  "master_baseline_report": "ENGINEERING/REPORTS/MASTER_ENGINEERING_BASELINE_REPORT.md",
+  "ci_system": "GitHub Actions: .github/workflows/verify.yml",
+  "engineering_lab_contract": "ENGINEERING/REPORTS/MASTER_ENGINEERING_BASELINE_REPORT.md#r-engineering-lab-plan",
+  "execution_environment": "ChatGPT Work scratch workspace; hosted Ubuntu 24.04 CI; operator VPS not accessible here",
+  "verified_execution_capabilities": [
+    "GitHub repository read/write connector",
+    "local Git and Python 3.12",
+    "hosted CI inspection"
+  ],
+  "controller": "Owner-approved task selection and source/evidence review; self-review is not independent review",
+  "executor": "Available local tools and GitHub CI; VPS Codex executor qualification remains BLOCKED",
+  "protected_actions": [
+    "credential_rotation",
+    "destructive_billing_or_cloud_resource_actions",
+    "destructive_database_migration",
+    "destructive_infrastructure",
+    "dns_changes",
+    "force_push",
+    "history_rewrite",
+    "merge",
+    "permanent_release_artifact_deletion",
+    "production_credential_rotation",
+    "production_database_operations",
+    "production_deploy",
+    "release",
+    "repository_deletion",
+    "server_or_cloud_destruction_or_reinstall",
+    "signing",
+    "store_publication",
+    "tag"
+  ],
+  "test_strategy": "Run project commands in AGENTS.md and .github/workflows/verify.yml; use disposable *_test PostgreSQL/Redis. Real Telegram/provider and native Office acceptance use docs/TELEGRAM_ACCEPTANCE.md and docs/OUTPUT_QUALITY.md.",
+  "evidence_location": "ENGINEERING/EVIDENCE/",
+  "report_location": "ENGINEERING/REPORTS/",
+  "artifact_location": null,
+  "backup_restore_strategy": "docs/OPERATIONS.md; current installation restore qualification UNKNOWN",
+  "release_model": "Explicit owner approval; source-bound CI, runtime/output fidelity and payment-policy gates remain separate",
+  "runtime_device_platform_matrix": [
+    "Python 3.12 backend and durable workers",
+    "Arabic/English Telegram customer and administrator journeys",
+    "Native Word/Excel/PowerPoint and PDF outputs"
+  ],
+  "risk_profile": "HIGH",
+  "risk_profile_reason": "Credit ledger, customer files, provider budgets and external delivery require HIGH treatment when affected; documentation-only tasks may be LIGHT without relaxing protected actions.",
+  "governance_lock": "governance/GOVERNANCE_LOCK.json",
+  "qualification_gaps": [
+    "No classic main branch protection and no repository rulesets observed on 2026-10-09",
+    "Actual VPS AI executor/tool-boundary qualification BLOCKED",
+    "Current source-bound staging/native Office/provider acceptance NOT RUN here",
+    "Current installation backup/restore evidence UNKNOWN"
+  ]
+}
