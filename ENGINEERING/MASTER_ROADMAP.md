@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## CI official-image registry fallback — 2026-10-17
+
+- FACT: Official main 409828c includes editing comparisons (#96), qualified by 2037 tests and 20 native worker checks before merge. Previous main a898e82's post-merge run 39032364723 failed twice before checkout while pulling ECR PostgreSQL: Data limit exceeded. No application test ran in those failed attempts.
+- CHANGE: Pull the existing three official image tags after checkout, bounded to one 90-second client pull per ECR/Docker Hub candidate. Start only disposable CI PostgreSQL/Redis through a separate run/attempt-scoped Compose project, require existing health probes with --wait and no extra pulls, and always clean only that CI project. Selected Python reference feeds the unchanged native worker build.
+- PASS LOCALLY: 17 helper/fallback/failure/context/architecture checks; lint/format/diff, workflow/Compose YAML and embedded Python syntax. Native worker qualification body is byte-for-byte unchanged. Hosted full workflow required before merge.
+- SAFETY: Every original lint/format/migration/full-pytest/drift/production-Compose/native worker gate remains required; no continue-on-error, new credential or registry publisher. Production Dockerfile/Compose, dependencies, services, financial policy and settings unchanged. Deployment remains deferred by owner.
+- LIMITS: Both registries may fail; CI then fails rather than bypasses gates. Tags are the existing series/version tags, not immutable cross-registry digest identity. Mocked fallback checks do not certify registry uptime or actual hosted service readiness.
+- Evidence: [registry fallback](REPORTS/2026-10-17-ci-registry-fallback.md).
+
 ## Editing comparison reports — 2026-10-17
 
 - OWNER: Continue service improvements/testing/merging without repeated approval; defer production deployment until development is complete. Official main a898e82 includes source-owned PDF table headings (#95).

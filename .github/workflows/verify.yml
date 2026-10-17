@@ -9,27 +9,11 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    services:
-      postgres:
-        image: public.ecr.aws/docker/library/postgres:16-bookworm
-        env:
-          POSTGRES_USER: services
-          POSTGRES_PASSWORD: test-only-password
-          POSTGRES_DB: services_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U services -d services_test"
-          --health-interval 5s --health-timeout 5s --health-retries 20
-      redis:
-        image: public.ecr.aws/docker/library/redis:7-alpine
-        ports: ['6379:6379']
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       APP_ENV: test
-      DATABASE_URL: postgresql+asyncpg://services:test-only-password@localhost:5432/services_test
-      REDIS_URL: redis://localhost:6379/0
+      CI_INFRA_PROJECT: tsp-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      DATABASE_URL: postgresql+asyncpg://services:test-only-password@127.0.0.1:5432/services_test
+      REDIS_URL: redis://127.0.0.1:6379/0
       BOT_TOKEN: '123456:TEST_TOKEN_ONLY'
       AI_ENABLED: 'false'
       STORAGE_ROOT: ./data/test-files
@@ -41,6 +25,14 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
+      - name: Pull official CI images with bounded registry fallback
+        id: images
+        run: python .github/scripts/ci_images.py
+      - name: Start disposable PostgreSQL and Redis
+        env:
+          CI_POSTGRES_IMAGE: ${{ steps.images.outputs.postgres_image }}
+          CI_REDIS_IMAGE: ${{ steps.images.outputs.redis_image }}
+        run: docker compose -f .github/compose.ci.yml -p "$CI_INFRA_PROJECT" up -d --wait --wait-timeout 120 --pull never
       - run: python -m pip install uv==0.12.19
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng libreoffice-writer
       - run: uv sync --locked --group dev
@@ -57,8 +49,10 @@ jobs:
           cp .env.example .env
           docker compose --env-file .env.example config --quiet
       - name: Build and qualify the document worker image
+        env:
+          CI_PYTHON_IMAGE: ${{ steps.images.outputs.python_image }}
         run: |
-          docker build --build-arg PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.12-slim --target document-worker -t services-document-worker .
+          docker build --pull=false --build-arg "PYTHON_IMAGE=$CI_PYTHON_IMAGE" --target document-worker -t services-document-worker .
           docker run --rm -i --network none --entrypoint python services-document-worker - <<'PY'
           import asyncio
           import os
@@ -307,3 +301,9 @@ jobs:
           print('Non-root worker: automatic document illumination, colored stamp and mixed numeric OCR fixture PASS with network disabled')
           print('Non-root worker: unified mixed-language OCR and automatic Arabic/English ruled/unruled table extraction PASS with network disabled')
           PY
+      - name: Remove disposable CI resources
+        if: always()
+        env:
+          CI_POSTGRES_IMAGE: ${{ steps.images.outputs.postgres_image }}
+          CI_REDIS_IMAGE: ${{ steps.images.outputs.redis_image }}
+        run: docker compose -f .github/compose.ci.yml -p "$CI_INFRA_PROJECT" down --volumes

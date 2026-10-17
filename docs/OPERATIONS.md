@@ -184,13 +184,33 @@ Terminal file deletion has a durable files_deleted marker and a 20-second/startu
 Cleanup failures keep the marker pending. Storage implementations own TTL expiry; Telegram delivery
 reads through the storage interface rather than assuming a local filesystem path.
 
-CI pulls Docker Official Images from Docker's Amazon ECR Public registry to avoid
-Docker Hub anonymous pull limits. The document-worker build selects the Python image
-through `PYTHON_IMAGE`; the default Dockerfile and Compose builds still use `python:3.12-slim`.
-No registry credentials or image publication are required. See
-https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/.
-Registry outages must be resolved and the full workflow rerun; do not skip financial tests
-or the non-root, network-disabled native worker qualification to obtain a passing check.
+CI pulls the existing Docker Official Image tags from ECR Public, falling back once
+per image to Docker Hub after a failed/90-second timed-out pull. The fixed allowlist
+is PostgreSQL 16-bookworm, Redis 7-alpine and Python 3.12-slim. No registry credentials,
+new image publisher or production image/configuration changes are needed. Both
+sources may be unavailable: that fails CI, never marks checks skipped/passed.
+The selected references are logged through ordinary public Docker pull output and
+GitHub step outputs; tags can change or mirrors can lag, so this is not digest identity
+or registry uptime certification.
+
+Checkout and Python setup precede image selection. The selected local images start
+only the disposable services in `.github/compose.ci.yml`, under a unique CI run/attempt
+project name with loopback-only ports and the existing health probes. Compose uses
+`--pull never --wait --wait-timeout 120`; no tests run before readiness succeeds.
+An always-run cleanup removes only that CI project's containers/network/anonymous
+volumes. It never uses the production Compose file. Do not run this CI stack on the
+production VPS. The helper refuses missing GitHub Actions/output context; this is an
+operational guard, not a sandbox for repository code.
+
+All lint, formatting, migration, complete pytest, Alembic drift, production Compose
+syntax validation and the non-root/network-disabled native worker qualification
+remain mandatory. Worker builds use the selected Python image with pull disabled;
+Dockerfile defaults remain unchanged. Public-registry failures must be resolved and
+the full workflow rerun; do not skip financial/native checks to obtain a green result.
+
+References: [Docker's official ECR mirror announcement](https://www.docker.com/blog/news-from-aws-reinvent-docker-official-images-on-amazon-ecr-public/),
+[Compose readiness and pull policy](https://docs.docker.com/reference/cli/docker/compose/up/),
+[scoped Compose cleanup](https://docs.docker.com/reference/cli/docker/compose/down/).
 
 ## Explicit DeepSeek completion mode
 
