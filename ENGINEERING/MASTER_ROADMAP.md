@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Translation email and URL fidelity — 2026-10-17
+
+- FACT: Official main 94147fa includes editing reports (#96) and CI image fallback (#97), qualified by 2051 tests and 20 native worker checks before merge. A baseline reproduction accepts changed@example.invalid for source@example.invalid in independent text translation despite prompt instructions.
+- CHANGE: Translation v2 checks exact email/HTTP(S)/www URL occurrence counts per original nonempty source line, using the existing contact-token matcher and request-local schema. Missing/changed/added/repeated/moved tokens trigger the existing bounded repair; no extra review call or retry allowance. Numeric/source/blank-line checks remain.
+- PASS LOCALLY: 78 pure contract/service tests, three architecture gates, global lint/format/diff. Added hosted tests cover AR/EN success and one repair, persistent contact changes releasing credit, provider cost accounting, and v1 cached delivery/unprepared cancellation preserving administrator prices and activation. Full hosted workflow required before merge.
+- SAFETY: Same customer inputs, files, prices and activation; historical prepared output replays unchanged. No core/ledger/provider budget/AI adapter/other translation path/dependency/migration/production change. Deployment remains deferred by owner.
+- LIMITS: Conservative literal token recognition, not all contact formats or semantic correctness. Existing matcher includes adjacent punctuation in URLs; source spelling/case/punctuation must remain exact. No live-provider or Telegram qualification claimed.
+- Evidence: [translation contact fidelity](REPORTS/2026-10-17-translation-contact-fidelity.md).
+
 ## CI official-image registry fallback — 2026-10-17
 
 - FACT: Official main 409828c includes editing comparisons (#96), qualified by 2037 tests and 20 native worker checks before merge. Previous main a898e82's post-merge run 39032364723 failed twice before checkout while pulling ECR PostgreSQL: Data limit exceeded. No application test ran in those failed attempts.
