@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Explicit PowerPoint slide counts — 2026-10-18
+
+- FACT: Official main 4eeecd8 includes CSV column summaries (#100), qualified by 2139 tests and 22 native worker checks before merge. PowerPoint count instructions in source prose were prompt-only, without a separate count contract.
+- CHANGE: PPTX v5 asks an optional 1–30 slide count before content, accepting Western/Arabic decimal digits and including the cover. Request-local schema exposes exact minItems/maxItems and enforces the count during generation, revalidation and continuation. A trusted prompt names the selected output count separately from source facts; skip retains legacy automatic behavior.
+- PASS LOCALLY: 86 focused count/source-contract/service/palette/native tests; three architecture gates, global lint/format/diff and workflow/worker Python syntax. Added hosted flows cover exact output, existing bounded repair and release/cost, invalid admission, approval reuse, cached retry and v1/v3/v4 upgrade/admin overrides. Native worker qualification adds 1/3/30-slide output checks. Full hosted qualification required before merge.
+- SAFETY: Same renderer, source tokens, file result, administrator price/activation, provider/financial limits and dependencies. Prepared historical output replays; unprepared older jobs release/cancel through existing version guards. No extra AI call allowance, dependency, migration or production action. Owner defers deployment to one later batch.
+- LIMITS: Exact count applies to the separate selected field; automatic/free-prose counts remain best effort. Count validation does not prove semantic completeness or fit every dense source; existing density/budget/source safeguards remain active.
+- Evidence: [PowerPoint count contract](REPORTS/2026-10-18-pptx-slide-count.md).
+
 ## Source-owned CSV column summaries — 2026-10-18
 
 - FACT: Official main 40aa7fa includes provider-free PDF rotation (#99), qualified by 2124 tests and 21 native worker checks before merge. CSV review had row-level audit but no compact per-column quality view.
