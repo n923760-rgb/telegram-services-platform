@@ -267,6 +267,17 @@ jobs:
                       assert [book['Source1'].cell(4,c).value for c in range(1,4)] == rows[0]
                       assert book['Source1']['D4'].value == 'T1:R1'
                       assert not any(cell.data_type == 'f' or cell.hyperlink for sheet in book for row in sheet for cell in row)
+          from app.services.text_summary.schema import Inputs as SummaryInputs, render as summary_render, summary_schema
+          from app.core.i18n import tr
+          for language in ('ar', 'en'):
+              source = 'Source 00123\n\nContact sample@example.invalid\nSource background'
+              values = SummaryInputs.parse({'text': source, 'length': 'short', 'language': language})
+              plan = summary_schema(values).model_validate({'points': [{'text': 'Contact sample@example.invalid for 00123', 'source_ids': [2, 1]}]})
+              summary, report = summary_render(values, plan)
+              assert tr('text_summary_point_sources', language, references='[1], [2]') in summary
+              assert '[1] [1], [2]' in report and report.encode('utf-8').decode('utf-8').endswith(source)
+              assert plan.points[0].source_ids == [2, 1]
+          print('Non-root worker: bilingual summary source references and literal UTF-8 report PASS with network disabled')
           image_document = images_pdf([picture(), picture(240, 120, color='blue')])
           pages = PdfReader(BytesIO(image_document)).pages
           assert len(pages) == 2

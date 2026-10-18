@@ -56,6 +56,8 @@ async def test_source_points_and_report_capture_once(
     expected, report = render(parsed, summary_schema(parsed).model_validate(plan))
     assert provider.calls == len(responses) and len(delivery.results) == 1
     assert delivery.results[0].text == expected
+    label = "فقرات المصدر: " if language == "ar" else "Source paragraphs: "
+    assert label + "[1]" in expected and label + "[3]" in expected
     assert dict(delivery.files)["summary-source.txt"].decode() == report
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
@@ -81,7 +83,10 @@ async def test_invalid_summary_after_one_repair_releases_credit(tmp_path, monkey
     assert len(provider.responses) == 1
 
 
-async def test_cached_summary_delivery_does_not_call_provider_again(tmp_path, monkeypatch):
+@pytest.mark.parametrize("old_version", [None, "1", "2"])
+async def test_cached_summary_delivery_does_not_call_provider_again(
+    tmp_path, monkeypatch, old_version
+):
     _, provider, delivery, ctx, price = await setup(
         "text_summary", [json.dumps(PLAN)], tmp_path, monkeypatch
     )
@@ -103,18 +108,50 @@ async def test_cached_summary_delivery_does_not_call_provider_again(tmp_path, mo
     async with sessions.begin() as db:
         assert (await db.get(Order, oid)).status == "delivering"
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC) - timedelta(seconds=1)
+        if old_version:
+            order = await db.get(Order, oid)
+            order.service_version = old_version
+            order.result = {**order.result, "text": "Legacy summary without inline references"}
     monkeypatch.setattr(delivery, "send", send)
     await execute_job(ctx, str(jid))
-    assert (
-        provider.calls == 1
-        and delivery.results[0].text
-        == render(
+    assert provider.calls == 1 and delivery.results[0].text == (
+        "Legacy summary without inline references"
+        if old_version
+        else render(
             Inputs.parse(values()), summary_schema(Inputs.parse(values())).model_validate(PLAN)
         )[0]
     )
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).reserved == 0
+
+
+@pytest.mark.parametrize("old_version", ["1", "2"])
+async def test_upgrade_releases_unprepared_work_and_preserves_admin_prices(
+    tmp_path, monkeypatch, old_version
+):
+    from app.core.models import Service
+    from app.services.registry import registry
+
+    _, provider, delivery, ctx, price = await setup("text_summary", [], tmp_path, monkeypatch)
+    oid = await submit(1, "text_summary", values(), price, "old-summary")
+    jid = await job_for(oid)
+    async with sessions.begin() as db:
+        (await db.get(Order, oid)).service_version = old_version
+        row = await db.get(Service, "text_summary")
+        row.version, row.price_halala, row.price_stars = old_version, 777, 42
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        row = await db.get(Service, "text_summary")
+        assert (row.version, row.enabled, row.price_halala, row.price_stars) == ("3", True, 777, 42)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "cancelled"
+        assert (await db.get(Job, jid)).cost_sar == Decimal("0")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+    assert provider.calls == 0 and not delivery.files
 
 
 async def test_file_save_failure_releases_credit(tmp_path, monkeypatch):
