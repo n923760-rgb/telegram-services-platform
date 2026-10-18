@@ -41,7 +41,7 @@ def note_units(line):
 
 
 class Inputs(StrictModel):
-    title: str = Field(min_length=1, max_length=200)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
     language: Literal["ar", "en"]
     notes: Annotated[str, StringConstraints(strip_whitespace=False)] = Field(
         min_length=1, max_length=12000
@@ -65,6 +65,9 @@ class Inputs(StrictModel):
         return [
             part for line in self.notes.split("\n") for part in note_units(line) if part.strip()
         ]
+
+    def document_title(self):
+        return self.title if self.title is not None else tr("minutes_default_title", self.language)
 
     @classmethod
     def parse(cls, inputs):
@@ -161,7 +164,7 @@ def document(values, plan):
                 )
             )
     return WordDocument(
-        title=values.title,
+        title=values.document_title(),
         sections=sections,
         alignment="right" if values.language == "ar" else "left",
     )

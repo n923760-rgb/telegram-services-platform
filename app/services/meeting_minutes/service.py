@@ -13,7 +13,7 @@ from app.services.meeting_minutes.schema import Inputs, classification_schema, d
 class MeetingMinutes(BaseService):
     slug = "meeting_minutes"
     worker_requirements = ("office_export",)
-    version = "3"
+    version = "4"
     menu_order = 20
     category = "professional"
     name_ar = tr("minutes_name")
@@ -24,7 +24,13 @@ class MeetingMinutes(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
-            InputField(name="title", prompt_key="minutes_title", max_length=200, single_line=True),
+            InputField(
+                name="title",
+                prompt_key="minutes_title",
+                max_length=200,
+                single_line=True,
+                required=False,
+            ),
             InputField(
                 name="language",
                 prompt_key="minutes_language",
@@ -69,7 +75,7 @@ class MeetingMinutes(BaseService):
         details = {}
         for lang in ("ar", "en"):
             preview = [tr("minutes_review_intro", lang)]
-            complete = [values.title, tr("minutes_review_complete", lang)]
+            complete = [values.document_title(), tr("minutes_review_complete", lang)]
             for category in ("discussion", "decision", "action", "review"):
                 ids = sorted(item.note_id for item in plan.assignments if item.category == category)
                 if ids:
