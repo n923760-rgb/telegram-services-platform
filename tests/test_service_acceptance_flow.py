@@ -67,6 +67,9 @@ async def test_direct_acceptance_native_outputs_and_single_capture_without_provi
 
 
 async def test_latest_native_acceptance_cases_pass_without_provider_calls(tmp_path, monkeypatch):
+    # The global test fixture exposes echo publicly for unrelated lifecycle tests;
+    # these real-portfolio cases must use its production admin-only audience.
+    monkeypatch.setattr(acceptance.registry.types["echo"], "admin_only", True)
     path = configure(tmp_path, monkeypatch)
     call = AsyncMock(side_effect=AssertionError("no network"))
     monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
@@ -89,6 +92,7 @@ async def test_latest_native_acceptance_cases_pass_without_provider_calls(tmp_pa
 async def test_failed_output_contract_never_counts_pass_or_captures_credit(tmp_path, monkeypatch):
     from dataclasses import replace
 
+    monkeypatch.setattr(acceptance.registry.types["echo"], "admin_only", True)
     path = configure(tmp_path, monkeypatch)
     original = acceptance.cases
     monkeypatch.setattr(

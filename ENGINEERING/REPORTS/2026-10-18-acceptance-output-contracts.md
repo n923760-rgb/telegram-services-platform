@@ -38,6 +38,12 @@ A deliberately missing required sheet must produce REVIEW_REQUIRED, no delivered
 no capture and no stranded reservation. Full exact-head hosted CI including all existing
 non-root network-disabled worker gates is required before merge; workflow is unchanged.
 
+FACT: First hosted run 39102158429 had 2297 passing tests and two new flow failures.
+The shared test fixture intentionally exposes echo as public, conflicting with the real
+16-service portfolio guard. The two real-portfolio tests now restore echo's production
+admin-only audience using scoped monkeypatch; the portfolio guard and product code are
+unchanged. Full exact-head rerun required; that failed run did not qualify the worker.
+
 NOT RUN: live provider acceptance, production/server work or representative Telegram/mobile
 visual acceptance. Local code tests and mocked hosted provider fixtures are not live acceptance.
 Isolation, fresh-database and synthetic-owner guards remain mandatory and unchanged.
