@@ -142,7 +142,7 @@ async def test_injected_ai_summary_owned_report_and_source(tmp_path, language):
         storage.storage.read(result.artifacts[0].key, 8)
     assert len(calls) == 1 and "at most 3" in calls[0][1] and "untrusted data" in calls[0][1]
     assert "next meetings" in calls[0][1] and "rejected proposals" in calls[0][1]
-    assert service.version == "2" and not service.enabled_by_default and service.requires_ai
+    assert service.version == "3" and not service.enabled_by_default and service.requires_ai
 
 
 async def test_missing_or_failed_ai_saves_no_file(tmp_path):

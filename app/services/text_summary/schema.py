@@ -94,13 +94,17 @@ def summary_schema(values):
 
 
 def render(values, plan):
-    points = "\n\n".join(f"• {point.text}" for point in plan.points)
+    references = [
+        ", ".join(f"[{number}]" for number in sorted(point.source_ids)) for point in plan.points
+    ]
+    points = "\n\n".join(
+        f"• [{index}] {point.text}\n"
+        + tr("text_summary_point_sources", values.language, references=references[index - 1])
+        for index, point in enumerate(plan.points, 1)
+    )
     heading = tr("text_summary_heading", values.language)
     summary = heading + "\n\n" + points + "\n\n" + tr("text_summary_notice", values.language)
-    citations = "\n".join(
-        f"[{i}] " + ", ".join(str(number) for number in point.source_ids)
-        for i, point in enumerate(plan.points, 1)
-    )
+    citations = "\n".join(f"[{i}] {references[i - 1]}" for i in range(1, len(plan.points) + 1))
     source = "\n\n".join(f"[{i}] {line}" for i, line in enumerate(values.lines(), 1))
     report = (
         summary

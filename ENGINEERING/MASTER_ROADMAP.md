@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Inline source references for summaries — 2026-10-18
+
+- FACT: Official main 41b0865 includes optional meeting-minute titles (#102), qualified by 2211 tests and 24 native worker checks before merge. Summary v2 showed citation mapping only inside the attached TXT report.
+- CHANGE: Summary v3 numbers displayed points and adds a localized source-paragraph reference line to each. Chat and report use identical ascending source IDs, without mutating AI plans or source text. The notice explicitly distinguishes references from semantic/completeness certification.
+- PASS LOCALLY: 45 summary/source-reference/service tests, including seven dense points with 80 references and Telegram chunk limits; three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted coverage extends one-call/repair capture, cached v1/v2 replay and unprepared upgrade cancellation preserving administrator prices. Full exact-head hosted qualification required before merge.
+- SAFETY: Same customer inputs, artifact count, AI schema/prompt/review, cost/repair limits, price/activation, financial policy and dependencies. Prepared historical results replay unchanged; no new provider stage or production action. Deployment deferred to one later batch by owner.
+- LIMITS: Source IDs refer to nonempty physical input lines, not sentence-level evidence or proof of semantic accuracy. A long source paragraph remains one source unit; existing semantic review is unchanged.
+- Evidence: [Summary inline references](REPORTS/2026-10-18-summary-inline-sources.md).
+
 ## Optional meeting-minute titles — 2026-10-18
 
 - FACT: Official main 8b0b451 includes explicit PPTX counts (#101), qualified by 2183 tests and 23 native worker checks before merge. Meeting minutes still required a title before language/source intake.
