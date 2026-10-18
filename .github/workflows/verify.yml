@@ -215,6 +215,14 @@ jobs:
                   titled = await renderer().word_pdf(minute_document(titled_values, classification_schema(titled_values.lines()).model_validate(titled_plan)))
                   titled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(titled.pdf)).pages)
                   assert titled_text.count('2026-10-12') == 2 and titled_text.count('00017') == 1
+                  untitled_source = minute_inputs(language)
+                  del untitled_source['title']
+                  untitled_values = MinuteInputs.parse(untitled_source)
+                  untitled_plan = classification_schema(untitled_values.lines()).model_validate(minute_plan())
+                  untitled = await renderer().word_pdf(minute_document(untitled_values, untitled_plan))
+                  assert Word(BytesIO(untitled.docx)).paragraphs[0].text.replace('\u200e', '') == untitled_values.document_title()
+                  untitled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(untitled.pdf)).pages)
+                  assert all(untitled_text.count(token) == 1 for token in ('00123', '125.50', '00017'))
                   cv = await renderer().word_pdf(cv_planned(cv_inputs(language)))
                   pages = PdfReader(BytesIO(cv.pdf)).pages
                   assert len(pages) == 1
@@ -310,6 +318,7 @@ jobs:
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound action register and exact deadline export PASS with network disabled')
           print('Non-root worker: Arabic/English titled task owner retains source unit and exact deadline PASS with network disabled')
+          print('Non-root worker: optional minutes title uses document language and retains source numbers in native pair PASS with network disabled')
           print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
           print('Non-root worker: Arabic/English CSV column summary preserves literal values and exact counts PASS with network disabled')
           print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')

@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Optional meeting-minute titles — 2026-10-18
+
+- FACT: Official main 8b0b451 includes explicit PPTX counts (#101), qualified by 2183 tests and 23 native worker checks before merge. Meeting minutes still required a title before language/source intake.
+- CHANGE: Minutes v4 makes the existing first title field optional through the generic Skip action. Missing/null titles use a neutral Arabic/English heading in the selected document language, shared by complete review and Word/PDF. Supplied titles retain existing validation; no name/date is inferred from source.
+- PASS LOCALLY: 65 focused title/source/action/service tests; three architecture gates; global lint/format/diff and workflow/worker syntax. One existing LibreOffice export test excluded because the binary is unavailable locally; full hosted qualification remains required. Added hosted coverage includes dispatcher skip, native approved output, single call/capture, cached replay and v3 upgrades preserving administrator overrides.
+- SAFETY: Same source classification, mandatory approval, artifact pair, provider limits, price/activation, dependencies and financial policy. Existing version guards cancel/release unprepared legacy work and replay prepared files. No server changes; deployment remains one later batch at owner request.
+- LIMITS: Skip uses a visible generic heading, not a titleless document or automatic source-based title. Native structure/text checks do not replace live-provider/Telegram visual acceptance.
+- Evidence: [Optional minutes titles](REPORTS/2026-10-18-minutes-optional-title.md).
+
 ## Explicit PowerPoint slide counts — 2026-10-18
 
 - FACT: Official main 4eeecd8 includes CSV column summaries (#100), qualified by 2139 tests and 22 native worker checks before merge. PowerPoint count instructions in source prose were prompt-only, without a separate count contract.
