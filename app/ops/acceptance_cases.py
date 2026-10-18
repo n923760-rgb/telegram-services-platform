@@ -21,6 +21,10 @@ class Case:
     inputs: dict
     tokens: tuple[str, ...] = ()
     pdf_pages: int = 1
+    exact_pdf_pages: int | None = None
+    pdf_rotations: tuple[int, ...] = ()
+    pptx_slides: int | None = None
+    required_sheets: tuple[str, ...] = ()
 
 
 def picture(*, shaded=False, mixed=False):
@@ -84,6 +88,7 @@ def cases(assets):
                 "text": "ID,Name,Amount\n00123, Demo ,125.50\n00017,=1+1,0\n00123,Demo,125.50",
             },
             ("00123",),
+            required_sheets=("Data", "Source", "Review", "Columns"),
         ),
         *[
             Case(
@@ -101,8 +106,9 @@ def cases(assets):
         Case(
             "images_pdf",
             "images_to_pdf",
-            {"images": [image, mixed], "orientation": "auto"},
+            {"images": [image, mixed], "orientation": "auto", "page_order": "٢، ١"},
             pdf_pages=2,
+            exact_pdf_pages=2,
         ),
         *[
             Case(
@@ -110,7 +116,6 @@ def cases(assets):
                 "meeting_minutes",
                 {
                     "language": lang,
-                    "title": "Meeting 2026-10-15",
                     "notes": "Discussed order 00123.\nApproved project start.\nSam must send report 00017 on 2026-10-20.",
                 },
                 ("00123", "00017"),
@@ -132,6 +137,15 @@ def cases(assets):
             "pdf_tools",
             {"files": [pdf], "operation": "extract", "pages": "1"},
             ("00123",),
+            exact_pdf_pages=1,
+        ),
+        Case(
+            "pdf_rotate",
+            "pdf_tools",
+            {"files": [pdf], "operation": "rotate", "pages": "1", "rotation": "90"},
+            ("00123",),
+            exact_pdf_pages=1,
+            pdf_rotations=(90,),
         ),
         Case(
             "pdf_merge",
@@ -139,6 +153,7 @@ def cases(assets):
             {"files": [pdf, assets["pdf2"]], "operation": "merge"},
             ("00123",),
             2,
+            exact_pdf_pages=2,
         ),
         *[
             Case(
@@ -172,7 +187,7 @@ def cases(assets):
             Case("text_pdf_" + mode, "text_to_pdf", {"text": text, "mode": mode}, ("00123",))
             for mode in ("direct", "smart")
         ],
-        Case("pptx", "text_to_pptx", {"text": text}),
+        Case("pptx", "text_to_pptx", {"text": text, "slide_count": "3"}, pptx_slides=3),
         *[
             Case(
                 "word_pdf_" + mode,

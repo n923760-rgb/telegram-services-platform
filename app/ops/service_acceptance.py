@@ -181,6 +181,13 @@ def inspect_output(name, data, case):
         pdf = PdfReader(BytesIO(data))
         if pdf.is_encrypted or len(pdf.pages) < case.pdf_pages:
             raise ServiceError("acceptance_output_invalid")
+        if case.exact_pdf_pages is not None and len(pdf.pages) != case.exact_pdf_pages:
+            raise ServiceError("acceptance_output_invalid")
+        if case.pdf_rotations:
+            rotations = tuple(page.rotation for page in pdf.pages)
+            if rotations != case.pdf_rotations:
+                raise ServiceError("acceptance_output_invalid")
+            details["rotations"] = list(rotations)
         details["pages"] = len(pdf.pages)
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     elif suffix == ".docx":
@@ -191,6 +198,8 @@ def inspect_output(name, data, case):
         )
     elif suffix == ".xlsx":
         book = load_workbook(BytesIO(data), data_only=False)
+        if not set(case.required_sheets).issubset(book.sheetnames):
+            raise ServiceError("acceptance_output_invalid")
         cells = [cell for sheet in book for row in sheet for cell in row]
         if any(cell.data_type == "f" or cell.hyperlink for cell in cells):
             raise ServiceError("acceptance_output_invalid")
@@ -199,6 +208,8 @@ def inspect_output(name, data, case):
     elif suffix == ".pptx":
         slides = Presentation(BytesIO(data)).slides
         if not slides:
+            raise ServiceError("acceptance_output_invalid")
+        if case.pptx_slides is not None and len(slides) != case.pptx_slides:
             raise ServiceError("acceptance_output_invalid")
         text = "\n".join(
             shape.text for slide in slides for shape in slide.shapes if shape.has_text_frame
