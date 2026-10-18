@@ -66,6 +66,55 @@ async def test_direct_acceptance_native_outputs_and_single_capture_without_provi
         assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 1
 
 
+async def test_latest_native_acceptance_cases_pass_without_provider_calls(tmp_path, monkeypatch):
+    path = configure(tmp_path, monkeypatch)
+    call = AsyncMock(side_effect=AssertionError("no network"))
+    monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
+    assert await acceptance.execute(["csv", "images_pdf", "pdf_rotate"]) == 0
+    report = json.loads((path / "report.json").read_text())
+    assert report["status"] == "PASS" and report["passed"] == 3
+    assert report["provider_calls"] == 0 and report["calculated_usage_sar"] == "0"
+    assert report["active_orders"] == report["wallet_reserved_halala"] == 0
+    cases = {case["case"]: case for case in report["cases"]}
+    assert all(case["status"] == "PASS" for case in cases.values())
+    assert "Columns" in cases["csv"]["artifacts"][0]["sheets"]
+    assert cases["images_pdf"]["artifacts"][0]["pages"] == 2
+    assert cases["pdf_rotate"]["artifacts"][0]["rotations"] == [90]
+    call.assert_not_awaited()
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 3
+
+
+async def test_failed_output_contract_never_counts_pass_or_captures_credit(tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    path = configure(tmp_path, monkeypatch)
+    original = acceptance.cases
+    monkeypatch.setattr(
+        acceptance,
+        "cases",
+        lambda assets: [
+            replace(
+                next(case for case in original(assets) if case.name == "csv"),
+                name="missing_sheet",
+                required_sheets=("Missing",),
+            )
+        ],
+    )
+    call = AsyncMock(side_effect=AssertionError("no network"))
+    monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
+    assert await acceptance.execute(["missing_sheet"]) == 1
+    report = json.loads((path / "report.json").read_text())
+    assert report["status"] == "REVIEW_REQUIRED" and report["passed"] == 0
+    assert report["failed"] == 1 and report["provider_calls"] == 0
+    assert report["active_orders"] == report["wallet_reserved_halala"] == 0
+    assert not report["cases"][0]["artifacts"]
+    call.assert_not_awaited()
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 0
+
+
 @pytest.mark.parametrize("failure", ["cap", "transport", "none"])
 async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
     tmp_path, monkeypatch, failure

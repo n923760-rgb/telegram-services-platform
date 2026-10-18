@@ -6,7 +6,13 @@ After owner authorization for live testing, run `bash scripts/service-acceptance
 from clean main while production provider pause is true. The wrapper uses a fresh
 uniquely named PostgreSQL acceptance database and dedicated shared-volume storage;
 it does not stop production containers or modify their pause, users, credit, gates
-or prices. Synthetic credit funds 28 cases across 16 services only inside that DB.
+or prices. Synthetic credit funds 29 cases across 16 services only inside that DB.
+The plan now exercises an explicit three-slide presentation, optional minutes titles,
+image page ordering, CSV Columns output and a native PDF rotation case. Exact PDF page
+counts/rotation flags, selected slide counts and required workbook sheets are checked
+where declared. The added rotation case is provider-free; AI case count and caps are unchanged.
+These structural checks do not certify semantic completeness, image order or mobile appearance;
+inspect outputs and retain separate representative Telegram/provider acceptance.
 The configured provider/key is inherited in-process without printing credentials;
 normal job-scoped cost reservation, schema/content review, native builders and
 confirmation/replay paths remain active. No real Telegram/Stars transactions.

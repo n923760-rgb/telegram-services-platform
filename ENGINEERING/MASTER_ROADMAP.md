@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Acceptance output contracts for recent improvements — 2026-10-18
+
+- FACT: Official main 9fd8e67 includes explicit image ordering (#104), qualified by 2278 tests and 26 native worker checks before merge. Synthetic acceptance inspected minimum PDF pages/nonempty PPTX/general Excel cells, but did not enforce selected slide count, exact native page count, rotation flags or required sheets.
+- CHANGE: Extend internal Case expectations and enforce exact PDF page counts, complete declared rotation tuples, exact PPTX slide counts and required workbook sheets when declared. Existing variable-layout minimum PDF policy remains. Current plan exercises reordered images, optional minutes titles and three-slide PPTX, requires CSV Columns, and adds one provider-free rotation case (29 cases/16 services; same AI case count/caps).
+- PASS LOCALLY: 43 acceptance/contract tests; three architecture gates and global lint/format/diff. Hosted DB tests exercise three current native cases with zero provider calls/single capture each, plus output-contract failure producing REVIEW_REQUIRED with no capture or stranded reservation. Full exact-head hosted suite/non-root worker qualification required before merge.
+- SAFETY: No live acceptance execution, provider call, production access, budget increase, plugin/schema/version/price/activation change or dependency. Existing production-isolation/fresh-database guards and one-batch deployment deferral retained.
+- LIMITS: Structural expectations do not prove semantic completeness, actual image order, native/mobile appearance or all output filenames. Those remain covered by dedicated native tests and representative output review. Source qualification is not production acceptance.
+- Evidence: [Acceptance output contracts](REPORTS/2026-10-18-acceptance-output-contracts.md).
+
 ## Explicit image-to-PDF page order — 2026-10-18
 
 - FACT: Official main d0366a0 includes summary references (#103), qualified by 2225 tests and 25 native worker checks before merge. Image PDF pages previously followed upload order only.
