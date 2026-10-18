@@ -36,5 +36,10 @@ Native non-root network-disabled worker qualification additionally renders untit
 minutes, reads the localized Word title and verifies exact source numbers in the PDF.
 Full exact-head hosted workflow must pass before merge; local checks are not deployment evidence.
 
+FACT: First hosted run 39093691480 completed 2209 tests successfully but failed two
+pre-existing review-detail assertions expecting version 3. Updated those assertions to
+version 4 without changing their content/approval checks. A complete rerun is required;
+the failed run did not execute native worker qualification and is not merge evidence.
+
 LIMITS: Skip creates a neutral visible title, not source-based generation or a hidden title.
 Real-provider/Telegram visual acceptance and production deployment NOT RUN.

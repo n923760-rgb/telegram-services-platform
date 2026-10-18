@@ -37,7 +37,7 @@ async def test_every_task_and_complete_metadata_are_reviewed_before_any_export(l
     service.runtime = SimpleNamespace(ai=ai, storage=None, renderer=None)
     result = await service.run(source)
     assert result.needs_confirmation and not result.artifacts and ai.extract.await_count == 1
-    assert MeetingMinutes.version == "3"
+    assert MeetingMinutes.version == "4"
     assert len(result.preview) <= 3000
     for lang in ("ar", "en"):
         review = result_preview(result.model_dump(), lang)
