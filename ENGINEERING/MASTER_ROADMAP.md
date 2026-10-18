@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Explicit image-to-PDF page order — 2026-10-18
+
+- FACT: Official main d0366a0 includes summary references (#103), qualified by 2225 tests and 25 native worker checks before merge. Image PDF pages previously followed upload order only.
+- CHANGE: Images-to-PDF v3 offers optional page_order after uploads and before orientation. Western/Arabic decimal digits, commas/Arabic commas/spaces are accepted; each uploaded image must appear exactly once. Skip/omitted/null keeps upload order. Result preview names the exact source-image order in AR/EN.
+- PASS LOCALLY: 74 order/native pixel/source-preservation/service tests, including all bounded permutations for 1–5 images, invalid admission, omitted/null defaults, EXIF-aware per-page orientation and literal pixels. Three architecture gates, global lint/format/diff and worker syntax. Hosted tests extend zero-provider cost/capture, invalid-order admission and v1/v2 upgrades/prepared replay. Full exact-head qualification required before merge.
+- SAFETY: Existing native renderer, limits, ownership, metadata removal, price/activation, file count, zero-AI policy and ledger unchanged. No omission/repetition, crop, new dependency or production change. Existing version guards cancel/release unprepared legacy jobs and replay prepared results. Deployment remains one later batch by owner request.
+- LIMITS: Image numbers refer to actual upload sequence, not filenames or inferred document pages. Reordering does not restore quality reduced by Telegram; send files for source resolution. Live Telegram visual acceptance NOT RUN.
+- Evidence: [Image PDF order](REPORTS/2026-10-18-images-pdf-page-order.md).
+
 ## Inline source references for summaries — 2026-10-18
 
 - FACT: Official main 41b0865 includes optional meeting-minute titles (#102), qualified by 2211 tests and 24 native worker checks before merge. Summary v2 showed citation mapping only inside the attached TXT report.
