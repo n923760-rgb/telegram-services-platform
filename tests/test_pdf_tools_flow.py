@@ -1,15 +1,17 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import AsyncMock
 
 import pytest
 from pypdf import PdfReader
 from sqlalchemy import func, select
 
 from app.core.db import sessions
-from app.core.models import CostHold, CostUsage, Job, Order, Service
+from app.core.models import CostHold, CostUsage, Job, Order, Service, Setting
 from app.core.settings import config
 from app.ops.admin import set_service
+from app.ops.circuit import evaluate
 from app.orders.engine import submit
 from app.providers.storage import LocalStorage
 from app.services.base import ServiceError
@@ -109,6 +111,15 @@ async def test_pdf_tools_failures_release_credit_and_never_deliver(
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
     assert not delivery.files and len(delivery.errors) == 1
+    if failure in {"form", "pages"}:
+        async with sessions.begin() as db:
+            db.add(Setting(key="CIRCUIT_MIN_SAMPLES", value={"value": 1}))
+            db.add(Setting(key="FAILURE_ALERT_COUNT", value={"value": 1}))
+        notifier = AsyncMock()
+        assert not await evaluate("pdf_tools", notifier)
+        notifier.alert.assert_not_awaited()
+        async with sessions() as db:
+            assert (await db.get(Service, "pdf_tools")).enabled
     if failure == "foreign":
         assert storage.read(file.key, 2) == data  # no cross-owner deletion
     else:

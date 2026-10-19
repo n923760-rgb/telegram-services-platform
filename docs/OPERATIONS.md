@@ -173,6 +173,10 @@ an automatic release of unknown exposure. The reconciliation command is idempote
 The circuit breaker evaluates the most recent configured window of completed/failed jobs, after the
 minimum sample count, and also alerts on consecutive failures. User credit releases are not a refund
 of provider expenditure: OCR rejected as unreadable still may incur provider cost.
+Explicit unsupported PDF content/forms, PDF input limits and invalid page selections are excluded
+before filling that window, so they do not pause a healthy service or emit failure alerts.
+Generic `file_invalid`, unknown processing errors and provider failures still count. This policy
+does not re-enable a service that an administrator or an earlier circuit evaluation disabled.
 
 
 Revised-spec controls:
