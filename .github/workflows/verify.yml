@@ -99,6 +99,7 @@ jobs:
           from tests.csv_similarity_fixtures import inputs as similarity_inputs
           from app.services.image_to_text.service import ImageToText
           from app.services.images_to_pdf.service import ImagesToPdf
+          from app.services.pdf_tools.service import PdfTools
           from app.services.pdf_tables_excel.service import PdfTablesExcel
           from app.providers.storage import LocalStorage, OwnedStorage
           from types import SimpleNamespace
@@ -159,6 +160,14 @@ jobs:
                       with Image.open(BytesIO(source_images[number - 1])) as source_image:
                           assert page.images[0].image.tobytes() == source_image.convert('RGB').tobytes()
                   assert all('3, 1, 2' in preview for preview in ordered_result.preview_localizations.values())
+                  original_pdf = storage.read(ordered_result.artifacts[0].key)
+                  pdf_files = [storage.save(f'part{number}.pdf', pdf_tools([original_pdf], operation='extract', pages=number), 'application/pdf').key for number in ('1', '2')]
+                  merge_service = PdfTools()
+                  merge_service.runtime = SimpleNamespace(storage=storage, ai=None)
+                  merged_result = await merge_service.run({'operation': 'merge', 'files': pdf_files, 'file_order': '٢،١'})
+                  merged_pages = PdfReader(BytesIO(storage.read(merged_result.artifacts[0].key))).pages
+                  assert len(merged_pages) == 2
+                  assert [page.images[0].data for page in merged_pages] == [ordered_pages[number].images[0].data for number in (1, 0)]
                   image = storage.save('source.png', printed(), 'image/png')
                   service = ImageToText()
                   service.runtime = SimpleNamespace(storage=storage, documents=processor(), ai=None)
@@ -347,6 +356,7 @@ jobs:
           print('Non-root worker: single-entry AI CV response fixtures, three named bilingual Word/PDF designs and fresh English page PASS with network disabled')
           print('Non-root worker: ordered images-to-PDF PASS with network disabled')
           print('Non-root worker: explicit Arabic-digit image order retains every source image and pixels PASS with network disabled')
+          print('Non-root worker: explicit PDF file merge order retains native source page images PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
           print('Non-root worker: Arabic/English source-bound action register and exact deadline export PASS with network disabled')
           print('Non-root worker: Arabic/English titled task owner retains source unit and exact deadline PASS with network disabled')

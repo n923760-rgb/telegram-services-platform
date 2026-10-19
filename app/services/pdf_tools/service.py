@@ -10,7 +10,7 @@ class PdfTools(BaseService):
     slug = "pdf_tools"
     menu_order = 30
     category = "pdf"
-    version = "2"
+    version = "3"
     name_ar = tr("pdf_tools_name")
     name_en = tr("pdf_tools_name", "en")
     description_ar = tr("pdf_tools_description")
@@ -26,6 +26,15 @@ class PdfTools(BaseService):
                 choice_keys=["pdf_tools_merge", "pdf_tools_extract", "pdf_tools_rotate"],
             ),
             InputField(name="files", kind="file", prompt_key="pdf_tools_files", multiple=True),
+            InputField(
+                name="file_order",
+                prompt_key="pdf_tools_file_order",
+                required=False,
+                skip_key="pdf_tools_upload_order",
+                max_length=32,
+                single_line=True,
+                when={"operation": ["merge"]},
+            ),
             InputField(
                 name="pages",
                 prompt_key="pdf_tools_pages",
@@ -55,7 +64,8 @@ class PdfTools(BaseService):
     async def run(self, inputs):
         values = Inputs.parse(inputs)
         data = []
-        for key in values.files:
+        for number in values.source_order():
+            key = values.files[number - 1]
             data.append(self.runtime.storage.read(key))
             if sum(map(len, data)) > 20 * 1024 * 1024:
                 raise ServiceError("pdf_tools_limit")
@@ -66,12 +76,19 @@ class PdfTools(BaseService):
         except PdfToolError as error:
             raise ServiceError(error.key) from None
         artifact = self.runtime.storage.save("result.pdf", content, "application/pdf")
-        preview_key = (
-            "pdf_tools_rotation_preview" if values.operation == "rotate" else "pdf_tools_preview"
+        preview_key = {
+            "merge": "pdf_tools_merge_preview",
+            "rotate": "pdf_tools_rotation_preview",
+            "extract": "pdf_tools_preview",
+        }[values.operation]
+        preview_args = (
+            {"file_order": ", ".join(map(str, values.source_order()))}
+            if values.operation == "merge"
+            else {}
         )
         return Result(
-            preview=tr(preview_key),
-            preview_localizations=translations(preview_key),
+            preview=tr(preview_key, **preview_args),
+            preview_localizations=translations(preview_key, **preview_args),
             artifacts=[artifact],
         )
 

@@ -1,9 +1,9 @@
-import re
 from typing import Literal
 
 from pydantic import Field, ValidationError, field_validator, model_validator
 
 from app.builders.schema import StrictModel
+from app.files.upload_order import ordered_indices, single_line
 from app.services.base import ServiceError
 
 
@@ -15,26 +15,17 @@ class Inputs(StrictModel):
     @field_validator("page_order", mode="before")
     @classmethod
     def single_line_order(cls, value):
-        if isinstance(value, str) and any(char in value for char in "\r\n\u2028\u2029"):
-            raise ValueError("page order must be one line")
-        return value
+        return single_line(value)
 
     @model_validator(mode="after")
     def distinct(self):
         if len(set(self.images)) != len(self.images) or any(not key.strip() for key in self.images):
             raise ValueError("empty or duplicate key")
-        if self.page_order is not None and not re.fullmatch(
-            r"\d(?:[ \t]*[,،][ \t]*\d|[ \t]+\d)*", self.page_order
-        ):
-            raise ValueError("list image numbers separated by commas or spaces")
-        if sorted(self.source_order()) != list(range(1, len(self.images) + 1)):
-            raise ValueError("use each uploaded image exactly once")
+        self.source_order()
         return self
 
     def source_order(self):
-        if self.page_order is None:
-            return list(range(1, len(self.images) + 1))
-        return [int(number) for number in re.split(r"[,، \t]+", self.page_order)]
+        return ordered_indices(self.page_order, len(self.images))
 
     @classmethod
     def parse(cls, inputs):

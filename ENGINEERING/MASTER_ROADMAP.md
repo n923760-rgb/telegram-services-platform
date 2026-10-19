@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Explicit PDF merge-file order — 2026-10-19
+
+- FACT: Official main 55010c8 includes PPTX contact direction (#106), qualified by 2321 tests and 27 native worker checks before merge. PDF merges previously followed upload order only.
+- CHANGE: PDF tools v3 adds optional file_order for merge only, after uploads. Arabic/Western/Persian digits and existing comma/space syntax express a complete permutation; skip/omitted/null keeps upload order. Entire source files move as units; internal page order is unchanged. AR/EN previews state actual file sequence. Reuse a bounded helper extracted from ImagesToPdf without changing its v3 contract.
+- PASS LOCALLY: 154 focused merge/order/image/rotation/native-service tests, including all 2–5-file permutations and unchanged image-order tests; three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows extend zero-AI capture, invalid admission, cached merge replay and v1/v2 upgrades/admin overrides. Native offline worker adds merged source-image readback. Full exact-head qualification required before merge.
+- SAFETY: Same PDF builder, page/byte limits, forms/signature/encryption rejection, ownership, prices/activation and financial/provider policy. No new dependency, AI call or production action. Prepared old outputs replay; unprepared older work cancels/releases through existing guards. Deployment remains one later batch by owner request.
+- LIMITS: Numbers refer to actual upload sequence, not filenames or inferred page numbering. Reordering does not restore outlines/metadata, repair PDFs or rewrite page content. Live Telegram/mobile acceptance NOT RUN.
+- Evidence: [PDF merge file order](REPORTS/2026-10-19-pdf-merge-file-order.md).
+
 ## PowerPoint direction with Arabic contact prose — 2026-10-19
 
 - FACT: Official main 07ecdb3 includes acceptance contracts (#105), qualified by 2299 tests and 26 native worker checks before merge. Reopened native PPTX for «تواصل: help@demo.invalid» had rtl=0 in both title and body because identifier letters dominated Arabic prose.
