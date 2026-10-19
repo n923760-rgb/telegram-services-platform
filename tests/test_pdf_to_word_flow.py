@@ -12,6 +12,7 @@ from app.services.pdf_to_word.test_service import SOURCE, pdf_bytes
 from app.services.registry import registry
 from app.wallet.ledger import balance
 from app.workers.runner import deliver_failures, execute_job
+from tests.pdf_form_fixtures import form_pdf
 from tests.pdf_image_fixtures import mixed_pdf
 from tests.test_foundation import job_for
 from tests.test_real_services import setup
@@ -84,7 +85,32 @@ async def test_mixed_pdf_rejection_releases_credit_and_notifies_once(tmp_path, m
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-@pytest.mark.parametrize("old_version", ["2", "3"])
+@pytest.mark.parametrize("kind", ["acroform", "widget", "permissions", "empty_form"])
+async def test_pdf_form_rejection_has_no_provider_cost_releases_and_cleans_files(
+    tmp_path, monkeypatch, kind
+):
+    store, provider, delivery, ctx, price = await setup("pdf_to_word", [], tmp_path, monkeypatch)
+    source = store.save(1, "source.pdf", form_pdf(kind, later=True), "application/pdf")
+    oid = await submit(1, "pdf_to_word", {"pdf": source.key}, price, "form-rejection")
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    await deliver_failures(ctx)
+    await deliver_failures(ctx)
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "failed"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+        assert (await db.get(Job, jid)).cost_sar == 0
+        assert not list(await db.scalars(select(CostUsage).where(CostUsage.job_id == jid)))
+        entries = list(await db.scalars(select(Ledger).where(Ledger.order_id == oid)))
+        assert sorted(entry.kind for entry in entries) == ["release", "reserve"]
+    assert provider.calls == 0 and not delivery.files
+    assert delivery.errors == [(1, oid, "pdf_word_form")]
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+@pytest.mark.parametrize("old_version", ["2", "3", "4"])
 async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_work(
     tmp_path, monkeypatch, old_version
 ):
@@ -100,7 +126,7 @@ async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_wo
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "pdf_to_word")
-        assert row.version == "4" and row.price_halala == 777 and row.enabled
+        assert row.version == "5" and row.price_halala == 777 and row.enabled
         assert row.price_stars == 143
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))
@@ -172,7 +198,10 @@ async def test_invalid_pdf_plan_releases_credit_without_delivering(tmp_path, mon
     assert delivery.errors == [(1, oid, "needs_information")]
 
 
-async def test_pdf_delivery_retry_reuses_output_and_captures_after_delivery(tmp_path, monkeypatch):
+@pytest.mark.parametrize("old_version", ["3", "4"])
+async def test_pdf_delivery_retry_reuses_output_and_captures_after_delivery(
+    tmp_path, monkeypatch, old_version
+):
     store, provider, delivery, ctx, price = await setup(
         "pdf_to_word", [PLAN], tmp_path, monkeypatch
     )
@@ -192,10 +221,14 @@ async def test_pdf_delivery_retry_reuses_output_and_captures_after_delivery(tmp_
         assert funds.available == 1000 - price and funds.reserved == price
     monkeypatch.setattr(delivery, "send", original_send)
     async with sessions.begin() as db:
-        # Already prepared historical v3 results replay without new generation
-        # under v4; only unprepared work is cancelled by the version policy.
-        (await db.get(Order, oid)).service_version = "3"
+        # Prepared historical results replay; only unprepared work is cancelled.
+        (await db.get(Order, oid)).service_version = old_version
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC) - timedelta(seconds=1)
+
+    def no_build(*args, **kwargs):
+        raise AssertionError("prepared Word output must not be regenerated")
+
+    monkeypatch.setattr("app.services.pdf_to_word.service.word.build", no_build)
     await execute_job(ctx, str(jid))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"

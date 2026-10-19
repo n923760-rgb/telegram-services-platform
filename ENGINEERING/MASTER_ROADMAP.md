@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## PDF-to-Word interactive-content safeguard — 2026-10-19
+
+- FACT: Official main ababfbd includes #108, qualified by 2385 tests and 29 native worker checks. A real filled PDF field has value Account 00999 absent from page text; v4 accepts conversion without it.
+- CHANGE: PDF-to-Word v5 rejects catalog AcroForm/Perms declarations, including empty forms, and orphan page Widgets before provider calls/output. AR/EN intake and errors explain limits and request a static text-based copy. Ordinary links and text-only Form XObjects remain supported; malformed inspected annotations fail closed.
+- PASS LOCALLY: 66 focused new/existing PDF tests (53 existing pure cases without unavailable DB fixtures), three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows add no-provider-cost rejection, release/no capture, notification/cleanup, and v4 upgrades/admin settings/cached replay. Offline non-root worker adds four declaration rejection fixtures. Full exact-head qualification required before merge.
+- SAFETY: Same source-token/image/page/text guards, editable builder, AI allowance, dependencies, prices/activation and financial/provider policy. Prepared old files replay; unprepared old work cancels/releases through existing guards. No production action; deployment remains one later batch.
+- LIMITS: Conservative rejection, not form flattening, field conversion or signature validation. Synthetic permission fixtures are not cryptographically signed files. Other annotations and original layout remain outside this qualification; live/provider/mobile acceptance NOT RUN.
+- Evidence: [PDF Word form safeguard](REPORTS/2026-10-19-pdf-word-form-safety.md).
+
 ## Long OCR Word whitespace fidelity — 2026-10-19
 
 - FACT: Official main 3e6ff34 includes PDF merge order (#107), qualified by 2354 tests and 28 native worker checks. Native DOCX readback reproduces loss of internal whitespace at the 12000-character chunk boundary while TXT remains intact.
