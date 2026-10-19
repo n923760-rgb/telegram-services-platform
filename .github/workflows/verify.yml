@@ -100,6 +100,9 @@ jobs:
           from app.services.image_to_text.service import ImageToText
           from app.services.images_to_pdf.service import ImagesToPdf
           from app.services.pdf_tools.service import PdfTools
+          from app.services.pdf_to_word.service import PdfToWord
+          from app.services.base import ServiceError
+          from tests.pdf_form_fixtures import form_pdf
           from app.services.pdf_tables_excel.service import PdfTablesExcel
           from app.providers.storage import LocalStorage, OwnedStorage
           from types import SimpleNamespace
@@ -150,6 +153,20 @@ jobs:
               with TemporaryDirectory() as directory:
                   from pathlib import Path
                   storage = OwnedStorage(LocalStorage(Path(directory)), 1)
+                  for kind in ('acroform', 'widget', 'widget_indirect', 'permissions', 'empty_form'):
+                      source_form = storage.save('form.pdf', form_pdf(kind, later=True), 'application/pdf')
+                      blocked_ai = SimpleNamespace(extract=AsyncMock())
+                      converter = PdfToWord()
+                      converter.runtime = SimpleNamespace(storage=storage, ai=blocked_ai)
+                      before = storage.storage.usage(1)[1]
+                      try:
+                          await converter.run({'pdf': source_form.key})
+                      except ServiceError as error:
+                          assert error.key == 'pdf_word_form'
+                      else:
+                          raise AssertionError('interactive PDF converted without preserving field content')
+                      blocked_ai.extract.assert_not_awaited()
+                      assert storage.storage.usage(1)[1] == before
                   source_images = [picture(), picture(240, 120, color='blue'), picture(color='green')]
                   keys = [storage.save(f'{index}.png', data, 'image/png').key for index, data in enumerate(source_images)]
                   ordered_service = ImagesToPdf()
@@ -360,6 +377,7 @@ jobs:
               assert workbook['Data'].max_row == workbook['Source'].max_row == 8
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
+          print('Non-root worker: PDF-to-Word form/widget/signature declarations reject before provider calls or output PASS with network disabled')
           print('Non-root worker: long Arabic/English OCR text export retains internal whitespace in editable Word and TXT PASS with network disabled')
           print('Non-root worker: declared worker capability preflight PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')

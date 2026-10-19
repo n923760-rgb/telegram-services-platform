@@ -131,7 +131,7 @@ async def test_user_cancellations_do_not_open_circuit():
         assert (await db.get(Service, "echo")).enabled
 
 
-@pytest.mark.parametrize("key", ["needs_information", "enhancement_not_improved"])
+@pytest.mark.parametrize("key", ["needs_information", "enhancement_not_improved", "pdf_word_form"])
 async def test_input_rejection_does_not_open_circuit(key):
     from app.orders.engine import fail_locked
 
@@ -140,7 +140,9 @@ async def test_input_rejection_does_not_open_circuit(key):
         oid = await submit(user, "echo", {"text": "x"}, 100, f"clarify-{user}")
         async with sessions.begin() as db:
             await fail_locked(db, await db.get(Order, oid), key)
-    assert not await evaluate("echo")
+    notifier = AsyncMock()
+    assert not await evaluate("echo", notifier)
+    notifier.alert.assert_not_awaited()
 
 
 async def test_failed_alert_send_can_be_retried():
