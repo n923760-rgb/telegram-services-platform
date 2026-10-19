@@ -46,7 +46,7 @@ class PdfToWord(BaseService):
             for index, page in enumerate(reader.pages, 1):
                 annotations = page.get("/Annots")
                 if annotations is not None and any(
-                    annotation.get_object().get("/Subtype") == "/Widget"
+                    annotation.get_object()["/Subtype"] == "/Widget"
                     for annotation in annotations.get_object()
                 ):
                     raise ServiceError("pdf_word_form")

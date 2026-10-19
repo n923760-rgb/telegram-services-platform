@@ -85,7 +85,9 @@ async def test_mixed_pdf_rejection_releases_credit_and_notifies_once(tmp_path, m
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-@pytest.mark.parametrize("kind", ["acroform", "widget", "permissions", "empty_form"])
+@pytest.mark.parametrize(
+    "kind", ["acroform", "widget", "widget_indirect", "permissions", "empty_form"]
+)
 async def test_pdf_form_rejection_has_no_provider_cost_releases_and_cleans_files(
     tmp_path, monkeypatch, kind
 ):

@@ -25,8 +25,14 @@ def form_pdf(kind="acroform", *, later=False):
     if kind == "acroform":
         return output.getvalue()
     writer = PdfWriter(clone_from=reader)
-    if kind == "widget":
+    if kind in {"widget", "widget_indirect"}:
         del writer.root_object["/AcroForm"]
+        if kind == "widget_indirect":
+            for page in writer.pages:
+                for annotation in page.get("/Annots", []):
+                    annotation.get_object()[NameObject("/Subtype")] = writer._add_object(
+                        NameObject("/Widget")
+                    )
     elif kind == "permissions":
         del writer.root_object["/AcroForm"]
         for page in writer.pages:

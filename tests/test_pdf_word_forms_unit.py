@@ -22,7 +22,9 @@ def test_real_field_value_is_not_part_of_extracted_page_text():
     assert "00999" not in reader.pages[0].extract_text()
 
 
-@pytest.mark.parametrize("kind", ["acroform", "widget", "permissions", "empty_form"])
+@pytest.mark.parametrize(
+    "kind", ["acroform", "widget", "widget_indirect", "permissions", "empty_form"]
+)
 @pytest.mark.parametrize("later", [False, True])
 async def test_forms_are_rejected_before_ai_or_output(tmp_path, kind, later):
     service, source, store, ai = configured_service(tmp_path, form_pdf(kind, later=later))

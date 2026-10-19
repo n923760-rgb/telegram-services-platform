@@ -28,19 +28,24 @@
 
 ## Verification
 
-- PASS LOCALLY: 66 focused tests: 13 new fixture/rejection/link/malformed/i18n cases
+- PASS LOCALLY: 68 focused tests: 15 new fixture/rejection/link/malformed/i18n cases
   and 53 existing PDF service/extraction/image/source-fidelity regressions. The latter
   pure modules use `--noconftest` locally because PostgreSQL is unavailable; hosted
   full-suite database fixtures remain unchanged.
-- New native fixtures exercise catalog forms, orphan widgets, permission/signature
+- New native fixtures exercise catalog forms, direct/indirect-subtype orphan widgets, permission/signature
   declarations and empty forms, on first/later pages. Permission fixtures are synthetic
   declarations, not cryptographically valid signed documents.
 - PASS LOCALLY: Three architecture gates, global Ruff lint/format/diff, workflow YAML
   parsing and embedded worker Python compilation.
-- Hosted DB tests add four zero-provider-cost rejection flows: single release, no
+- Hosted DB tests add five zero-provider-cost rejection flows: single release, no
   capture or CostUsage, one error notification and file cleanup. Extend v4 pending
   upgrade/admin overrides and v3/v4 cached retry with Word regeneration forbidden.
-- Offline non-root worker adds actual injected service rejection of four PDF fixtures,
+- A local adversarial review after publication also reproduced an orphan Widget whose
+  Subtype is an indirect PDF name reference bypassing `.get()` comparison. Resolve
+  Subtype through pypdf dictionary indexing instead; add first/later-page regressions,
+  hosted settlement and native worker coverage. Qualify the corrected head, not the
+  earlier publication, before merge.
+- Offline non-root worker adds actual injected service rejection of five PDF fixtures,
   verifying no provider call or new artifact. Full exact-head hosted tests, migrations,
   drift, Compose and worker image checks are required before merge.
 

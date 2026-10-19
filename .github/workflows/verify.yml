@@ -153,7 +153,7 @@ jobs:
               with TemporaryDirectory() as directory:
                   from pathlib import Path
                   storage = OwnedStorage(LocalStorage(Path(directory)), 1)
-                  for kind in ('acroform', 'widget', 'permissions', 'empty_form'):
+                  for kind in ('acroform', 'widget', 'widget_indirect', 'permissions', 'empty_form'):
                       source_form = storage.save('form.pdf', form_pdf(kind, later=True), 'application/pdf')
                       blocked_ai = SimpleNamespace(extract=AsyncMock())
                       converter = PdfToWord()
