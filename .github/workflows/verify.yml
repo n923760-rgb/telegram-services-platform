@@ -306,6 +306,14 @@ jobs:
               assert len(deck.slides) == count
               assert any(shape.has_text_frame and shape.text == f'{count} / {count}' for shape in deck.slides[-1].shapes)
           print('Non-root worker: explicit PowerPoint counts match editable native output at 1, 3 and 30 slides PASS with network disabled')
+          contact_text = 'تواصل: help@demo.invalid'
+          contact_plan = pptx_source_schema(contact_text + '\n' + contact_text, 1).model_validate({'deck': {'slides': [{'title': contact_text, 'bullets': [contact_text]}]}})
+          contact_deck = Presentation(BytesIO(native_pptx.build(contact_plan.deck)))
+          for shape in contact_deck.slides[0].shapes:
+              if shape.name in ('Slide title', 'Slide content'):
+                  paragraph = shape.text_frame.paragraphs[0]
+                  assert paragraph.text == contact_text and paragraph._p.pPr.get('rtl') == '1'
+          print('Non-root worker: Arabic PowerPoint contact prose retains RTL and exact email text PASS with network disabled')
           for language in ('ar', 'en'):
               values = CsvInputs.parse(csv_inputs(language))
               headers, rows = values.records()

@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## PowerPoint direction with Arabic contact prose — 2026-10-19
+
+- FACT: Official main 07ecdb3 includes acceptance contracts (#105), qualified by 2299 tests and 26 native worker checks before merge. Reopened native PPTX for «تواصل: help@demo.invalid» had rtl=0 in both title and body because identifier letters dominated Arabic prose.
+- CHANGE: PPTX v6 reuses the existing Word contact/date matcher solely for direction detection. Titles, bullets, table heading direction and individual cells follow remaining prose; actual text, source tokens, fonts, count/density contracts and centered covers remain unchanged. Pure contacts stay LTR; mixed prose still follows its dominant script.
+- PASS LOCALLY: 112 focused contact/source-count/service/native-layout tests (95 normal focused plus 17 pure native tests without the unavailable DB fixture); three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flow adds source-owned contact output and extends v5 cancellation/cached replay/admin overrides. Native offline worker adds exact-email/RTL readback. Full exact-head hosted qualification required before merge.
+- SAFETY: Same customer inputs, one artifact, AI schema/prompt/review/call limits, price/activation and dependencies. Prepared v4/v5 files replay; unprepared legacy work cancels/releases under existing guards. No server or production action; deployment remains deferred to one later batch.
+- LIMITS: Reuses conservative contact/date recognition, not a language detector or arbitrary-identifier parser. Native XML/text assertions are not PowerPoint/mobile visual acceptance; unknown contact forms retain existing dominant-script behavior.
+- Evidence: [PowerPoint contact direction](REPORTS/2026-10-19-pptx-contact-direction.md).
+
 ## Acceptance output contracts for recent improvements — 2026-10-18
 
 - FACT: Official main 9fd8e67 includes explicit image ordering (#104), qualified by 2278 tests and 26 native worker checks before merge. Synthetic acceptance inspected minimum PDF pages/nonempty PPTX/general Excel cells, but did not enforce selected slide count, exact native page count, rotation flags or required sheets.
