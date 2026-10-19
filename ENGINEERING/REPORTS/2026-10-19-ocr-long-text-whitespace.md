@@ -45,6 +45,12 @@
   from OCR accuracy and does not claim a real long-image recognition result.
 - Full exact-head hosted suite, migrations/drift and worker image qualification are
   required before merge; they are not represented as completed local checks.
+- FIRST HOSTED RUN: `39256094813` on `db214c8` finished with 2383 passed and two
+  failures. Existing administrator-panel expectations still named v5; the existing
+  long-OCR test joined body paragraphs with an invented space, assuming that chunks
+  discard source delimiters. Update panel expectations to v6 and compare exact
+  concatenated body text instead. No product safeguard is relaxed. Requalify the
+  corrected head with the entire workflow before merge.
 
 ## Limits and deployment
 
