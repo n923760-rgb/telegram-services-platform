@@ -18,6 +18,9 @@
   annotation structures use the existing `file_invalid` safe failure.
 - Arabic/English intake and `pdf_word_form` explain unsupported fields/signatures,
   request a static text-based copy, and make no signature-authenticity promise.
+- Classify the new `pdf_word_form` rejection as customer input in the existing circuit
+  exclusion list. It must not pause the service or trigger failure alerts; this does
+  not change classification of any existing error or genuine provider failure.
 - Ordinary PDF links and reusable text-only Form XObjects remain supported. A Form
   XObject is a drawing resource, distinct from an AcroForm interactive field.
 - No new service, dependency, AI stage, schema fields, migration, financial policy,
@@ -40,6 +43,8 @@
 - Hosted DB tests add five zero-provider-cost rejection flows: single release, no
   capture or CostUsage, one error notification and file cleanup. Extend v4 pending
   upgrade/admin overrides and v3/v4 cached retry with Word regeneration forbidden.
+- Extend the existing circuit regression with six synthetic form-input failures and
+  assert no circuit opening or failure alert. Retain genuine-failure circuit tests.
 - A local adversarial review after publication also reproduced an orphan Widget whose
   Subtype is an indirect PDF name reference bypassing `.get()` comparison. Resolve
   Subtype through pypdf dictionary indexing instead; add first/later-page regressions,
