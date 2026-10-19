@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Long OCR Word whitespace fidelity — 2026-10-19
+
+- FACT: Official main 3e6ff34 includes PDF merge order (#107), qualified by 2354 tests and 28 native worker checks. Native DOCX readback reproduces loss of internal whitespace at the 12000-character chunk boundary while TXT remains intact.
+- CHANGE: ImageToText v6 retains the delimiter in the preceding Word chunk and no longer strips the remaining text. Existing outer trim, artifact threshold, paragraph/source limits, editable builder and recognition/review routes remain unchanged.
+- PASS LOCALLY: 48 focused export/source/follow-up/service tests (16 existing pure tests without the unavailable DB fixture), three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows cover long exact text, cached v5 replay without rebuilding, single call/capture/cost, and v5 cancellation/admin settings. Offline non-root worker adds Arabic/English DOCX/TXT readback with injected recognition. Full exact-head hosted qualification required before merge.
+- SAFETY: Same customer inputs, AI calls, dependencies, prices/activation, financial/provider policy and production settings. Prepared output replays; unprepared old work cancels/releases through existing guards. Deployment remains one later batch by owner request.
+- LIMITS: Word paragraph structure, XML-safe text handling and outer trim remain; no original-layout or arbitrary control-character retention claim. Export checks do not certify OCR accuracy or native mobile appearance. Live acceptance NOT RUN.
+- Evidence: [OCR long-text whitespace](REPORTS/2026-10-19-ocr-long-text-whitespace.md).
+
 ## Explicit PDF merge-file order — 2026-10-19
 
 - FACT: Official main 55010c8 includes PPTX contact direction (#106), qualified by 2321 tests and 27 native worker checks before merge. PDF merges previously followed upload order only.

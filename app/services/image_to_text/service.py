@@ -19,7 +19,7 @@ from app.services.image_to_text.schema import Extracted, Inputs
 
 
 class ImageToText(BaseService):
-    version = "5"
+    version = "6"
     slug = "image_to_text"
     optional_worker_requirements = ("native_ocr",)
     menu_order = 10
@@ -92,9 +92,11 @@ class ImageToText(BaseService):
                 if end < len(remaining):
                     boundary = max(remaining.rfind(" ", 0, end), remaining.rfind("\n", 0, end))
                     if boundary > 0:
-                        end = boundary
+                        end = boundary + 1
                 paragraphs.append(remaining[:end])
-                remaining = remaining[end:].lstrip()
+                # Chunking limits Word paragraphs, not source whitespace. Keep
+                # the delimiter and any indentation/blank lines in the next chunk.
+                remaining = remaining[end:]
             document = Document(
                 title=tr("ocr_document_title"),
                 sections=[Section(paragraphs=[paragraph]) for paragraph in paragraphs],
