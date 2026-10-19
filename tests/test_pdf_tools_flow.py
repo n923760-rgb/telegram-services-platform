@@ -37,8 +37,13 @@ async def prepare(tmp_path, monkeypatch):
     return storage, Delivery(storage), price
 
 
-@pytest.mark.parametrize("operation", ["merge", "extract", "rotate"])
-async def test_pdf_tools_capture_once_no_ai_cost_and_cleanup(tmp_path, monkeypatch, operation):
+@pytest.mark.parametrize(
+    "operation,file_order",
+    [("merge", None), ("extract", None), ("rotate", None), ("merge", "2,1"), ("merge", "٢،١")],
+)
+async def test_pdf_tools_capture_once_no_ai_cost_and_cleanup(
+    tmp_path, monkeypatch, operation, file_order
+):
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     files = [storage.save(1, "one.pdf", source(), "application/pdf").key]
     if operation == "merge":
@@ -46,6 +51,7 @@ async def test_pdf_tools_capture_once_no_ai_cost_and_cleanup(tmp_path, monkeypat
     inputs = {
         "operation": operation,
         "files": files,
+        **({"file_order": file_order} if file_order is not None else {}),
         **({"pages": "2,1"} if operation == "extract" else {}),
         **({"pages": "2", "rotation": "90"} if operation == "rotate" else {}),
     }
@@ -66,7 +72,11 @@ async def test_pdf_tools_capture_once_no_ai_cost_and_cleanup(tmp_path, monkeypat
         "extract": ["00124", "00123"],
         "rotate": ["00123", "00124"],
     }
+    if file_order is not None:
+        expected["merge"] = ["00999", "00123", "00124"]
     assert records(delivery.files[0][1]) == expected[operation]
+    if file_order is not None:
+        assert all("2, 1" in text for text in delivery.results[0].preview_localizations.values())
     if operation == "rotate":
         assert [page.rotation for page in PdfReader(BytesIO(delivery.files[0][1])).pages] == [0, 90]
     assert not list(tmp_path.glob("[0-9]*/*/*"))
@@ -123,7 +133,7 @@ async def test_invalid_pdf_tools_input_fails_before_reservation(tmp_path, monkey
         assert (await balance(db, 1)).reserved == 0
 
 
-@pytest.mark.parametrize("operation", ["extract", "rotate"])
+@pytest.mark.parametrize("operation", ["merge", "extract", "rotate"])
 async def test_pdf_tools_delivery_retry_reuses_output_without_rebuilding(
     tmp_path, monkeypatch, operation
 ):
@@ -131,13 +141,16 @@ async def test_pdf_tools_delivery_retry_reuses_output_without_rebuilding(
 
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     file = storage.save(1, "one.pdf", source(), "application/pdf")
+    files = [file.key]
+    if operation == "merge":
+        files.append(storage.save(1, "two.pdf", source(("00999",)), "application/pdf").key)
     oid = await submit(
         1,
         "pdf_tools",
         {
             "operation": operation,
-            "files": [file.key],
-            "pages": "1",
+            "files": files,
+            **({"file_order": "2,1"} if operation == "merge" else {"pages": "1"}),
             **({"rotation": "270"} if operation == "rotate" else {}),
         },
         price,
@@ -166,13 +179,34 @@ async def test_pdf_tools_delivery_retry_reuses_output_without_rebuilding(
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).reserved == 0
     output = PdfReader(BytesIO(delivery.files[0][1]))
-    assert len(output.pages) == (2 if operation == "rotate" else 1)
+    assert len(output.pages) == (3 if operation == "merge" else 2 if operation == "rotate" else 1)
+    if operation == "merge":
+        assert records(delivery.files[0][1]) == ["00999", "00123", "00124"]
     assert output.pages[0].rotation == (270 if operation == "rotate" else 0)
 
 
+@pytest.mark.parametrize("file_order", ["1,1", "1", "1,3"])
+async def test_invalid_merge_order_does_not_reserve_credit(tmp_path, monkeypatch, file_order):
+    storage, _, price = await prepare(tmp_path, monkeypatch)
+    files = [storage.save(1, f"{i}.pdf", source(), "application/pdf").key for i in range(2)]
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(
+            1,
+            "pdf_tools",
+            {"operation": "merge", "files": files, "file_order": file_order},
+            price,
+            "bad-order",
+        )
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+
+
 @pytest.mark.parametrize("cached", [False, True])
-async def test_pdf_tools_v1_upgrade_keeps_prepared_output_and_admin_overrides(
-    tmp_path, monkeypatch, cached
+@pytest.mark.parametrize("old_version", ["1", "2"])
+async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
+    tmp_path, monkeypatch, cached, old_version
 ):
     from app.services.pdf_tools.service import PdfTools
     from app.services.registry import registry
@@ -197,13 +231,13 @@ async def test_pdf_tools_v1_upgrade_keeps_prepared_output_and_admin_overrides(
         await execute_job({"delivery": delivery}, str(jid))
     async with sessions.begin() as db:
         service = await db.get(Service, "pdf_tools")
-        service.version, service.price_halala, service.price_stars = "1", 777, 25
-        (await db.get(Order, oid)).service_version = "1"
+        service.version, service.price_halala, service.price_stars = old_version, 777, 25
+        (await db.get(Order, oid)).service_version = old_version
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "pdf_tools")
-        assert service.version == "2" and service.enabled
+        assert service.version == "3" and service.enabled
         assert (service.price_halala, service.price_stars) == (777, 25)
 
     async def forbidden(*args):
