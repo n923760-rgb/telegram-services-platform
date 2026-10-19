@@ -10,7 +10,7 @@ from app.services.text_to_pptx.schema import Inputs, source_plan_schema
 
 
 class TextToPptx(BaseService):
-    version = "5"
+    version = "6"
     slug = "text_to_pptx"
     menu_order = 40
     category = "documents"

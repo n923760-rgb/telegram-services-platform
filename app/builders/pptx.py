@@ -11,7 +11,7 @@ from app.builders.direction import has_arabic, is_rtl
 from app.builders.pptx_layout import FONT, plan_slide
 from app.builders.quality import validate
 from app.builders.schema import Deck
-from app.builders.word import safe_text
+from app.builders.word import INLINE_LTR, safe_text
 
 ACCENT = RGBColor(0x17, 0x6B, 0x55)
 DARK = RGBColor(0x22, 0x36, 0x3D)
@@ -22,6 +22,12 @@ COVER_TEXT = RGBColor(0xFF, 0xFF, 0xFF)
 COVER_MUTED = RGBColor(0xD6, 0xE5, 0xE0)
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
+
+
+def _reading_rtl(text):
+    # Contacts/dates are identifiers, not English prose. Reuse the Word matcher
+    # only for detection; never remove or rewrite them in the rendered content.
+    return is_rtl(INLINE_LTR.sub("", text))
 
 
 def _style_run(run, size, bold, color):
@@ -95,7 +101,7 @@ def _table(slide, item, layout):
     table = native.table
     table.first_row = True
     table.horz_banding = False  # Explicit colors, consistent across Office themes.
-    table._tbl.tblPr.set("rtl", "1" if is_rtl(" ".join(data.columns)) else "0")
+    table._tbl.tblPr.set("rtl", "1" if _reading_rtl(" ".join(data.columns)) else "0")
     for row_index, values in enumerate([data.columns, *data.rows]):
         table.rows[row_index].height = Pt(layout.row_heights[row_index])
         for column_index, value in enumerate(values):
@@ -118,7 +124,7 @@ def _table(slide, item, layout):
                 fill.append(color)
                 border.append(fill)
                 cell._tc.get_or_add_tcPr().insert_element_before(border, "a:solidFill")
-            rtl = is_rtl(value)
+            rtl = _reading_rtl(value)
             _paragraph(
                 cell.text_frame.paragraphs[0],
                 value,
@@ -149,7 +155,7 @@ def build(data: Deck) -> bytes:
         title_frame = _textbox(
             slide, "Slide title", 0.85, 1.55 if cover else 0.45, 11.6, 1.6 if cover else 1.3
         )
-        rtl = is_rtl(item.title)
+        rtl = _reading_rtl(item.title)
         _paragraph(
             title_frame.paragraphs[0],
             item.title,
@@ -167,7 +173,7 @@ def build(data: Deck) -> bytes:
             )
             for bullet_index, text in enumerate(item.bullets):
                 paragraph = body.paragraphs[0] if bullet_index == 0 else body.add_paragraph()
-                rtl = is_rtl(text)
+                rtl = _reading_rtl(text)
                 _paragraph(
                     paragraph,
                     text,
