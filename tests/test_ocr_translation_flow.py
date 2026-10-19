@@ -70,10 +70,11 @@ async def test_embedded_translation_inputs_rejected_before_reservation(
     assert not delivery.results and not delivery.files
 
 
+@pytest.mark.parametrize("old_version", [None, "5"])
 async def test_ocr_long_original_cached_delivery_retains_editable_numeric_output(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, old_version
 ):
-    records = 60
+    records = 60 if old_version else 220
     source = (SOURCE + "\n") * records
     assert len(source.strip()) > 3500
     store, provider, delivery, ctx, price = await setup(
@@ -97,17 +98,27 @@ async def test_ocr_long_original_cached_delivery_retains_editable_numeric_output
         assert (funds.available, funds.reserved) == (1000 - price, price)
     monkeypatch.setattr(delivery, "send", send)
     async with sessions.begin() as db:
+        order = await db.get(Order, oid)
+        if old_version:
+            order.service_version = old_version
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC) - timedelta(seconds=1)
+
+    def no_build(*args, **kwargs):
+        raise AssertionError("cached Word output must not be regenerated")
+
+    monkeypatch.setattr("app.services.image_to_text.service.build", no_build)
     await execute_job(ctx, str(jid))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000 - price, 0)
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".004")
     assert provider.calls == 1 and len(delivery.results) == 1
     files = dict(delivery.files)
     assert files["result.txt"].decode() == source.strip()
     document = Document(BytesIO(files["result.docx"]))
-    body = "\n".join(p.text for p in document.paragraphs[1:])
+    body = "".join(p.text for p in document.paragraphs[1:])
+    assert body == source.strip()
     assert body.count("00123") == records and body.count("125.50") == records
     # Arabic dates/numbers are separate direction-aware runs; edit the whole paragraph.
     document.paragraphs[1].text = "Updated editable text 00123"
@@ -127,7 +138,7 @@ async def test_ocr_without_translation_has_one_call_and_keeps_original_numbers(
     assert provider.calls == 1 and delivery.results[0].text == SOURCE
 
 
-@pytest.mark.parametrize("old_version", ["2", "3", "4"])
+@pytest.mark.parametrize("old_version", ["2", "3", "4", "5"])
 async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
     tmp_path, monkeypatch, old_version
 ):
@@ -136,12 +147,14 @@ async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
     async with sessions.begin() as db:
         row = await db.get(Service, "image_to_text")
         row.version, row.price_halala, row.enabled = old_version, 777, True
+        row.price_stars = 25
         (await db.get(Order, oid)).service_version = old_version
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "image_to_text")
-        assert row.version == "5" and row.price_halala == 777 and row.enabled
+        assert row.version == "6" and row.price_halala == 777 and row.enabled
+        assert row.price_stars == 25
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

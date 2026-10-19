@@ -273,7 +273,7 @@ async def test_configuration_panel_refresh_preserves_prices_flags_draft_and_ledg
         await app.callback("admin:inspect:image_to_text")
         assert tr("admin_ai_off") in app.transport.messages[-1].text
         assert tr("admin_disabled") in app.transport.messages[-1].text
-        assert tr("admin_version_ok", stored="5", source="5") in app.transport.messages[-1].text
+        assert tr("admin_version_ok", stored="6", source="6") in app.transport.messages[-1].text
         async with sessions.begin() as db:
             source = await db.get(Service, "image_to_text")
             source.enabled = True
@@ -283,7 +283,7 @@ async def test_configuration_panel_refresh_preserves_prices_flags_draft_and_ledg
         assert "31" in app.transport.messages[-1].text
         assert tr("admin_enabled") in app.transport.messages[-1].text
         assert (
-            tr("admin_version_mismatch", stored="old", source="5")
+            tr("admin_version_mismatch", stored="old", source="6")
             in app.transport.messages[-1].text
         )
         async with sessions() as db:

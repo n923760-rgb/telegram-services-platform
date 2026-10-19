@@ -307,7 +307,7 @@ async def test_long_ocr_delivers_txt_docx_and_deletes_all_files(tmp_path, monkey
     assert delivery.files[0][0] == "result.txt"
     assert delivery.files[0][1].decode() == text.strip()
     doc = Word(BytesIO(delivery.files[1][1]))
-    assert " ".join(p.text for p in doc.paragraphs[1:]) == text.strip()
+    assert "".join(p.text for p in doc.paragraphs[1:]) == text.strip()
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 

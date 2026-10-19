@@ -104,6 +104,7 @@ jobs:
           from app.providers.storage import LocalStorage, OwnedStorage
           from types import SimpleNamespace
           from tempfile import TemporaryDirectory
+          from unittest.mock import AsyncMock
           from app.ops.worker_capabilities import probe_worker
           assert os.getuid() == 10001
           async def verify():
@@ -173,6 +174,17 @@ jobs:
                   service.runtime = SimpleNamespace(storage=storage, documents=processor(), ai=None)
                   result = await service.run({'images': [image.key]})
                   assert result.text == 'Invoice 00123\nTotal 125.50\nDate 2026-10-09'
+                  # Isolate export fidelity from OCR accuracy with injected recognition.
+                  for label in ('السجل', 'Record'):
+                      long_text = (label + ' 00123\t125.50\n') * 800
+                      long_text = (long_text[:11999] + ' \t\n\n  ' + long_text[11999:]).strip()
+                      service.runtime = SimpleNamespace(storage=storage, ai=None, documents=SimpleNamespace(recognize=AsyncMock(return_value=SimpleNamespace(confidence=.99, text=long_text))))
+                      exported = await service.run({'images': [image.key]})
+                      exports = {artifact.filename: storage.read(artifact.key) for artifact in exported.artifacts}
+                      assert exported.text == exports['result.txt'].decode('utf-8') == long_text
+                      body = Word(BytesIO(exports['result.docx'])).paragraphs[1:]
+                      assert len(body) > 1 and all(0 < len(p.text) <= 12000 for p in body)
+                      assert ''.join(p.text for p in body) == long_text
                   for language in ('ar', 'en'):
                       for ruled in (True, False):
                           data, rows = table_pdf(language, ruled=ruled)
@@ -348,6 +360,7 @@ jobs:
               assert workbook['Data'].max_row == workbook['Source'].max_row == 8
           asyncio.run(verify())
           print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
+          print('Non-root worker: long Arabic/English OCR text export retains internal whitespace in editable Word and TXT PASS with network disabled')
           print('Non-root worker: declared worker capability preflight PASS with network disabled')
           print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
           print('Non-root worker: source-bound AI Word/PDF fixtures in Arabic and English across three designs PASS with network disabled')
