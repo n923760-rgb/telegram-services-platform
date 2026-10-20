@@ -25,10 +25,11 @@ def content(*slides, **extra):
     return json.dumps({"deck": {"slides": list(slides)}, **extra})
 
 
-def test_repetition_is_counted_across_slides_not_mistaken_for_a_new_value():
+def test_excess_repetition_is_counted_after_the_allowed_cross_slide_reuse():
     data = content(
         {"title": "Order 00123", "bullets": ["Amount 125.50 SAR"]},
         {"title": "Details", "bullets": ["Order 00123"]},
+        {"title": "Repeated again", "bullets": ["Order 00123"]},
     )
     result = pptx_token_diagnostics(data, SOURCE)
     assert result["counts"] == {
@@ -38,7 +39,7 @@ def test_repetition_is_counted_across_slides_not_mistaken_for_a_new_value():
         "contact_repeated": 0,
     }
     assert result["locations"] == [
-        {"slide": 2, "field": "bullet", "kind": "numeric_repeated", "occurrences": 1}
+        {"slide": 3, "field": "bullet", "kind": "numeric_repeated", "occurrences": 1}
     ]
     assert not result["truncated"]
 

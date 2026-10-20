@@ -66,12 +66,40 @@ class DeckPlan(StrictModel):
         return self
 
 
+def source_token_violations(source, deck):
+    """Yield content-free locations exceeding the v7 source-token budgets.
+
+    Numeric literals permit one additional contextual use on another slide.
+    Each slide still has the original source occurrence budget. Contacts retain
+    their original whole-deck budget. This does not establish meaning/coverage.
+    """
+    for kind, pattern in (("numeric", NUMERIC_TOKEN), ("contact", CONTACT_TOKEN)):
+        expected, seen = Counter(pattern.findall(source)), Counter()
+        for number, slide in enumerate(deck.slides, 1):
+            per_slide, excess = Counter(), Counter()
+            parts = [("title", slide.title), *(("bullet", text) for text in slide.bullets)]
+            if slide.table is not None:
+                parts.extend(("table_header", text) for text in slide.table.columns)
+                parts.extend(("table_cell", text) for row in slide.table.rows for text in row)
+            for field, text in parts:
+                for token in pattern.findall(text):
+                    seen[token] += 1
+                    per_slide[token] += 1
+                    if token not in expected:
+                        excess[(field, kind + "_added")] += 1
+                    elif (
+                        seen[token] > expected[token] + (kind == "numeric")
+                        or per_slide[token] > expected[token]
+                    ):
+                        excess[(field, kind + "_repeated")] += 1
+            for (field, category), count in sorted(excess.items()):
+                yield {"slide": number, "field": field, "kind": category, "occurrences": count}
+
+
 def source_plan_schema(source, slide_count=None, *, protected=None):
-    """Prevent new/altered/over-repeated tokens, not omissions or wrong associations."""
+    """Bound exact source literals and contextual reuse; meaning needs review."""
     if slide_count is not None and (type(slide_count) is not int or not 1 <= slide_count <= 30):
         raise ValueError("invalid slide count")
-    patterns = (NUMERIC_TOKEN, CONTACT_TOKEN)
-    expected = tuple(Counter(pattern.findall(source)) for pattern in patterns)
 
     class RequestedDeck(Deck):
         slides: list[Slide] = Field(min_length=slide_count or 1, max_length=slide_count or 30)
@@ -102,19 +130,11 @@ def source_plan_schema(source, slide_count=None, *, protected=None):
         def source_tokens(self):
             if self.missing_information or self.deck is None:
                 return self
-            parts = []
-            for slide in self.deck.slides:
-                parts.extend([slide.title, *slide.bullets])
-                if slide.table is not None:
-                    parts.extend(slide.table.columns)
-                    parts.extend(cell for row in slide.table.rows for cell in row)
-            for pattern, tokens in zip(patterns, expected, strict=True):
-                actual = Counter(token for part in parts for token in pattern.findall(part))
-                if not actual <= tokens:
-                    raise PydanticCustomError(
-                        "pptx_source_tokens",
-                        "do not invent, alter or duplicate numeric/contact source tokens",
-                    )
+            if next(source_token_violations(source, self.deck), None) is not None:
+                raise PydanticCustomError(
+                    "pptx_source_tokens",
+                    "preserve numeric/contact source tokens and their bounded reuse",
+                )
             return self
 
     return SourceDeckPlan

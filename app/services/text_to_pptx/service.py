@@ -7,12 +7,12 @@ from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.protected_values import ProtectedValues
 from app.services.text_editing.schema import CONTACT_TOKEN
-from app.services.text_to_pptx.prompt import DECK, SLIDE_COUNT
+from app.services.text_to_pptx.prompt import DECK, REFERENCE_CONTEXT, SLIDE_COUNT
 from app.services.text_to_pptx.schema import Inputs, source_plan_schema
 
 
 class TextToPptx(BaseService):
-    version = "6"
+    version = "7"
     slug = "text_to_pptx"
     menu_order = 40
     category = "documents"
@@ -55,6 +55,8 @@ class TextToPptx(BaseService):
             if self.runtime.ai is None:
                 raise ServiceError("provider_config")
             prompt = DECK + protected.instruction()
+            if protected.values:
+                prompt += "\n" + REFERENCE_CONTEXT
             if values.slide_count is not None:
                 prompt += "\n\n" + SLIDE_COUNT.format(count=values.slide_count)
             plan = await self.runtime.ai.extract(schema, protected.request(), prompt)
