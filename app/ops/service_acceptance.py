@@ -15,7 +15,6 @@ from docx import Document
 from openpyxl import load_workbook
 from PIL import Image
 from pptx import Presentation
-from pydantic import ValidationError
 from pypdf import PdfReader
 from sqlalchemy import func, select
 from sqlalchemy.engine import make_url
@@ -40,6 +39,7 @@ from app.orders.locking import lock_order
 from app.providers.ai.gateway import AI
 from app.providers.ai.openai_compatible import OpenAICompatible
 from app.providers.ai.review import QualityReview
+from app.providers.ai.validation import validation_categories
 from app.providers.runtime import runtime_for, storage
 from app.providers.storage import OwnedStorage
 from app.services.base import ServiceError
@@ -112,6 +112,8 @@ class DiagnosticAI(AI):
         diagnostics, provider = self.diagnostics, self.provider
 
         class ObservedSchema:
+            diagnostic_categories = getattr(schema, "diagnostic_categories", {})
+
             @staticmethod
             def model_json_schema():
                 return schema.model_json_schema()
@@ -123,37 +125,11 @@ class DiagnosticAI(AI):
                     candidate = schema.model_validate_json(content)
                 except ValueError as error:
                     # Do not retain messages, locations, input, context or custom error types.
-                    kinds = (
-                        {
-                            e["type"]
-                            for e in error.errors(include_input=False, include_context=False)
-                        }
-                        if isinstance(error, ValidationError)
-                        else {"value_error"}
-                    )
-                    labels = {
-                        "json_invalid": "invalid_json",
-                        "missing": "missing_field",
-                        "extra_forbidden": "extra_field",
-                        "value_error": "constraint",
-                    }
-                    # Trusted schemas may declare fixed categories; never copy raw error types.
-                    declared = getattr(schema, "diagnostic_categories", {})
-                    if isinstance(declared, dict):
-                        for code, label in declared.items():
-                            if (
-                                isinstance(code, str)
-                                and isinstance(label, str)
-                                and code not in labels
-                                and re.fullmatch(r"[a-z][a-z0-9_]{0,47}", code)
-                                and re.fullmatch(r"[a-z][a-z0-9_]{0,47}", label)
-                            ):
-                                labels[code] = label
                     diagnostics.append(
                         event
                         | {
                             "outcome": "invalid",
-                            "categories": sorted({labels.get(k, "schema_type") for k in kinds}),
+                            "categories": validation_categories(schema, error),
                         }
                     )
                     raise
