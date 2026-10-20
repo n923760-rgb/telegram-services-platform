@@ -41,6 +41,8 @@ class Registry:
     def discover(self):
         for info in pkgutil.iter_modules(app.services.__path__):
             if info.ispkg:
+                # AGENTS.md trusts local plugin code; discovery names are not customer input.
+                # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
                 module = importlib.import_module(f"app.services.{info.name}.service")
                 cls = module.SERVICE
                 if not issubclass(cls, BaseService) or cls.slug != info.name:
