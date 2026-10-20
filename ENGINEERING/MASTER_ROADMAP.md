@@ -1260,3 +1260,10 @@ Publication history: [initial permission rejection](REPORTS/2026-10-04-publicati
 [authorized import](REPORTS/2026-10-04-import.md).
 
 Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
+
+## Portfolio acceptance deliverable integrity — 2026-10-21
+
+- FACT: Main 272c511 includes merged #120. Existing acceptance accepts any nonempty valid package, so missing Word/PDF companions or text-change reports are not guaranteed to fail. Identical source PDFs mask merge reversal, and exact page count alone does not prove image retention/order. Original checker reproduces acceptance of reversed distinct PDFs and wrong image pixels.
+- CHANGE: All 29 synthetic cases across all 16 public services declare exact output filenames, including required chat text. Check the complete set before writing acceptance outputs. Use distinguishable merge sources with page-local literal assertions and decoded RGB dimensions/pixel signatures for every selected images-to-PDF page. Keep the same 29 cases, AI call/cost caps and synthetic isolation; no production plugin/schema/version, pricing or runtime changes.
+- PASS LOCALLY: 68 acceptance/output/delivery checks, three architecture gates, lint/format/diff. Ten DB-backed acceptance cases collected but NOT RUN locally (PostgreSQL unavailable); hosted cases cover four correct native paths and failed package/order checks with no capture, one release, no outbound calls and no residual reservations/active work. Exact-head hosted checks required before merge.
+- LIMIT: These stricter gates verify package completeness and synthetic native content, not semantic meaning, original document layout, image placement/visibility or mobile appearance. No live-provider call, server access/deployment or all-service professional readiness claim. Requalify the latest built worker with the existing isolated acceptance runner and review saved outputs.
