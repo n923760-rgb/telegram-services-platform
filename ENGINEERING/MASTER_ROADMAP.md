@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Context-aware bounded schema repair — 2026-10-20
+
+- FACT: Operator's new three-case live run reports document_source_tokens for Word/PDF and pptx_source_tokens for PPTX, on both creation attempts. These establish a protected-token fidelity rejection, not the precise historical changed/extra/missing occurrence. Source inspection confirms the correction previously discarded the rejected candidate and specific rejection category.
+- CHANGE: Supply original source, a bounded rejected candidate and fixed content-free categories as untrusted input to the existing correction. Share the safe classifier with isolated diagnostics, forwarding trusted declarations through its schema observer. Preserve original contract/source for content review and reserve the complete actual repair request before sending.
+- SAFETY: At most the existing two creation calls; unchanged schemas/versions, fidelity rules, prices/activation, caps, financial ledger and unknown-cost handling. Candidate is omitted entirely above 16384 characters, held transiently only and never logged. No production setting/unpause, deployment or live call here.
+- PASS LOCALLY: 181 focused repair/review/completion/source/acceptance checks, three architecture gates and global lint/format/diff. Six DB-backed repair/rejection cases collected, NOT RUN locally (PostgreSQL unavailable); hosted execution must verify all three services with one capture/release, settled per-call usage, zero reserved credit and no duplicate delivery before merge.
+- LIMIT: Simulated correction proves orchestration and guards, not that a live model will correct every result. Three-case isolated live requalification remains required; larger repair input may be rejected by existing budgets.
+
 ## Document plan guidance and safe rejection diagnosis — 2026-10-20
 
 - FACT: Operator's 26/29 live sweep reports two generation constraints each for Word smart/PPTX, and a valid generation plus accepted review followed by needs_information for Text PDF smart. All supplied completions finish with stop and remain below the requested 8192-token cap. The generic constraint category cannot identify either historical failing rule; no truncation evidence appears in these calls.
