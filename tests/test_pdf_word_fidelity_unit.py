@@ -92,10 +92,12 @@ def test_source_schemas_are_request_local_and_do_not_disclose_source_in_json_sch
     assert "00123" not in str(first.model_json_schema())
 
 
-def test_absent_document_or_missing_information_stays_rejectable_by_service():
+@pytest.mark.parametrize("data", [{}, {"document": None}, {"missing_information": True}])
+def test_absent_document_or_missing_information_enters_the_existing_schema_repair(data):
     schema = source_plan_schema("Invoice 00123")
-    assert schema.model_validate({}).document is None
-    assert schema.model_validate({"missing_information": True}).missing_information
+    with pytest.raises(ValidationError) as error:
+        schema.model_validate(data)
+    assert error.value.errors(include_input=False)[0]["type"] == "pdf_word_missing_body"
 
 
 def test_forbids_control_characters_that_builder_would_strip():

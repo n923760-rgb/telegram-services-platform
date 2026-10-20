@@ -18,4 +18,6 @@ class Inputs(StrictModel):
 
 
 class Assessment(StrictModel):
-    choice: Literal["none", "contrast", "sharpen"]
+    choice: Literal["none", "contrast", "sharpen"] = Field(
+        description="Select a candidate only for a visible useful document-quality improvement with preserved source information; uniform paper illumination can improve an already readable original. Otherwise choose none.",
+    )
