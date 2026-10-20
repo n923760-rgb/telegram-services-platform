@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Literal references for smart Word and PowerPoint — 2026-10-20
+
+- FACT: Operator's live run on 62ab996 passes Text PDF smart after correction, but Word smart and PPTX still reject protected source tokens twice. Exact historical altered/extra/missing values remain unknown; this is not evidence of a renderer failure.
+- CHANGE: Supply request-local references plus a literal dictionary for numeric/contact values in smart Word and PPTX source input. Restore known references before all schema, source-count, layout and semantic-review checks. Keep resolved continuations and native output free of generated internal references; raw valid responses remain compatible. PDF and Excel provider inputs remain unchanged.
+- SAFETY: Reject unknown/incomplete current references, guesses and duplicate values through fixed reference errors and existing source guards. No fuzzy matching, inserted missing values, tolerance change, added calls, contract/version, price, activation or financial-policy change. Mapping stays transient in provider input, not JSON schemas or diagnostic logs; it is not encryption. Existing exposure reservations/caps apply to the larger input.
+- PASS LOCALLY: 289 focused reference/source/service/repair/review/completion/acceptance checks; actual editable Word/PPTX readback verifies exact literals and no generated references. Three architecture gates and lint/format/diff checked. Ten PostgreSQL settlement/rejection/replay cases collected, NOT RUN locally; require full hosted qualification before merge.
+- LIMIT: References reduce literal rewriting opportunities, not omissions, wrong associations or semantic errors. Existing semantic review remains required. No live call, provider unpause or production deployment here; isolated Word/PDF/PPTX live acceptance is still required before claiming readiness.
+
 ## Context-aware bounded schema repair — 2026-10-20
 
 - FACT: Operator's new three-case live run reports document_source_tokens for Word/PDF and pptx_source_tokens for PPTX, on both creation attempts. These establish a protected-token fidelity rejection, not the precise historical changed/extra/missing occurrence. Source inspection confirms the correction previously discarded the rejected candidate and specific rejection category.
