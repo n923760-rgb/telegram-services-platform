@@ -28,6 +28,12 @@ pass locally: 75 checks including 10 new callback regressions, plus three archit
 gates and global lint/format/diff checks. Full hosted checks and offline native worker qualification are required
 before merge; record final source-bound evidence in the PR.
 
+Hosted review found six purchase-journey fixtures selecting the removed visible skip
+button. Update those journeys to select the explicit direct choice and assert the
+unique mode keyboard, retained direct mode/format and reservation. Parameterize
+legacy skip callbacks separately across all three formats and both languages,
+retaining coverage of historical messages without expecting a duplicate new button.
+
 Limits: Exact translation-key aliases only, not arbitrary matching translated
 labels or automatic inference that two different actions have identical semantics.
 This UI fix does not resume the provider or qualify live AI output. Server update
