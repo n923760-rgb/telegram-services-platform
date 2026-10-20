@@ -65,6 +65,31 @@ After updating the worker image, a bounded targeted investigation is
 `bash scripts/service-acceptance.sh word_smart text_pdf_smart pptx`.
 Passing source tests or prompt clarification does not establish live acceptance.
 
+PDF-to-Word v6 distinguishes conversion from authoring: the supplied extracted
+text is the complete input, including sparse cell values and partial notes.
+Missing/null document or `missing_information=true` now produces the fixed
+`pdf_word_missing_body` category and enters the existing single repair before
+semantic review. Persistent refusal fails as `provider_invalid` without a file.
+Exact prior numeric/contact occurrence rules remain, with a fixed
+`pdf_word_source_tokens` category. Image/form/page guards and normal cost budgets
+are unchanged. Build the updated worker image before isolated PDF-to-Word testing.
+Administrator settings and prepared historical replay are retained across v6 sync.
+
+The latest full d63d896 operator run is 27/29: PDF-to-Word requests context and
+image enhancement reports `enhancement_not_improved`. The latter is the existing
+quality-decline path, not evidence of successful enhancement or necessarily a
+runtime defect. It must remain visible for review; a model accepting its refusal
+does not certify a useful processed image. Positive output quality requires
+inspection, while the controlled refusal must deliver no image and release credit.
+Enhancement v4 now explicitly judges meaningful paper-illumination/background
+improvement as well as text legibility/edges. Original readability alone does not
+exclude useful illumination correction; brightness changes alone are insufficient.
+Preserve characters, numbers, marks and color-coded distinctions, and retain none
+for uncertain fidelity or no useful improvement. Native processing and the three
+evidence images/output files are unchanged. Build the new worker image, then run
+`bash scripts/service-acceptance.sh pdf_word enhance` for targeted live qualification.
+Prepared image v3 files replay; admin settings and existing old-job release remain.
+
 Schema repair now supplies the original source, the bounded rejected candidate
 (up to 16384 characters; omitted in full above that limit) and fixed validation
 categories to the existing correction attempt. This context remains in memory
