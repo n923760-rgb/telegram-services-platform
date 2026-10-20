@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Bounded contextual numeric reuse in PowerPoint v7 — 2026-10-20
+
+- FACT: Operator's targeted c69bf5f run reports zero added numeric/contact values and exactly two excess numeric occurrences in third-slide bullets on both attempts. Word/PDF passed the previous live run. Rejected response text/meaning is not retained, so the exact sentences and whether the repetition was useful remain unknown.
+- POLICY CHANGE: PPTX v7 deliberately permits each exact numeric literal one additional use across the deck, on a different slide. Each slide keeps the original source occurrence budget; contacts keep the original whole-deck budget. New/changed values, in-slide excess and further repetition still fail. This accepts normal contextual recap patterns without deleting content. Prompts explain the limit; mandatory semantic review still checks meaning, coverage, duplicate records and padding.
+- CHANGE: Production validation and isolated diagnostics share the same content-free violation iterator. The acceptance fixture now requires both original ID/amount literals in native output, including editable table cells. Version bump preserves administrator price/activation overrides, replays prepared historical files and cancels/releases unprepared old-version work under existing policy.
+- PASS LOCALLY: 204 focused policy/reference/native/diagnostic/repair/acceptance checks, 17 existing native layout/quality checks and three architecture gates; global lint/format/diff clean. Added PostgreSQL cases exercise accepted context versus a simulated semantic rejection of reversed payment meaning through the normal review gateway, per-call settled cost, single capture/release and cached replay. Added v6 upgrade cases; 33 PPTX DB tests collected, NOT RUN locally (PostgreSQL unavailable). Full hosted qualification required before merge.
+- LIMIT: This changes presentation policy, not source facts or exact-value matching. Token budgets do not prove semantic truth or source coverage. The supplied counts reproduce a failure class, not the unavailable exact historic response. No provider unpause, live call or production deployment here; build the new worker image and rerun isolated PPTX live acceptance before readiness claims. Word/PDF policies, call/cost caps and prices are unchanged.
+
 ## Content-free isolated PowerPoint rejection evidence — 2026-10-20
 
 - FACT: Operator's live run on abe7bb8 passes Word smart and Text PDF smart; PPTX still fails pptx_source_tokens on both creation attempts. This does not identify an added/altered value versus excess repetition, or the affected slide field. No rejected response is retained in the historical report.

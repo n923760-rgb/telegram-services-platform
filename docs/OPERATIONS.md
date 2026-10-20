@@ -85,20 +85,30 @@ source-count checks still reject invented/changed/over-repeated values; referenc
 do not establish correct meaning or associations. PDF and Excel inputs are unchanged.
 The dictionary is transient provider input, not encryption, and is absent from
 diagnostic reports and JSON schemas. Larger inputs use existing reservations and
-caps. There is no extra provider call, relaxed validation or production unpause.
-Operator's latest run on abe7bb8 passed Word smart and Text PDF smart but still
-failed PPTX with `pptx_source_tokens` on both attempts. Isolated PPTX failures now
+caps. The reference protocol adds no provider call or production unpause.
+Operator's abe7bb8 run passed Word smart and Text PDF smart. The targeted c69bf5f
+PPTX run identified exactly two excess numeric occurrences in third-slide bullets
+on both attempts, with zero added values. PPTX v7 deliberately changes repetition
+policy: each exact numeric source literal may appear once more across the deck,
+on another slide; the original per-slide count budget and original whole-deck
+contact budget remain. New/altered values and further repetition reject. This
+allows contextual reuse, not duplicated records, padding or changed meaning;
+normal semantic review remains required. Word/PDF source-count policies are unchanged.
+Isolated PPTX failures
 also report `token_diagnostics`: counts of added/repeated numeric/contact values,
 and at most 32 locations containing only slide ordinal, fixed field/category and
 occurrence count. Altered values count as added. Locations are the occurrences
-beyond the source budget in traversal order, not a decision about which copy to
+beyond the current per-slide/whole-deck budgets in traversal order, not a decision about which copy to
 remove. Numeric parts inside contacts mirror the existing validator and may also
 contribute to numeric counts. No source values, hashes or model text are retained.
 Failed-case diagnostics print directly in console output as well as report.json.
-With the abe7bb8 worker image already built, this observer-only update is supplied
-by the wrapper's operational-module mounts: run
-`bash scripts/service-acceptance.sh pptx` without rebuilding the image. Production
-validation and provider inputs are unchanged; this adds evidence, not a live fix.
+Diagnostics share the v7 production budget function, so allowed contextual reuse
+is not reported as a violation. Build the new worker image before running
+`bash scripts/service-acceptance.sh pptx`. The PPTX fixture requires the original
+ID and amount in native text/table cells as well as exactly three slides. Version
+sync retains administrator prices/activation; prepared older files replay and
+unprepared older jobs cancel/release. Provider pause is unchanged. A live pass and
+visual/semantic output review are still required before production qualification.
 
 The wrapper mounts operational modules, not changed service implementations.
 After a service-code update, build the worker image before its acceptance run:

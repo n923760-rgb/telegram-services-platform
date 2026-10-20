@@ -187,7 +187,13 @@ def cases(assets):
             Case("text_pdf_" + mode, "text_to_pdf", {"text": text, "mode": mode}, ("00123",))
             for mode in ("direct", "smart")
         ],
-        Case("pptx", "text_to_pptx", {"text": text, "slide_count": "3"}, pptx_slides=3),
+        Case(
+            "pptx",
+            "text_to_pptx",
+            {"text": text, "slide_count": "3"},
+            ("00123", "125.50"),
+            pptx_slides=3,
+        ),
         *[
             Case(
                 "word_pdf_" + mode,
