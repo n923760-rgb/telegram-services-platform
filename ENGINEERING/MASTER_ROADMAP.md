@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## PDF input rejection circuit classification — 2026-10-19
+
+- FACT: Official main 25de614 includes #109, qualified by 2408 tests and 30 worker checks. Source inspection finds six explicit PDF content/limit/selection rejections still entering failed-service circuit samples.
+- CHANGE: Exclude pdf_image_content, pdf_text_unreadable, pdf_text_too_long, pdf_tools_form, pdf_tools_limit and pdf_page_selection through the existing SQL input filter before its window limit. Generic file_invalid, unknown and provider/service failures remain counted.
+- PASS LOCALLY: Three architecture gates, lint/format/diff and collection of 55 touched operational/PDF flow tests. PostgreSQL is unavailable locally. Hosted regressions cover repeated excluded inputs preserving queued work, three genuine/ambiguous failure cases behind newer input rejections, and actual form/page rejection under one-sample circuit/alert thresholds. Full hosted workflow/worker qualification required before merge.
+- SAFETY: Same plugin versions, customer outputs, AI allowance, prices/activation, financial mechanics, provider pause and circuit thresholds/reset. No dependency, migration, production setting or server action. Existing disabled services are not re-enabled; deployment remains one later batch.
+- LIMITS: Six explicit input codes only; no blanket file-error exemption, production incident claim or live-provider/mobile qualification. No audit rewrite.
+- Evidence: [PDF input circuit](REPORTS/2026-10-19-pdf-input-circuit.md).
+
 ## PDF-to-Word interactive-content safeguard — 2026-10-19
 
 - FACT: Official main ababfbd includes #108, qualified by 2385 tests and 29 native worker checks. A real filled PDF field has value Account 00999 absent from page text; v4 accepts conversion without it.
