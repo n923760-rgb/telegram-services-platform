@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Content-free isolated PowerPoint rejection evidence — 2026-10-20
+
+- FACT: Operator's live run on abe7bb8 passes Word smart and Text PDF smart; PPTX still fails pptx_source_tokens on both creation attempts. This does not identify an added/altered value versus excess repetition, or the affected slide field. No rejected response is retained in the historical report.
+- CHANGE: In isolated acceptance only, resolve the same references and validate the original deck shape before counting excess numeric/contact occurrences against the synthetic case source. Record four fixed counts plus at most 32 locations with slide ordinal, fixed field/category and occurrence count. Print existing safe diagnostics for failed cases, avoiding a second report-extraction command.
+- LIMIT: Locations identify occurrences beyond the source budget in traversal order, not which copy should be removed. Altered and wholly new literals both count as added. Numeric matches inside contacts mirror the existing source validator and may overlap contact counts. No values, hashes, source/model text, raw validation paths/context or candidate bodies are recorded.
+- SAFETY: Same production schemas, prompts, prices/versions, fidelity rules, provider calls/correction caps, settlement and pause state. No fix or live readiness claim. Only already-mounted operational code changes; with the abe7bb8 worker image, a targeted isolated PPTX run needs no image rebuild.
+- PASS LOCALLY: 92 focused observer/acceptance/repair/reference/diagnostic checks and three architecture gates; global lint/format/diff clean. Full hosted qualification required before merge; no local PostgreSQL/live-provider/server execution.
+
 ## Literal references for smart Word and PowerPoint — 2026-10-20
 
 - FACT: Operator's live run on 62ab996 passes Text PDF smart after correction, but Word smart and PPTX still reject protected source tokens twice. Exact historical altered/extra/missing values remain unknown; this is not evidence of a renderer failure.
