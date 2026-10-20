@@ -2,6 +2,7 @@
 
 import re
 from collections import Counter
+from typing import ClassVar
 
 from pydantic import model_validator
 from pydantic_core import PydanticCustomError
@@ -35,12 +36,22 @@ def visible_text(document):
     return "\n".join(parts)
 
 
-def source_document_schema(plan_type, source):
+def source_document_schema(plan_type, source, *, protected=None):
     # Captured privately per request; no source content in schemas or validation errors.
     expected_numbers = Counter(NUMERIC_TOKEN.findall(source))
     expected_contacts = Counter(CONTACT_TOKEN.findall(source))
 
     class SourceDocumentPlan(plan_type):
+        diagnostic_categories: ClassVar = {
+            **getattr(plan_type, "diagnostic_categories", {}),
+            "protected_value_reference": "protected_value_reference",
+        }
+
+        @model_validator(mode="before")
+        @classmethod
+        def resolve_source_values(cls, value):
+            return protected.resolve(value) if protected is not None else value
+
         @model_validator(mode="after")
         def source_fidelity(self):
             if self.missing_information:

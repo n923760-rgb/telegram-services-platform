@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -107,7 +108,12 @@ async def test_professional_word_uses_structured_plan_and_native_table(tmp_path)
     assert service.needs_ai(inputs)
     result = await service.run(inputs)
     assert ai.extract.await_args.args[0].__name__ == "SourceDocumentPlan"
-    assert ai.extract.await_args.args[1:] == (inputs["text"], WORD)
+    request = json.loads(ai.extract.await_args.args[1])
+    restored = request["source"]
+    for marker, literal in request["protected_values"].items():
+        restored = restored.replace(marker, literal)
+    assert restored == inputs["text"]
+    assert ai.extract.await_args.args[2].startswith(WORD)
     doc = Document(BytesIO(store.read(result.artifacts[0].key)))
     assert doc.paragraphs[0].text == "مذكرة الطلب"
     assert len(doc.tables) == 1
