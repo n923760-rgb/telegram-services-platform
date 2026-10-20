@@ -5,7 +5,6 @@ import asyncio
 import hashlib
 import json
 import re
-from collections import Counter
 from dataclasses import replace
 from decimal import Decimal
 from io import BytesIO
@@ -109,8 +108,7 @@ def pptx_token_diagnostics(content, source):
     """
     from app.services.protected_values import ProtectedValues
     from app.services.text_editing.schema import CONTACT_TOKEN
-    from app.services.text_to_pptx.schema import DeckPlan
-    from app.services.translation import NUMERIC_TOKEN
+    from app.services.text_to_pptx.schema import DeckPlan, source_token_violations
 
     if (
         not isinstance(content, str)
@@ -129,26 +127,9 @@ def pptx_token_diagnostics(content, source):
     totals = dict.fromkeys(
         ("numeric_added", "numeric_repeated", "contact_added", "contact_repeated"), 0
     )
-    locations = []
-    for kind, pattern in (("numeric", NUMERIC_TOKEN), ("contact", CONTACT_TOKEN)):
-        expected, seen = Counter(pattern.findall(source)), Counter()
-        for number, slide in enumerate(plan.deck.slides, 1):
-            parts = [("title", slide.title), *(("bullet", text) for text in slide.bullets)]
-            if slide.table is not None:
-                parts.extend(("table_header", text) for text in slide.table.columns)
-                parts.extend(("table_cell", text) for row in slide.table.rows for text in row)
-            excess = Counter()
-            for field, text in parts:
-                for token in pattern.findall(text):
-                    seen[token] += 1
-                    if seen[token] > expected[token]:
-                        category = kind + ("_repeated" if token in expected else "_added")
-                        totals[category] += 1
-                        excess[(field, category)] += 1
-            locations.extend(
-                {"slide": number, "field": field, "kind": category, "occurrences": count}
-                for (field, category), count in sorted(excess.items())
-            )
+    locations = list(source_token_violations(source, plan.deck))
+    for location in locations:
+        totals[location["kind"]] += location["occurrences"]
     return {"counts": totals, "locations": locations[:32], "truncated": len(locations) > 32}
 
 
@@ -250,9 +231,14 @@ def inspect_output(name, data, case):
             raise ServiceError("acceptance_output_invalid")
         if case.pptx_slides is not None and len(slides) != case.pptx_slides:
             raise ServiceError("acceptance_output_invalid")
-        text = "\n".join(
-            shape.text for slide in slides for shape in slide.shapes if shape.has_text_frame
-        )
+        texts = []
+        for slide in slides:
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    texts.append(shape.text)
+                if shape.has_table:
+                    texts.extend(cell.text for row in shape.table.rows for cell in row.cells)
+        text = "\n".join(texts)
         details["slides"] = len(slides)
     elif suffix in {".png", ".jpg", ".jpeg"}:
         with Image.open(BytesIO(data)) as image:

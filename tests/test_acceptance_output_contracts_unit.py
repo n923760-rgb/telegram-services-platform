@@ -68,6 +68,25 @@ def test_selected_slide_count_is_an_exact_output_contract(count):
             inspect_output("result.pptx", output.getvalue(), case)
 
 
+@pytest.mark.parametrize("present", [True, False])
+def test_powerpoint_acceptance_requires_source_values_including_native_table_cells(present):
+    from pptx.util import Inches
+
+    deck = Presentation()
+    slide = deck.slides.add_slide(deck.slide_layouts[6])
+    table = slide.shapes.add_table(1, 2, Inches(1), Inches(1), Inches(6), Inches(1)).table
+    table.cell(0, 0).text = "00123" if present else "123"
+    table.cell(0, 1).text = "125.50"
+    output = BytesIO()
+    deck.save(output)
+    case = Case("pptx", "text_to_pptx", {}, ("00123", "125.50"), pptx_slides=1)
+    if present:
+        assert inspect_output("result.pptx", output.getvalue(), case)["slides"] == 1
+    else:
+        with pytest.raises(ServiceError, match="acceptance_source_token_missing"):
+            inspect_output("result.pptx", output.getvalue(), case)
+
+
 @pytest.mark.parametrize("missing", [None, "Data", "Source", "Review", "Columns"])
 def test_required_workbook_sheets_reject_missing_but_allow_optional_sheets(missing):
     required = ("Data", "Source", "Review", "Columns")
@@ -98,6 +117,7 @@ def test_plan_covers_new_contracts_without_extra_ai_cases():
     plan = {case.name: case for case in cases(ASSETS)}
     assert len(plan) == 29
     assert plan["pptx"].inputs["slide_count"] == "3" and plan["pptx"].pptx_slides == 3
+    assert plan["pptx"].tokens == ("00123", "125.50")
     assert plan["images_pdf"].inputs["page_order"] == "٢، ١"
     assert plan["images_pdf"].exact_pdf_pages == 2
     assert plan["pdf_rotate"].pdf_rotations == (90,)

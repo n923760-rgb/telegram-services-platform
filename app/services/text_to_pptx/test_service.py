@@ -119,7 +119,7 @@ def test_source_schema_rejects_changed_or_invented_tokens_everywhere(location, t
         ).model_validate({"deck": {"slides": [slide]}})
 
 
-def test_source_counter_rejects_duplication_but_not_instruction_only_slide_count():
+def test_source_counter_bounds_context_reuse_and_ignores_instruction_only_slide_count():
     from pydantic import ValidationError
 
     from app.services.text_to_pptx.schema import source_plan_schema
@@ -132,12 +132,14 @@ def test_source_counter_rejects_duplication_but_not_instruction_only_slide_count
             ]
         }
     }
-    with pytest.raises(ValidationError):
-        source_plan_schema("Prepare 2 slides. Invoice 00123").model_validate(plan)
+    assert source_plan_schema("Prepare 2 slides. Invoice 00123").model_validate(plan)
     validated = source_plan_schema("Prepare 2 slides. Invoice 00123 twice: 00123").model_validate(
         plan
     )
     assert len(validated.deck.slides) == 2
+    plan["deck"]["slides"].append({"title": "Again", "bullets": ["Invoice 00123"]})
+    with pytest.raises(ValidationError):
+        source_plan_schema("Prepare 3 slides. Invoice 00123").model_validate(plan)
 
 
 @pytest.mark.parametrize("continuation", [False, True])
