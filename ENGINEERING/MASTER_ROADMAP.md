@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Portfolio shared file-save recovery — 2026-10-20
+
+- FACT: Main 88f98b1 includes #110. Fault injection reproduces failed writes/renames leaving temporary bytes that consume customer quota.
+- CHANGE: Best-effort temporary-file/directory cleanup under the existing quota lock, preserving the original failure. Existing retention is the fallback when cleanup is unavailable. Refresh the 16-service source inventory to current versions/capabilities.
+- PASS LOCALLY: 485 portfolio/source/output checks including six new failure/retry/cleanup cases; seven additional existing pure quota tests; architecture/lint/format/diff. Full hosted PostgreSQL/native worker checks required before merge.
+- SAFETY: No plugin contract/version, AI allowance, prices/activation, financial/provider policy, dependency, migration or server change. Deployment remains one later batch.
+- LIMITS: Catchable write/rename errors only; not a multi-artifact transaction or SIGKILL guarantee. Live provider/mobile/server acceptance remains separate.
+- Evidence: [shared storage recovery](REPORTS/2026-10-20-shared-storage-recovery.md).
+
 ## PDF input rejection circuit classification — 2026-10-19
 
 - FACT: Official main 25de614 includes #109, qualified by 2408 tests and 30 worker checks. Source inspection finds six explicit PDF content/limit/selection rejections still entering failed-service circuit samples.
