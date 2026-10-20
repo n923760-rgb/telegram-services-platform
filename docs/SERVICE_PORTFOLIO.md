@@ -91,6 +91,26 @@ actual worker qualification, then representative user/provider/staging acceptanc
 before operator enablement. A library installed or a passing mock does not establish
 customer value. Keep all progress in ENGINEERING/MASTER_ROADMAP.md and linked reports.
 
+## Integrated service experience — 2026-10-20
+
+Customers choose deliverables and meaningful content outcomes, not an AI engine
+or a separate AI add-on. Required-AI services already select their internal
+provider through the shared runtime. Mixed services select their implementation
+from the customer's requested outcome through `needs_ai(inputs)`.
+Document choices describe preserving the supplied wording versus improving its
+wording/organization/design. Preserve-text consent remains explicit; removing an
+engine label must not silently authorize rewriting. Format, language, table
+heading policy and slide-count choices remain useful output controls.
+AR/EN buttons and document previews describe these outcomes without engine labels.
+Internal metadata, provider controls and billing safeguards remain operational.
+
+Operator-reported isolated acceptance on 2026-10-20 completed 26/29 cases across
+16 services: `word_smart` and `pptx` failed with `provider_invalid`, and
+`text_pdf_smart` with `needs_information`. Active test orders and reserved test
+credit ended at zero; production provider remained paused. The results archive
+has not been reviewed here. Those failures still require diagnosis and a targeted
+live rerun; this presentation change does not establish production readiness.
+
 ## Selective AI improvement authority — 2026-10-14
 
 The owner authorizes later AI use in existing services when it improves the actual

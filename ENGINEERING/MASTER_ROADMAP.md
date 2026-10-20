@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Integrated service presentation — 2026-10-20
+
+- AUTHORITY: Owner requests integrated AI inside eligible services without an external AI option button. Existing required services already route automatically; mixed services retain explicit consent to change wording.
+- CHANGE: AR/EN document buttons, mode explanation, previews and temporary-unavailability notice describe deliverables/content outcomes instead of engine selection. Help explains automatic internal processing. Retain format, language, heading and count controls; preserve existing values, old callbacks, service versions and request contracts.
+- RUNTIME FACT: Latest operator inventory has all 16 services enabled, matching versions and all native capabilities present; production AI paused. Isolated live acceptance is operator-reported 26/29, with word_smart/provider_invalid, text_pdf_smart/needs_information and pptx/provider_invalid. Source presentation work is independent of diagnosing those failures from the pending results archive.
+- PASS LOCALLY: 159 existing mode/output/AI-routing/readiness/portfolio/PPTX checks, three architecture gates, global lint/format/diff. Hosted lifecycle checks remain required before source merge. No new live-provider or production test was run in this presentation round.
+- SAFETY: No provider unpause, budget/retry increase, price/payment/history change or production deployment. Integration is already internal; a label change does not fix provider validation or certify all-service quality.
+
 ## Document intake choice clarity — 2026-10-20
 
 - FACT: Owner reports deployment of 248fafd; screenshots reproduce duplicate Preserve text choice/skip buttons and ambiguous provider-unavailable wording.
