@@ -6,7 +6,8 @@ from app.builders import word
 from app.builders.excel_source import build as source_workbook
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
-from app.services.document_fidelity import source_document_schema
+from app.services.document_fidelity import CONTACT_TOKEN, source_document_schema
+from app.services.protected_values import ProtectedValues
 from app.services.text_to_office.excel_source import source_excel_schema, source_json
 from app.services.text_to_office.prompt import EXCEL, WORD
 from app.services.text_to_office.schema import Inputs, WordPlan
@@ -49,8 +50,9 @@ class TextToOffice(BaseService):
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
+        protected = ProtectedValues(values.text, CONTACT_TOKEN) if values.target == "word" else None
         schema = (
-            source_document_schema(WordPlan, values.text)
+            source_document_schema(WordPlan, values.text, protected=protected)
             if values.target == "word"
             else source_excel_schema(values)
         )
@@ -65,8 +67,8 @@ class TextToOffice(BaseService):
                 if continuation
                 else await self.runtime.ai.extract(
                     schema,
-                    values.text if values.target == "word" else source_json(values),
-                    WORD if values.target == "word" else EXCEL,
+                    protected.request() if protected is not None else source_json(values),
+                    WORD + protected.instruction() if protected is not None else EXCEL,
                 )
             )
         except ValidationError:

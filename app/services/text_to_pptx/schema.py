@@ -66,7 +66,7 @@ class DeckPlan(StrictModel):
         return self
 
 
-def source_plan_schema(source, slide_count=None):
+def source_plan_schema(source, slide_count=None, *, protected=None):
     """Prevent new/altered/over-repeated tokens, not omissions or wrong associations."""
     if slide_count is not None and (type(slide_count) is not int or not 1 <= slide_count <= 30):
         raise ValueError("invalid slide count")
@@ -84,10 +84,19 @@ def source_plan_schema(source, slide_count=None):
             return value
 
     class SourceDeckPlan(DeckPlan):
+        diagnostic_categories: ClassVar = {
+            **DeckPlan.diagnostic_categories,
+            "protected_value_reference": "protected_value_reference",
+        }
         deck: RequestedDeck | None = Field(
             default=None,
             description="Provide the complete deck with the requested slide count unless missing_information is true.",
         )
+
+        @model_validator(mode="before")
+        @classmethod
+        def resolve_source_values(cls, value):
+            return protected.resolve(value) if protected is not None else value
 
         @model_validator(mode="after")
         def source_tokens(self):

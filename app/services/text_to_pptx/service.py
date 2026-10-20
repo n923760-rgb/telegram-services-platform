@@ -5,6 +5,8 @@ from pydantic import ValidationError
 from app.builders import pptx
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.services.protected_values import ProtectedValues
+from app.services.text_editing.schema import CONTACT_TOKEN
 from app.services.text_to_pptx.prompt import DECK, SLIDE_COUNT
 from app.services.text_to_pptx.schema import Inputs, source_plan_schema
 
@@ -41,7 +43,8 @@ class TextToPptx(BaseService):
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
-        schema = source_plan_schema(values.text, values.slide_count)
+        protected = ProtectedValues(values.text, CONTACT_TOKEN)
+        schema = source_plan_schema(values.text, values.slide_count, protected=protected)
         continuation = inputs.get("__continuation")
         if "__continuation" in inputs:
             try:
@@ -51,10 +54,10 @@ class TextToPptx(BaseService):
         else:
             if self.runtime.ai is None:
                 raise ServiceError("provider_config")
-            prompt = DECK
+            prompt = DECK + protected.instruction()
             if values.slide_count is not None:
                 prompt += "\n\n" + SLIDE_COUNT.format(count=values.slide_count)
-            plan = await self.runtime.ai.extract(schema, values.text, prompt)
+            plan = await self.runtime.ai.extract(schema, protected.request(), prompt)
             try:
                 plan = schema.model_validate(plan.model_dump(mode="json"))
             except (ValidationError, ValueError):

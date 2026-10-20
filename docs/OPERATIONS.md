@@ -76,6 +76,19 @@ Larger repair inputs may hit an existing job budget; caps are not increased.
 After correction, the original schema/source guards and content review still apply.
 There is no added creation attempt or automatic fallback that bypasses fidelity.
 
+Smart Word and PowerPoint use temporary references for numeric/contact literals
+inside provider input, with a dictionary of the exact original values. Known
+references are restored before schema/source/layout validation and content review;
+rendered files and continuations contain resolved values. Unknown or incomplete
+current references report the fixed `protected_value_reference` category. Existing
+source-count checks still reject invented/changed/over-repeated values; references
+do not establish correct meaning or associations. PDF and Excel inputs are unchanged.
+The dictionary is transient provider input, not encryption, and is absent from
+diagnostic reports and JSON schemas. Larger inputs use existing reservations and
+caps. There is no extra provider call, relaxed validation or production unpause.
+Operator's latest run passed Text PDF smart but still failed Word/PPTX; rerun the
+three-case isolated acceptance after building the updated worker image.
+
 The wrapper mounts operational modules, not changed service implementations.
 After a service-code update, build the worker image before its acceptance run:
 `docker compose build worker`, then `bash scripts/service-acceptance.sh cv_en`.
