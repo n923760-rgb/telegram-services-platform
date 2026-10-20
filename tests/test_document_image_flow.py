@@ -61,7 +61,8 @@ async def test_invalid_image_failure_releases_and_cleans(tmp_path, monkeypatch):
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-async def test_send_retry_uses_cached_enhanced_files(tmp_path, monkeypatch):
+@pytest.mark.parametrize("old_version", ["1", "3"])
+async def test_send_retry_uses_cached_enhanced_files(tmp_path, monkeypatch, old_version):
     from unittest.mock import AsyncMock
 
     from app.builders import document_image
@@ -76,11 +77,12 @@ async def test_send_retry_uses_cached_enhanced_files(tmp_path, monkeypatch):
         job.next_run_at = datetime.now(UTC) - timedelta(seconds=1)
         # A previously prepared v1 result must be replayed, never regenerated.
         order = await db.get(Order, oid)
-        order.service_version = "1"
-        # Reproduce the old received/enhanced/comparison artifact ordering.
-        cached = dict(order.result)
-        cached["artifacts"] = [cached["artifacts"][2], *cached["artifacts"][:2]]
-        order.result = cached
+        order.service_version = old_version
+        if old_version == "1":
+            # Reproduce the old received/enhanced/comparison artifact ordering.
+            cached = dict(order.result)
+            cached["artifacts"] = [cached["artifacts"][2], *cached["artifacts"][:2]]
+            order.result = cached
     monkeypatch.setattr(document_image, "build", lambda *args: pytest.fail("No second enhancement"))
     # Service imports the builder callable directly; also replace that binding.
     from app.services.document_image_enhancement import service
@@ -89,12 +91,13 @@ async def test_send_retry_uses_cached_enhanced_files(tmp_path, monkeypatch):
     delivery.send = send
     await execute_job({"delivery": delivery}, str(jid))
     assert len(delivery.files) == 3
-    assert delivery.files[0] == ("received.png", picture())
+    assert delivery.files[0][0] == ("received.png" if old_version == "1" else "enhanced.png")
+    assert ("received.png", picture()) in delivery.files
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
 
 
-@pytest.mark.parametrize("old_version", ["1", "2"])
+@pytest.mark.parametrize("old_version", ["1", "2", "3"])
 async def test_old_upgrade_keeps_admin_settings_and_releases_incompatible_job(
     tmp_path, monkeypatch, old_version
 ):
@@ -125,7 +128,7 @@ async def test_old_upgrade_keeps_admin_settings_and_releases_incompatible_job(
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "document_image_enhancement")
-        assert row.version == "3" and row.enabled and row.price_halala == 777
+        assert row.version == "4" and row.enabled and row.price_halala == 777
     await execute_job({"delivery": Delivery(store)}, str(jid))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

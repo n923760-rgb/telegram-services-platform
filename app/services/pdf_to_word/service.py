@@ -14,7 +14,7 @@ from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
 
 class PdfToWord(BaseService):
-    version = "5"
+    version = "6"
     slug = "pdf_to_word"
     menu_order = 20
     category = "pdf"
@@ -80,8 +80,6 @@ class PdfToWord(BaseService):
             plan = schema.model_validate(plan.model_dump(mode="json"))
         except (ValidationError, ValueError):
             raise ServiceError("provider_invalid") from None
-        if plan.missing_information or plan.document is None:
-            raise ServiceError("needs_information")
         content = word.build(plan.document)
         artifact = self.runtime.storage.save(
             "result.docx",

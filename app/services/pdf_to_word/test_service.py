@@ -120,7 +120,7 @@ async def test_extract_limit_stops_before_later_pages_or_ai(tmp_path, monkeypatc
 async def test_missing_information_does_not_write_output(tmp_path):
     service, artifact, store, ai = configured_service(tmp_path, pdf_bytes())
     ai.extract.return_value = WordPlan(missing_information=True)
-    with pytest.raises(ServiceError, match="needs_information"):
+    with pytest.raises(ServiceError, match="provider_invalid"):
         await service.run({"pdf": artifact.key})
     assert store.storage.usage(1)[1] == 1
 
