@@ -10,7 +10,7 @@ from app.services.document_image_enhancement.schema import Assessment, Inputs
 
 
 class DocumentImageEnhancement(BaseService):
-    version = "3"
+    version = "4"
     slug = "document_image_enhancement"
     worker_requirements = ("document_images",)
     menu_order = 20
