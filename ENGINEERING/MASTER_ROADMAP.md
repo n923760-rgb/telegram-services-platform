@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Document intake choice clarity — 2026-10-20
+
+- FACT: Owner reports deployment of 248fafd; screenshots reproduce duplicate Preserve text choice/skip buttons and ambiguous provider-unavailable wording.
+- CHANGE: Hide a skip alias already present in choice keys in the generic renderer; preserve explicit choices, distinct skips, old callbacks and schemas. Update AR/EN mode instructions and unavailable-service wording.
+- PASS LOCALLY: 75 focused checks including 10 actual callback/in-memory-state regressions cover both languages, direct/smart/old-skip paths, optional titles, distinct skips and retained drafts after rejected submission; three architecture gates and global lint/format/diff. Full source-bound hosted checks required before merge.
+- SAFETY: No service version, provider pause/credentials, pricing, wallet/order policy, dependency or migration change. Live provider output and updated Telegram/server verification remain separate.
+- Evidence: [intake choice clarity](REPORTS/2026-10-20-intake-choice-clarity.md).
+
 ## Portfolio shared file-save recovery — 2026-10-20
 
 - FACT: Main 88f98b1 includes #110. Fault injection reproduces failed writes/renames leaving temporary bytes that consume customer quota.
