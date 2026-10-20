@@ -4,6 +4,7 @@ import re
 from collections import Counter
 
 from pydantic import model_validator
+from pydantic_core import PydanticCustomError
 
 from app.services.translation import NUMERIC_TOKEN
 
@@ -11,6 +12,14 @@ CONTACT_TOKEN = re.compile(
     r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
     r"|(?:https?://|www\.)[^\s<>\"'،؛]+"
 )
+
+# Fixed categories consumed only by isolated acceptance diagnostics.
+DOCUMENT_DIAGNOSTICS = {
+    "document_missing_body": "document_missing_body",
+    "document_missing_question": "document_missing_question",
+    "document_invalid_text": "document_invalid_text",
+    "document_source_tokens": "document_source_tokens",
+}
 
 
 def visible_text(document):
@@ -43,12 +52,15 @@ def source_document_schema(plan_type, source):
                 or ord(c) in {0xFFFE, 0xFFFF}
                 for c in text
             ):
-                raise ValueError("invalid document text")
+                raise PydanticCustomError("document_invalid_text", "invalid document text")
             if (
                 Counter(NUMERIC_TOKEN.findall(text)) != expected_numbers
                 or Counter(CONTACT_TOKEN.findall(text)) != expected_contacts
             ):
-                raise ValueError("preserve source numeric and contact tokens and counts verbatim")
+                raise PydanticCustomError(
+                    "document_source_tokens",
+                    "preserve source numeric and contact tokens and counts verbatim",
+                )
             return self
 
     return SourceDocumentPlan

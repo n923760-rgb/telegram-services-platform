@@ -1,5 +1,37 @@
 # Master engineering roadmap
 
+## Context-aware bounded schema repair — 2026-10-20
+
+- FACT: Operator's new three-case live run reports document_source_tokens for Word/PDF and pptx_source_tokens for PPTX, on both creation attempts. These establish a protected-token fidelity rejection, not the precise historical changed/extra/missing occurrence. Source inspection confirms the correction previously discarded the rejected candidate and specific rejection category.
+- CHANGE: Supply original source, a bounded rejected candidate and fixed content-free categories as untrusted input to the existing correction. Share the safe classifier with isolated diagnostics, forwarding trusted declarations through its schema observer. Preserve original contract/source for content review and reserve the complete actual repair request before sending.
+- SAFETY: At most the existing two creation calls; unchanged schemas/versions, fidelity rules, prices/activation, caps, financial ledger and unknown-cost handling. Candidate is omitted entirely above 16384 characters, held transiently only and never logged. No production setting/unpause, deployment or live call here.
+- PASS LOCALLY: 181 focused repair/review/completion/source/acceptance checks, three architecture gates and global lint/format/diff. Six DB-backed repair/rejection cases collected, NOT RUN locally (PostgreSQL unavailable); hosted execution must verify all three services with one capture/release, settled per-call usage, zero reserved credit and no duplicate delivery before merge.
+- LIMIT: Simulated correction proves orchestration and guards, not that a live model will correct every result. Three-case isolated live requalification remains required; larger repair input may be rejected by existing budgets.
+
+## Document plan guidance and safe rejection diagnosis — 2026-10-20
+
+- FACT: Operator's 26/29 live sweep reports two generation constraints each for Word smart/PPTX, and a valid generation plus accepted review followed by needs_information for Text PDF smart. All supplied completions finish with stop and remain below the requested 8192-token cap. The generic constraint category cannot identify either historical failing rule; no truncation evidence appears in these calls.
+- CHANGE: Explain existing document/deck/clarification requirements in provider-visible schema descriptions and clarify PDF handling of short supplied notes versus genuinely missing facts. Add fixed rejection codes for missing output/question, protected source tokens, document text and explicit slide-count mismatch; retain accepted/rejected payload boundaries. Isolated diagnostics record fixed plan booleans without source/output/question text.
+- PASS LOCALLY: 251 focused schema/source/service/gateway/completion/acceptance checks, three architecture gates, global lint/format/diff. Rejection tests verify exactly two accounted creation calls and content-free codes; valid missing-information output remains observable and accepted by the same schema. Hosted qualification required before merge.
+- SAFETY: Same customer inputs, versions, renderers, prices/activation, financial settlement, token caps and repair/call limits. Schema descriptions add prompt text within existing cost reservation. No provider unpause, live call or server deployment here.
+- LIMIT: This corrects unclear guidance and insufficient diagnostics, not a proven root cause of the two historical constraints. New three-case isolated live acceptance is required before claiming those services fixed or enabling production AI.
+
+## Integrated service presentation — 2026-10-20
+
+- AUTHORITY: Owner requests integrated AI inside eligible services without an external AI option button. Existing required services already route automatically; mixed services retain explicit consent to change wording.
+- CHANGE: AR/EN document buttons, mode explanation, previews and temporary-unavailability notice describe deliverables/content outcomes instead of engine selection. Help explains automatic internal processing. Retain format, language, heading and count controls; preserve existing values, old callbacks, service versions and request contracts.
+- RUNTIME FACT: Latest operator inventory has all 16 services enabled, matching versions and all native capabilities present; production AI paused. Isolated live acceptance is operator-reported 26/29, with word_smart/provider_invalid, text_pdf_smart/needs_information and pptx/provider_invalid. Source presentation work is independent of diagnosing those failures from the pending results archive.
+- PASS LOCALLY: 159 existing mode/output/AI-routing/readiness/portfolio/PPTX checks, three architecture gates, global lint/format/diff. Hosted lifecycle checks remain required before source merge. No new live-provider or production test was run in this presentation round.
+- SAFETY: No provider unpause, budget/retry increase, price/payment/history change or production deployment. Integration is already internal; a label change does not fix provider validation or certify all-service quality.
+
+## Document intake choice clarity — 2026-10-20
+
+- FACT: Owner reports deployment of 248fafd; screenshots reproduce duplicate Preserve text choice/skip buttons and ambiguous provider-unavailable wording.
+- CHANGE: Hide a skip alias already present in choice keys in the generic renderer; preserve explicit choices, distinct skips, old callbacks and schemas. Update AR/EN mode instructions and unavailable-service wording.
+- PASS LOCALLY: 75 focused checks including 10 actual callback/in-memory-state regressions cover both languages, direct/smart/old-skip paths, optional titles, distinct skips and retained drafts after rejected submission; three architecture gates and global lint/format/diff. Full source-bound hosted checks required before merge.
+- SAFETY: No service version, provider pause/credentials, pricing, wallet/order policy, dependency or migration change. Live provider output and updated Telegram/server verification remain separate.
+- Evidence: [intake choice clarity](REPORTS/2026-10-20-intake-choice-clarity.md).
+
 ## Portfolio shared file-save recovery — 2026-10-20
 
 - FACT: Main 88f98b1 includes #110. Fault injection reproduces failed writes/renames leaving temporary bytes that consume customer quota.

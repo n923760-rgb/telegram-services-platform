@@ -88,7 +88,8 @@ def create_router():
                     (tr(k, lang), f"choice:{data['key']}:{index}:{i}")
                     for i, k in enumerate(field.choice_keys)
                 ]
-                if not field.required:
+                # A skip alias already offered as a choice needs only one visible button.
+                if not field.required and field.skip_key not in field.choice_keys:
                     items.append((tr(field.skip_key, lang), f"skip:{data['key']}:{index}"))
                 items.append(cancel_item)
                 await message.answer(

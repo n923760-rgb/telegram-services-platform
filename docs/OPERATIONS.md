@@ -54,6 +54,28 @@ such as `cv_source_tokens`, `cv_section_order` and `cv_summary_sources`. Unregis
 types still collapse to `schema_type`; no raw messages, input, context or locations
 are reported. This observer remains isolated-test-only, not production logging.
 
+Word/PDF plan diagnostics distinguish `document_missing_body`,
+`document_missing_question`, `document_invalid_text` and `document_source_tokens`.
+PPTX distinguishes `pptx_missing_deck`, `pptx_missing_question`,
+`pptx_source_tokens` and `pptx_slide_count`. Other constraints can still use the
+generic category; these labels do not recover the cause of an older report.
+Valid plan events also expose only the boolean `missing_information` and
+`ambiguous` dispositions when present, never the clarification or output text.
+After updating the worker image, a bounded targeted investigation is
+`bash scripts/service-acceptance.sh word_smart text_pdf_smart pptx`.
+Passing source tests or prompt clarification does not establish live acceptance.
+
+Schema repair now supplies the original source, the bounded rejected candidate
+(up to 16384 characters; omitted in full above that limit) and fixed validation
+categories to the existing correction attempt. This context remains in memory
+and goes only to the configured provider; it is not stored in diagnostic reports,
+cost audits or exception messages. Raw validation messages, locations and context
+are excluded. Every repair still reserves its full actual request exposure before
+calling the provider, and every completed call settles its reported usage.
+Larger repair inputs may hit an existing job budget; caps are not increased.
+After correction, the original schema/source guards and content review still apply.
+There is no added creation attempt or automatic fallback that bypasses fidelity.
+
 The wrapper mounts operational modules, not changed service implementations.
 After a service-code update, build the worker image before its acceptance run:
 `docker compose build worker`, then `bash scripts/service-acceptance.sh cv_en`.
