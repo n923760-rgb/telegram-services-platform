@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Document plan guidance and safe rejection diagnosis — 2026-10-20
+
+- FACT: Operator's 26/29 live sweep reports two generation constraints each for Word smart/PPTX, and a valid generation plus accepted review followed by needs_information for Text PDF smart. All supplied completions finish with stop and remain below the requested 8192-token cap. The generic constraint category cannot identify either historical failing rule; no truncation evidence appears in these calls.
+- CHANGE: Explain existing document/deck/clarification requirements in provider-visible schema descriptions and clarify PDF handling of short supplied notes versus genuinely missing facts. Add fixed rejection codes for missing output/question, protected source tokens, document text and explicit slide-count mismatch; retain accepted/rejected payload boundaries. Isolated diagnostics record fixed plan booleans without source/output/question text.
+- PASS LOCALLY: 251 focused schema/source/service/gateway/completion/acceptance checks, three architecture gates, global lint/format/diff. Rejection tests verify exactly two accounted creation calls and content-free codes; valid missing-information output remains observable and accepted by the same schema. Hosted qualification required before merge.
+- SAFETY: Same customer inputs, versions, renderers, prices/activation, financial settlement, token caps and repair/call limits. Schema descriptions add prompt text within existing cost reservation. No provider unpause, live call or server deployment here.
+- LIMIT: This corrects unclear guidance and insufficient diagnostics, not a proven root cause of the two historical constraints. New three-case isolated live acceptance is required before claiming those services fixed or enabling production AI.
+
 ## Integrated service presentation — 2026-10-20
 
 - AUTHORITY: Owner requests integrated AI inside eligible services without an external AI option button. Existing required services already route automatically; mixed services retain explicit consent to change wording.

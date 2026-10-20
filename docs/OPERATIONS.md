@@ -54,6 +54,17 @@ such as `cv_source_tokens`, `cv_section_order` and `cv_summary_sources`. Unregis
 types still collapse to `schema_type`; no raw messages, input, context or locations
 are reported. This observer remains isolated-test-only, not production logging.
 
+Word/PDF plan diagnostics distinguish `document_missing_body`,
+`document_missing_question`, `document_invalid_text` and `document_source_tokens`.
+PPTX distinguishes `pptx_missing_deck`, `pptx_missing_question`,
+`pptx_source_tokens` and `pptx_slide_count`. Other constraints can still use the
+generic category; these labels do not recover the cause of an older report.
+Valid plan events also expose only the boolean `missing_information` and
+`ambiguous` dispositions when present, never the clarification or output text.
+After updating the worker image, a bounded targeted investigation is
+`bash scripts/service-acceptance.sh word_smart text_pdf_smart pptx`.
+Passing source tests or prompt clarification does not establish live acceptance.
+
 The wrapper mounts operational modules, not changed service implementations.
 After a service-code update, build the worker image before its acceptance run:
 `docker compose build worker`, then `bash scripts/service-acceptance.sh cv_en`.

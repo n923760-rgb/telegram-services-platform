@@ -160,6 +160,12 @@ class DiagnosticAI(AI):
                 diagnostics.append(event | {"outcome": "valid"})
                 if stage == "review":
                     diagnostics[-1].update(accepted=candidate.accepted, issues=candidate.issues)
+                else:
+                    # Fixed booleans only: never copy clarification text or model content.
+                    for flag in ("missing_information", "ambiguous"):
+                        value = getattr(candidate, flag, None)
+                        if type(value) is bool:
+                            diagnostics[-1][flag] = value
                 return candidate
 
         return await super()._extract(ObservedSchema, *args, **kwargs)
