@@ -86,8 +86,19 @@ do not establish correct meaning or associations. PDF and Excel inputs are uncha
 The dictionary is transient provider input, not encryption, and is absent from
 diagnostic reports and JSON schemas. Larger inputs use existing reservations and
 caps. There is no extra provider call, relaxed validation or production unpause.
-Operator's latest run passed Text PDF smart but still failed Word/PPTX; rerun the
-three-case isolated acceptance after building the updated worker image.
+Operator's latest run on abe7bb8 passed Word smart and Text PDF smart but still
+failed PPTX with `pptx_source_tokens` on both attempts. Isolated PPTX failures now
+also report `token_diagnostics`: counts of added/repeated numeric/contact values,
+and at most 32 locations containing only slide ordinal, fixed field/category and
+occurrence count. Altered values count as added. Locations are the occurrences
+beyond the source budget in traversal order, not a decision about which copy to
+remove. Numeric parts inside contacts mirror the existing validator and may also
+contribute to numeric counts. No source values, hashes or model text are retained.
+Failed-case diagnostics print directly in console output as well as report.json.
+With the abe7bb8 worker image already built, this observer-only update is supplied
+by the wrapper's operational-module mounts: run
+`bash scripts/service-acceptance.sh pptx` without rebuilding the image. Production
+validation and provider inputs are unchanged; this adds evidence, not a live fix.
 
 The wrapper mounts operational modules, not changed service implementations.
 After a service-code update, build the worker image before its acceptance run:
