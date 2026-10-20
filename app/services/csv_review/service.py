@@ -8,7 +8,7 @@ from app.services.csv_review.schema import Inputs
 
 
 class CsvReview(BaseService):
-    version = "2"
+    version = "3"
     slug = "csv_review"
     menu_order = 10
     category = "data"
@@ -72,6 +72,8 @@ class CsvReview(BaseService):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         previews = translations("csv_review_preview", **counts)
+        for language in previews:
+            previews[language] += "\n\n" + tr("csv_columns_preview", language)
         if values.similarity == "conservative":
             for language in previews:
                 previews[language] += "\n\n" + tr("csv_similarity_preview", language, **counts)

@@ -1,5 +1,206 @@
 # Master engineering roadmap
 
+## Portfolio shared file-save recovery — 2026-10-20
+
+- FACT: Main 88f98b1 includes #110. Fault injection reproduces failed writes/renames leaving temporary bytes that consume customer quota.
+- CHANGE: Best-effort temporary-file/directory cleanup under the existing quota lock, preserving the original failure. Existing retention is the fallback when cleanup is unavailable. Refresh the 16-service source inventory to current versions/capabilities.
+- PASS LOCALLY: 485 portfolio/source/output checks including six new failure/retry/cleanup cases; seven additional existing pure quota tests; architecture/lint/format/diff. Full hosted PostgreSQL/native worker checks required before merge.
+- SAFETY: No plugin contract/version, AI allowance, prices/activation, financial/provider policy, dependency, migration or server change. Deployment remains one later batch.
+- LIMITS: Catchable write/rename errors only; not a multi-artifact transaction or SIGKILL guarantee. Live provider/mobile/server acceptance remains separate.
+- Evidence: [shared storage recovery](REPORTS/2026-10-20-shared-storage-recovery.md).
+
+## PDF input rejection circuit classification — 2026-10-19
+
+- FACT: Official main 25de614 includes #109, qualified by 2408 tests and 30 worker checks. Source inspection finds six explicit PDF content/limit/selection rejections still entering failed-service circuit samples.
+- CHANGE: Exclude pdf_image_content, pdf_text_unreadable, pdf_text_too_long, pdf_tools_form, pdf_tools_limit and pdf_page_selection through the existing SQL input filter before its window limit. Generic file_invalid, unknown and provider/service failures remain counted.
+- PASS LOCALLY: Three architecture gates, lint/format/diff and collection of 55 touched operational/PDF flow tests. PostgreSQL is unavailable locally. Hosted regressions cover repeated excluded inputs preserving queued work, three genuine/ambiguous failure cases behind newer input rejections, and actual form/page rejection under one-sample circuit/alert thresholds. Full hosted workflow/worker qualification required before merge.
+- SAFETY: Same plugin versions, customer outputs, AI allowance, prices/activation, financial mechanics, provider pause and circuit thresholds/reset. No dependency, migration, production setting or server action. Existing disabled services are not re-enabled; deployment remains one later batch.
+- LIMITS: Six explicit input codes only; no blanket file-error exemption, production incident claim or live-provider/mobile qualification. No audit rewrite.
+- Evidence: [PDF input circuit](REPORTS/2026-10-19-pdf-input-circuit.md).
+
+## PDF-to-Word interactive-content safeguard — 2026-10-19
+
+- FACT: Official main ababfbd includes #108, qualified by 2385 tests and 29 native worker checks. A real filled PDF field has value Account 00999 absent from page text; v4 accepts conversion without it.
+- CHANGE: PDF-to-Word v5 rejects catalog AcroForm/Perms declarations, including empty forms, and orphan page Widgets before provider calls/output. AR/EN intake and errors explain limits and request a static text-based copy. Ordinary links and text-only Form XObjects remain supported; malformed inspected annotations fail closed. Classify only this new rejection as customer input for circuit/alert exclusion; retain genuine-failure handling and test both paths.
+- PASS LOCALLY: 68 focused new/existing PDF tests (53 existing pure cases without unavailable DB fixtures), three architecture gates, global lint/format/diff and workflow/worker syntax. Reproduced and closed an indirect Widget Subtype reference bypass during local adversarial review. Hosted flows add no-provider-cost rejection, release/no capture, notification/cleanup, and v4 upgrades/admin settings/cached replay. Offline non-root worker adds five declaration rejection fixtures. Full exact-head qualification required before merge.
+- SAFETY: Same source-token/image/page/text guards, editable builder, AI allowance, dependencies, prices/activation and financial/provider policy. Prepared old files replay; unprepared old work cancels/releases through existing guards. No production action; deployment remains one later batch.
+- LIMITS: Conservative rejection, not form flattening, field conversion or signature validation. Synthetic permission fixtures are not cryptographically signed files. Other annotations and original layout remain outside this qualification; live/provider/mobile acceptance NOT RUN.
+- Evidence: [PDF Word form safeguard](REPORTS/2026-10-19-pdf-word-form-safety.md).
+
+## Long OCR Word whitespace fidelity — 2026-10-19
+
+- FACT: Official main 3e6ff34 includes PDF merge order (#107), qualified by 2354 tests and 28 native worker checks. Native DOCX readback reproduces loss of internal whitespace at the 12000-character chunk boundary while TXT remains intact.
+- CHANGE: ImageToText v6 retains the delimiter in the preceding Word chunk and no longer strips the remaining text. Existing outer trim, artifact threshold, paragraph/source limits, editable builder and recognition/review routes remain unchanged.
+- PASS LOCALLY: 48 focused export/source/follow-up/service tests (16 existing pure tests without the unavailable DB fixture), three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows cover long exact text, cached v5 replay without rebuilding, single call/capture/cost, and v5 cancellation/admin settings. Offline non-root worker adds Arabic/English DOCX/TXT readback with injected recognition. Full exact-head hosted qualification required before merge.
+- SAFETY: Same customer inputs, AI calls, dependencies, prices/activation, financial/provider policy and production settings. Prepared output replays; unprepared old work cancels/releases through existing guards. Deployment remains one later batch by owner request.
+- LIMITS: Word paragraph structure, XML-safe text handling and outer trim remain; no original-layout or arbitrary control-character retention claim. Export checks do not certify OCR accuracy or native mobile appearance. Live acceptance NOT RUN.
+- Evidence: [OCR long-text whitespace](REPORTS/2026-10-19-ocr-long-text-whitespace.md).
+
+## Explicit PDF merge-file order — 2026-10-19
+
+- FACT: Official main 55010c8 includes PPTX contact direction (#106), qualified by 2321 tests and 27 native worker checks before merge. PDF merges previously followed upload order only.
+- CHANGE: PDF tools v3 adds optional file_order for merge only, after uploads. Arabic/Western/Persian digits and existing comma/space syntax express a complete permutation; skip/omitted/null keeps upload order. Entire source files move as units; internal page order is unchanged. AR/EN previews state actual file sequence. Reuse a bounded helper extracted from ImagesToPdf without changing its v3 contract.
+- PASS LOCALLY: 154 focused merge/order/image/rotation/native-service tests, including all 2–5-file permutations and unchanged image-order tests; three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows extend zero-AI capture, invalid admission, cached merge replay and v1/v2 upgrades/admin overrides. Native offline worker adds merged source-image readback. Full exact-head qualification required before merge.
+- SAFETY: Same PDF builder, page/byte limits, forms/signature/encryption rejection, ownership, prices/activation and financial/provider policy. No new dependency, AI call or production action. Prepared old outputs replay; unprepared older work cancels/releases through existing guards. Deployment remains one later batch by owner request.
+- LIMITS: Numbers refer to actual upload sequence, not filenames or inferred page numbering. Reordering does not restore outlines/metadata, repair PDFs or rewrite page content. Live Telegram/mobile acceptance NOT RUN.
+- Evidence: [PDF merge file order](REPORTS/2026-10-19-pdf-merge-file-order.md).
+
+## PowerPoint direction with Arabic contact prose — 2026-10-19
+
+- FACT: Official main 07ecdb3 includes acceptance contracts (#105), qualified by 2299 tests and 26 native worker checks before merge. Reopened native PPTX for «تواصل: help@demo.invalid» had rtl=0 in both title and body because identifier letters dominated Arabic prose.
+- CHANGE: PPTX v6 reuses the existing Word contact/date matcher solely for direction detection. Titles, bullets, table heading direction and individual cells follow remaining prose; actual text, source tokens, fonts, count/density contracts and centered covers remain unchanged. Pure contacts stay LTR; mixed prose still follows its dominant script.
+- PASS LOCALLY: 112 focused contact/source-count/service/native-layout tests (95 normal focused plus 17 pure native tests without the unavailable DB fixture); three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flow adds source-owned contact output and extends v5 cancellation/cached replay/admin overrides. Native offline worker adds exact-email/RTL readback. Full exact-head hosted qualification required before merge.
+- SAFETY: Same customer inputs, one artifact, AI schema/prompt/review/call limits, price/activation and dependencies. Prepared v4/v5 files replay; unprepared legacy work cancels/releases under existing guards. No server or production action; deployment remains deferred to one later batch.
+- LIMITS: Reuses conservative contact/date recognition, not a language detector or arbitrary-identifier parser. Native XML/text assertions are not PowerPoint/mobile visual acceptance; unknown contact forms retain existing dominant-script behavior.
+- Evidence: [PowerPoint contact direction](REPORTS/2026-10-19-pptx-contact-direction.md).
+
+## Acceptance output contracts for recent improvements — 2026-10-18
+
+- FACT: Official main 9fd8e67 includes explicit image ordering (#104), qualified by 2278 tests and 26 native worker checks before merge. Synthetic acceptance inspected minimum PDF pages/nonempty PPTX/general Excel cells, but did not enforce selected slide count, exact native page count, rotation flags or required sheets.
+- CHANGE: Extend internal Case expectations and enforce exact PDF page counts, complete declared rotation tuples, exact PPTX slide counts and required workbook sheets when declared. Existing variable-layout minimum PDF policy remains. Current plan exercises reordered images, optional minutes titles and three-slide PPTX, requires CSV Columns, and adds one provider-free rotation case (29 cases/16 services; same AI case count/caps).
+- PASS LOCALLY: 43 acceptance/contract tests; three architecture gates and global lint/format/diff. Hosted DB tests exercise three current native cases with zero provider calls/single capture each, plus output-contract failure producing REVIEW_REQUIRED with no capture or stranded reservation. Full exact-head hosted suite/non-root worker qualification required before merge.
+- SAFETY: No live acceptance execution, provider call, production access, budget increase, plugin/schema/version/price/activation change or dependency. Existing production-isolation/fresh-database guards and one-batch deployment deferral retained.
+- LIMITS: Structural expectations do not prove semantic completeness, actual image order, native/mobile appearance or all output filenames. Those remain covered by dedicated native tests and representative output review. Source qualification is not production acceptance.
+- Evidence: [Acceptance output contracts](REPORTS/2026-10-18-acceptance-output-contracts.md).
+
+## Explicit image-to-PDF page order — 2026-10-18
+
+- FACT: Official main d0366a0 includes summary references (#103), qualified by 2225 tests and 25 native worker checks before merge. Image PDF pages previously followed upload order only.
+- CHANGE: Images-to-PDF v3 offers optional page_order after uploads and before orientation. Western/Arabic decimal digits, commas/Arabic commas/spaces are accepted; each uploaded image must appear exactly once. Skip/omitted/null keeps upload order. Result preview names the exact source-image order in AR/EN.
+- PASS LOCALLY: 74 order/native pixel/source-preservation/service tests, including all bounded permutations for 1–5 images, invalid admission, omitted/null defaults, EXIF-aware per-page orientation and literal pixels. Three architecture gates, global lint/format/diff and worker syntax. Hosted tests extend zero-provider cost/capture, invalid-order admission and v1/v2 upgrades/prepared replay. Full exact-head qualification required before merge.
+- SAFETY: Existing native renderer, limits, ownership, metadata removal, price/activation, file count, zero-AI policy and ledger unchanged. No omission/repetition, crop, new dependency or production change. Existing version guards cancel/release unprepared legacy jobs and replay prepared results. Deployment remains one later batch by owner request.
+- LIMITS: Image numbers refer to actual upload sequence, not filenames or inferred document pages. Reordering does not restore quality reduced by Telegram; send files for source resolution. Live Telegram visual acceptance NOT RUN.
+- Evidence: [Image PDF order](REPORTS/2026-10-18-images-pdf-page-order.md).
+
+## Inline source references for summaries — 2026-10-18
+
+- FACT: Official main 41b0865 includes optional meeting-minute titles (#102), qualified by 2211 tests and 24 native worker checks before merge. Summary v2 showed citation mapping only inside the attached TXT report.
+- CHANGE: Summary v3 numbers displayed points and adds a localized source-paragraph reference line to each. Chat and report use identical ascending source IDs, without mutating AI plans or source text. The notice explicitly distinguishes references from semantic/completeness certification.
+- PASS LOCALLY: 45 summary/source-reference/service tests, including seven dense points with 80 references and Telegram chunk limits; three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted coverage extends one-call/repair capture, cached v1/v2 replay and unprepared upgrade cancellation preserving administrator prices. Full exact-head hosted qualification required before merge.
+- SAFETY: Same customer inputs, artifact count, AI schema/prompt/review, cost/repair limits, price/activation, financial policy and dependencies. Prepared historical results replay unchanged; no new provider stage or production action. Deployment deferred to one later batch by owner.
+- LIMITS: Source IDs refer to nonempty physical input lines, not sentence-level evidence or proof of semantic accuracy. A long source paragraph remains one source unit; existing semantic review is unchanged.
+- Evidence: [Summary inline references](REPORTS/2026-10-18-summary-inline-sources.md).
+
+## Optional meeting-minute titles — 2026-10-18
+
+- FACT: Official main 8b0b451 includes explicit PPTX counts (#101), qualified by 2183 tests and 23 native worker checks before merge. Meeting minutes still required a title before language/source intake.
+- CHANGE: Minutes v4 makes the existing first title field optional through the generic Skip action. Missing/null titles use a neutral Arabic/English heading in the selected document language, shared by complete review and Word/PDF. Supplied titles retain existing validation; no name/date is inferred from source.
+- PASS LOCALLY: 65 focused title/source/action/service tests; three architecture gates; global lint/format/diff and workflow/worker syntax. One existing LibreOffice export test excluded because the binary is unavailable locally; full hosted qualification remains required. Added hosted coverage includes dispatcher skip, native approved output, single call/capture, cached replay and v3 upgrades preserving administrator overrides.
+- SAFETY: Same source classification, mandatory approval, artifact pair, provider limits, price/activation, dependencies and financial policy. Existing version guards cancel/release unprepared legacy work and replay prepared files. No server changes; deployment remains one later batch at owner request.
+- LIMITS: Skip uses a visible generic heading, not a titleless document or automatic source-based title. Native structure/text checks do not replace live-provider/Telegram visual acceptance.
+- Evidence: [Optional minutes titles](REPORTS/2026-10-18-minutes-optional-title.md).
+
+## Explicit PowerPoint slide counts — 2026-10-18
+
+- FACT: Official main 4eeecd8 includes CSV column summaries (#100), qualified by 2139 tests and 22 native worker checks before merge. PowerPoint count instructions in source prose were prompt-only, without a separate count contract.
+- CHANGE: PPTX v5 asks an optional 1–30 slide count before content, accepting Western/Arabic decimal digits and including the cover. Request-local schema exposes exact minItems/maxItems and enforces the count during generation, revalidation and continuation. A trusted prompt names the selected output count separately from source facts; skip retains legacy automatic behavior.
+- PASS LOCALLY: 86 focused count/source-contract/service/palette/native tests; three architecture gates, global lint/format/diff and workflow/worker Python syntax. Added hosted flows cover exact output, existing bounded repair and release/cost, invalid admission, approval reuse, cached retry and v1/v3/v4 upgrade/admin overrides. Native worker qualification adds 1/3/30-slide output checks. Full hosted qualification required before merge.
+- SAFETY: Same renderer, source tokens, file result, administrator price/activation, provider/financial limits and dependencies. Prepared historical output replays; unprepared older jobs release/cancel through existing version guards. No extra AI call allowance, dependency, migration or production action. Owner defers deployment to one later batch.
+- LIMITS: Exact count applies to the separate selected field; automatic/free-prose counts remain best effort. Count validation does not prove semantic completeness or fit every dense source; existing density/budget/source safeguards remain active.
+- Evidence: [PowerPoint count contract](REPORTS/2026-10-18-pptx-slide-count.md).
+
+## Source-owned CSV column summaries — 2026-10-18
+
+- FACT: Official main 40aa7fa includes provider-free PDF rotation (#99), qualified by 2124 tests and 21 native worker checks before merge. CSV review had row-level audit but no compact per-column quality view.
+- CHANGE: CSV v3 adds a native Columns sheet with source/Data headings and nonempty/empty/distinct-nonempty/trimmed counts for each original column. Uses exact case-sensitive post-rule values, includes duplicate records, excludes generated references, and explains static counts and literal emptiness in AR/EN. Customer headings remain exact literal text; counts are native integers, never formulas.
+- PASS LOCALLY: 69 focused profile/CSV/similarity/whole-word-layout tests; three architecture gates, global lint/format/diff. Added/extended hosted flows cover zero-AI capture, cached retry and v1/v2 upgrades/admin overrides, including a historical workbook without Columns. Native worker qualification gains bilingual column-count checks. Full exact-head hosted workflow required before merge.
+- SAFETY: Same inputs, price/activation, source rows/order/cell values, one artifact, similarity limits, provider/financial policy and dependencies. Existing version guards cancel/release unprepared legacy jobs and reuse prepared legacy files. No production action; owner requests one deployment after improvements.
+- LIMITS: Counts describe literal values at creation, not business correctness, inferred missing data or spreadsheet formulas that recalculate. Native structure/readback is separate from mobile appearance acceptance.
+- Evidence: [CSV column summaries](REPORTS/2026-10-18-csv-column-profile.md).
+
+## Provider-free selected PDF page rotation — 2026-10-17
+
+- FACT: Official main a4a307d includes translation contact fidelity (#98), qualified by 2081 tests and 20 native worker checks before merge. PDF utilities previously offered merge/extract only.
+- CHANGE: PDF tools v2 adds selected-page rotation by an explicit additional clockwise 90/180/270 degrees. Keeps every source page in original order; modifies only selected rotation flags, normalizes modulo 360, retains text/content streams/images/page boxes. Conditional angle field and AR/EN prompts explain additive rotation versus extraction order.
+- PASS LOCALLY: 55 native builder/contract/injected-service and existing merge/extract tests; three architecture gates; global lint/format/diff. New hosted flows cover no-AI cost/capture, invalid admission, failure/release/ownership, prepared retry and v1 upgrade/admin overrides. Non-root network-disabled worker qualification adds an image/page/order preservation check. Full hosted workflow required before merge.
+- SAFETY: Existing limits, encrypted/form/signature rejection, price/activation, financial policy and dependencies retained. Prepared v1 files replay; unprepared v1 jobs cancel/release through existing guards. No new service, AI call, migration or production setting change. Owner confirms development first and one production deployment later; no server action.
+- LIMITS: Rotation changes page display, not OCR, deskew, cropping, compression or original-layout reconstruction. Outlines/metadata remain unsupported as disclosed; signed/form PDFs stay rejected. Structural/native fixture evidence is not universal mobile-viewer acceptance.
+- Evidence: [selected PDF rotation](REPORTS/2026-10-17-pdf-page-rotation.md).
+
+## Translation email and URL fidelity — 2026-10-17
+
+- FACT: Official main 94147fa includes editing reports (#96) and CI image fallback (#97), qualified by 2051 tests and 20 native worker checks before merge. A baseline reproduction accepts changed@example.invalid for source@example.invalid in independent text translation despite prompt instructions.
+- CHANGE: Translation v2 checks exact email/HTTP(S)/www URL occurrence counts per original nonempty source line, using the existing contact-token matcher and request-local schema. Missing/changed/added/repeated/moved tokens trigger the existing bounded repair; no extra review call or retry allowance. Numeric/source/blank-line checks remain.
+- PASS LOCALLY: 78 pure contract/service tests, three architecture gates, global lint/format/diff. Added hosted tests cover AR/EN success and one repair, persistent contact changes releasing credit, provider cost accounting, and v1 cached delivery/unprepared cancellation preserving administrator prices and activation. Full hosted workflow required before merge.
+- SAFETY: Same customer inputs, files, prices and activation; historical prepared output replays unchanged. No core/ledger/provider budget/AI adapter/other translation path/dependency/migration/production change. Deployment remains deferred by owner.
+- LIMITS: Conservative literal token recognition, not all contact formats or semantic correctness. Existing matcher includes adjacent punctuation in URLs; source spelling/case/punctuation must remain exact. No live-provider or Telegram qualification claimed.
+- Evidence: [translation contact fidelity](REPORTS/2026-10-17-translation-contact-fidelity.md).
+
+## CI official-image registry fallback — 2026-10-17
+
+- FACT: Official main 409828c includes editing comparisons (#96), qualified by 2037 tests and 20 native worker checks before merge. Previous main a898e82's post-merge run 39032364723 failed twice before checkout while pulling ECR PostgreSQL: Data limit exceeded. No application test ran in those failed attempts.
+- CHANGE: Pull the existing three official image tags after checkout, bounded to one 90-second client pull per ECR/Docker Hub candidate. Start only disposable CI PostgreSQL/Redis through a separate run/attempt-scoped Compose project, require existing health probes with --wait and no extra pulls, and always clean only that CI project. Selected Python reference feeds the unchanged native worker build.
+- PASS LOCALLY: 17 helper/fallback/failure/context/architecture checks; lint/format/diff, workflow/Compose YAML and embedded Python syntax. Native worker qualification body is byte-for-byte unchanged. Hosted full workflow required before merge.
+- SAFETY: Every original lint/format/migration/full-pytest/drift/production-Compose/native worker gate remains required; no continue-on-error, new credential or registry publisher. Production Dockerfile/Compose, dependencies, services, financial policy and settings unchanged. Deployment remains deferred by owner.
+- LIMITS: Both registries may fail; CI then fails rather than bypasses gates. Tags are the existing series/version tags, not immutable cross-registry digest identity. Mocked fallback checks do not certify registry uptime or actual hosted service readiness.
+- Evidence: [registry fallback](REPORTS/2026-10-17-ci-registry-fallback.md).
+
+## Editing comparison reports — 2026-10-17
+
+- OWNER: Continue service improvements/testing/merging without repeated approval; defer production deployment until development is complete. Official main a898e82 includes source-owned PDF table headings (#95).
+- CHANGE: Text editing v2 keeps clean edited chat text and revision.txt, adding a deterministic changes.txt. It shows changed physical lines with exact before/after text and a full normalized-original appendix for context, including an explicit no-change result. Report labels follow source direction; no extra AI/schema/repair calls.
+- PASS LOCALLY: 84 comparison/source-policy/existing-service/architecture checks; global lint/format/diff. Tests cover AR/EN, blank lines, CRLF, complete bounds, exact source/contact/zero preservation and partial-save cleanup. Full hosted lifecycle/cost/native worker qualification required before merge.
+- SAFETY: Same inputs/price/activation, provider limits and financial policy. v1 upgrade cancels/releases unprepared work and replays historical one-file results without generating a report. New cached results replay both files. A failed second save attempts first-file deletion; existing TTL handles unreferenced files if deletion fails. No dependencies, migrations or production change.
+- LIMITS: Literal line comparison is not a semantic/style/grammar assessment or a Microsoft Word tracked-changes file. Original context is present in the customer-owned report and follows existing retention. Live provider/Telegram quality NOT RUN; deployment remains deferred by owner.
+- Evidence: [editing comparison report](REPORTS/2026-10-17-editing-change-report.md).
+
+## Source-owned PDF table headers — 2026-10-17
+
+- FACT: Official main 6d3a39f includes whole-word Excel sizing (#94). PDF-table direct export still uses generic columns and retains the source header as a data record; the portfolio review calls for an explicit source-first-row choice.
+- CHANGE: PDF tables v4 adds a provider-free first-row heading choice for every extracted table. Data uses that row as native headers and starts at original R2; Source retains all cells and R1. Complete bilingual review shows every heading. Blank/duplicate/multiline/oversized or edge-whitespace headings are rejected rather than silently renamed. Existing optional visual Arabic recovery applies to Data headings only with explicit consent.
+- PASS LOCALLY: 87 focused contract/native/source/Arabic/provider/architecture checks, global lint/format and diff checks. Native provider tests cover AR/EN ruled/unruled extraction; full DB lifecycle/upgrade and non-root worker source-heading export require hosted CI before merge.
+- SAFETY: Existing direct/proposed modes retained; source mode never calls AI. Price/activation overrides and prepared-file replay retained; v2/v3 upgrade regression covers cancellation/release versus cached delivery. No dependency, migration, financial policy, provider pause, cap/retry or production change.
+- LIMITS: The customer must decide whether every first row is really a header; merged/multiline/blank headers and per-table mixed choices are unsupported. Workbook readback is not native/mobile visual acceptance. Actual server deployment remains UNKNOWN pending operator output.
+- Evidence: [source-owned table headers](REPORTS/2026-10-17-pdf-source-headers.md).
+
+## Excel whole-word row sizing — 2026-10-17
+
+- FACT: Official main f056e92 includes PowerPoint visual hierarchy (#93). Excel row sizing divided total text width by available width, underestimating paragraphs where whole words leave unused space at line ends.
+- CHANGE: Shared Excel measurement now counts word boundaries, explicit blank lines and long unbroken values, with a request-local token measurement cache. CSV review, PDF-table workbooks and source-bound Office workbooks reuse this layout helper; cells, types, source references and native table ownership are unchanged.
+- PASS LOCALLY: 41 focused wrapping/source tests; global lint/format/diff and three architecture gates. Arabic/English native workbook readback verifies six wide words receive at least six lines; exact values and the 409-point row-height ceiling survive. Full hosted CI/native worker qualification required before merge.
+- LIMITS: This is a bounded sizing estimate, not Microsoft Excel/mobile visual certification. Very long cells still reach Excel's row-height ceiling; full text remains in the editable cell. No input/schema/service-version, provider-call, price/gate, dependency, migration or payment changes. Prepared files stay reusable. Owner now authorizes deployments after successful checks; no direct server connection is available here.
+- Evidence: [Excel whole-word sizing](REPORTS/2026-10-17-excel-word-wrap.md).
+
+## PowerPoint contrast and Arabic date display — 2026-10-17
+
+- FACT: Official main aa58e16 includes selected document formats (#92). Native slide preview exposed reversed ISO-date components inside Arabic paragraphs despite intact source strings.
+- CHANGE: PPTX v4 uses a dark cover/light text, restrained paper content background and explicit native table borders. Arabic paragraphs wrap ISO dates in display-only LTR marks; exact date characters retained, English unchanged. Existing measured geometry/font sizes/density rejection remain.
+- PASS LOCALLY: Focused palette/native editability/service tests, lint/format/diff and architecture. Eight AR/EN fixture slides rendered in LibreOffice and inspected; Arabic cover/content rerendered after date fix and display order checked. Hosted full CI required before merge.
+- LIMITS: No new AI schema/call, price/gate, retry/cap, dependency, migration or production change. Native shapes/text/tables remain editable. Preview is LibreOffice evidence, not Microsoft PowerPoint/mobile/provider semantic certification.
+- Evidence: [PowerPoint visual hierarchy](REPORTS/2026-10-17-pptx-visual-hierarchy.md).
+
+## Document delivery formats — 2026-10-17
+
+- FACT: Official main 4098b7d qualifies explicit Office Word mode (#91). The existing Word/PDF bundle still always delivers two files while separate document entry prices remain DB-owned.
+- CHANGE: Document v3 offers Word, PDF or both before one content intake; preserves direct/smart choices and optional title. Shared preparation stores only requested files and discloses selected output in both normal and visual review. Existing CV/minutes helper calls keep paired delivery unchanged.
+- SAFETY: Same service price/admin activation, unchanged AI calls/bounds and rendering/source fidelity. Legacy internal inputs default to both; existing version guards handle old unprepared jobs. No retiring/rerouting other services or silently reconciling their prices, no financial/provider/migration/dependency changes or production action.
+- PASS LOCALLY: 117 focused output/AI/source-policy/acceptance and existing bundle-service tests; lint/format/diff and architecture. New native/dispatcher/prepared-delivery/retry/upgrade flows require hosted full CI. Live provider/Telegram/production qualification NOT RUN.
+- Evidence: [document delivery formats](REPORTS/2026-10-17-document-delivery-formats.md).
+
+## Explicit Word intake before content — 2026-10-17
+
+- FACT: Official main eeb33c1 includes qualified provider completion safeguards (#90); new live CV evidence is still unavailable. Office v7 exposed direct Word through a first-line directive rather than a visible choice.
+- CHANGE: Office v8 asks file type, then required direct/smart choice for Word, then content. Excel skips the Word-only field and retains its AI contract. New direct requests preserve every supplied line; legacy internal parser/default behavior remains unchanged.
+- SAFETY: Existing version/snapshot guards handle old drafts/jobs; upgrade regression covers v7 cancellation/release and administrator price/activation preservation. No core branching, renderer, service consolidation, price, provider, payment, dependency, migration, cap/retry or production setting change.
+- PASS LOCALLY: Focused schema/routing/source fidelity/acceptance checks and existing Office service regressions, lint/format/diff. Dispatcher, lifecycle and upgrade flows require hosted full CI before merge; no new live-provider, visual redesign or production qualification.
+- Evidence: [explicit Office Word mode](REPORTS/2026-10-17-explicit-office-word-mode.md).
+
+## Explicit DeepSeek completion mode and truncation handling — 2026-10-17
+
+- FACT: Official DeepSeek docs now state thinking/high effort defaults on; earlier adapter omitted a switch. Latest bilingual provider_usage remains unclassified without its archive. PR #89 is separate review-only work, preserved.
+- CHANGE: Default explicit thinking.disabled for exact official Flash/Pro, validated operator override, fixed completion audit including finish reason and optional reasoning count (never text). Length-truncated JSON settles then uses the existing bounded repair; actual overrun accounting/pause retained.
+- SAFETY: No new provider call, retry loop, cap/price/activation/service contract/migration/dependency change, historical rewrite, unknown-hold clearance or unpause. Other vendors/proxies/models untouched. Old billing is not a prerequisite for isolated development tests.
+- PASS LOCALLY: 88 focused pure tests and lint/format/diff. New accounting flows and legacy DB-backed adapter checks require hosted full CI. New live provider/visual/production qualification NOT RUN; no permanent-reliability claim.
+- Evidence: [provider completion contract](REPORTS/2026-10-17-provider-completion-contract.md).
+
+## Complete portfolio review and accurate AI presentation — 2026-10-16
+
+- FACT: Reverified official main ad1d2c1 and reviewed all 16 public contracts, catalog/admin/inventory, source policy tests and available acceptance evidence. Nine required AI, four conditional, three direct. CV v7 operator AR/EN PASS, bilingual provider_usage FAIL; new report/artifacts not supplied, no inferred root cause.
+- CHANGE: Explicit optional-AI presentation metadata for four mixed plugins; shared required/conditional/none classification, registry validation, accurate no-AI admin text, paused mixed-option catalog notices and inventory warnings. Admission/activation/needs_ai, contracts, prices, versions, ledger, retries/caps and production pause unchanged.
+- PLAN: Preserve six registry categories; diagnose current CV incident, then explicit document mode/unified Word/PDF entry, richer CV/PPTX/Excel and real image/PDF/text semantic acceptance. Preserve old contracts and reconcile differing admin prices before consolidation. No blanket activation or new unapproved services.
+- PASS LOCALLY: focused policy/readiness/private/inventory tests; lint/format/diff. New DB flow coverage requires hosted full CI before merge; no new provider or production execution here.
+- Evidence: [full review and phased plan](REPORTS/2026-10-16-service-portfolio-review.md).
+
 ## Resume visual hierarchy — 2026-10-16
 
 - FACT: Operator CV v6 English acceptance passed: three calls, calculated SAR .070128, settled holds, no test active orders/reserved credit; production pause retained. Uploaded hashes matched, Word/PDF sample inspected. Review needed one JSON repair; this is one synthetic sample, not universal qualification.

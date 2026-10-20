@@ -1,6 +1,6 @@
 import asyncio
 from decimal import Decimal
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, call
 
 import pytest
 from redis.asyncio import Redis
@@ -131,7 +131,20 @@ async def test_user_cancellations_do_not_open_circuit():
         assert (await db.get(Service, "echo")).enabled
 
 
-@pytest.mark.parametrize("key", ["needs_information", "enhancement_not_improved"])
+@pytest.mark.parametrize(
+    "key",
+    [
+        "needs_information",
+        "enhancement_not_improved",
+        "pdf_word_form",
+        "pdf_image_content",
+        "pdf_text_unreadable",
+        "pdf_text_too_long",
+        "pdf_tools_form",
+        "pdf_tools_limit",
+        "pdf_page_selection",
+    ],
+)
 async def test_input_rejection_does_not_open_circuit(key):
     from app.orders.engine import fail_locked
 
@@ -140,7 +153,50 @@ async def test_input_rejection_does_not_open_circuit(key):
         oid = await submit(user, "echo", {"text": "x"}, 100, f"clarify-{user}")
         async with sessions.begin() as db:
             await fail_locked(db, await db.get(Order, oid), key)
-    assert not await evaluate("echo")
+    await fund(7)
+    queued = await submit(7, "echo", {"text": "waiting"}, 100, "waiting-after-rejections")
+    notifier = AsyncMock()
+    assert not await evaluate("echo", notifier)
+    notifier.alert.assert_not_awaited()
+    async with sessions() as db:
+        assert (await db.get(Service, "echo")).enabled
+        assert (await db.get(Order, queued)).status == "queued"
+        funds = await balance(db, 7)
+        assert (funds.available, funds.reserved) == (900, 100)
+        for user in range(1, 7):
+            funds = await balance(db, user)
+            assert (funds.available, funds.reserved) == (1000, 0)
+
+
+@pytest.mark.parametrize("failure_key", ["service_failed", "provider_invalid", "file_invalid"])
+async def test_newer_input_rejections_do_not_hide_real_failures_or_prevent_release(failure_key):
+    from app.orders.engine import fail_locked
+
+    async with sessions.begin() as db:
+        db.add(Setting(key="CIRCUIT_WINDOW", value={"value": 5}))
+    for user in range(1, 12):
+        await fund(user)
+        oid = await submit(user, "echo", {"text": "x"}, 100, f"mixed-circuit-{user}")
+        async with sessions.begin() as db:
+            await fail_locked(
+                db,
+                await db.get(Order, oid),
+                failure_key if user <= 5 else "pdf_page_selection",
+            )
+    await fund(12)
+    queued = await submit(12, "echo", {"text": "waiting"}, 100, "waiting-after-failures")
+    notifier = AsyncMock()
+    assert await evaluate("echo", notifier)
+    assert notifier.alert.await_args_list == [
+        call("circuit_open", slug="echo"),
+        call("consecutive_failures", slug="echo"),
+    ]
+    async with sessions() as db:
+        assert not (await db.get(Service, "echo")).enabled
+        order = await db.get(Order, queued)
+        assert order.status == "cancelled" and order.error_key == "circuit_paused"
+        funds = await balance(db, 12)
+        assert (funds.available, funds.reserved) == (1000, 0)
 
 
 async def test_failed_alert_send_can_be_retried():

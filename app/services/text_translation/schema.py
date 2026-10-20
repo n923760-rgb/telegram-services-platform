@@ -7,6 +7,7 @@ from pydantic import Field, StrictInt, StringConstraints, ValidationError, model
 from app.builders.schema import StrictModel
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
+from app.services.text_editing.schema import CONTACT_TOKEN
 from app.services.translation import NUMERIC_TOKEN
 
 
@@ -48,7 +49,7 @@ class Segment(StrictModel):
     text: str = Field(
         min_length=1,
         max_length=24000,
-        description="Full translated source line, no commentary or newlines; numeric tokens verbatim.",
+        description="Full translated source line, no commentary or newlines; numeric/email/URL tokens verbatim.",
     )
 
 
@@ -58,6 +59,7 @@ class Translation(StrictModel):
 
 def translation_schema(values):
     expected = {i: Counter(NUMERIC_TOKEN.findall(line)) for i, line in enumerate(values.lines(), 1)}
+    contacts = {i: Counter(CONTACT_TOKEN.findall(line)) for i, line in enumerate(values.lines(), 1)}
 
     class SourceTranslation(Translation):
         @model_validator(mode="after")
@@ -71,6 +73,8 @@ def translation_schema(values):
                     raise ValueError("one translated line per source ID")
                 if Counter(NUMERIC_TOKEN.findall(segment.text)) != expected[segment.id]:
                     raise ValueError("preserve source numeric tokens per line verbatim")
+                if Counter(CONTACT_TOKEN.findall(segment.text)) != contacts[segment.id]:
+                    raise ValueError("preserve source contact tokens per line verbatim")
             if len(render(values, self)) > 24000:
                 raise ValueError("translation output limit")
             return self

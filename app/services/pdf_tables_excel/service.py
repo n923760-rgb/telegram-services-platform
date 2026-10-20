@@ -13,11 +13,12 @@ from app.services.pdf_tables_excel.schema import (
     ai_source,
     direct_labels,
     labels_schema,
+    source_labels,
 )
 
 
 class PdfTablesExcel(BaseService):
-    version = "3"
+    version = "4"
     slug = "pdf_tables_excel"
     worker_requirements = ("pdf_tables",)
     menu_order = 20
@@ -27,6 +28,7 @@ class PdfTablesExcel(BaseService):
     description_ar = tr("pdf_tables_description")
     price_sar = Decimal("5.00")
     requires_ai = False
+    optional_ai = True
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
@@ -34,8 +36,8 @@ class PdfTablesExcel(BaseService):
             InputField(
                 name="mode",
                 prompt_key="pdf_tables_mode",
-                choices=["direct", "labels"],
-                choice_keys=["pdf_tables_direct", "pdf_tables_labels"],
+                choices=["direct", "source", "labels"],
+                choice_keys=["pdf_tables_direct", "pdf_tables_source_headers", "pdf_tables_labels"],
             ),
             InputField(
                 name="language",
@@ -66,6 +68,14 @@ class PdfTablesExcel(BaseService):
                 prepared = Prepared.model_validate(inputs["__continuation"])
                 if values.mode == "labels":
                     labels_schema(prepared.extraction).model_validate(prepared.labels.model_dump())
+                elif values.mode == "source":
+                    expected = source_labels(
+                        prepared.extraction,
+                        values.language,
+                        visual_arabic=values.arabic_order == "visual",
+                    )
+                    if prepared.labels != expected:
+                        raise ValueError("invalid source headers continuation")
                 elif prepared.labels != direct_labels(prepared.extraction, values.language):
                     raise ValueError("invalid direct continuation")
             except (ValidationError, ValueError):
@@ -76,6 +86,7 @@ class PdfTablesExcel(BaseService):
                 language=values.language,
                 enhanced=values.mode == "labels",
                 visual_arabic=values.arabic_order == "visual",
+                source_headers=values.mode == "source",
             )
             artifact = self.runtime.storage.save(
                 "tables.xlsx",
@@ -104,6 +115,13 @@ class PdfTablesExcel(BaseService):
         except DocumentError as error:
             raise ServiceError(error.key, transient=error.transient) from None
         labels = direct_labels(extraction, values.language)
+        if values.mode == "source":
+            try:
+                labels = source_labels(
+                    extraction, values.language, visual_arabic=values.arabic_order == "visual"
+                )
+            except ValueError:
+                raise ServiceError("input_invalid") from None
         if values.mode == "labels":
             labels = await self.runtime.ai.extract(
                 labels_schema(extraction),
@@ -114,6 +132,8 @@ class PdfTablesExcel(BaseService):
         reviews = {}
         for lang in ("ar", "en"):
             preview = [tr("pdf_tables_review", lang)]
+            if values.mode == "source":
+                preview.append(tr("pdf_tables_source_headers_review", lang))
             if values.arabic_order == "visual":
                 preview.append(tr("pdf_tables_arabic_review", lang))
             for table_labels in sorted(labels.tables, key=lambda table: table.table_id):
@@ -128,7 +148,7 @@ class PdfTablesExcel(BaseService):
                         columns=len(table.rows[0]),
                     )
                 )
-                if values.mode == "labels":
+                if values.mode in {"labels", "source"}:
                     preview.append(table_labels.title)
                     preview.extend(
                         f"{i}. {label}" for i, label in enumerate(table_labels.columns, 1)
@@ -136,7 +156,9 @@ class PdfTablesExcel(BaseService):
                 # Generic numbered columns add no information beyond the exact width.
             review = "\n".join(preview)
             if len(review) > 2800:
-                raise ServiceError("provider_invalid")
+                raise ServiceError(
+                    "input_invalid" if values.mode == "source" else "provider_invalid"
+                )
             reviews[lang] = review
         return Result(
             preview=reviews[values.language],

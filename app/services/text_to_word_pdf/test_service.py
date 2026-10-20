@@ -24,7 +24,7 @@ class Renderer:
 @pytest.mark.parametrize("title", [None, "تقرير الطلبات"])
 async def test_service_preserves_text_uses_injected_renderer_and_saves_two_files(tmp_path, title):
     text = "  Invoice 00123\n\nالطلب 2026-10-09 بقيمة 125.50"
-    inputs = {"text": text, **({"title": title} if title else {})}
+    inputs = {"output_format": "both", "text": text, **({"title": title} if title else {})}
     service = TextToWordPdf()
     storage = OwnedStorage(LocalStorage(tmp_path), 1)
     renderer = Renderer()
@@ -41,11 +41,11 @@ async def test_service_preserves_text_uses_injected_renderer_and_saves_two_files
 @pytest.mark.parametrize(
     "inputs",
     [
-        {"text": ""},
-        {"text": "x", "title": "two\nlines"},
-        {"text": "x", "mode": "unknown"},
-        {"text": "x", "upload": "foreign.docx"},
-        {"text": "x" * 12001},
+        {"output_format": "both", "text": ""},
+        {"output_format": "both", "text": "x", "title": "two\nlines"},
+        {"output_format": "both", "text": "x", "mode": "unknown"},
+        {"output_format": "both", "text": "x", "upload": "foreign.docx"},
+        {"output_format": "both", "text": "x" * 12001},
     ],
 )
 def test_invalid_input_rejected_before_reservation(inputs):
@@ -70,7 +70,7 @@ async def test_render_failures_never_save_partial_artifacts(tmp_path, key, trans
         renderer=Renderer(DocumentError(key, transient=transient)),
     )
     with pytest.raises(ServiceError) as error:
-        await service.run({"text": "Invoice 00123"})
+        await service.run({"output_format": "both", "text": "Invoice 00123"})
     assert error.value.key == ("input_invalid" if key == "document_render_limit" else key)
     assert error.value.transient == transient
     assert not list(tmp_path.glob("[0-9]*/*/*"))
@@ -80,9 +80,9 @@ async def test_smart_mode_requires_provider_before_render(tmp_path):
     service = TextToWordPdf()
     renderer = Renderer()
     service.runtime = SimpleNamespace(ai=None, renderer=renderer)
-    assert service.needs_ai({"text": "Source", "mode": "smart"})
+    assert service.needs_ai({"output_format": "both", "text": "Source", "mode": "smart"})
     with pytest.raises(ServiceError, match="provider_config"):
-        await service.run({"text": "Source", "mode": "smart"})
+        await service.run({"output_format": "both", "text": "Source", "mode": "smart"})
     assert not renderer.calls
 
 
@@ -99,5 +99,5 @@ async def test_second_save_failure_deletes_first_artifact(tmp_path, monkeypatch)
     service = TextToWordPdf()
     service.runtime = SimpleNamespace(ai=None, storage=storage, renderer=Renderer())
     with pytest.raises(ServiceError, match="storage_quota"):
-        await service.run({"text": "Invoice 00123"})
+        await service.run({"output_format": "both", "text": "Invoice 00123"})
     assert not list(tmp_path.glob("[0-9]*/*/*"))

@@ -3,7 +3,7 @@
 from app.core.settings import config
 from app.ops.settings import provider_paused
 from app.providers.runtime import provider
-from app.services.base import ServiceError
+from app.services.base import ServiceError, ai_policy
 from app.services.registry import registry
 
 
@@ -34,6 +34,7 @@ def checks(row, *, ai_state, stars_enabled):
         and (not stars_enabled or row.price_stars is not None),
         "admin_only": plugin.admin_only,
         "ai_required": plugin.requires_ai,
+        "ai_policy": ai_policy(plugin),
         "ai_state": ai_state,
         "stars_enabled": stars_enabled,
         "stars_price_missing": stars_enabled and row.price_stars is None,

@@ -3,6 +3,7 @@
 import re
 
 from app.core.i18n import tr
+from app.services.base import ai_policy
 from app.services.catalog import CATEGORY_KEYS, ordered
 from app.services.registry import registry
 
@@ -31,7 +32,7 @@ def view(rows, lang, *, category=None, page=0, admin=False, ai_available=True):
         return (
             "\n\n" + tr("catalog_ai_notice", lang)
             if not ai_available
-            and any(getattr(registry.types.get(s.slug), "requires_ai", False) for s in values)
+            and any(ai_policy(registry.types.get(s.slug)) != "none" for s in values)
             else ""
         )
 

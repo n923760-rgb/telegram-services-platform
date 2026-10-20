@@ -110,7 +110,11 @@ async def test_paused_provider_blocks_smart_but_keeps_direct_available(tmp_path,
         assert await db.scalar(select(func.count(Order.id))) == 0
         assert await db.scalar(select(func.count(CostHold.id))) == 0
     oid = await submit(
-        1, "text_to_word_pdf", {"text": "Source 00123", "mode": "direct"}, price, "paused-direct"
+        1,
+        "text_to_word_pdf",
+        {"output_format": "both", "text": "Source 00123", "mode": "direct"},
+        price,
+        "paused-direct",
     )
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     assert provider.calls == 0 and len(delivery.files) == 2
@@ -138,7 +142,11 @@ async def test_smart_source_limit_rejects_before_order_or_hold(tmp_path, monkeyp
     provider, _, price = await prepare(tmp_path, monkeypatch)
     with pytest.raises(ServiceError, match="input_invalid"):
         await submit(
-            1, "text_to_word_pdf", {"mode": "smart", "text": "x" * 9001}, price, "too-long"
+            1,
+            "text_to_word_pdf",
+            {"output_format": "both", "mode": "smart", "text": "x" * 9001},
+            price,
+            "too-long",
         )
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
@@ -147,20 +155,23 @@ async def test_smart_source_limit_rejects_before_order_or_hold(tmp_path, monkeyp
     assert provider.calls == 0
 
 
+@pytest.mark.parametrize("old_version", ["1", "2"])
 async def test_upgrade_retains_admin_price_gate_and_releases_old_unprepared_order(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, old_version
 ):
     provider, delivery, price = await prepare(tmp_path, monkeypatch)
-    oid = await submit(1, "text_to_word_pdf", {"text": "Literal"}, price, "old-document")
+    oid = await submit(
+        1, "text_to_word_pdf", {"output_format": "both", "text": "Literal"}, price, "old-document"
+    )
     async with sessions.begin() as db:
         row = await db.get(Service, "text_to_word_pdf")
-        row.version, row.price_halala, row.enabled = "1", 777, True
-        (await db.get(Order, oid)).service_version = "1"
+        row.version, row.price_halala, row.enabled = old_version, 777, True
+        (await db.get(Order, oid)).service_version = old_version
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "text_to_word_pdf")
-        assert row.version == "2" and row.price_halala == 777 and row.enabled
+        assert row.version == "3" and row.price_halala == 777 and row.enabled
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

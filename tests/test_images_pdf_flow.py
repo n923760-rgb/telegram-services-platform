@@ -40,14 +40,18 @@ async def prepare(tmp_path, monkeypatch):
     return storage, Delivery(storage), price
 
 
-async def test_ordered_pages_single_capture_zero_ai_and_all_files_removed(tmp_path, monkeypatch):
+@pytest.mark.parametrize("page_order", [None, "2,1", "٢ ١"])
+async def test_ordered_pages_single_capture_zero_ai_and_all_files_removed(
+    tmp_path, monkeypatch, page_order
+):
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     first = storage.save(1, "one.png", picture(), "image/png")
     second = storage.save(1, "two.png", picture(240, 120, color="blue"), "image/png")
     oid = await submit(
         1,
         "images_to_pdf",
-        {"images": [first.key, second.key], "orientation": "auto"},
+        {"images": [first.key, second.key], "orientation": "auto"}
+        | ({"page_order": page_order} if page_order is not None else {}),
         price,
         "images-native",
     )
@@ -64,8 +68,12 @@ async def test_ordered_pages_single_capture_zero_ai_and_all_files_removed(tmp_pa
     assert [name for name, _ in delivery.files] == ["images.pdf"]
     pages = PdfReader(BytesIO(delivery.files[0][1])).pages
     assert len(pages) == 2
-    assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
-    assert pages[1].images[0].image.getpixel((0, 0)) == (0, 0, 255)
+    colors = [(255, 0, 0), (0, 0, 255)]
+    if page_order is not None:
+        colors.reverse()
+    assert [page.images[0].image.getpixel((0, 0)) for page in pages] == colors
+    for lang in ("ar", "en"):
+        assert ("2, 1" if page_order else "1, 2") in delivery.results[0].preview_localizations[lang]
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -151,8 +159,28 @@ async def test_duplicate_image_keys_never_reserve_credit(tmp_path, monkeypatch):
         assert (await balance(db, 1)).reserved == 0
 
 
+@pytest.mark.parametrize("page_order", ["1,1", "2", "1,3"])
+async def test_invalid_page_order_never_reserves_credit(tmp_path, monkeypatch, page_order):
+    storage, _, price = await prepare(tmp_path, monkeypatch)
+    keys = [storage.save(1, f"{index}.png", picture(), "image/png").key for index in range(2)]
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(
+            1,
+            "images_to_pdf",
+            {"images": keys, "page_order": page_order, "orientation": "auto"},
+            price,
+            "invalid-order",
+        )
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+        assert await db.scalar(select(func.count(CostUsage.id))) == 0
+
+
+@pytest.mark.parametrize("old_version", ["1", "2"])
 async def test_source_preservation_upgrade_keeps_admin_settings_and_cancels_old_job(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, old_version
 ):
     from app.services.registry import registry
 
@@ -165,15 +193,17 @@ async def test_source_preservation_upgrade_keeps_admin_settings_and_cancels_old_
     async with sessions.begin() as db:
         row = await db.get(Service, "images_to_pdf")
         old = deepcopy(row.input_schema)
-        old["fields"][0].pop("preserve_image")
-        row.version, row.input_schema = "1", old
+        old["fields"] = [field for field in old["fields"] if field["name"] != "page_order"]
+        if old_version == "1":
+            old["fields"][0].pop("preserve_image")
+        row.version, row.input_schema = old_version, old
         row.price_halala, row.price_stars = 777, 25
         order = await db.get(Order, oid)
-        order.service_version, order.input_schema_snapshot = "1", old
+        order.service_version, order.input_schema_snapshot = old_version, old
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "images_to_pdf")
-        assert row.version == "2" and row.enabled
+        assert row.version == "3" and row.enabled
         assert row.price_halala == 777 and row.price_stars == 25
     await execute_job({"delivery": delivery}, str(jid))
     async with sessions() as db:
@@ -183,8 +213,9 @@ async def test_source_preservation_upgrade_keeps_admin_settings_and_cancels_old_
     assert delivery.files == []
 
 
+@pytest.mark.parametrize("old_version", ["1", "2"])
 async def test_cached_legacy_pdf_is_delivered_without_regeneration_after_upgrade(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, old_version
 ):
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     file = storage.save(1, "source.png", picture(), "image/png")
@@ -202,7 +233,7 @@ async def test_cached_legacy_pdf_is_delivered_without_regeneration_after_upgrade
     async with sessions.begin() as db:
         order = await db.get(Order, oid)
         assert order.result
-        order.service_version = "1"
+        order.service_version = old_version
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
 
     def no_build(*args, **kwargs):

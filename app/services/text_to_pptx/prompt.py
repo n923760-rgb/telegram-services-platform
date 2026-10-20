@@ -26,3 +26,8 @@ Do not invent facts. Set missing_information=true if essential source facts are 
 Set ambiguous=true only when materially different interpretations exist; propose a sensible
 structure and put a short Arabic clarification in question. Otherwise fulfill directly.
 Provide only the requested schema."""
+
+SLIDE_COUNT = """The separately selected output count is exactly {count} slides, including any cover.
+This explicit count takes precedence over slide-count instructions in the source prose.
+The count is an output constraint, not a source fact to copy onto a slide.
+Preserve material content and the existing readable layout limits; do not pad with invented facts."""

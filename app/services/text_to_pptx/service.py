@@ -5,12 +5,12 @@ from pydantic import ValidationError
 from app.builders import pptx
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
-from app.services.text_to_pptx.prompt import DECK
+from app.services.text_to_pptx.prompt import DECK, SLIDE_COUNT
 from app.services.text_to_pptx.schema import Inputs, source_plan_schema
 
 
 class TextToPptx(BaseService):
-    version = "3"
+    version = "6"
     slug = "text_to_pptx"
     menu_order = 40
     category = "documents"
@@ -20,7 +20,19 @@ class TextToPptx(BaseService):
     price_sar = Decimal("5.00")
     requires_ai = True
     enabled_by_default = False
-    input_schema = InputSchema(fields=[InputField(name="text", prompt_key="pptx_text")])
+    input_schema = InputSchema(
+        fields=[
+            InputField(
+                name="slide_count",
+                prompt_key="pptx_slide_count",
+                required=False,
+                max_length=4,
+                single_line=True,
+                skip_key="pptx_slide_count_auto",
+            ),
+            InputField(name="text", prompt_key="pptx_text"),
+        ]
+    )
 
     @classmethod
     def needs_ai(cls, inputs):
@@ -29,7 +41,7 @@ class TextToPptx(BaseService):
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
-        schema = source_plan_schema(values.text)
+        schema = source_plan_schema(values.text, values.slide_count)
         continuation = inputs.get("__continuation")
         if "__continuation" in inputs:
             try:
@@ -39,7 +51,10 @@ class TextToPptx(BaseService):
         else:
             if self.runtime.ai is None:
                 raise ServiceError("provider_config")
-            plan = await self.runtime.ai.extract(schema, values.text, DECK)
+            prompt = DECK
+            if values.slide_count is not None:
+                prompt += "\n\n" + SLIDE_COUNT.format(count=values.slide_count)
+            plan = await self.runtime.ai.extract(schema, values.text, prompt)
             try:
                 plan = schema.model_validate(plan.model_dump(mode="json"))
             except (ValidationError, ValueError):

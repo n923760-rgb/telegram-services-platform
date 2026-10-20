@@ -53,6 +53,12 @@ class Registry:
                     raise ValueError("invalid service menu order")
                 if type(cls.admin_only) is not bool:
                     raise ValueError("invalid service audience")
+                if (
+                    type(cls.requires_ai) is not bool
+                    or type(cls.optional_ai) is not bool
+                    or (cls.requires_ai and cls.optional_ai)
+                ):
+                    raise ValueError("invalid service AI metadata")
                 required, optional = cls.worker_requirements, cls.optional_worker_requirements
                 if (
                     type(required) is not tuple

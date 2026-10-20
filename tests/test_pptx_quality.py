@@ -77,7 +77,9 @@ def test_pptx_native_text_table_source_values_fonts_and_editability():
                         for run in p.runs
                     )
     body = next(s for s in prs.slides[1].shapes if s.name == "Slide content")
-    assert [p.text for p in body.text_frame.paragraphs] == data.slides[1].bullets
+    assert [p.text.replace("\u200e", "") for p in body.text_frame.paragraphs] == data.slides[
+        1
+    ].bullets
     assert [p._p.pPr.get("rtl") for p in body.text_frame.paragraphs] == ["1", "1", "0"]
     for paragraph in body.text_frame.paragraphs:
         assert paragraph._p.pPr.find(qn("a:buChar")) is not None

@@ -13,7 +13,7 @@ from app.core.settings import config
 from app.ops import activation
 from app.ops.readiness import ai_configuration
 from app.ops.worker_capabilities import probe_worker
-from app.services.base import ServiceError
+from app.services.base import ServiceError, ai_policy
 from app.services.registry import _input_contract, registry
 
 MAX_SERVICES = 64
@@ -71,6 +71,8 @@ async def inspect():
                 for key in plugin.optional_worker_requirements
                 if not capabilities.get(key)
             ]
+            if plugin.optional_ai and ai_state != "configured":
+                warnings.append("ai_options_unavailable")
             evidence = None
             if row is None:
                 blockers.append("service_missing")
@@ -102,6 +104,7 @@ async def inspect():
                     "price_halala": row.price_halala if row else None,
                     "price_stars": row.price_stars if row else None,
                     "ai_required": plugin.requires_ai,
+                    "ai_policy": ai_policy(plugin),
                     "worker_requirements": requirements,
                     "active_orders": len(evidence["orders"]) if evidence is not None else None,
                     "blockers": sorted(set(blockers)),

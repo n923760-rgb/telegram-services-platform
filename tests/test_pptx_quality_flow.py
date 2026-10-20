@@ -88,11 +88,44 @@ async def test_pptx_builder_failure_does_not_capture_credit(tmp_path, monkeypatc
     assert provider.calls == 1 and not delivery.files and len(delivery.errors) == 1
 
 
+async def test_source_owned_arabic_contact_direction_keeps_count_and_single_capture(
+    tmp_path, monkeypatch
+):
+    text = "تواصل: help@demo.invalid"
+    plan = {"deck": {"slides": [{"title": text, "bullets": [text]}]}}
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pptx", [json.dumps(plan)], tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1,
+        "text_to_pptx",
+        {"text": text + "\n" + text, "slide_count": "1"},
+        price,
+        "contact-direction",
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    deck = Presentation(BytesIO(delivery.files[0][1]))
+    assert len(deck.slides) == 1 and provider.calls == 1
+    for shape in deck.slides[0].shapes:
+        if shape.name in {"Slide title", "Slide content"}:
+            paragraph = shape.text_frame.paragraphs[0]
+            assert paragraph.text == text and paragraph._p.pPr.get("rtl") == "1"
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".004")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price, 0)
+
+
 async def test_pptx_delivery_retry_reuses_native_file_before_single_capture(tmp_path, monkeypatch):
     _, provider, delivery, ctx, price = await setup(
         "text_to_pptx", [json.dumps({"deck": sample_plan()})], tmp_path, monkeypatch
     )
-    oid = await submit(1, "text_to_pptx", {"text": sample_source()}, price, "retry-pptx")
+    oid = await submit(
+        1, "text_to_pptx", {"text": sample_source(), "slide_count": "3"}, price, "retry-pptx"
+    )
     jid = await job_for(oid)
     original_send = delivery.send
 
@@ -117,20 +150,179 @@ async def test_pptx_delivery_retry_reuses_native_file_before_single_capture(tmp_
     assert any(s.has_table for s in Presentation(BytesIO(delivery.files[0][1])).slides[2].shapes)
 
 
-async def test_pptx_version_upgrade_keeps_admin_settings_and_releases_old_pending_job(
+@pytest.mark.parametrize("count", [1, 3])
+@pytest.mark.parametrize("repair", [False, True])
+async def test_explicit_count_delivers_exact_native_slides_and_captures_once(
+    tmp_path, monkeypatch, count, repair
+):
+    from tests.test_pptx_count_unit import plan
+
+    responses = [json.dumps(plan(count))]
+    if repair:
+        responses.insert(0, json.dumps(plan(2)))
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pptx", responses, tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1, "text_to_pptx", {"text": "Source content", "slide_count": str(count)}, price, "count"
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".004") * len(responses)
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price, 0)
+        assert (
+            await db.scalar(
+                select(func.count(Ledger.id)).where(
+                    Ledger.kind == "capture", Ledger.order_id == oid
+                )
+            )
+            == 1
+        )
+    assert provider.calls == len(responses) and len(delivery.files) == 1
+    assert len(Presentation(BytesIO(delivery.files[0][1])).slides) == count
+
+
+async def test_wrong_count_after_existing_single_repair_releases_credit_without_file(
     tmp_path, monkeypatch
+):
+    from tests.test_pptx_count_unit import plan
+
+    bad = json.dumps(plan(2))
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pptx", [bad, bad, "unused"], tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1, "text_to_pptx", {"text": "Source content", "slide_count": "3"}, price, "bad-count"
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "failed"
+        assert (await db.get(Job, jid)).cost_sar == Decimal(".008")
+        assert await db.scalar(select(func.count(CostUsage.id))) == 2
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+    assert provider.calls == 2 and len(provider.responses) == 1
+    assert not delivery.files and not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+@pytest.mark.parametrize("count", ["0", "31", "3.0", "٣١"])
+async def test_bad_count_has_no_order_cost_hold_or_reservation(tmp_path, monkeypatch, count):
+    _, provider, _, _, price = await setup("text_to_pptx", [], tmp_path, monkeypatch)
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(
+            1,
+            "text_to_pptx",
+            {"text": "Source content", "slide_count": count},
+            price,
+            "invalid-count",
+        )
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        assert (await balance(db, 1)).reserved == 0
+    assert provider.calls == 0
+
+
+async def test_explicit_count_approval_reuses_validated_plan_without_another_call(
+    tmp_path, monkeypatch
+):
+    from tests.test_pptx_count_unit import plan
+
+    response = {**plan(3), "ambiguous": True, "question": "اعتماد الهيكل؟"}
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pptx", [json.dumps(response)], tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1, "text_to_pptx", {"text": "Source content", "slide_count": "٣"}, price, "count-approval"
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "waiting_confirmation"
+    await confirm_structure(oid, 1, True)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        assert (await balance(db, 1)).reserved == 0
+    assert provider.calls == 1 and len(Presentation(BytesIO(delivery.files[0][1])).slides) == 3
+
+
+@pytest.mark.parametrize("old_version", ["4", "5"])
+async def test_prepared_file_replays_after_upgrade_with_admin_prices_preserved(
+    tmp_path, monkeypatch, old_version
+):
+    from app.services.text_to_pptx.service import TextToPptx
+    from tests.test_pptx_count_unit import plan
+
+    _, provider, delivery, ctx, price = await setup(
+        "text_to_pptx", [json.dumps(plan(1))], tmp_path, monkeypatch
+    )
+    oid = await submit(1, "text_to_pptx", {"text": "Source content"}, price, "v4-cache")
+    jid = await job_for(oid)
+    send = delivery.send
+
+    async def offline(*args):
+        raise ConnectionError("synthetic delivery failure")
+
+    monkeypatch.setattr(delivery, "send", offline)
+    await execute_job(ctx, str(jid))
+    async with sessions.begin() as db:
+        row = await db.get(Service, "text_to_pptx")
+        old_schema = row.input_schema
+        if old_version == "4":
+            old_schema = {
+                **row.input_schema,
+                "fields": [f for f in row.input_schema["fields"] if f["name"] != "slide_count"],
+            }
+        row.version, row.price_halala, row.price_stars, row.input_schema = (
+            old_version,
+            777,
+            25,
+            old_schema,
+        )
+        order = await db.get(Order, oid)
+        order.service_version, order.input_schema_snapshot = old_version, old_schema
+        (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        row = await db.get(Service, "text_to_pptx")
+        assert row.version == "6" and row.enabled
+        assert (row.price_halala, row.price_stars) == (777, 25)
+
+    async def forbidden(*args):
+        raise AssertionError("historical file must not be regenerated")
+
+    monkeypatch.setattr(TextToPptx, "run", forbidden)
+    monkeypatch.setattr(delivery, "send", send)
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == "completed"
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price, 0)
+    assert provider.calls == 1 and len(Presentation(BytesIO(delivery.files[0][1])).slides) == 1
+
+
+@pytest.mark.parametrize("old_version", ["1", "3", "4", "5"])
+async def test_pptx_version_upgrade_keeps_admin_settings_and_releases_old_pending_job(
+    tmp_path, monkeypatch, old_version
 ):
     _, provider, delivery, ctx, price = await setup("text_to_pptx", [], tmp_path, monkeypatch)
     oid = await submit(1, "text_to_pptx", {"text": "Content"}, price, "old-pptx")
     async with sessions.begin() as db:
         row = await db.get(Service, "text_to_pptx")
-        row.version, row.price_halala, row.enabled = "1", 777, True
-        (await db.get(Order, oid)).service_version = "1"
+        row.version, row.price_halala, row.enabled = old_version, 777, True
+        (await db.get(Order, oid)).service_version = old_version
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "text_to_pptx")
-        assert row.version == "3" and row.price_halala == 777 and row.enabled
+        assert row.version == "6" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:

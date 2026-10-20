@@ -46,6 +46,43 @@ async def review(ctx, oid):
 
 
 @pytest.mark.parametrize("language", ["ar", "en"])
+async def test_telegram_title_skip_keeps_language_and_source_until_confirmation(
+    flow,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+    language,
+):
+    from app.core.i18n import tr
+    from app.core.users import set_language
+    from tests.test_bounded_fixes import button_by_prefix
+
+    transport, message, callback, state = flow
+    _, provider, _, _, price = await prepare(tmp_path, monkeypatch, [])
+    await set_language(1, language)
+    await message("/start")
+    await callback("service:meeting_minutes")
+    assert transport.messages[-1].text.endswith(tr("minutes_title", language))
+    skip = button_by_prefix(transport.messages[-1].reply_markup, "skip:")
+    draft = await state.get_data()
+    await message("Title\nnot a single line")
+    assert transport.messages[-1].text == tr("input_single_line", language)
+    assert await state.get_data() == draft
+    await callback(skip)
+    assert transport.messages[-1].text.endswith(tr("minutes_language", language))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + (":0" if language == "ar" else ":1"))
+    source = inputs(language)["notes"]
+    await message(source)
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
+    async with sessions() as db:
+        order = await db.scalar(select(Order))
+        assert order.inputs == {"language": language, "notes": source}
+        assert order.service_version == "4"
+        assert (await balance(db, 1)).reserved == price
+    assert provider.calls == 0
+
+
+@pytest.mark.parametrize("language", ["ar", "en"])
 async def test_order_details_reopen_all_tasks_in_current_ui_language(
     flow,  # noqa: F811
     tmp_path,
@@ -146,13 +183,21 @@ async def test_multipart_review_notification_recovers_without_new_ai_or_early_ca
 
 
 @pytest.mark.parametrize("language", ["ar", "en"])
+@pytest.mark.parametrize("title_mode", ["custom", "omitted", "null"])
 async def test_confirmed_source_notes_native_pair_single_capture_and_provider_call(
-    tmp_path, monkeypatch, language
+    tmp_path, monkeypatch, language, title_mode
 ):
     store, provider, delivery, ctx, price = await prepare(
         tmp_path, monkeypatch, [json.dumps(plan())]
     )
     source = inputs(language)
+    if title_mode != "custom":
+        source.pop("title")
+    if title_mode == "null":
+        source["title"] = None
+    expected_title = source.get("title") or (
+        "محضر اجتماع" if language == "ar" else "Meeting minutes"
+    )
     oid = await submit(1, "meeting_minutes", source, price, "minutes-native")
     jid = await review(ctx, oid)
     async with sessions() as db:
@@ -160,6 +205,7 @@ async def test_confirmed_source_notes_native_pair_single_capture_and_provider_ca
         assert (await balance(db, 1)).reserved == price
         assert await db.scalar(select(func.count(Order.id))) == 1
     assert not delivery.files and len(delivery.confirmations) == 1
+    assert delivery.confirmations[0][1].startswith(expected_title + "\n")
     for i, note in enumerate(source["notes"].split("\n"), 1):
         assert f"[{i}] {note}" in delivery.confirmations[0][1]
     with pytest.raises(ServiceError, match="not_allowed"):
@@ -178,6 +224,7 @@ async def test_confirmed_source_notes_native_pair_single_capture_and_provider_ca
     text = [
         p.text.replace("\u200e", "") for p in Document(BytesIO(delivery.files[0][1])).paragraphs
     ]
+    assert text[0] == expected_title
     for index, line in enumerate(source["notes"].split("\n"), 1):
         assert text.count(f"[{index}] {line}") == 1
     pdf_text = PdfReader(BytesIO(delivery.files[1][1])).pages[0].extract_text()
@@ -247,7 +294,7 @@ async def test_confirmed_render_failure_releases_credit(tmp_path, monkeypatch):
     assert not delivery.files
 
 
-@pytest.mark.parametrize("old_version", [None, "1", "2"])
+@pytest.mark.parametrize("old_version", [None, "1", "2", "3"])
 async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(
     tmp_path, monkeypatch, old_version
 ):
@@ -284,7 +331,7 @@ async def test_confirmed_delivery_retry_reuses_pair_without_ai_or_export(
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-@pytest.mark.parametrize("old_version", ["1", "2"])
+@pytest.mark.parametrize("old_version", ["1", "2", "3"])
 @pytest.mark.parametrize("approved", [False, True])
 async def test_boundary_upgrade_retains_admin_settings_and_cancels_unprepared_old_work(
     tmp_path, monkeypatch, old_version, approved
@@ -306,7 +353,7 @@ async def test_boundary_upgrade_retains_admin_settings_and_cancels_unprepared_ol
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "meeting_minutes")
-        assert (row.version, row.enabled, row.price_halala, row.price_stars) == ("3", True, 777, 42)
+        assert (row.version, row.enabled, row.price_halala, row.price_stars) == ("4", True, 777, 42)
     await execute_job(ctx, str(jid))
     await execute_job(ctx, str(jid))
     await deliver_failures(ctx)

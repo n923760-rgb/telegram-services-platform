@@ -80,6 +80,9 @@ class InputSchema(BaseModel):
         return self
 
     def validate_inputs(self, inputs):
+        if not isinstance(inputs, dict) or any(not isinstance(key, str) for key in inputs):
+            raise ServiceError("input_invalid")
+
         def known_fields(fields, values):
             if not isinstance(values, dict) or set(values) - {field.name for field in fields}:
                 raise ServiceError("input_invalid")
@@ -219,6 +222,7 @@ class BaseService:
     input_schema: InputSchema
     enabled_by_default = True
     requires_ai = False
+    optional_ai = False  # Presentation only; needs_ai(inputs) remains authoritative.
     runtime: Any = None
     text_followups: tuple[TextFollowup, ...] = ()
     # Retain historical execution, but never sell a second implementation of one result.
@@ -250,3 +254,10 @@ class BaseService:
 
     async def run(self, inputs: dict) -> Result:
         raise NotImplementedError
+
+
+def ai_policy(plugin):
+    """Describe the declared capability without inventing inputs or running a plugin."""
+    if getattr(plugin, "requires_ai", False) is True:
+        return "required"
+    return "conditional" if getattr(plugin, "optional_ai", False) is True else "none"

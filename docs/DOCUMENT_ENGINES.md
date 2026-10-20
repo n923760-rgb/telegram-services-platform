@@ -26,9 +26,12 @@ adoption record; an approved candidate is not an installed or qualified feature.
 
 ## Local printed-text recognition
 
-The merged PDF slice implements merge and selected-page extraction through the
-new `pdf_tools` plugin with existing pypdf, without introducing qpdf or AI. It has
-bounded multifile intake, preserves page content/order and rejects forms/signatures.
+The PDF slice implements merge, selected-page extraction and explicit additional
+clockwise page rotation through `pdf_tools` v2 with existing pypdf, without qpdf
+or AI. Rotation accepts one PDF, selected page numbers and 90/180/270 degrees;
+all source pages remain in their original order, with selected rotation normalized
+modulo 360. Native content streams, images and page boxes are copied unchanged.
+The plugin retains bounded multifile intake and rejects forms/signatures.
 It remains disabled until operator acceptance. This does not qualify the remaining
 candidates below or claim production deployment.
 

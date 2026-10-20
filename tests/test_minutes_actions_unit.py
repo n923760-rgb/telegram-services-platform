@@ -25,7 +25,7 @@ def test_natural_paragraph_preserves_decimals_ids_and_dates(language):
     )
     assert values.lines() == Inputs.parse(inputs(language)).lines()
     assert "125.50" in values.lines()[0] and "00017" in values.lines()[2]
-    assert MeetingMinutes.version == "3"
+    assert MeetingMinutes.version == "4"
 
 
 @pytest.mark.parametrize(

@@ -140,6 +140,25 @@ async def test_optional_native_ocr_is_disclosed_without_blocking_ai_fallback(rea
     assert row["warnings"] == ["worker_optional_missing:native_ocr"] and not row["blockers"]
 
 
+async def test_inventory_separates_paused_optional_modes_from_direct_services(ready):
+    from app.core.models import Setting
+
+    async with sessions.begin() as db:
+        db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
+    report, _ = await service_portfolio.inspect()
+    for row in report["services"]:
+        if row["ai_policy"] == "required":
+            assert "provider_config" in row["blockers"]
+        elif row["ai_policy"] == "conditional":
+            assert "ai_options_unavailable" in row["warnings"]
+            assert "provider_config" not in row["blockers"]
+        else:
+            assert not row["warnings"] and "provider_config" not in row["blockers"]
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(ServiceActivationChange)) == 0
+        assert await db.scalar(select(func.count()).select_from(Ledger)) == 0
+
+
 async def test_unauthorized_actor_is_rejected_before_probes_or_mutation(ready):
     _, probe = ready
     with pytest.raises(ServiceError, match="not_allowed"):

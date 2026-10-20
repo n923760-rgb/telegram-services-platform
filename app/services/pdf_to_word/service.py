@@ -14,7 +14,7 @@ from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
 
 class PdfToWord(BaseService):
-    version = "4"
+    version = "5"
     slug = "pdf_to_word"
     menu_order = 20
     category = "pdf"
@@ -35,10 +35,21 @@ class PdfToWord(BaseService):
             reader = PdfReader(BytesIO(data), strict=True)
             if reader.is_encrypted or not 1 <= len(reader.pages) <= 200:
                 raise ValueError
+            # Text extraction cannot preserve interactive values or signatures.
+            # Even an empty declaration is unsupported, not proof of plain text.
+            root = reader.trailer["/Root"]
+            if root.get("/AcroForm") is not None or root.get("/Perms") is not None:
+                raise ServiceError("pdf_word_form")
             pages = []
             sources = []
             text_length = 0
             for index, page in enumerate(reader.pages, 1):
+                annotations = page.get("/Annots")
+                if annotations is not None and any(
+                    annotation.get_object()["/Subtype"] == "/Widget"
+                    for annotation in annotations.get_object()
+                ):
+                    raise ServiceError("pdf_word_form")
                 if has_image_content(page, reader):
                     raise ServiceError("pdf_image_content")
                 page_text = extract_page_text(page, limit=50000 - text_length)

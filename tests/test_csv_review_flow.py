@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
@@ -56,6 +57,7 @@ async def test_native_single_capture_zero_ai_and_cleanup(tmp_path, monkeypatch, 
     book = load_workbook(BytesIO(delivery.files[0][1]))
     assert book["Data"]["A4"].value == "00123" and book["Data"]["C5"].value == "0"
     assert book["Source"]["B4"].value == " أحمد " and book["Review"]["C6"].value == 1
+    assert [book["Columns"].cell(5, c).value for c in range(4, 8)] == [3, 1, 2, 1]
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -124,6 +126,7 @@ async def test_delivery_retry_reuses_workbook_without_early_capture(tmp_path, mo
         assert (await balance(db, 1)).reserved == 0
     assert len(delivery.files) == 1
     assert "Similarities" in load_workbook(BytesIO(delivery.files[0][1])).sheetnames
+    assert "Columns" in load_workbook(BytesIO(delivery.files[0][1])).sheetnames
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -152,6 +155,7 @@ async def test_similarity_delivers_candidates_without_ai_and_captures_once(
     assert book["Similarities"]["A4"].value == 1 and book["Similarities"]["B4"].value == 2
     assert book["Data"]["A4"].value == "00123" and book["Data"]["C4"].data_type == "s"
     assert book["Data"].max_row == 8
+    assert "Columns" in book.sheetnames
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
         funds = await balance(db, 1)
@@ -202,10 +206,73 @@ async def test_csv_version_upgrade_preserves_admin_settings_and_releases_stale_j
         await registry.sync(db)
     async with sessions() as db:
         service = await db.get(Service, "csv_review")
-        assert service.version == "2" and service.enabled and service.price_halala == 777
+        assert service.version == "3" and service.enabled and service.price_halala == 777
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
     assert not delivery.files
+
+
+@pytest.mark.parametrize("cached", [False, True])
+async def test_v2_upgrade_replays_legacy_workbook_without_column_summary_or_rebuild(
+    tmp_path, monkeypatch, cached
+):
+    from app.services.csv_review.service import CsvReview
+    from app.services.registry import registry
+
+    store, delivery, price = await prepare(tmp_path, monkeypatch)
+    oid = await submit(1, "csv_review", inputs(), price, "v2-upgrade")
+    jid = await job_for(oid)
+    send = delivery.send
+    if cached:
+
+        async def offline(*args):
+            raise ConnectionError("synthetic delivery failure")
+
+        monkeypatch.setattr(delivery, "send", offline)
+        await execute_job({"delivery": delivery}, str(jid))
+    async with sessions.begin() as db:
+        service = await db.get(Service, "csv_review")
+        service.version, service.price_halala, service.price_stars = "2", 777, 25
+        order = await db.get(Order, oid)
+        order.service_version = "2"
+        if cached:
+            legacy = deepcopy(order.result)
+            artifact = legacy["artifacts"][0]
+            book = load_workbook(BytesIO(store.read(artifact["key"], 1)))
+            del book["Columns"]
+            content = BytesIO()
+            book.save(content)
+            book.close()
+            file = store.save(1, "review.xlsx", content.getvalue(), artifact["mime"])
+            store.delete(artifact["key"], 1)
+            legacy["artifacts"] = [file.model_dump()]
+            legacy["preview"] = "Legacy CSV review"
+            legacy["preview_localizations"] = {"ar": "مراجعة سابقة", "en": "Legacy CSV review"}
+            order.result = legacy
+        (await db.get(Job, jid)).next_run_at = datetime.now(UTC)
+    async with sessions.begin() as db:
+        await registry.sync(db)
+        service = await db.get(Service, "csv_review")
+        assert service.version == "3" and service.enabled
+        assert (service.price_halala, service.price_stars) == (777, 25)
+
+    async def forbidden(*args):
+        raise AssertionError("upgrade must not regenerate or append a new sheet")
+
+    monkeypatch.setattr(CsvReview, "run", forbidden)
+    monkeypatch.setattr(delivery, "send", send)
+    await execute_job({"delivery": delivery}, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("completed" if cached else "cancelled")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if cached else 1000, 0)
+    assert len(delivery.files) == int(cached)
+    if cached:
+        assert load_workbook(BytesIO(delivery.files[0][1])).sheetnames == [
+            "Data",
+            "Source",
+            "Review",
+        ]

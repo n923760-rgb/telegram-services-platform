@@ -122,6 +122,7 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
             {
                 "text": "تفاح 12" if target == "excel" else "المعلومات",
                 "target": target,
+                **({"mode": "smart"} if target == "word" else {}),
             },
             price,
             target,
@@ -171,6 +172,7 @@ async def test_professional_word_table_delivery_and_single_capture(
         1,
         "text_to_office",
         {
+            "mode": "smart",
             "text": "مذكرة: الطلب 00123، المبلغ 125.50 ريال، التاريخ 2026-10-08.",
             "target": "word",
         },
@@ -209,7 +211,7 @@ async def test_invalid_word_table_after_one_repair_releases_credit(tmp_path, mon
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "00123", "target": "word"},
+        {"mode": "smart", "text": "00123", "target": "word"},
         price,
         "invalid-table",
     )
@@ -231,7 +233,9 @@ async def test_ambiguity_confirm_resumes_without_second_ai_charge(tmp_path, monk
         tmp_path,
         monkeypatch,
     )
-    oid = await submit(1, "text_to_office", {"text": "نص", "target": "word"}, price, "ambiguous")
+    oid = await submit(
+        1, "text_to_office", {"mode": "smart", "text": "نص", "target": "word"}, price, "ambiguous"
+    )
     jid = await job_for(oid)
     await execute_job(ctx, str(jid))
     await deliver_confirmations(ctx)
@@ -272,7 +276,7 @@ async def test_real_service_invalid_json_releases_credit(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "نص", "target": "word"},
+        {"mode": "smart", "text": "نص", "target": "word"},
         price,
         "invalid-json",
     )
@@ -303,7 +307,7 @@ async def test_long_ocr_delivers_txt_docx_and_deletes_all_files(tmp_path, monkey
     assert delivery.files[0][0] == "result.txt"
     assert delivery.files[0][1].decode() == text.strip()
     doc = Word(BytesIO(delivery.files[1][1]))
-    assert " ".join(p.text for p in doc.paragraphs[1:]) == text.strip()
+    assert "".join(p.text for p in doc.paragraphs[1:]) == text.strip()
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -319,7 +323,7 @@ async def test_missing_information_releases_reservation(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "غير مكتمل", "target": "word"},
+        {"mode": "smart", "text": "غير مكتمل", "target": "word"},
         price,
         "missing-info",
     )
@@ -345,7 +349,9 @@ async def test_ambiguity_expiry_releases_reservation(tmp_path, monkeypatch):
         monkeypatch,
     )
     monkeypatch.setattr(config(), "storage_root", tmp_path)
-    oid = await submit(1, "text_to_office", {"text": "محتوى", "target": "word"}, price, "expired")
+    oid = await submit(
+        1, "text_to_office", {"mode": "smart", "text": "محتوى", "target": "word"}, price, "expired"
+    )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions.begin() as db:
         (await db.get(Order, oid)).updated_at = datetime.now(UTC) - timedelta(minutes=31)
@@ -393,7 +399,7 @@ async def test_database_abort_after_generation_reuses_saved_result(tmp_path, mon
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "بيانات", "target": "word"},
+        {"mode": "smart", "text": "بيانات", "target": "word"},
         price,
         "db-abort-output",
     )
