@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import json
 import re
+from collections import Counter
 from dataclasses import replace
 from decimal import Decimal
 from io import BytesIO
@@ -100,16 +101,69 @@ class AcceptanceProvider(OpenAICompatible):
         return await super().call(*args)
 
 
-class DiagnosticAI(AI):
-    """Observe validation in isolated acceptance only; never retain model/source text."""
+def pptx_token_diagnostics(content, source):
+    """Observe only counts/fixed field kinds in isolated acceptance, never literal values.
 
-    def __init__(self, *args, diagnostics, **kwargs):
+    Locations describe occurrences beyond the source budget in traversal order;
+    they do not determine which copy is semantically appropriate to remove.
+    """
+    from app.services.protected_values import ProtectedValues
+    from app.services.text_editing.schema import CONTACT_TOKEN
+    from app.services.text_to_pptx.schema import DeckPlan
+    from app.services.translation import NUMERIC_TOKEN
+
+    if (
+        not isinstance(content, str)
+        or len(content) > 100000
+        or not isinstance(source, str)
+        or len(source) > 12000
+    ):
+        return None
+    try:
+        values = ProtectedValues(source, CONTACT_TOKEN)
+        plan = DeckPlan.model_validate(values.resolve(json.loads(content)))
+    except ValueError:
+        return None
+    if plan.deck is None or plan.missing_information:
+        return None
+    totals = dict.fromkeys(
+        ("numeric_added", "numeric_repeated", "contact_added", "contact_repeated"), 0
+    )
+    locations = []
+    for kind, pattern in (("numeric", NUMERIC_TOKEN), ("contact", CONTACT_TOKEN)):
+        expected, seen = Counter(pattern.findall(source)), Counter()
+        for number, slide in enumerate(plan.deck.slides, 1):
+            parts = [("title", slide.title), *(("bullet", text) for text in slide.bullets)]
+            if slide.table is not None:
+                parts.extend(("table_header", text) for text in slide.table.columns)
+                parts.extend(("table_cell", text) for row in slide.table.rows for text in row)
+            excess = Counter()
+            for field, text in parts:
+                for token in pattern.findall(text):
+                    seen[token] += 1
+                    if seen[token] > expected[token]:
+                        category = kind + ("_repeated" if token in expected else "_added")
+                        totals[category] += 1
+                        excess[(field, category)] += 1
+            locations.extend(
+                {"slide": number, "field": field, "kind": category, "occurrences": count}
+                for (field, category), count in sorted(excess.items())
+            )
+    return {"counts": totals, "locations": locations[:32], "truncated": len(locations) > 32}
+
+
+class DiagnosticAI(AI):
+    """Observe validation in isolated acceptance only; never record model/source text."""
+
+    def __init__(self, *args, diagnostics, pptx_source=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.diagnostics = diagnostics
+        self.pptx_source = pptx_source
 
     async def _extract(self, schema, *args, **kwargs):
         stage = "review" if schema is QualityReview else "generation"
         diagnostics, provider = self.diagnostics, self.provider
+        pptx_source = self.pptx_source
 
         class ObservedSchema:
             diagnostic_categories = getattr(schema, "diagnostic_categories", {})
@@ -125,13 +179,16 @@ class DiagnosticAI(AI):
                     candidate = schema.model_validate_json(content)
                 except ValueError as error:
                     # Do not retain messages, locations, input, context or custom error types.
-                    diagnostics.append(
-                        event
-                        | {
-                            "outcome": "invalid",
-                            "categories": validation_categories(schema, error),
-                        }
-                    )
+                    event.update(outcome="invalid", categories=validation_categories(schema, error))
+                    if (
+                        stage == "generation"
+                        and pptx_source is not None
+                        and "pptx_source_tokens" in event["categories"]
+                    ):
+                        details = pptx_token_diagnostics(content, pptx_source)
+                        if details is not None:
+                            event["token_diagnostics"] = details
+                    diagnostics.append(event)
                     raise
                 diagnostics.append(event | {"outcome": "valid"})
                 if stage == "review":
@@ -317,7 +374,12 @@ async def run_case(case, adapter, backend, output):
             )
             if value.ai is not None:
                 value.ai = DiagnosticAI(
-                    adapter, job_id, user_id, quality_review=True, diagnostics=diagnostics
+                    adapter,
+                    job_id,
+                    user_id,
+                    quality_review=True,
+                    diagnostics=diagnostics,
+                    pptx_source=case.inputs["text"] if case.slug == "text_to_pptx" else None,
                 )
             return value
 
@@ -476,12 +538,10 @@ async def execute(case_names=None):
             }
         report["cases"].append(row)
         save_report(path, report)
-        print(
-            json.dumps(
-                {key: row.get(key) for key in ("case", "status", "error", "provider_calls")}
-            ),
-            flush=True,
-        )
+        console = {key: row.get(key) for key in ("case", "status", "error", "provider_calls")}
+        if row["status"] == "FAIL" and row.get("diagnostics"):
+            console["diagnostics"] = row["diagnostics"]
+        print(json.dumps(console), flush=True)
     async with sessions() as db:
         funds = await balance(db, OWNER)
         active = await db.scalar(select(func.count(Order.id)).where(Order.status.in_(ACTIVE)))
