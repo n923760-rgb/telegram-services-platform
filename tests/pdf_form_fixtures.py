@@ -33,13 +33,15 @@ def form_pdf(kind="acroform", *, later=False):
                     annotation.get_object()[NameObject("/Subtype")] = writer._add_object(
                         NameObject("/Widget")
                     )
-    elif kind == "permissions":
+    elif kind in {"permissions", "empty_permissions"}:
         del writer.root_object["/AcroForm"]
         for page in writer.pages:
             page.pop("/Annots", None)
         writer.root_object[NameObject("/Perms")] = DictionaryObject(
             {NameObject("/DocMDP"): DictionaryObject({NameObject("/Type"): NameObject("/Sig")})}
         )
+        if kind == "empty_permissions":
+            writer.root_object[NameObject("/Perms")] = DictionaryObject()
     elif kind == "empty_form":
         writer.root_object[NameObject("/AcroForm")] = DictionaryObject()
         for page in writer.pages:

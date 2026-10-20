@@ -76,7 +76,7 @@ jobs:
           from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
           from tests.images_pdf_fixtures import picture
           from app.builders.images_pdf import build as images_pdf
-          from app.builders.pdf_tools import build as pdf_tools
+          from app.builders.pdf_tools import PdfToolError, build as pdf_tools
           from app.builders import pptx as native_pptx
           from app.services.text_to_pptx.schema import source_plan_schema as pptx_source_schema
           from pptx import Presentation
@@ -167,6 +167,23 @@ jobs:
                           raise AssertionError('interactive PDF converted without preserving field content')
                       blocked_ai.extract.assert_not_awaited()
                       assert storage.storage.usage(1)[1] == before
+                  image_document_for_forms = images_pdf([picture()])
+                  for kind in ('acroform', 'widget', 'widget_indirect', 'permissions', 'empty_form', 'empty_permissions'):
+                      form_data = form_pdf(kind, later=True)
+                      for operation in ('merge', 'extract', 'rotate'):
+                          files = [image_document_for_forms, form_data] if operation == 'merge' else [form_data]
+                          args = {'operation': operation}
+                          if operation != 'merge':
+                              args['pages'] = '1'
+                          if operation == 'rotate':
+                              args['rotation'] = '90'
+                          try:
+                              pdf_tools(files, **args)
+                          except PdfToolError as error:
+                              assert error.key == 'pdf_tools_form'
+                          else:
+                              raise AssertionError('unsupported interactive PDF accepted by page operation')
+                  print('Non-root worker: PDF tools reject form declarations and orphan widgets in merge/extract/rotate PASS with network disabled')
                   source_images = [picture(), picture(240, 120, color='blue'), picture(color='green')]
                   keys = [storage.save(f'{index}.png', data, 'image/png').key for index, data in enumerate(source_images)]
                   ordered_service = ImagesToPdf()

@@ -8,7 +8,7 @@ from pypdf import PdfReader
 from sqlalchemy import func, select
 
 from app.core.db import sessions
-from app.core.models import CostHold, CostUsage, Job, Order, Service, Setting
+from app.core.models import CostHold, CostUsage, Job, Ledger, Order, Service, Setting
 from app.core.settings import config
 from app.ops.admin import set_service
 from app.ops.circuit import evaluate
@@ -18,6 +18,7 @@ from app.services.base import ServiceError
 from app.services.pdf_tools.test_service import records, source
 from app.wallet.ledger import balance
 from app.workers.runner import deliver_failures, execute_job
+from tests.pdf_form_fixtures import form_pdf
 from tests.test_foundation import fund, job_for
 from tests.test_real_services import Delivery
 
@@ -215,7 +216,7 @@ async def test_invalid_merge_order_does_not_reserve_credit(tmp_path, monkeypatch
 
 
 @pytest.mark.parametrize("cached", [False, True])
-@pytest.mark.parametrize("old_version", ["1", "2"])
+@pytest.mark.parametrize("old_version", ["1", "2", "3"])
 async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
     tmp_path, monkeypatch, cached, old_version
 ):
@@ -248,7 +249,7 @@ async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "pdf_tools")
-        assert service.version == "3" and service.enabled
+        assert service.version == "4" and service.enabled
         assert (service.price_halala, service.price_stars) == (777, 25)
 
     async def forbidden(*args):
@@ -264,3 +265,42 @@ async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
     assert len(delivery.files) == int(cached)
     if cached:
         assert records(delivery.files[0][1]) == ["00124", "00123"]
+
+
+@pytest.mark.parametrize("operation", ["merge", "extract", "rotate"])
+@pytest.mark.parametrize("kind", ["empty_form", "widget", "widget_indirect", "empty_permissions"])
+async def test_unsupported_forms_release_once_without_cost_output_or_circuit_trip(
+    tmp_path, monkeypatch, operation, kind
+):
+    storage, delivery, price = await prepare(tmp_path, monkeypatch)
+    form = storage.save(1, "form.pdf", form_pdf(kind, later=True), "application/pdf")
+    files = [form.key]
+    if operation == "merge":
+        files.insert(0, storage.save(1, "plain.pdf", source(), "application/pdf").key)
+    inputs = {"operation": operation, "files": files}
+    if operation != "merge":
+        inputs["pages"] = "1"
+    if operation == "rotate":
+        inputs["rotation"] = "90"
+    oid = await submit(1, "pdf_tools", inputs, price, "form-boundary")
+    jid = await job_for(oid)
+    await execute_job({"delivery": delivery}, str(jid))
+    await execute_job({"delivery": delivery}, str(jid))
+    await deliver_failures({"delivery": delivery})
+    await deliver_failures({"delivery": delivery})
+    async with sessions.begin() as db:
+        assert (await db.get(Order, oid)).status == "failed"
+        assert (await db.get(Job, jid)).cost_sar == 0
+        assert await db.scalar(select(func.count(CostUsage.id))) == 0
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+        entries = list(await db.scalars(select(Ledger).where(Ledger.order_id == oid)))
+        assert sorted(entry.kind for entry in entries) == ["release", "reserve"]
+        db.add(Setting(key="CIRCUIT_MIN_SAMPLES", value={"value": 1}))
+        db.add(Setting(key="FAILURE_ALERT_COUNT", value={"value": 1}))
+    notifier = AsyncMock()
+    assert not await evaluate("pdf_tools", notifier)
+    notifier.alert.assert_not_awaited()
+    assert not delivery.files and delivery.errors == [(1, oid, "pdf_tools_form")]
+    assert not list(tmp_path.glob("[0-9]*/*/*"))

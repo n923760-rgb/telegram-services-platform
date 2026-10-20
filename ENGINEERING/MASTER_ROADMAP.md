@@ -1,5 +1,12 @@
 # Master engineering roadmap
 
+## PDF tools shared interactive-content boundary — 2026-10-21
+
+- FACT: R02 from the comprehensive review reproduces on main 3af2a5a: empty AcroForm/Perms declarations and orphan Widgets (including indirect Subtype) pass page extraction. These operations cannot preserve form semantics or signatures.
+- CHANGE: PDF tools v4 shares the existing conservative PDF-to-Word declaration/Widget checks, inspecting every source page before merge/extract/rotate. Malformed inspected annotations fail closed; ordinary links remain supported. PDF-to-Word retains its existing per-page inspection and extraction-limit ordering. Existing localized disclosures/errors and input-failure circuit classification apply.
+- PASS LOCALLY: 155 focused builder/service/form/rotation/merge checks; three architecture gates, lint/format/diff and embedded worker Python syntax. Four before-fix fixtures reproduce acceptance. Added 12 PostgreSQL rejection cases and v3 prepared/unprepared upgrade coverage; 43 PDF-tools DB cases collected but NOT RUN locally (PostgreSQL unavailable). Hosted tests and worker qualification required before merge.
+- SAFETY: Preserve administrator prices/activation and prepared v1–v3 results; incompatible unprepared work cancels/releases under existing guards. No AI, dependency, payment, migration, provider setting or server action. Synthetic fixtures do not validate signatures or prove native/mobile output quality.
+
 ## Bounded contextual numeric reuse in PowerPoint v7 — 2026-10-20
 
 - FACT: Operator's targeted c69bf5f run reports zero added numeric/contact values and exactly two excess numeric occurrences in third-slide bullets on both attempts. Word/PDF passed the previous live run. Rejected response text/meaning is not retained, so the exact sentences and whether the repetition was useful remain unknown.
