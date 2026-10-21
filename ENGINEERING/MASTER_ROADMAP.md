@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Processing choice before source input — 2026-10-21
+
+- FACT: Main 1688401 provides early mixed-service availability hints, but Text PDF and PDF tables still ask for the source first. Owner requests continuation.
+- CHANGE: Text PDF v5 and PDF tables v5 collect mode before text/file through their existing schemas and generic handlers. All four current mixed services now collect their AI-dependent choice before initial source intake. Preserve choices, limits, optional title/order, confirmation and processing; neutral AR/EN PDF source instructions also suit old drafts.
+- PASS LOCALLY: 161 focused checks (22 new), three architecture gates and global lint/format/diff. 139 affected dispatcher/lifecycle/upgrade cases collected, including 14 new DB cases; NOT RUN locally (PostgreSQL unavailable). Require exact-head hosted full tests, migrations and native worker qualification.
+- COMPATIBILITY: Preserve administrator activation and SAR/Stars prices. Saved v4 drafts keep their schema/index/source but require a fresh version to purchase. Existing prepared historical files replay; unprepared old work cancels/releases under unchanged policy. Drain outstanding work before eventual deployment. No new admission/payment rule, provider/activation change, dependency, migration or deployment. This completes the mode-before-source UX portion of R04, not live output-quality qualification.
+- Evidence: [scope, checks and upgrade limits](REPORTS/2026-10-21-mode-before-source.md).
+
 ## Early mixed-mode availability hints — 2026-10-21
 
 - FACT: Main 06d900f protects required-AI starts and final admission but does not mark/block unavailable mixed choices during intake. Owner authorizes continuing review improvements.

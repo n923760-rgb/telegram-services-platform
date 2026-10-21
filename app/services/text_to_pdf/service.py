@@ -11,7 +11,7 @@ from app.services.text_to_pdf.schema import Inputs, PdfPlan
 
 
 class TextToPdf(BaseService):
-    version = "4"
+    version = "5"
     slug = "text_to_pdf"
     worker_requirements = ("pdf_font",)
     menu_order = 20
@@ -26,13 +26,13 @@ class TextToPdf(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
-            InputField(name="text", prompt_key="pdf_text"),
             InputField(
                 name="mode",
                 prompt_key="document_mode",
                 choices=["direct", "smart"],
                 choice_keys=["document_direct", "document_smart"],
             ),
+            InputField(name="text", prompt_key="pdf_text"),
             InputField(
                 name="title",
                 prompt_key="document_title",

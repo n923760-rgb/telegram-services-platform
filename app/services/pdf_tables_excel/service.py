@@ -18,7 +18,7 @@ from app.services.pdf_tables_excel.schema import (
 
 
 class PdfTablesExcel(BaseService):
-    version = "4"
+    version = "5"
     slug = "pdf_tables_excel"
     worker_requirements = ("pdf_tables",)
     menu_order = 20
@@ -33,13 +33,13 @@ class PdfTablesExcel(BaseService):
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[
-            InputField(name="pdf", kind="file", prompt_key="pdf_tables_file"),
             InputField(
                 name="mode",
                 prompt_key="pdf_tables_mode",
                 choices=["direct", "source", "labels"],
                 choice_keys=["pdf_tables_direct", "pdf_tables_source_headers", "pdf_tables_labels"],
             ),
+            InputField(name="pdf", kind="file", prompt_key="pdf_tables_file"),
             InputField(
                 name="language",
                 prompt_key="pdf_tables_language",
