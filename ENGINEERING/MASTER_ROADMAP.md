@@ -7,6 +7,7 @@
 - PASS LOCALLY: 140 focused PowerPoint/repair checks (22 new), uploaded deck reproduces and now rejects specifically for source language, three architecture gates, lint/format/diff. Four DB order-flow cases added; NOT RUN locally. Full hosted suite required before merge; actual updated-provider PPTX rerun remains open.
 - LIMIT: No source-file attachment edits, server/provider calls, new dependency or version/schema migration. Secondary office rendering resolved false Arabic-order/leading-zero preview anomalies. Correct-input editing, same-language translation and very short documents remain acceptance gaps.
 - Evidence: [native output review, observed defect and verification](REPORTS/2026-10-22-native-service-acceptance-review.md).
+- HOSTED LIMIT: First run 39680325972 prints 2893 tests and 34 native-worker passes but is cancelled just beyond the 15-minute job cap; it is not a successful workflow. Allow 20 minutes for the same complete checks and require a successful rerun before merge.
 
 ## Acceptance bind-mount readability preflight — 2026-10-22
 

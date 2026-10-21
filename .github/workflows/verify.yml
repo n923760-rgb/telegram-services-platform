@@ -8,7 +8,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # The full suite plus native OCR/Office qualification can exceed 15 minutes.
+    timeout-minutes: 20
     env:
       APP_ENV: test
       CI_INFRA_PROJECT: tsp-ci-${{ github.run_id }}-${{ github.run_attempt }}
