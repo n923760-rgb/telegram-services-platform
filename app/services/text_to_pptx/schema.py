@@ -5,6 +5,7 @@ from typing import ClassVar
 from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
+from app.builders.direction import has_arabic
 from app.builders.schema import Deck, Slide, StrictModel
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
@@ -44,6 +45,7 @@ class DeckPlan(StrictModel):
         "pptx_missing_question": "pptx_missing_question",
         "pptx_source_tokens": "pptx_source_tokens",
         "pptx_slide_count": "pptx_slide_count",
+        "pptx_source_language": "pptx_source_language",
     }
     ambiguous: bool = False
     missing_information: bool = Field(
@@ -96,10 +98,33 @@ def source_token_violations(source, deck):
                 yield {"slide": number, "field": field, "kind": category, "occurrences": count}
 
 
+def _script_counts(text):
+    letters = [char for char in CONTACT_TOKEN.sub("", text) if char.isalpha()]
+    arabic = sum(has_arabic(char) for char in letters)
+    latin = sum("a" <= char.lower() <= "z" for char in letters)
+    return arabic, latin, len(letters) - arabic - latin
+
+
+def source_language(source):
+    """Conservative script evidence, not general language identification.
+
+    Contacts are identifiers. Mixed/other-script or short sources need semantic
+    review; only clearly single-script prose receives a deterministic guard.
+    """
+    arabic, latin, other = _script_counts(source)
+    if not other:
+        if latin >= 20 and not arabic:
+            return "English"
+        if arabic >= 20 and not latin:
+            return "Arabic"
+    return None
+
+
 def source_plan_schema(source, slide_count=None, *, protected=None):
     """Bound exact source literals and contextual reuse; meaning needs review."""
     if slide_count is not None and (type(slide_count) is not int or not 1 <= slide_count <= 30):
         raise ValueError("invalid slide count")
+    language = source_language(source)
 
     class RequestedDeck(Deck):
         slides: list[Slide] = Field(min_length=slide_count or 1, max_length=slide_count or 30)
@@ -118,7 +143,14 @@ def source_plan_schema(source, slide_count=None, *, protected=None):
         }
         deck: RequestedDeck | None = Field(
             default=None,
-            description="Provide the complete deck with the requested slide count unless missing_information is true.",
+            description=(
+                "Provide the complete deck with the requested slide count unless missing_information is true. "
+                + (
+                    f"Preserve the source prose in {language}; do not translate it."
+                    if language
+                    else "Preserve the source languages."
+                )
+            ),
         )
 
         @model_validator(mode="before")
@@ -134,6 +166,20 @@ def source_plan_schema(source, slide_count=None, *, protected=None):
                 raise PydanticCustomError(
                     "pptx_source_tokens",
                     "preserve numeric/contact source tokens and their bounded reuse",
+                )
+            parts = []
+            for slide in self.deck.slides:
+                parts.extend([slide.title, *slide.bullets])
+                if slide.table is not None:
+                    parts.extend(slide.table.columns)
+                    parts.extend(cell for row in slide.table.rows for cell in row)
+            arabic, latin, _ = _script_counts("\n".join(parts))
+            if (language == "English" and arabic > latin) or (
+                language == "Arabic" and latin > arabic
+            ):
+                raise PydanticCustomError(
+                    "pptx_source_language",
+                    "preserve the source language; do not translate the deck",
                 )
             return self
 
