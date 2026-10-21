@@ -24,6 +24,29 @@ The configured provider/key is inherited in-process without printing credentials
 normal job-scoped cost reservation, schema/content review, native builders and
 confirmation/replay paths remain active. No real Telegram/Stars transactions.
 
+The same 29-case plan now uses actual English grammar errors for
+`editing_proofread`, colloquial Arabic for formal `editing_rewrite`, Arabic input
+for `translation_en` and English input for `translation_ar`. `summary` compresses
+twelve paragraphs, and `word_pdf_direct` exports a longer bilingual source to
+both editable Word and a PDF required to have at least two pages. All twelve
+section markers and the order/amount literals must survive in both files.
+Only these known-change editing/translation fixtures reject unchanged output
+(including whitespace-only changes) as `acceptance_text_unchanged`; correct
+customer text is still allowed to remain unchanged in production. Each of these
+six cases reports fixed `manual_review_checks`. A changed string alone does not
+prove corrected grammar, translation quality, meaning or tone.
+
+For a bounded follow-up use:
+`bash scripts/service-acceptance.sh editing_proofread editing_rewrite translation_ar translation_en summary word_pdf_direct`.
+The two source mounts contain these acceptance-only changes, so the already
+qualified 4a53ceb worker image can run them without replacing production
+containers. Keep the normal clean-main, readability and provider-pause guards.
+The existing SAR 5 cumulative conservative bound, 96-call maximum and per-job
+limits remain unchanged; longer sources can cost more or hit those limits.
+Inspect every output page and compare all six results with the synthetic source
+in `app/ops/acceptance_cases.py` before claiming readiness. Do not treat the
+earlier short-source PASS reports as evidence for these stronger fixtures.
+
 Default `python -m app.ops.service_acceptance` prints the pure plan without live
 calls. Execution requires the wrapper's explicit isolated environment. The run
 reserves at most SAR 5 in cumulative conservative call bounds and permits at most
