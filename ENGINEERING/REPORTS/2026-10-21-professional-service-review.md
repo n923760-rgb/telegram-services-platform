@@ -87,3 +87,12 @@ move accepted historical orders or change prices as part of this quality review.
 - NOT RUN: twelve new PostgreSQL lifecycle scenarios (collection PASS), full hosted suite,
   worker container qualification, live provider and customer phone/Office acceptance.
 - Test counts overlap. No local credentials, actual customer input or billable calls used.
+
+## Integration source update — 2026-10-21
+
+Synchronized with main `c9df79b401056ab1c67058b581e9ec66ae6c2947`, retaining the
+merged #120 conversion/enhancement work and #125–126 draft review/editing. References
+to pending #120 and missing review/edit UX above describe the original baseline; those
+source changes are now present, while their live/provider/mobile acceptance stays separate.
+No runtime prompt/review changes beyond the original PR. Hosted checks must be rerun
+against this synchronized source before merge.
