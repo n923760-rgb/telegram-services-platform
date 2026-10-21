@@ -8,7 +8,7 @@ from app.services.base import BaseService, InputField, InputSchema, Result, Serv
 from app.services.protected_values import ProtectedValues
 from app.services.text_editing.schema import CONTACT_TOKEN
 from app.services.text_to_pptx.prompt import DECK, REFERENCE_CONTEXT, SLIDE_COUNT
-from app.services.text_to_pptx.schema import Inputs, source_plan_schema
+from app.services.text_to_pptx.schema import Inputs, source_language, source_plan_schema
 
 
 class TextToPptx(BaseService):
@@ -55,6 +55,9 @@ class TextToPptx(BaseService):
             if self.runtime.ai is None:
                 raise ServiceError("provider_config")
             prompt = DECK + protected.instruction()
+            language = source_language(values.text)
+            if language:
+                prompt += f"\nKeep the source prose in {language}. Do not translate it."
             if protected.values:
                 prompt += "\n" + REFERENCE_CONTEXT
             if values.slide_count is not None:

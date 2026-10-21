@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## Uploaded service-output review and PowerPoint language preservation — 2026-10-22
+
+- FACT: Uploaded ZIP matches all 45 artifact hashes and records 29/29 cases, 16 services, 40 calls and zero pending accounting. Visual review covers all 16 PDF pages, three unpaired DOCX pages, three PPTX slides and 12 workbook tabs. Actual native PPTX translates the English fixture into Arabic despite the existing source-language contract; model review accepted it. Native checks passing do not certify professional content.
+- CHANGE: Conservative single-script AR/EN source hint and whole-deck opposite-script rejection, after contact exclusion and numeric restoration. Expose a fixed language diagnostic/schema/prompt hint and reuse the one existing repair. Mixed/short/other-script inputs stay with semantic review. Preserve all service/admin/financial contracts and prepared replay.
+- PASS LOCALLY: 140 focused PowerPoint/repair checks (22 new), uploaded deck reproduces and now rejects specifically for source language, three architecture gates, lint/format/diff. Four DB order-flow cases added; NOT RUN locally. Full hosted suite required before merge; actual updated-provider PPTX rerun remains open.
+- LIMIT: No source-file attachment edits, server/provider calls, new dependency or version/schema migration. Secondary office rendering resolved false Arabic-order/leading-zero preview anomalies. Correct-input editing, same-language translation and very short documents remain acceptance gaps.
+- Evidence: [native output review, observed defect and verification](REPORTS/2026-10-22-native-service-acceptance-review.md).
+- HOSTED LIMIT: First run 39680325972 prints 2893 tests and 34 native-worker passes but is cancelled just beyond the 15-minute job cap; it is not a successful workflow. Allow 20 minutes for the same complete checks and require a successful rerun before merge.
+
 ## Acceptance bind-mount readability preflight — 2026-10-22
 
 - FACT: Operator's b05d60b acceptance attempt failed importing `/opt/app/app/ops/service_acceptance.py` with PermissionError before service cases ran; the subsequent result-folder copy failed because no results existed. Earlier checkout commands used umask 077, a plausible cause; host file modes were not inspected here.
