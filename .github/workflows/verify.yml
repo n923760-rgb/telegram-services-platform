@@ -394,6 +394,25 @@ jobs:
                   paragraph = shape.text_frame.paragraphs[0]
                   assert paragraph.text == contact_text and paragraph._p.pPr.get('rtl') == '1'
           print('Non-root worker: Arabic PowerPoint contact prose retains RTL and exact email text PASS with network disabled')
+          from tests.pptx_table_fixtures import table_slide
+          from app.builders.schema import Deck
+          from app.builders.pptx_layout import BODY_HEIGHT, plan_slide
+          for language in ('ar', 'en'):
+              source = table_slide(language)
+              plan = Deck.model_validate({'slides': [source]})
+              layout = plan_slide(plan.slides[0])
+              deck = Presentation(BytesIO(native_pptx.build(plan)))
+              shape = next(shape for shape in deck.slides[0].shapes if shape.has_table)
+              assert sum(layout.row_heights) <= BODY_HEIGHT
+              assert sum(column.width for column in shape.table.columns) == shape.width
+              assert shape.table.columns[1].width > shape.table.columns[0].width
+              assert [[cell.text for cell in row.cells] for row in shape.table.rows] == [source['table']['columns'], *source['table']['rows']]
+              shape.table.cell(1, 2).text = '250.75'
+              edited = BytesIO()
+              deck.save(edited)
+              reopened = Presentation(BytesIO(edited.getvalue()))
+              assert next(shape.table for shape in reopened.slides[0].shapes if shape.has_table).cell(1, 2).text == '250.75'
+          print('Non-root worker: Arabic/English uneven PowerPoint table widths retain source records and edit/save/reopen PASS with network disabled')
           for language in ('ar', 'en'):
               values = CsvInputs.parse(csv_inputs(language))
               headers, rows = values.records()

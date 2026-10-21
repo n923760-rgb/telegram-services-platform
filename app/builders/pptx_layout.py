@@ -59,6 +59,55 @@ class Layout:
     title_size: int
     body_size: int
     row_heights: tuple[float, ...] = ()
+    column_widths: tuple[float, ...] = ()
+
+
+def _table_heights(rows, widths):
+    return tuple(
+        max(
+            40,
+            max(
+                wrapped_lines(cell, size, width, bold=index == 0)
+                for cell, width in zip(row, widths, strict=True)
+            )
+            * size
+            * 1.2
+            + 16,
+        )
+        for index, row in enumerate(rows)
+        for size in [21 if index == 0 else 20]
+    )
+
+
+def _table_layout(table):
+    rows = [table.columns, *table.rows]
+    count = len(table.columns)
+    equal = (BODY_WIDTH / count,) * count
+    # Use measured source text, not character counts: Arabic/Latin glyphs and
+    # identifiers have different widths. Keep at least 1.25 inches per column.
+    demands = [
+        max(
+            _font(size, index == 0).getlength(line) / 4
+            for index, row in enumerate(rows)
+            for size in [21 if index == 0 else 20]
+            for line in row[column].split("\n")
+        )
+        for column in range(count)
+    ]
+    weights = [max(1, demand) for demand in demands]
+    remaining = BODY_WIDTH - count * 90
+    weighted = tuple(90 + remaining * weight / sum(weights) for weight in weights)
+    widths, heights = equal, _table_heights(rows, equal)
+    # A small fixed candidate set bounds work. Keep equal widths on ties and
+    # never increase the measured total height just to make columns unequal.
+    for blend in (0.5, 1.0):
+        candidate = tuple(
+            base + blend * (target - base) for base, target in zip(equal, weighted, strict=True)
+        )
+        candidate_heights = _table_heights(rows, candidate)
+        if sum(candidate_heights) < sum(heights):
+            widths, heights = candidate, candidate_heights
+    return widths, heights
 
 
 def plan_slide(item, *, cover_candidate=False):
@@ -72,19 +121,10 @@ def plan_slide(item, *, cover_candidate=False):
     if text_height([item.title], 32, BODY_WIDTH, bold=True) > 1.3 * 72:
         raise ValueError("slide title too dense; use a concise source-bound title")
     if table is not None:
-        width = BODY_WIDTH / len(table.columns)
-        heights = tuple(
-            max(
-                40,
-                max(wrapped_lines(cell, size, width, bold=index == 0) for cell in row) * size * 1.2
-                + 16,
-            )
-            for index, row in enumerate([table.columns, *table.rows])
-            for size in [21 if index == 0 else 20]
-        )
+        widths, heights = _table_layout(table)
         if sum(heights) > BODY_HEIGHT:
             raise ValueError("slide table too dense; split records across planned slides")
-        return Layout("table", 32, 20, heights)
+        return Layout("table", 32, 20, heights, widths)
     for size in (26, 24, 22, 20):
         if text_height(item.bullets, size, BODY_WIDTH - 24) <= BODY_HEIGHT:
             return Layout("content", 32, size)
