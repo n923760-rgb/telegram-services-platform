@@ -200,7 +200,7 @@ async def test_optional_title_rejects_multiline_then_skips_without_losing_body(f
         assert (await balance(db, 1)).reserved == order.price_halala
 
 
-async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
+async def test_smart_word_mode_rejects_disabled_provider_before_source(flow):
     from app.ops.admin import set_service
 
     transport, message, callback, state = flow
@@ -210,22 +210,23 @@ async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
     await callback("service:text_to_office")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    saved = await state.get_data()
     await callback(choice.rsplit(":", 1)[0] + ":1")
-    await message("نص العميل")
-    assert await state.get_state() == "confirm"
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
-    assert transport.messages[-1].text == tr("provider_config")
+    assert await state.get_state() == "collect"
+    assert await state.get_data() == saved
+    assert saved["inputs"] == {"target": "word"}
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
         assert (await balance(db, 1)).reserved == 0
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
-async def test_excel_intake_skips_word_mode_and_preserves_source(flow, lang):
+async def test_excel_intake_skips_word_mode_and_preserves_source(flow, lang, monkeypatch):
     from app.ops.admin import set_service
 
     transport, message, callback, state = flow
     await set_language(1, lang)
+    monkeypatch.setattr(config(), "ai_enabled", True)
     await set_service("text_to_office", enabled=True)
     await message("/start")
     await callback("service:text_to_office")
@@ -260,7 +261,7 @@ async def test_document_format_choice_is_retained_through_purchase(
     ]
     assert [button.text for button in mode_buttons] == [
         tr("word_pdf_direct", lang),
-        tr("word_pdf_smart", lang),
+        tr("intake_choice_unavailable", lang, choice=tr("word_pdf_smart", lang)),
         tr("cancel", lang),
     ]
     assert button_by_prefix(transport.messages[-1].reply_markup, "skip:") is None

@@ -613,5 +613,8 @@
   "review_edit_back": "Back to review",
   "review_edit_abort": "Return without changes",
   "review_edit_notice": "Enter the new value. Affected conditional fields will be asked again; other inputs are retained.",
-  "review_edit_submitted": "This request has already been submitted and cannot be edited. Track it in My orders."
+  "review_edit_submitted": "This request has already been submitted and cannot be edited. Track it in My orders.",
+  "intake_direct_only": "Direct options are available. Some processing options are temporarily unavailable and will be marked accordingly.",
+  "intake_choice_unavailable": "{choice} — unavailable",
+  "intake_option_unavailable": "This option is temporarily unavailable. Choose a direct option or try later; your draft has not changed."
 }

@@ -24,6 +24,7 @@ class TextToOffice(BaseService):
     price_sar = Decimal("5.00")
     requires_ai = False  # Direct Word can be enabled without a provider.
     optional_ai = True
+    ai_intake_choices = {"target": ("excel",), "mode": ("smart",)}
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[

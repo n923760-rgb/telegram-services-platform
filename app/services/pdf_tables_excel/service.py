@@ -29,6 +29,7 @@ class PdfTablesExcel(BaseService):
     price_sar = Decimal("5.00")
     requires_ai = False
     optional_ai = True
+    ai_intake_choices = {"mode": ("labels",)}
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[

@@ -22,6 +22,7 @@ class TextToWordPdf(BaseService):
     price_sar = Decimal("3.00")
     requires_ai = False
     optional_ai = True
+    ai_intake_choices = {"mode": ("smart",)}
     enabled_by_default = False
     input_schema = InputSchema(
         fields=[

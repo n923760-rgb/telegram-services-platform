@@ -20,7 +20,8 @@ def database():
 
 
 @pytest.fixture
-async def intake():
+async def intake(monkeypatch):
+    monkeypatch.setattr("app.bot.handlers.mixed_ai_unavailable", AsyncMock(return_value=False))
     router = create_router()
     storage = MemoryStorage()
     state = FSMContext(storage, StorageKey(bot_id=42, chat_id=1, user_id=1))

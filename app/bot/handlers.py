@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
 
-from app.bot.availability import mandatory_ai_unavailable
+from app.bot.availability import declared_ai_choices, mandatory_ai_unavailable, mixed_ai_unavailable
 from app.bot.draft_edit import abort_edit, accepted_draft, advance, begin_edit, next_index
 from app.bot.order_review import confirmation_text, field_label
 from app.bot.ui import buttons, home_keyboard, leave_support, menu
@@ -60,6 +60,11 @@ def create_router():
         else:
             await state.set_state("collect")
             field = fields[index]
+            ai_unavailable = await mixed_ai_unavailable(data)
+            blocked_choices = (
+                declared_ai_choices(data).get(field.name, ()) if ai_unavailable else ()
+            )
+            notice = tr("intake_direct_only", lang) + "\n\n" if ai_unavailable else ""
             heading = tr(
                 "intake_step",
                 lang,
@@ -77,6 +82,7 @@ def create_router():
                 await message.answer(
                     heading
                     + "\n\n"
+                    + notice
                     + tr("files_received", lang, count=len(values), maximum=field.max_items)
                     + "\n"
                     + tr("more_files", lang),
@@ -86,7 +92,12 @@ def create_router():
                 )
             else:
                 items = [
-                    (tr(k, lang), f"choice:{data['key']}:{index}:{i}")
+                    (
+                        tr("intake_choice_unavailable", lang, choice=tr(k, lang))
+                        if field.choices[i] in blocked_choices
+                        else tr(k, lang),
+                        f"choice:{data['key']}:{index}:{i}",
+                    )
                     for i, k in enumerate(field.choice_keys)
                 ]
                 # A skip alias already offered as a choice needs only one visible button.
@@ -96,6 +107,7 @@ def create_router():
                 await message.answer(
                     heading
                     + "\n\n"
+                    + notice
                     + (tr("review_edit_notice", lang) + "\n\n" if "_edit_queue" in data else "")
                     + tr(field.prompt_key, lang),
                     reply_markup=buttons(
@@ -305,6 +317,13 @@ def create_router():
         if field.required or get_input(data["inputs"], field.name) is not None:
             await callback.message.answer(tr("invalid_request", lang))
             return
+        blocked = declared_ai_choices(data).get(field.name, ())
+        if any(
+            value in blocked and field.choice_keys[index] == field.skip_key
+            for index, value in enumerate(field.choices)
+        ) and await mixed_ai_unavailable(data):
+            await callback.message.answer(tr("intake_option_unavailable", lang))
+            return
         advance(data)
         await state.set_data(data)
         await ask(callback.message, state, lang)
@@ -330,6 +349,11 @@ def create_router():
             await callback.answer(tr("invalid_request", lang), show_alert=True)
             return
         value = field.choices[selected_index]
+        if value in declared_ai_choices(data).get(field.name, ()) and await mixed_ai_unavailable(
+            data
+        ):
+            await callback.answer(tr("intake_option_unavailable", lang), show_alert=True)
+            return
         await callback.answer()
         await collect_value(callback.message, state, data, field.name, value, lang)
 

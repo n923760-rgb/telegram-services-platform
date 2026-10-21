@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Early mixed-mode availability hints — 2026-10-21
+
+- FACT: Main 06d900f protects required-AI starts and final admission but does not mark/block unavailable mixed choices during intake. Owner authorizes continuing review improvements.
+- CHANGE: Generic validated plugin declarations mark Excel/smart/suggested-heading choices and warn from the first question in AR/EN. Recheck pause/disabled-AI on click; preserve inputs, price, key and edit restoration. Direct paths and legacy direct skip remain usable. Current version/schema matching avoids applying new declarations to historical drafts. Final admission remains authoritative; no fabricated partial-input needs_ai calls.
+- PASS LOCALLY: 139 focused checks (35 new), three architecture gates and global lint/format/diff. Ten new actual-dispatcher/DB cases collected (77 affected dispatcher cases total), NOT RUN locally because PostgreSQL is unavailable; require exact-head hosted tests, migrations and native worker qualification before merge.
+- LIMIT: R04 early-warning/choice portion only. Source-first field order remains unchanged, with a warning before source intake; moving mode earlier requires a versioned follow-up. Availability hints cover disabled AI/provider pause, not provider health/budgets. No contract/version, price, activation, payment/provider/server or deployment changes. Live Telegram/provider/mobile qualification remains open.
+- Evidence: [scope and checks](REPORTS/2026-10-21-early-mixed-mode-availability.md).
+
 ## PDF tools shared interactive-content boundary — 2026-10-21
 
 - FACT: R02 from the comprehensive review reproduces on main 3af2a5a: empty AcroForm/Perms declarations and orphan Widgets (including indirect Subtype) pass page extraction. These operations cannot preserve form semantics or signatures.
