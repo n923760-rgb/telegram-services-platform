@@ -69,6 +69,7 @@ jobs:
           from app.builders import pdf as text_pdf
           from app.services.text_to_office.excel_source import source_excel_schema
           from app.builders.excel_source import build as source_excel
+          from app.builders.schema import Table as NativeTable
           from docx import Document as Word
           from app.services.text_to_word_pdf.schema import Inputs as SmartDocumentInputs, revision_schema as smart_document_schema, refined_document
           from tests.minutes_fixtures import inputs as minute_inputs, plan as minute_plan
@@ -154,6 +155,20 @@ jobs:
                   assert book['Data']['G4'].value == 'L001' and book['Data'].tables['Records'].ref == 'A3:G6'
                   assert [book['Source'].cell(r,3).value for r in range(4,7)] == values.lines()
                   assert not any(c.data_type == 'f' or c.hyperlink for sheet in book for row in sheet for c in row)
+              for language in ('ar', 'en'):
+                  contact = 'procurement.contracts.and.customer.accounts@example-company.invalid'
+                  note = ('يرجى التواصل عبر ' if language == 'ar' else 'Please contact ') + contact
+                  raw = contact + (' يرجى مراجعة الطلب' if language == 'ar' else ' Please review the order')
+                  table = NativeTable(title='Source', columns=['الملاحظات', 'التواصل'] if language == 'ar' else ['Notes', 'Contact'], rows=[[note, contact]])
+                  book = load_workbook(BytesIO(source_excel(table, [raw], [1], [[None, None]])))
+                  assert book['Data'].sheet_view.rightToLeft == (language == 'ar')
+                  assert book['Source'].sheet_view.rightToLeft == (language == 'ar')
+                  assert book['Data']['A4'].value == note and book['Source']['C4'].value == raw
+                  assert book['Data']['A4'].alignment.readingOrder == (2 if language == 'ar' else 1)
+                  assert book['Source']['C4'].alignment.readingOrder == (2 if language == 'ar' else 1)
+                  assert book['Data']['B4'].value == contact and book['Data']['B4'].alignment.readingOrder == 1
+                  assert book['Data']['C4'].value == book['Source']['A4'].value == 'L001'
+              print('Non-root worker: Arabic/English Excel contact prose and literal source references retain native direction PASS with network disabled')
               source = picture(1800, 1200, color='white')
               native_pdf = await NativeImagePdf().render([source], 'auto')
               embedded = PdfReader(BytesIO(native_pdf)).pages[0].images[0].image

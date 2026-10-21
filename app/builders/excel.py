@@ -15,13 +15,19 @@ from PIL import ImageFont
 from app.builders.direction import is_rtl
 from app.builders.quality import validate
 from app.builders.schema import Table
-from app.builders.word import safe_text
+from app.builders.word import INLINE_LTR, safe_text
 
 HEADER_FILL = PatternFill("solid", fgColor="176B55")
 HEADER_FONT = Font(name="DejaVu Sans", size=11, bold=True, color="FFFFFF")
 BODY_FONT = Font(name="DejaVu Sans", size=11)
 THIN = Side(style="thin", color="D9D9D9")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+
+
+def _reading_rtl(text):
+    # Dates and ASCII contacts are identifiers, not evidence of English prose.
+    # Strip them only for detection; preserve every cell value verbatim.
+    return is_rtl(INLINE_LTR.sub("", text))
 
 
 def cell_safe(value):
@@ -109,7 +115,7 @@ def build(data: Table) -> bytes:
     rows = [[cell_safe(value) for value in row] for row in data.rows]
 
     probe = " ".join(columns) + " " + " ".join(str(value) for value in (rows[0] if rows else []))
-    rtl = is_rtl(probe)
+    rtl = _reading_rtl(probe)
     sheet.sheet_view.rightToLeft = rtl
     sheet.sheet_view.showGridLines = False
     sheet.sheet_properties.pageSetUpPr.fitToPage = True
@@ -168,7 +174,7 @@ def build(data: Table) -> bytes:
             cell.border = BORDER
             if _is_number(value):
                 horizontal = "right"
-            elif isinstance(value, str) and is_rtl(value):
+            elif isinstance(value, str) and _reading_rtl(value):
                 horizontal = "right"
             else:
                 horizontal = "left"
@@ -176,7 +182,7 @@ def build(data: Table) -> bytes:
                 horizontal=horizontal,
                 vertical="top",
                 wrap_text=True,
-                readingOrder=2 if isinstance(value, str) and is_rtl(value) else 1,
+                readingOrder=2 if isinstance(value, str) and _reading_rtl(value) else 1,
             )
 
     widths = [_display_width(column, bold=True) for column in columns]

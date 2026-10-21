@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Excel contact-aware Arabic reading direction — 2026-10-21
+
+- FACT: Main 9abc34e treats long ASCII contacts as English prose in Excel's direction probe; Arabic notes can become left-aligned/LTR, and Source Excel also forces ASCII-leading Arabic source chunks to LTR.
+- CHANGE: Reuse the existing Word identifier matcher only for direction detection in Excel and its Source sheet. Preserve exact values and labels. This improves Text-to-Office Excel, CSV review and PDF-table Excel through the shared builder; Word/PowerPoint already have contact-aware handling. Standalone contacts/dates and English prose remain LTR.
+- PASS LOCALLY: 93 focused checks (25 new) and 26 existing Excel quality/filter assertions in a DB-free harness; three architecture gates, lint/format/diff and embedded worker syntax. Two added native-worker cases pass locally; require full hosted tests, migrations and container qualification before merge.
+- LIMIT: Native XLSX style/structure and editable readback evidence, not Excel/mobile visual certification or live-provider quality. No contract/version, width/height, price/activation, source normalization, provider/payment, dependency, migration or deployment change. Prepared artifacts replay unchanged.
+- Evidence: [affected services, checks and limits](REPORTS/2026-10-21-excel-contact-direction.md).
+
 ## PDF section-heading pagination — 2026-10-21
 
 - FACT: Main 070492b can leave an Arabic/English section heading at a page foot with its opening content on the next page. Twelve new boundary assertions reproduce the defect before the fix.
