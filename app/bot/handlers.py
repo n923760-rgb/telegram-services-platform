@@ -7,6 +7,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
 
 from app.bot.availability import mandatory_ai_unavailable
+from app.bot.order_review import confirmation_text
 from app.bot.ui import buttons, home_keyboard, leave_support, menu
 from app.core.db import sessions
 from app.core.display import order_reference
@@ -41,13 +42,8 @@ def create_router():
         if index >= len(fields):
             await state.set_state("confirm")
             await message.answer(
-                tr("confirmation_title", lang, name=data.get(f"name_{lang}", data["slug"]))
-                + "\n\n"
-                + (
-                    tr("stars_confirm", lang, amount=data["stars_price"], terms=data["terms"][lang])
-                    if data.get("payment_mode") == "stars"
-                    else tr("confirm_price", lang, amount=sar(data["price"]))
-                ),
+                confirmation_text(data, lang),
+                parse_mode=None,
                 reply_markup=buttons(
                     [
                         (

@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Draft input review before purchase — 2026-10-21
+
+- FACT: Confirmation on main 272c511 shows service/price but omits collected choices. Owner prioritizes professional deliverables and a clear paid journey.
+- CHANGE: Generic active-field AR/EN summary shows selected output/mode, bounded titles/orders/counts and received text/upload sizes. Preserve original payment text, plain-text parsing, callback keys, pending-send recovery and all acceptance/financial/service contracts. No bulk content or storage keys in the summary.
+- PASS LOCALLY: 73 focused checks (18 new), three architecture gates and global lint/format/diff. A broader invocation has the same 73 passes plus 37 unrelated DB-fixture setup errors because local PostgreSQL is unavailable; full hosted checks remain required.
+- LIMIT: R05 summary subtask only; earlier-field editing and early mixed-mode availability remain open. Input review does not establish final admission or generated-output quality. No provider/server/payment activation or deployment.
+- Evidence: [scope, checks and limits](REPORTS/2026-10-21-order-review-summary.md).
+
 ## Clarify PDF conversion and document-image quality decisions — 2026-10-20
 
 - FACT: Operator's full d63d896 run passes 27/29 cases, including PowerPoint, Word and Text PDF. PDF-to-Word emits a schema-valid missing_information=true which its content review accepts; the service then rejects it. Enhancement independently declines with enhancement_not_improved; the existing quality guard intentionally delivers no image and releases credit on that path. Neither historical response text nor image-assessment reasoning is retained.
