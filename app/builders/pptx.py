@@ -99,6 +99,13 @@ def _table(slide, item, layout):
     )
     native.name = "Source records"
     table = native.table
+    # Match the exact widths used by the layout gate. Keep the native table's
+    # total width exact after converting point measurements to integer EMUs.
+    remaining_width = native.width
+    for index, width in enumerate(layout.column_widths):
+        native_width = remaining_width if index == len(layout.column_widths) - 1 else Pt(width)
+        table.columns[index].width = native_width
+        remaining_width -= native_width
     table.first_row = True
     table.horz_banding = False  # Explicit colors, consistent across Office themes.
     table._tbl.tblPr.set("rtl", "1" if _reading_rtl(" ".join(data.columns)) else "0")

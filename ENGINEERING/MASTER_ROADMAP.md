@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## GitHub reuse and native PowerPoint table readiness — 2026-10-21
+
+- AUTHORITY/BASELINE: Owner prioritizes service readiness, GitHub reuse and merging ready improvements. Live main b05d60b verified; operator reports successful deployment and healthy application services. Runtime evidence remains operator-reported.
+- FINDING/CHANGE: Equal column widths reject a four-record AR/EN table whose ID/amount columns need much less room than its note column. Reuse existing MIT python-pptx native column APIs and Pillow glyph metrics. Compare three bounded candidates, keep at least 90pt per column and equal widths on ties, choose lower total height, then serialize matching widths with an exact integer-EMU total. Reproduced fixture heights fall from 393.2/489.2pt to 297.2pt within the existing 349.2pt limit.
+- PASS LOCALLY: 101 focused PowerPoint checks (11 new), 17 existing native compatibility checks in a DB-free harness, three architecture gates and global lint/format/diff. Add AR/EN non-root worker geometry/source/edit-save-reopen qualification; full hosted tests/container checks required before merge.
+- LIMIT: Native structure/metrics do not certify actual Office/mobile appearance or live-provider semantics. Preserve source values/order, font minimums, slide limits/count, dense-content rejection, prices/activation, prepared replay and financial/provider settings. No new dependency, vendored code, migration or server change. Six upstream repositories reviewed with license/fit decisions; remaining readiness gates stay explicit.
+- Evidence: [upstream review, implementation and remaining acceptance](REPORTS/2026-10-21-github-service-readiness.md).
+
 ## Excel contact-aware Arabic reading direction — 2026-10-21
 
 - FACT: Main 9abc34e treats long ASCII contacts as English prose in Excel's direction probe; Arabic notes can become left-aligned/LTR, and Source Excel also forces ASCII-leading Arabic source chunks to LTR.
