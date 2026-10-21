@@ -1,5 +1,15 @@
 # Master engineering roadmap
 
+## Professional service value and task-sensitive AI quality review — 2026-10-21
+
+- AUTHORITY: Owner requests reviewing the remaining services and explicitly permits AI where it improves a professional paid result. Keep meaningful content-change consent and internal bounded processing. Source inventory confirms 16 public contracts: nine required AI, four conditional AI and three deterministic operations.
+- FINDING/CHANGE: Shared review checked fidelity but lacked a fixed category for identifiable grammar, fluency, organization or selected-tone defects. Add `quality` with task-sensitive guidance; clarify editing and AR/EN translation style/mode expectations. Correct text and literal OCR/table/source outputs are exempt from forced polishing. Preserve existing one-correction envelope, actual per-call cost admission, public contracts/versions, prices, activation, pause settings and cached replay.
+- PASS LOCALLY: 35 focused gateway/professional-quality tests (15 new) and 505 broader service/source checks. Broad invocation also has five FAIL_ENV native exports (`document_render_unavailable`, LibreOffice absent) and 41 unrelated autouse-DB fixture errors (PostgreSQL absent). All 41 existing pure Excel/PPTX builder assertions pass in an isolated DB-free harness. Three architecture gates, lint/format/diff pass. Counts overlap; no full-suite PASS claim. Twelve new DB-backed repair/rejection/single-settlement/cost/cache/cleanup scenarios collected but NOT RUN locally; exact-head hosted checks required before merge.
+- LIMIT: All model verdicts in local tests are scripted; these prove orchestration, not real semantic/style judgement. No live-provider calls, production changes or native mobile certification. The source review matrix covers all 16 services and explicit remaining value gates; #120 PDF/image and #121 PDF forms remain separate pending rounds.
+- Evidence: [professional service review and 16-service acceptance matrix](REPORTS/2026-10-21-professional-service-review.md).
+
+- SYNC 2026-10-21: Reconciled with main c9df79b, preserving #125–126 draft review/editing. Historical observations above stay scoped to their baseline; new combined-source hosted verification is required before merge.
+
 ## Generic editing of unsubmitted input — 2026-10-21
 
 - FACT: Main 05f4ebb shows the input review, but changing inputs still requires a new draft. Owner requests continuation of the review improvements.
