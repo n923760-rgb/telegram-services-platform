@@ -47,6 +47,17 @@ Inspect every output page and compare all six results with the synthetic source
 in `app/ops/acceptance_cases.py` before claiming readiness. Do not treat the
 earlier short-source PASS reports as evidence for these stronger fixtures.
 
+Summary logical rejections now expose fixed categories through the existing
+gateway: `summary_point_limit`, `summary_source_ids`, `summary_point_text`,
+`summary_duplicate_point`, `summary_source_tokens`, `summary_output_limit` and
+`summary_not_shorter`. These identify a failure class without logging the source,
+candidate, exception message or context. Existing point/reference/fidelity and
+compression conditions remain unchanged, as does the single repair allowance.
+The historical two `constraint` events cannot be retrospectively classified.
+Build the updated worker image before `bash scripts/service-acceptance.sh summary`;
+no production container replacement or provider setting change is needed for
+this isolated diagnostic rerun. Inspect any passing summary against its source.
+
 Default `python -m app.ops.service_acceptance` prints the pure plan without live
 calls. Execution requires the wrapper's explicit isolated environment. The run
 reserves at most SAR 5 in cumulative conservative call bounds and permits at most
