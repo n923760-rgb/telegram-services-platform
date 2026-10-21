@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Generic editing of unsubmitted input — 2026-10-21
+
+- FACT: Main 05f4ebb shows the input review, but changing inputs still requires a new draft. Owner requests continuation of the review improvements.
+- CHANGE: Add generic active-field editing and return-without-changes. Preserve unrelated inputs, recollect explicit transitive conditional dependencies and rotate callback/purchase keys before edits/restores. A durable owner/key check blocks editing any accepted order, including invoice/FSM failure windows. Reuse collection/skip/upload/Done and pending-send recovery. No service-specific core branches or price/version/payment/provider/deployment changes.
+- PASS LOCALLY: 107 focused checks (34 new editing cases), three architecture gates and global lint/format/diff. Eight new actual-dispatcher/DB cases collected, NOT RUN locally because PostgreSQL is unavailable; require hosted one-purchase/stale-key/zero-admission-during-edit evidence before merge.
+- LIMIT: Final admission still validates undeclared cross-field relationships and availability. Orphan uploads follow existing age expiry. Real Telegram, live-provider/mobile quality, Stars checkout/refund and deployment remain unqualified here.
+- Evidence: [scope and checks](REPORTS/2026-10-21-draft-editing.md).
+
 ## Draft input review before purchase — 2026-10-21
 
 - FACT: Confirmation on main 272c511 shows service/price but omits collected choices. Owner prioritizes professional deliverables and a clear paid journey.

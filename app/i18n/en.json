@@ -12,7 +12,7 @@
   "balance_details": "Available credit: {available} SAR\nReserved credit: {reserved} SAR",
   "confirm_price": "Price: {amount} SAR\n\nConfirm to reserve this amount and execute the order.",
   "confirm": "Confirm and execute",
-  "confirm_unchanged": "Your request is still waiting for confirmation and your input has not changed. Use Confirm to submit or Cancel to discard; to change anything, cancel and start a new request.",
+  "confirm_unchanged": "Your request is waiting for confirmation and your input has not changed. Use Confirm to submit, Edit inputs to change it, or Cancel to discard it.",
   "cancel": "Cancel",
   "cancelled": "Cancelled. Reserved credit has been released where applicable.",
   "draft_cancelled": "Draft cancelled. No credit was reserved or charged.",
@@ -607,5 +607,11 @@
   "text_summary_language_review": "Summary language",
   "local_ocr_images_review": "Text images",
   "local_ocr_language_review": "Text language",
-  "review_not_specified": "Not specified"
+  "review_not_specified": "Not specified",
+  "review_edit": "Edit inputs",
+  "review_edit_choose": "Choose the input to edit.",
+  "review_edit_back": "Back to review",
+  "review_edit_abort": "Return without changes",
+  "review_edit_notice": "Enter the new value. Affected conditional fields will be asked again; other inputs are retained.",
+  "review_edit_submitted": "This request has already been submitted and cannot be edited. Track it in My orders."
 }
