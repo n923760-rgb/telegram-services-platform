@@ -132,7 +132,7 @@ async def test_blocked_choice_preserves_draft_then_same_button_works_after_resum
 
 @pytest.mark.parametrize("slug", ["text_to_pdf", "pdf_tables_excel"])
 @pytest.mark.parametrize("lang", ["ar", "en"])
-async def test_first_source_prompt_warns_before_text_or_upload(intake, monkeypatch, slug, lang):
+async def test_first_mode_prompt_warns_before_text_or_upload(intake, monkeypatch, slug, lang):
     handlers, state, message, callback = intake
     monkeypatch.setattr("app.bot.handlers.mixed_ai_unavailable", AsyncMock(return_value=True))
     data = await state.get_data()

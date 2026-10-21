@@ -71,8 +71,8 @@ async def test_paused_direct_pdf_journey_still_submits_without_provider(flow, mo
         db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
     await message("/start")
     await callback("service:text_to_pdf")
-    await message("Literal 00123")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    await message("Literal 00123")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     async with sessions() as db:
@@ -165,8 +165,8 @@ async def test_paused_resume_keeps_saved_required_ai_input_and_state(flow, monke
         ("text_to_office", 0, {}, 1),
         ("text_to_office", 1, {"target": "word"}, 1),
         ("text_to_word_pdf", 1, {"output_format": "pdf"}, 1),
-        ("text_to_pdf", 1, {"text": "Saved 00123"}, 1),
-        ("pdf_tables_excel", 1, {"pdf": "1/" + "a" * 32 + "/source.pdf"}, 2),
+        ("text_to_pdf", 0, {}, 1),
+        ("pdf_tables_excel", 0, {}, 2),
     ],
 )
 async def test_mixed_choice_pause_recheck_preserves_draft_without_admission(
@@ -213,3 +213,70 @@ async def test_mixed_choice_pause_recheck_preserves_draft_without_admission(
     current = await state.get_data()
     assert current["inputs"] == inputs | {field.name: field.choices[selected]}
     assert current["key"] == saved["key"] and current["price"] == saved["price"]
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("slug,blocked", [("text_to_pdf", 1), ("pdf_tables_excel", 2)])
+@pytest.mark.parametrize("paused", [False, True])
+async def test_mode_is_first_and_unavailable_choice_never_requests_source(
+    flow, monkeypatch, lang, slug, blocked, paused
+):
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    monkeypatch.setattr(config(), "ai_enabled", paused)
+    async with sessions.begin() as db:
+        (await db.get(Service, slug)).enabled = True
+        if paused:
+            db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
+    await message("/start")
+    await callback("service:" + slug)
+    saved = await state.get_data()
+    fields = registry.types[slug].input_schema.conversation()
+    assert saved["index"] == 0 and saved["inputs"] == {} and fields[0].name == "mode"
+    assert transport.messages[-1].text.endswith(tr(fields[0].prompt_key, lang))
+    await message("Premature source 00123")
+    assert transport.messages[-1].text == tr("choose_option", lang)
+    assert await state.get_data() == saved
+    await callback(f"choice:{saved['key']}:0:{blocked}")
+    assert transport.callback_answers[-1].text == tr("intake_option_unavailable", lang)
+    assert await state.get_data() == saved
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        assert await db.scalar(select(func.count(StarCharge.charge_id))) == 0
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        assert (await balance(db, 1)).reserved == 0
+    await callback(f"choice:{saved['key']}:0:0")
+    assert transport.messages[-1].text.endswith(tr(fields[1].prompt_key, lang))
+    assert (await state.get_data())["inputs"] == {"mode": "direct"}
+
+
+@pytest.mark.parametrize("slug", ["text_to_pdf", "pdf_tables_excel"])
+async def test_saved_v4_confirmation_keeps_draft_and_rejects_before_reservation(flow, slug):
+    transport, message, callback, state = flow
+    await fund()
+    async with sessions.begin() as db:
+        (await db.get(Service, slug)).enabled = True
+    await message("/start")
+    await callback("service:" + slug)
+    data = await state.get_data()
+    data["schema"]["fields"][:2] = reversed(data["schema"]["fields"][:2])
+    data.update(
+        version="4",
+        index=len(data["schema"]["fields"]),
+        inputs={"mode": "direct", "text": "Saved 00123"}
+        if slug == "text_to_pdf"
+        else {"mode": "direct", "pdf": "1/" + "a" * 32 + "/source.pdf", "language": "ar"},
+    )
+    await state.set_data(data)
+    await state.set_state("confirm")
+    await callback("draft:resume")
+    saved = await state.get_data()
+    await callback(f"confirm:{saved['key']}")
+    assert transport.messages[-1].text == tr("service_changed")
+    assert await state.get_data() == saved and await state.get_state() == "confirm"
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        assert await db.scalar(select(func.count(StarCharge.charge_id))) == 0
+        assert (await balance(db, 1)).reserved == 0

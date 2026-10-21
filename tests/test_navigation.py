@@ -146,10 +146,11 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
             for b in row
         )
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    await message(text)
-    if slug == "text_to_pdf":
+    else:
         assert transport.messages[-1].text.endswith(tr("document_mode", lang))
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    await message(text)
+    if slug == "text_to_pdf":
         assert transport.messages[-1].text.endswith(tr("document_title", lang))
         await message("عنوان العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
@@ -162,7 +163,7 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
         else:
             assert order.inputs["mode"] == "direct"
             assert set(order.inputs) == {"text", "target", "mode"}
-        assert order.service_version == ("8" if slug == "text_to_office" else "4")
+        assert order.service_version == ("8" if slug == "text_to_office" else "5")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
@@ -177,11 +178,8 @@ async def test_optional_title_rejects_multiline_then_skips_without_losing_body(f
     await message("/start")
     await callback(f"service:{slug}")
     text = "نص 00123\n\nEnglish 125.50"
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     await message(text)
-    if slug == "text_to_office":
-        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(choice.rsplit(":", 1)[0] + (":1" if slug == "text_to_office" else ":0"))
     markup = transport.messages[-1].reply_markup
     skip = button_by_prefix(markup, "skip:")
     assert any(

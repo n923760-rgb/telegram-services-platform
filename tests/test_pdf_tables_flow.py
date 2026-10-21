@@ -243,7 +243,7 @@ async def test_native_visual_arabic_confirmed_export_preserves_source_zero_ai(
 
 
 @pytest.mark.parametrize("cached", [False, True])
-@pytest.mark.parametrize("old_version", ["2", "3"])
+@pytest.mark.parametrize("old_version", ["2", "3", "4"])
 async def test_arabic_order_upgrade_keeps_prices_gates_and_legacy_cache(
     tmp_path, monkeypatch, cached, old_version
 ):
@@ -274,8 +274,9 @@ async def test_arabic_order_upgrade_keeps_prices_gates_and_legacy_cache(
                 if old_version != "2" or f["name"] != "arabic_order"
             ],
         }
+        old["fields"].sort(key=lambda field: field["name"] != "pdf")
         for field in old["fields"]:
-            if field["name"] == "mode":
+            if field["name"] == "mode" and old_version != "4":
                 field["choices"] = ["direct", "labels"]
                 field["choice_keys"] = ["pdf_tables_direct", "pdf_tables_labels"]
         service.version, service.input_schema = old_version, old
@@ -286,7 +287,7 @@ async def test_arabic_order_upgrade_keeps_prices_gates_and_legacy_cache(
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "pdf_tables_excel")
-        assert service.version == "4" and service.enabled
+        assert service.version == "5" and service.enabled
         assert service.price_halala == 777 and service.price_stars == 25
 
     async def forbidden(*args):

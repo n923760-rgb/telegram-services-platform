@@ -112,7 +112,7 @@
   "pptx_tables_preview": "Editable tables: {tables}",
   "pdf_name": "Create a PDF document",
   "pdf_description": "A professional printable PDF document from your request",
-  "pdf_text": "Send the text to convert to PDF. Next choose whether to preserve the text or organize its content.",
+  "pdf_text": "Send the text to convert to PDF.",
   "pdf_preview": "Document title: {title}\nSections: {sections}",
   "translation_style": "Choose a translation style:",
   "done_files": "Done uploading",
