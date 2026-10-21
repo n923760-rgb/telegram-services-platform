@@ -26,6 +26,15 @@ def _inline(value, limit=80):
     return value if len(value) <= limit else value[: limit - 1] + "…"
 
 
+def field_label(field, number, lang):
+    label_key = field.prompt_key + "_review"
+    return (
+        tr(label_key, lang)
+        if label_key in CATALOGS.get(lang, CATALOGS["ar"])
+        else tr("review_field", lang, number=number)
+    )
+
+
 def input_summary(schema, inputs, lang, budget=1000):
     rows = []
     for number, field in enumerate(schema.conversation(), 1):
@@ -51,12 +60,7 @@ def input_summary(schema, inputs, lang, budget=1000):
             display = tr("review_text_size", lang, count=len(value))
         else:
             continue
-        label_key = field.prompt_key + "_review"
-        label = (
-            tr(label_key, lang)
-            if label_key in CATALOGS.get(lang, CATALOGS["ar"])
-            else tr("review_field", lang, number=number)
-        )
+        label = field_label(field, number, lang)
         rows.append(_inline(label, 40) + ": " + display)
     if not rows:
         return ""
