@@ -524,7 +524,10 @@ async def test_service_buttons_show_name_and_price_only_at_confirmation(flow, la
     await message("Customer content")
     review = transport.messages[-1].text
     assert tr("confirm_price", lang, amount="12.34") in review
-    assert review.split("\n\n")[1] == tr("confirm_price", lang, amount="12.34").split("\n\n")[0]
+    assert review.split("\n\n")[1].startswith(tr("review_heading", lang))
+    assert "\n\n" + tr("confirm_price", lang, amount="12.34") in review
+    assert tr("review_text_size", lang, count=len("Customer content")) in review
+    assert "Customer content" not in review
     assert await state.get_state() == "confirm"
     async with sessions() as db:
         assert await db.scalar(select(func.count()).select_from(Order)) == 0

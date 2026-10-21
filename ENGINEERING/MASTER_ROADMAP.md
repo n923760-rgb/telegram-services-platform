@@ -1,5 +1,31 @@
 # Master engineering roadmap
 
+## Professional service value and task-sensitive AI quality review — 2026-10-21
+
+- AUTHORITY: Owner requests reviewing the remaining services and explicitly permits AI where it improves a professional paid result. Keep meaningful content-change consent and internal bounded processing. Source inventory confirms 16 public contracts: nine required AI, four conditional AI and three deterministic operations.
+- FINDING/CHANGE: Shared review checked fidelity but lacked a fixed category for identifiable grammar, fluency, organization or selected-tone defects. Add `quality` with task-sensitive guidance; clarify editing and AR/EN translation style/mode expectations. Correct text and literal OCR/table/source outputs are exempt from forced polishing. Preserve existing one-correction envelope, actual per-call cost admission, public contracts/versions, prices, activation, pause settings and cached replay.
+- PASS LOCALLY: 35 focused gateway/professional-quality tests (15 new) and 505 broader service/source checks. Broad invocation also has five FAIL_ENV native exports (`document_render_unavailable`, LibreOffice absent) and 41 unrelated autouse-DB fixture errors (PostgreSQL absent). All 41 existing pure Excel/PPTX builder assertions pass in an isolated DB-free harness. Three architecture gates, lint/format/diff pass. Counts overlap; no full-suite PASS claim. Twelve new DB-backed repair/rejection/single-settlement/cost/cache/cleanup scenarios collected but NOT RUN locally; exact-head hosted checks required before merge.
+- LIMIT: All model verdicts in local tests are scripted; these prove orchestration, not real semantic/style judgement. No live-provider calls, production changes or native mobile certification. The source review matrix covers all 16 services and explicit remaining value gates; #120 PDF/image and #121 PDF forms remain separate pending rounds.
+- Evidence: [professional service review and 16-service acceptance matrix](REPORTS/2026-10-21-professional-service-review.md).
+
+- SYNC 2026-10-21: Reconciled with main c9df79b, preserving #125–126 draft review/editing. Historical observations above stay scoped to their baseline; new combined-source hosted verification is required before merge.
+
+## Generic editing of unsubmitted input — 2026-10-21
+
+- FACT: Main 05f4ebb shows the input review, but changing inputs still requires a new draft. Owner requests continuation of the review improvements.
+- CHANGE: Add generic active-field editing and return-without-changes. Preserve unrelated inputs, recollect explicit transitive conditional dependencies and rotate callback/purchase keys before edits/restores. A durable owner/key check blocks editing any accepted order, including invoice/FSM failure windows. Reuse collection/skip/upload/Done and pending-send recovery. No service-specific core branches or price/version/payment/provider/deployment changes.
+- PASS LOCALLY: 107 focused checks (34 new editing cases), three architecture gates and global lint/format/diff. Eight new actual-dispatcher/DB cases collected, NOT RUN locally because PostgreSQL is unavailable; require hosted one-purchase/stale-key/zero-admission-during-edit evidence before merge.
+- LIMIT: Final admission still validates undeclared cross-field relationships and availability. Orphan uploads follow existing age expiry. Real Telegram, live-provider/mobile quality, Stars checkout/refund and deployment remain unqualified here.
+- Evidence: [scope and checks](REPORTS/2026-10-21-draft-editing.md).
+
+## Draft input review before purchase — 2026-10-21
+
+- FACT: Confirmation on main 272c511 shows service/price but omits collected choices. Owner prioritizes professional deliverables and a clear paid journey.
+- CHANGE: Generic active-field AR/EN summary shows selected output/mode, bounded titles/orders/counts and received text/upload sizes. Preserve original payment text, plain-text parsing, callback keys, pending-send recovery and all acceptance/financial/service contracts. No bulk content or storage keys in the summary.
+- PASS LOCALLY: 73 focused checks (18 new), three architecture gates and global lint/format/diff. A broader invocation has the same 73 passes plus 37 unrelated DB-fixture setup errors because local PostgreSQL is unavailable; full hosted checks remain required.
+- LIMIT: R05 summary subtask only; earlier-field editing and early mixed-mode availability remain open. Input review does not establish final admission or generated-output quality. No provider/server/payment activation or deployment.
+- Evidence: [scope, checks and limits](REPORTS/2026-10-21-order-review-summary.md).
+
 ## Clarify PDF conversion and document-image quality decisions — 2026-10-20
 
 - FACT: Operator's full d63d896 run passes 27/29 cases, including PowerPoint, Word and Text PDF. PDF-to-Word emits a schema-valid missing_information=true which its content review accepts; the service then rejects it. Enhancement independently declines with enhancement_not_improved; the existing quality guard intentionally delivers no image and releases credit on that path. Neither historical response text nor image-assessment reasoning is retained.
@@ -1267,3 +1293,5 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - CHANGE: All 29 synthetic cases across all 16 public services declare exact output filenames, including required chat text. Check the complete set before writing acceptance outputs. Use distinguishable merge sources with page-local literal assertions and decoded RGB dimensions/pixel signatures for every selected images-to-PDF page. Keep the same 29 cases, AI call/cost caps and synthetic isolation; no production plugin/schema/version, pricing or runtime changes.
 - PASS LOCALLY: 68 acceptance/output/delivery checks, three architecture gates, lint/format/diff. Ten DB-backed acceptance cases collected but NOT RUN locally (PostgreSQL unavailable); hosted cases cover four correct native paths and failed package/order checks with no capture, one release, no outbound calls and no residual reservations/active work. Exact-head hosted checks required before merge.
 - LIMIT: These stricter gates verify package completeness and synthetic native content, not semantic meaning, original document layout, image placement/visibility or mobile appearance. No live-provider call, server access/deployment or all-service professional readiness claim. Requalify the latest built worker with the existing isolated acceptance runner and review saved outputs.
+
+- SYNC 2026-10-21: Includes synchronized #122 quality review and main c9df79b draft UX. Merge after #122; require new combined-source hosted verification. Original acceptance scope/case count/cost caps remain unchanged.

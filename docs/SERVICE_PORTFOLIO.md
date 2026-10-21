@@ -11,6 +11,22 @@ The private verification utility and retired OCR product are excluded. Configura
 preflight, tested source and live output acceptance are separate evidence; future
 portfolio candidates below remain unimplemented until their contracts are delivered.
 
+## Professional quality policy — 2026-10-21
+
+Owner authorizes AI wherever it improves the paid result. AI remains internal to the
+service: nine contracts require it, four use it conditionally, and three native copying/data
+operations remain deterministic. Keep explicit consent to change wording, source fidelity,
+validated output and bounded per-call cost admission. Avoiding AI must not reduce useful
+content quality; adding AI must not alter literal data or turn deterministic copying into
+an unnecessary external dependency.
+
+The [16-service quality matrix](../ENGINEERING/REPORTS/2026-10-21-professional-service-review.md)
+records value criteria and remaining live/native/mobile qualification. Shared content review
+now also identifies grammar, fluency, organization and selected-tone defects through the
+fixed `quality` finding and existing one-correction envelope. Correct proofreading and literal
+source outputs may remain unchanged. This does not certify real-provider judgement or file
+appearance, activate services, clear a provider pause or change existing prices.
+
 ## Integrated source capabilities
 
 | Capability | Customer deliverable and quality boundary |

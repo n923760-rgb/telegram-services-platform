@@ -38,3 +38,10 @@ per-service acceptance matrix and actual saved-file review on Office/mobile.
 After the source and worker are updated, use the existing isolated `scripts/service-acceptance.sh`
 procedure. Preserve its exact source SHA, report and generated files. Do not compare a new
 ops checker against an older worker and label that the current product qualified.
+
+## Integration source update — 2026-10-21
+
+Synchronized after #122 head `f050278c609dc354b1f9dd88a21dd8232b0bbcb7`, including
+main c9df79b draft review/editing. Merge #122 before this PR. Acceptance behavior and
+29-case selection are unchanged from the original diff; rerun hosted qualification
+on this combined source. Live-provider/mobile acceptance remains separate.

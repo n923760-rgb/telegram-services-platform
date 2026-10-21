@@ -7,6 +7,8 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
 
 from app.bot.availability import mandatory_ai_unavailable
+from app.bot.draft_edit import abort_edit, accepted_draft, advance, begin_edit, next_index
+from app.bot.order_review import confirmation_text, field_label
 from app.bot.ui import buttons, home_keyboard, leave_support, menu
 from app.core.db import sessions
 from app.core.display import order_reference
@@ -31,9 +33,7 @@ def create_router():
         """
         data = await state.get_data()
         fields = InputSchema.model_validate(data["schema"]).conversation()
-        index = data["index"]
-        while index < len(fields) and not active_field(fields[index], data["inputs"]):
-            index += 1
+        index = next_index(data, fields)
         if index != data["index"]:
             data["index"] = index
         data["pending_prompt"] = True
@@ -41,13 +41,8 @@ def create_router():
         if index >= len(fields):
             await state.set_state("confirm")
             await message.answer(
-                tr("confirmation_title", lang, name=data.get(f"name_{lang}", data["slug"]))
-                + "\n\n"
-                + (
-                    tr("stars_confirm", lang, amount=data["stars_price"], terms=data["terms"][lang])
-                    if data.get("payment_mode") == "stars"
-                    else tr("confirm_price", lang, amount=sar(data["price"]))
-                ),
+                confirmation_text(data, lang),
+                parse_mode=None,
                 reply_markup=buttons(
                     [
                         (
@@ -57,6 +52,7 @@ def create_router():
                             ),
                             f"confirm:{data['key']}",
                         ),
+                        (tr("review_edit", lang), f"edit:{data['key']}"),
                         (tr("cancel", lang), f"cancel:{data['key']}"),
                     ]
                 ),
@@ -71,6 +67,11 @@ def create_router():
                 step=sum(active_field(f, data["inputs"]) for f in fields[:index]) + 1,
             )
             cancel_item = (tr("cancel", lang), f"cancel:{data['key']}")
+            exit_items = (
+                [(tr("review_edit_abort", lang), f"editabort:{data['key']}")]
+                if "_edit_queue" in data
+                else []
+            ) + [cancel_item]
             values = get_input(data["inputs"], field.name)
             if field.multiple and isinstance(values, list) and 0 < len(values) < field.max_items:
                 await message.answer(
@@ -80,7 +81,7 @@ def create_router():
                     + "\n"
                     + tr("more_files", lang),
                     reply_markup=buttons(
-                        [(tr("done_files", lang), f"done:{data['key']}:{index}"), cancel_item]
+                        [(tr("done_files", lang), f"done:{data['key']}:{index}")] + exit_items
                     ),
                 )
             else:
@@ -91,9 +92,12 @@ def create_router():
                 # A skip alias already offered as a choice needs only one visible button.
                 if not field.required and field.skip_key not in field.choice_keys:
                     items.append((tr(field.skip_key, lang), f"skip:{data['key']}:{index}"))
-                items.append(cancel_item)
+                items.extend(exit_items)
                 await message.answer(
-                    heading + "\n\n" + tr(field.prompt_key, lang),
+                    heading
+                    + "\n\n"
+                    + (tr("review_edit_notice", lang) + "\n\n" if "_edit_queue" in data else "")
+                    + tr(field.prompt_key, lang),
                     reply_markup=buttons(
                         items, columns=2 if field.choices else 1, separate_last=bool(field.choices)
                     ),
@@ -202,6 +206,69 @@ def create_router():
         if (await state.get_data()).get("key"):
             await ask(callback.message, state, new_lang)
 
+    @router.callback_query(StateFilter("confirm"), F.data.startswith("edit:"))
+    async def edit_menu(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        data = await state.get_data()
+        if callback.data != f"edit:{data.get('key')}":
+            await callback.answer(tr("stale_button", lang), show_alert=True)
+            return
+        if await _resume_if_pending(callback.message, state, lang):
+            await callback.answer()
+            return
+        if await accepted_draft(callback.from_user.id, data["key"]):
+            await callback.answer(tr("review_edit_submitted", lang), show_alert=True)
+            return
+        fields = InputSchema.model_validate(data["schema"]).conversation()
+        items = [
+            (field_label(field, index + 1, lang), f"editfield:{data['key']}:{index}")
+            for index, field in enumerate(fields)
+            if active_field(field, data["inputs"])
+        ]
+        items.append((tr("review_edit_back", lang), "draft:resume"))
+        await callback.answer()
+        await callback.message.answer(tr("review_edit_choose", lang), reply_markup=buttons(items))
+
+    @router.callback_query(StateFilter("confirm"), F.data.startswith("editfield:"))
+    async def edit_field(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        data = await state.get_data()
+        try:
+            _, key, index = callback.data.split(":")
+            if key != data.get("key"):
+                await callback.answer(tr("stale_button", lang), show_alert=True)
+                return
+            if not index.isascii() or not index.isdecimal() or str(int(index)) != index:
+                raise ValueError("invalid index")
+            if await _resume_if_pending(callback.message, state, lang):
+                await callback.answer()
+                return
+            if await accepted_draft(callback.from_user.id, key):
+                await callback.answer(tr("review_edit_submitted", lang), show_alert=True)
+                return
+            edited = begin_edit(data, int(index))
+        except (ValueError, KeyError):
+            await callback.answer(tr("invalid_request", lang), show_alert=True)
+            return
+        edited["key"] = uuid4().hex
+        edited["pending_prompt"] = True
+        await state.set_data(edited)
+        await state.set_state("collect")
+        await callback.answer()
+        await ask(callback.message, state, lang)
+
+    @router.callback_query(StateFilter("collect"), F.data.startswith("editabort:"))
+    async def edit_abort(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        data = await state.get_data()
+        if callback.data != f"editabort:{data.get('key')}" or "_edit_original" not in data:
+            await callback.answer(tr("stale_button", lang), show_alert=True)
+            return
+        restored = abort_edit(data)
+        restored["key"] = uuid4().hex
+        restored["pending_prompt"] = True
+        await state.set_data(restored)
+        await state.set_state("confirm")
+        await callback.answer()
+        await ask(callback.message, state, lang)
+
     @router.callback_query(
         StateFilter("collect", "confirm", "support"), F.data.startswith("cancel:")
     )
@@ -238,7 +305,7 @@ def create_router():
         if field.required or get_input(data["inputs"], field.name) is not None:
             await callback.message.answer(tr("invalid_request", lang))
             return
-        data["index"] += 1
+        advance(data)
         await state.set_data(data)
         await ask(callback.message, state, lang)
 
@@ -268,7 +335,7 @@ def create_router():
 
     async def collect_value(message, state, data, name, value, lang):
         set_input(data["inputs"], name, value)
-        data["index"] += 1
+        advance(data)
         await state.set_data(data)
         await ask(message, state, lang)
 

@@ -11,4 +11,11 @@ Do not translate, summarize, remove content, invent a subject/greeting/signature
 change dates/units/currencies, or turn a request into an agreement or commitment.
 Do not combine segments or insert newlines within a segment; caller retains blank lines.
 If no correction is necessary, return the source unchanged. Return no advice/commentary.
+For content review, verify the selected mode as well as source fidelity. Proofreading must
+correct identifiable errors without stylistic rewriting; an already correct line may stay
+unchanged. Rewriting must produce clear, grammatical prose in the requested tone when a
+source line needs improvement; reject unresolved awkwardness or a clearly incompatible tone.
+Formal is respectful and neutral, business is concise professional communication, and casual
+is natural conversational language without forced slang. Do not inflate simple wording,
+add marketing claims, strengthen promises or replace the author's voice unnecessarily.
 The result is a draft for the customer to review against the original."""
