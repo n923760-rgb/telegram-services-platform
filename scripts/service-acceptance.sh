@@ -5,6 +5,25 @@ umask 077
 cd "$(dirname "$0")/.."
 test "$(git branch --show-current)" = main
 test -z "$(git status --porcelain)"
+acceptance_mounts=(
+  -v "$PWD/app/ops/service_acceptance.py:/opt/app/app/ops/service_acceptance.py:ro"
+  -v "$PWD/app/ops/acceptance_cases.py:/opt/app/app/ops/acceptance_cases.py:ro"
+)
+# Git checkouts made under umask 077 may be unreadable by the worker UID.
+# Probe the exact read-only mounts before creating an acceptance DB or backup.
+if ! docker compose run --rm --no-deps -T "${acceptance_mounts[@]}" worker python -c '
+from pathlib import Path
+try:
+    for name in ("service_acceptance.py", "acceptance_cases.py"):
+        with (Path("/opt/app/app/ops") / name).open("rb") as source:
+            source.read(1)
+except OSError:
+    raise SystemExit(1)
+' </dev/null; then
+  echo 'STOP: worker cannot read acceptance mounts, or its preflight could not start.' >&2
+  echo 'Check Docker output and run: chmod 0644 app/ops/service_acceptance.py app/ops/acceptance_cases.py' >&2
+  exit 1
+fi
 acceptance_cases=$(python3 - "$@" <<'PY'
 import json
 import sys
@@ -32,8 +51,7 @@ acceptance_rc=0
 docker compose run --rm --no-deps -T \
   -e ACCEPTANCE_DATABASE="$acceptance_db" -e ACCEPTANCE_RUN="$acceptance_id" \
   -e ACCEPTANCE_CASES="$acceptance_cases" \
-  -v "$PWD/app/ops/service_acceptance.py:/opt/app/app/ops/service_acceptance.py:ro" \
-  -v "$PWD/app/ops/acceptance_cases.py:/opt/app/app/ops/acceptance_cases.py:ro" \
+  "${acceptance_mounts[@]}" \
   worker python - <<'PY' || acceptance_rc=$?
 import os
 import json

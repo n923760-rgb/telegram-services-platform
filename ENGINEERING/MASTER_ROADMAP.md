@@ -1,5 +1,12 @@
 # Master engineering roadmap
 
+## Acceptance bind-mount readability preflight — 2026-10-22
+
+- FACT: Operator's b05d60b acceptance attempt failed importing `/opt/app/app/ops/service_acceptance.py` with PermissionError before service cases ran; the subsequent result-folder copy failed because no results existed. Earlier checkout commands used umask 077, a plausible cause; host file modes were not inspected here.
+- CHANGE: Read one byte from both exact read-only acceptance mounts using the existing worker identity before any SQL, test DB creation or backup directory. Reuse the mount array for execution; fail with a bounded diagnostic and a chmod 0644 command for those two public source files if the probe/container cannot start. No automatic chmod, root execution or provider call.
+- PASS LOCALLY: Three subprocess wrapper regressions cover unreadable mounts, container-start failure and successful preflight reaching the existing provider-pause gate. Assert no test resource creation, unchanged worker identity and closed stdin. Shell syntax, architecture gates and global lint/format/diff pass; full hosted verification required before merge.
+- LIMIT: Docker unavailable locally; subprocess tests use a fake CLI. Real operator rerun is separate. Preserve production pause, prices/gates, test isolation/budgets and prior failed-run accounting/backup data. No application or database schema change.
+
 ## GitHub reuse and native PowerPoint table readiness — 2026-10-21
 
 - AUTHORITY/BASELINE: Owner prioritizes service readiness, GitHub reuse and merging ready improvements. Live main b05d60b verified; operator reports successful deployment and healthy application services. Runtime evidence remains operator-reported.

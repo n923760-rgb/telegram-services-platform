@@ -4,6 +4,13 @@
 
 After owner authorization for live testing, run `bash scripts/service-acceptance.sh`
 from clean main while production provider pause is true. The wrapper uses a fresh
+worker container to probe readability of its two read-only source mounts before
+accessing SQL or creating test resources. A checkout under restrictive umask may
+require `chmod 0644 app/ops/service_acceptance.py app/ops/acceptance_cases.py`;
+this targets public source only, never .env. The probe retains the non-root worker
+identity and does not import the application or call providers. Container startup
+failures also stop the probe; inspect Docker output before assuming permissions.
+After a successful probe the wrapper uses a fresh
 uniquely named PostgreSQL acceptance database and dedicated shared-volume storage;
 it does not stop production containers or modify their pause, users, credit, gates
 or prices. Synthetic credit funds 29 cases across 16 services only inside that DB.
