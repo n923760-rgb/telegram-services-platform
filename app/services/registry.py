@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 import app.services
 from app.core.models import Service
-from app.services.base import WORKER_REQUIREMENTS, BaseService
+from app.services.base import WORKER_REQUIREMENTS, BaseService, validate_ai_intake_choices
 from app.services.catalog import CATEGORY_KEYS
 from app.wallet.ledger import halalas
 
@@ -59,6 +59,7 @@ class Registry:
                     or (cls.requires_ai and cls.optional_ai)
                 ):
                     raise ValueError("invalid service AI metadata")
+                validate_ai_intake_choices(cls)
                 required, optional = cls.worker_requirements, cls.optional_worker_requirements
                 if (
                     type(required) is not tuple

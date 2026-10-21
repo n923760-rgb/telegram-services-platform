@@ -223,6 +223,7 @@ class BaseService:
     enabled_by_default = True
     requires_ai = False
     optional_ai = False  # Presentation only; needs_ai(inputs) remains authoritative.
+    ai_intake_choices: dict[str, tuple[str, ...]] = {}  # Read-only UI hints, not admission.
     runtime: Any = None
     text_followups: tuple[TextFollowup, ...] = ()
     # Retain historical execution, but never sell a second implementation of one result.
@@ -261,3 +262,21 @@ def ai_policy(plugin):
     if getattr(plugin, "requires_ai", False) is True:
         return "required"
     return "conditional" if getattr(plugin, "optional_ai", False) is True else "none"
+
+
+def validate_ai_intake_choices(plugin):
+    """Choice hints only; validated needs_ai(inputs) still owns actual admission."""
+    mapping = plugin.ai_intake_choices
+    if type(mapping) is not dict or (mapping and not plugin.optional_ai):
+        raise ValueError("invalid AI intake choices")
+    fields = {field.name: field for field in plugin.input_schema.conversation()}
+    for name, values in mapping.items():
+        if (
+            name not in fields
+            or type(values) is not tuple
+            or not values
+            or any(type(value) is not str for value in values)
+            or len(set(values)) != len(values)
+            or not set(values).issubset(fields[name].choices)
+        ):
+            raise ValueError("invalid AI intake choices")

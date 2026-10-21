@@ -156,3 +156,60 @@ async def test_paused_resume_keeps_saved_required_ai_input_and_state(flow, monke
     await callback("draft:resume")
     assert transport.messages[-1].text.endswith(tr("text_translation_language"))
     assert (await state.get_data())["inputs"] == saved["inputs"]
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize(
+    "slug,index,inputs,selected",
+    [
+        ("text_to_office", 0, {}, 1),
+        ("text_to_office", 1, {"target": "word"}, 1),
+        ("text_to_word_pdf", 1, {"output_format": "pdf"}, 1),
+        ("text_to_pdf", 1, {"text": "Saved 00123"}, 1),
+        ("pdf_tables_excel", 1, {"pdf": "1/" + "a" * 32 + "/source.pdf"}, 2),
+    ],
+)
+async def test_mixed_choice_pause_recheck_preserves_draft_without_admission(
+    flow, monkeypatch, lang, slug, index, inputs, selected
+):
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    monkeypatch.setattr(config(), "ai_enabled", True)
+    async with sessions.begin() as db:
+        (await db.get(Service, slug)).enabled = True
+        db.add(Setting(key="PROVIDER_PAUSED", value={"value": False}))
+    await message("/start")
+    await callback("service:" + slug)
+    data = await state.get_data()
+    data.update(index=index, inputs=inputs, pending_prompt=False)
+    await state.set_data(data)
+    await callback("draft:resume")
+    field = registry.types[slug].input_schema.conversation()[index]
+    assert tr("intake_direct_only", lang) not in transport.messages[-1].text
+    choice = f"choice:{data['key']}:{index}:{selected}"
+    saved = await state.get_data()
+    async with sessions.begin() as db:
+        (await db.get(Setting, "PROVIDER_PAUSED")).value = {"value": True}
+    # The old enabled button is checked again against current pause status.
+    await callback(choice)
+    assert transport.callback_answers[-1].text == tr("intake_option_unavailable", lang)
+    assert transport.callback_answers[-1].show_alert
+    assert await state.get_data() == saved and await state.get_state() == "collect"
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        assert await db.scalar(select(func.count(StarCharge.charge_id))) == 0
+        assert (await balance(db, 1)).reserved == 0
+    await callback("draft:resume")
+    assert tr("intake_direct_only", lang) in transport.messages[-1].text
+    buttons = [b for row in transport.messages[-1].reply_markup.inline_keyboard for b in row]
+    assert buttons[selected].text == tr(
+        "intake_choice_unavailable", lang, choice=tr(field.choice_keys[selected], lang)
+    )
+    async with sessions.begin() as db:
+        (await db.get(Setting, "PROVIDER_PAUSED")).value = {"value": False}
+    await callback(choice)
+    current = await state.get_data()
+    assert current["inputs"] == inputs | {field.name: field.choices[selected]}
+    assert current["key"] == saved["key"] and current["price"] == saved["price"]
