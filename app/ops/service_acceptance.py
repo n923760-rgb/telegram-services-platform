@@ -193,6 +193,12 @@ def selected_cases(templates, names=None):
     return [case for case in templates if case.name in names]
 
 
+def pixel_signature(image):
+    """Decoded RGB dimensions/pixels of synthetic assets, independent of PNG encoding."""
+    with image.convert("RGB") as rgb:
+        return hashlib.sha256(f"{rgb.width}x{rgb.height}:".encode() + rgb.tobytes()).hexdigest()
+
+
 def inspect_output(name, data, case):
     suffix = Path(name).suffix.lower()
     text = ""
@@ -208,6 +214,22 @@ def inspect_output(name, data, case):
             if rotations != case.pdf_rotations:
                 raise ServiceError("acceptance_output_invalid")
             details["rotations"] = list(rotations)
+        if case.pdf_page_tokens:
+            if len(pdf.pages) != len(case.pdf_page_tokens):
+                raise ServiceError("acceptance_output_invalid")
+            for page, tokens in zip(pdf.pages, case.pdf_page_tokens, strict=True):
+                page_text = page.extract_text() or ""
+                if any(token not in page_text for token in tokens):
+                    raise ServiceError("acceptance_source_token_missing")
+        if case.pdf_image_sources and not case.pdf_image_hashes:
+            raise ServiceError("acceptance_output_invalid")
+        if case.pdf_image_hashes:
+            if len(pdf.pages) != len(case.pdf_image_hashes):
+                raise ServiceError("acceptance_output_invalid")
+            for page, expected in zip(pdf.pages, case.pdf_image_hashes, strict=True):
+                images = list(page.images)
+                if len(images) != 1 or pixel_signature(images[0].image) != expected:
+                    raise ServiceError("acceptance_output_invalid")
         details["pages"] = len(pdf.pages)
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     elif suffix == ".docx":
@@ -269,6 +291,10 @@ class Delivery:
             entries.append(("response.txt", result.text.encode("utf-8")))
         if not entries or len({name for name, _ in entries}) != len(entries):
             raise ServiceError("acceptance_output_invalid")
+        if self.case.expected_files is not None and set(name for name, _ in entries) != set(
+            self.case.expected_files
+        ):
+            raise ServiceError("acceptance_output_invalid")
         checked = []
         for name, data in entries:
             if name != Path(name).name or not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
@@ -302,7 +328,11 @@ def materialize(case, owned, data):
             return saved[value]
         return value
 
-    return replace(case, inputs=walk(case.inputs))
+    hashes = []
+    for name in case.pdf_image_sources:
+        with Image.open(BytesIO(data[name])) as image:
+            hashes.append(pixel_signature(image))
+    return replace(case, inputs=walk(case.inputs), pdf_image_hashes=tuple(hashes))
 
 
 def save_report(path, report):
@@ -493,7 +523,7 @@ async def execute(case_names=None):
     pdf = source_pdf()
     data = {
         "pdf": pdf,
-        "pdf2": pdf,
+        "pdf2": source_pdf(second=True),
         "image": picture(),
         "shaded": picture(shaded=True),
         "mixed": picture(mixed=True),

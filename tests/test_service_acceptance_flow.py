@@ -73,9 +73,9 @@ async def test_latest_native_acceptance_cases_pass_without_provider_calls(tmp_pa
     path = configure(tmp_path, monkeypatch)
     call = AsyncMock(side_effect=AssertionError("no network"))
     monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
-    assert await acceptance.execute(["csv", "images_pdf", "pdf_rotate"]) == 0
+    assert await acceptance.execute(["csv", "images_pdf", "pdf_rotate", "pdf_merge"]) == 0
     report = json.loads((path / "report.json").read_text())
-    assert report["status"] == "PASS" and report["passed"] == 3
+    assert report["status"] == "PASS" and report["passed"] == 4
     assert report["provider_calls"] == 0 and report["calculated_usage_sar"] == "0"
     assert report["active_orders"] == report["wallet_reserved_halala"] == 0
     cases = {case["case"]: case for case in report["cases"]}
@@ -83,32 +83,44 @@ async def test_latest_native_acceptance_cases_pass_without_provider_calls(tmp_pa
     assert "Columns" in cases["csv"]["artifacts"][0]["sheets"]
     assert cases["images_pdf"]["artifacts"][0]["pages"] == 2
     assert cases["pdf_rotate"]["artifacts"][0]["rotations"] == [90]
+    assert cases["pdf_merge"]["artifacts"][0]["pages"] == 2
     call.assert_not_awaited()
     async with sessions() as db:
         assert await db.scalar(select(func.count(CostHold.id))) == 0
-        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 3
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 4
 
 
-async def test_failed_output_contract_never_counts_pass_or_captures_credit(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "failure", ["missing_sheet", "missing_file", "reordered_images", "reordered_pdf"]
+)
+async def test_failed_output_contract_never_counts_pass_or_captures_credit(
+    tmp_path, monkeypatch, failure
+):
     from dataclasses import replace
 
     monkeypatch.setattr(acceptance.registry.types["echo"], "admin_only", True)
     path = configure(tmp_path, monkeypatch)
     original = acceptance.cases
-    monkeypatch.setattr(
-        acceptance,
-        "cases",
-        lambda assets: [
-            replace(
-                next(case for case in original(assets) if case.name == "csv"),
-                name="missing_sheet",
-                required_sheets=("Missing",),
+
+    def invalid_contract(assets):
+        plan = {case.name: case for case in original(assets)}
+        if failure == "missing_sheet":
+            case = replace(plan["csv"], required_sheets=("Missing",))
+        elif failure == "missing_file":
+            case = replace(plan["csv"], expected_files=("review.xlsx", "missing.txt"))
+        elif failure == "reordered_images":
+            case = replace(plan["images_pdf"], pdf_image_sources=("image", "mixed"))
+        else:
+            case = replace(
+                plan["pdf_merge"],
+                pdf_page_tokens=tuple(reversed(plan["pdf_merge"].pdf_page_tokens)),
             )
-        ],
-    )
+        return [replace(case, name="invalid_contract")]
+
+    monkeypatch.setattr(acceptance, "cases", invalid_contract)
     call = AsyncMock(side_effect=AssertionError("no network"))
     monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
-    assert await acceptance.execute(["missing_sheet"]) == 1
+    assert await acceptance.execute(["invalid_contract"]) == 1
     report = json.loads((path / "report.json").read_text())
     assert report["status"] == "REVIEW_REQUIRED" and report["passed"] == 0
     assert report["failed"] == 1 and report["provider_calls"] == 0
@@ -117,6 +129,7 @@ async def test_failed_output_contract_never_counts_pass_or_captures_credit(tmp_p
     call.assert_not_awaited()
     async with sessions() as db:
         assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 0
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "release")) == 1
 
 
 @pytest.mark.parametrize("failure", ["cap", "transport", "none"])

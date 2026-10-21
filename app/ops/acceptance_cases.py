@@ -1,6 +1,6 @@
 """Synthetic acceptance data only; no customer uploads or test-suite imports."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
@@ -25,6 +25,10 @@ class Case:
     pdf_rotations: tuple[int, ...] = ()
     pptx_slides: int | None = None
     required_sheets: tuple[str, ...] = ()
+    expected_files: tuple[str, ...] | None = None
+    pdf_page_tokens: tuple[tuple[str, ...], ...] = ()
+    pdf_image_sources: tuple[str, ...] = ()
+    pdf_image_hashes: tuple[str, ...] = ()
 
 
 def picture(*, shaded=False, mixed=False):
@@ -44,7 +48,7 @@ def picture(*, shaded=False, mixed=False):
     return output.getvalue()
 
 
-def source_pdf():
+def source_pdf(*, second=False):
     if "Acceptance" not in pdfmetrics.getRegisteredFontNames():
         pdfmetrics.registerFont(
             TTFont("Acceptance", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
@@ -53,6 +57,8 @@ def source_pdf():
     pdf = canvas.Canvas(output, pagesize=(600, 800))
     pdf.setFont("Acceptance", 12)
     rows = [["ID", "Amount", "Note"], ["00123", "125.50", "Example"], ["00017", "0", "Pending"]]
+    if second:
+        rows = [["ID", "Amount", "Note"], ["00999", "80.00", "Second"], ["00018", "0", "Pending"]]
     for r, row in enumerate(rows):
         for c, text in enumerate(row):
             pdf.drawString(60 + c * 160, 710 - r * 35, text)
@@ -109,6 +115,7 @@ def cases(assets):
             {"images": [image, mixed], "orientation": "auto", "page_order": "٢، ١"},
             pdf_pages=2,
             exact_pdf_pages=2,
+            pdf_image_sources=("mixed", "image"),
         ),
         *[
             Case(
@@ -154,6 +161,7 @@ def cases(assets):
             ("00123",),
             2,
             exact_pdf_pages=2,
+            pdf_page_tokens=(("00123", "125.50"), ("00999", "80.00")),
         ),
         *[
             Case(
@@ -213,6 +221,39 @@ def cases(assets):
             for lang in ("ar", "en")
         ],
     ]
+    # Exact customer deliverables for these bounded synthetic fixtures. This is
+    # acceptance metadata, not production service dispatch or payment policy.
+    deliverables = {
+        "csv": ("review.xlsx",),
+        "enhance": ("enhanced.png", "comparison.png", "received.png"),
+        "ocr_en": ("response.txt",),
+        "ocr_mixed": ("response.txt",),
+        "images_pdf": ("images.pdf",),
+        "tables_direct": ("tables.xlsx",),
+        "tables_labels": ("tables.xlsx",),
+        "pdf_word": ("result.docx",),
+        "pdf_extract": ("result.pdf",),
+        "pdf_rotate": ("result.pdf",),
+        "pdf_merge": ("result.pdf",),
+        "summary": ("summary-source.txt", "response.txt"),
+        "word_direct": ("result.docx",),
+        "word_smart": ("result.docx",),
+        "excel_smart": ("result.xlsx",),
+        "text_pdf_direct": ("result.pdf",),
+        "text_pdf_smart": ("result.pdf",),
+        "pptx": ("result.pptx",),
+        **{"cv_" + lang: ("cv.docx", "cv.pdf") for lang in ("ar", "en", "bilingual")},
+        **{"minutes_" + lang: ("minutes.docx", "minutes.pdf") for lang in ("ar", "en")},
+        **{
+            "editing_" + mode: ("revision.txt", "changes.txt", "response.txt")
+            for mode in ("proofread", "rewrite")
+        },
+        **{"word_pdf_" + mode: ("result.docx", "result.pdf") for mode in ("direct", "smart")},
+        **{"translation_" + lang: ("translation.txt", "response.txt") for lang in ("ar", "en")},
+    }
+    if set(deliverables) != {case.name for case in result}:
+        raise ValueError("Every acceptance case must declare its exact deliverables")
+    result = [replace(case, expected_files=deliverables[case.name]) for case in result]
     from app.ops.service_portfolio import customer_slugs
 
     if {case.slug for case in result} != set(customer_slugs()):
