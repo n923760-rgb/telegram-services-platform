@@ -57,6 +57,7 @@ jobs:
           import asyncio
           import os
           import re
+          import pdfplumber
           from tests.ocr_fixtures import printed, processor
           from tests.ocr_fixtures import detailed as detailed_ocr_source
           from tests.word_pdf_fixtures import document, renderer, table_document
@@ -86,6 +87,7 @@ jobs:
           from app.builders.csv_review import build as csv_review
           from openpyxl import load_workbook
           from tests.pdf_tables_fixtures import table_pdf
+          from tests.pdf_pagination_fixtures import boundary_document
           from app.providers.tables.camelot import CamelotTables
           from app.services.pdf_tables_excel.schema import direct_labels, source_labels
           from app.builders.pdf_tables import build as tables_excel
@@ -132,6 +134,15 @@ jobs:
                   else:
                       raise AssertionError('unbound document accepted')
               print('Non-root worker: smart Word/PDF source fidelity and native output PASS with network disabled')
+              for language in ('ar', 'en'):
+                  for wrapped in (False, True):
+                      with pdfplumber.open(BytesIO(text_pdf.build(boundary_document(language, wrapped=wrapped)))) as paginated:
+                          assert len(paginated.pages) == 2
+                          pages = [''.join(char['text'] for char in page.chars) for page in paginated.pages]
+                      assert '00123' not in pages[0]
+                      assert '00123' in pages[1] and '125.50' in pages[1]
+                      assert all(f'Record {i:02d} retained.' in '\n'.join(pages) for i in range(20))
+              print('Non-root worker: Arabic/English PDF section headings stay with content across page breaks PASS with network disabled')
               for language in ('ar','en'):
                   values = SourceOfficeInputs.parse(source_excel_inputs(language))
                   plan = source_excel_schema(values).model_validate(source_excel_plan(language))

@@ -135,9 +135,11 @@ def build(data: Document, *, include_title: bool = True) -> bytes:
         story.append(Spacer(1, 4))
 
     for section in data.sections:
+        heading_start = len(story)
         if section.heading:
             for line in _wrap(section.heading, "DejaVu-Bold", 14, width):
                 story.append(Paragraph(display(line), heading_rtl if is_rtl(line) else heading_ltr))
+        body_start = len(story)
         for text in section.paragraphs:
             for logical in safe_text(text).splitlines() or [""]:
                 if not logical.strip():
@@ -151,6 +153,16 @@ def build(data: Document, *, include_title: bool = True) -> bytes:
         for bullet in section.bullets:
             for line in _wrap("• " + bullet, "DejaVu", 11, width):
                 story.append(Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr))
+        if section.heading:
+            # Keep all heading lines and any source-leading blank space with the first
+            # content line, not the entire section. Oversized prefixes can still split.
+            first_content = next(
+                (i for i in range(body_start, len(story)) if isinstance(story[i], Paragraph)),
+                None,
+            )
+            if first_content is not None:
+                for flowable in story[heading_start:first_content]:
+                    flowable.keepWithNext = True
 
     # A terminal spacer can overflow an otherwise full page and create a blank page.
     while story and isinstance(story[-1], Spacer):
