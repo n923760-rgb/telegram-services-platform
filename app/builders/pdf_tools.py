@@ -5,6 +5,7 @@ from io import BytesIO
 from pypdf import PdfReader, PdfWriter
 
 from app.builders.quality import validate
+from app.files.pdf_forms import has_interactive_content
 from app.files.pdf_selection import page_selection
 
 
@@ -47,8 +48,7 @@ def build(
                 raise PdfToolError("pdf_tools_limit")
             # Page-copying is not a form/signature editor. Reject rather than
             # silently dropping field values or implying preserved signatures.
-            root = reader.trailer["/Root"]
-            if root.get("/AcroForm") or root.get("/Perms"):
+            if has_interactive_content(reader):
                 raise PdfToolError("pdf_tools_form")
             readers.append(reader)
         writer = PdfWriter()

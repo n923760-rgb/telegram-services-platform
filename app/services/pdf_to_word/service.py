@@ -7,6 +7,7 @@ from pypdf import PdfReader
 from app.builders import word
 from app.core.i18n import tr, translations
 from app.files.pdf_content import has_image_content
+from app.files.pdf_forms import has_form_declaration, has_widget
 from app.files.pdf_text import extract_page_text
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.pdf_to_word.prompt import PDF_TO_WORD
@@ -37,18 +38,13 @@ class PdfToWord(BaseService):
                 raise ValueError
             # Text extraction cannot preserve interactive values or signatures.
             # Even an empty declaration is unsupported, not proof of plain text.
-            root = reader.trailer["/Root"]
-            if root.get("/AcroForm") is not None or root.get("/Perms") is not None:
+            if has_form_declaration(reader):
                 raise ServiceError("pdf_word_form")
             pages = []
             sources = []
             text_length = 0
             for index, page in enumerate(reader.pages, 1):
-                annotations = page.get("/Annots")
-                if annotations is not None and any(
-                    annotation.get_object()["/Subtype"] == "/Widget"
-                    for annotation in annotations.get_object()
-                ):
+                if has_widget(page):
                     raise ServiceError("pdf_word_form")
                 if has_image_content(page, reader):
                     raise ServiceError("pdf_image_content")

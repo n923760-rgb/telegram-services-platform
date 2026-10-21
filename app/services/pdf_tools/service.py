@@ -10,7 +10,7 @@ class PdfTools(BaseService):
     slug = "pdf_tools"
     menu_order = 30
     category = "pdf"
-    version = "3"
+    version = "4"
     name_ar = tr("pdf_tools_name")
     name_en = tr("pdf_tools_name", "en")
     description_ar = tr("pdf_tools_description")

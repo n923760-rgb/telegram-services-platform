@@ -1,5 +1,14 @@
 # Master engineering roadmap
 
+## PDF tools shared interactive-content boundary — 2026-10-21
+
+- FACT: R02 from the comprehensive review reproduces on main 3af2a5a: empty AcroForm/Perms declarations and orphan Widgets (including indirect Subtype) pass page extraction. These operations cannot preserve form semantics or signatures.
+- CHANGE: PDF tools v4 shares the existing conservative PDF-to-Word declaration/Widget checks, inspecting every source page before merge/extract/rotate. Malformed inspected annotations fail closed; ordinary links remain supported. PDF-to-Word retains its existing per-page inspection and extraction-limit ordering. Existing localized disclosures/errors and input-failure circuit classification apply.
+- PASS LOCALLY: 155 focused builder/service/form/rotation/merge checks; three architecture gates, lint/format/diff and embedded worker Python syntax. Four before-fix fixtures reproduce acceptance. Added 12 PostgreSQL rejection cases and v3 prepared/unprepared upgrade coverage; 43 PDF-tools DB cases collected but NOT RUN locally (PostgreSQL unavailable). Hosted tests and worker qualification required before merge.
+- SAFETY: Preserve administrator prices/activation and prepared v1–v3 results; incompatible unprepared work cancels/releases under existing guards. No AI, dependency, payment, migration, provider setting or server action. Synthetic fixtures do not validate signatures or prove native/mobile output quality.
+
+- SYNC 2026-10-21: Includes main c9df79b and synchronized #122–123; merge after those PRs. Preserve both roadmap records. 142 current focused PDF tests, architecture gates, global lint/format/diff and embedded worker syntax pass locally. Re-run all hosted tests and the added native PDF-form cases; no production/provider/settings action.
+
 ## Professional service value and task-sensitive AI quality review — 2026-10-21
 
 - AUTHORITY: Owner requests reviewing the remaining services and explicitly permits AI where it improves a professional paid result. Keep meaningful content-change consent and internal bounded processing. Source inventory confirms 16 public contracts: nine required AI, four conditional AI and three deterministic operations.
