@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Specific content-free summary validation diagnostics — 2026-10-22
+
+- FACT: Operator's 497edd9 targeted run passes five of six representative cases. Summary fails generation twice as `provider_invalid` with only `constraint`; no candidate text or detailed validation cause was retained. Run reports ten calls, calculated usage 0.016179 SAR, zero active orders/reserved credit, production pause unchanged. Five passing outputs still require inspection of the ZIP.
+- CHANGE: Assign seven fixed summary validator codes through the existing diagnostic-category declaration. The same codes reach isolated diagnostics and the existing bounded in-memory correction request. Preserve accepted payloads, original JSON schema and validation order, source references/values, point/compression limits, review, per-call accounting and one repair. No raw exception, candidate or source content added to diagnostics.
+- PASS LOCALLY: 49 focused summary/reference/acceptance checks (15 new), including each rejection class, successful correction or persistent invalidity after exactly two calls, and per-call reservation/settlement mocks. Full hosted suite and worker qualification required before merge.
+- LIMIT: This makes the next rejection diagnosable; it does not identify or fix the unknown historical model error. Rebuild the worker image before a targeted isolated summary rerun; do not replace production containers or change settings. Contract/version, prices, dependencies and database schema stay unchanged.
+- Evidence: [diagnosis scope and rerun procedure](REPORTS/2026-10-22-summary-diagnostics.md).
+
 ## Representative editing, translation and multi-page acceptance — 2026-10-22
 
 - FACT: Operator reports successful deployment of 4a53ceb with healthy application services; native inspection of the subsequent PPTX ZIP confirms three English slides, exact order/amount values and the unapproved payment meaning. This qualifies that synthetic sample, not all input lengths or mobile Office behavior.

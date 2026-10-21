@@ -1,8 +1,9 @@
 import json
 from collections import Counter
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import Field, StrictInt, StringConstraints, ValidationError, model_validator
+from pydantic_core import PydanticCustomError
 
 from app.builders.schema import StrictModel
 from app.core.i18n import tr
@@ -56,6 +57,18 @@ class Point(StrictModel):
 
 
 class Summary(StrictModel):
+    diagnostic_categories: ClassVar = {
+        key: key
+        for key in (
+            "summary_point_limit",
+            "summary_source_ids",
+            "summary_point_text",
+            "summary_duplicate_point",
+            "summary_source_tokens",
+            "summary_output_limit",
+            "summary_not_shorter",
+        )
+    }
     points: list[Point] = Field(min_length=1, max_length=7)
 
 
@@ -66,28 +79,36 @@ def summary_schema(values):
         @model_validator(mode="after")
         def grounded_points(self):
             if len(self.points) > limit:
-                raise ValueError("summary point limit")
+                raise PydanticCustomError("summary_point_limit", "summary point limit")
             seen = set()
             for point in self.points:
                 ids = point.source_ids
                 if len(ids) != len(set(ids)) or any(number > count for number in ids):
-                    raise ValueError("cite unique known source IDs")
-                DocumentInputs.printable_text(point.text)
+                    raise PydanticCustomError("summary_source_ids", "cite unique known source IDs")
+                try:
+                    DocumentInputs.printable_text(point.text)
+                except ValueError:
+                    raise PydanticCustomError(
+                        "summary_point_text", "one clean paragraph per point"
+                    ) from None
                 if "\n" in point.text or "\r" in point.text or point.text.strip() != point.text:
-                    raise ValueError("one clean paragraph per point")
+                    raise PydanticCustomError("summary_point_text", "one clean paragraph per point")
                 if point.text in seen:
-                    raise ValueError("duplicate summary point")
+                    raise PydanticCustomError("summary_duplicate_point", "duplicate summary point")
                 seen.add(point.text)
                 cited = "\n".join(values.lines()[number - 1] for number in ids)
                 for pattern in (NUMERIC_TOKEN, CONTACT_TOKEN):
                     if Counter(pattern.findall(point.text)) - Counter(pattern.findall(cited)):
-                        raise ValueError("summary numbers and contacts must occur in cited source")
+                        raise PydanticCustomError(
+                            "summary_source_tokens",
+                            "summary numbers and contacts must occur in cited source",
+                        )
             if sum(len(point.text) for point in self.points) > 6000:
-                raise ValueError("summary output limit")
+                raise PydanticCustomError("summary_output_limit", "summary output limit")
             if len(values.text.split()) >= 40 and sum(
                 len(point.text.split()) for point in self.points
             ) >= len(values.text.split()):
-                raise ValueError("summary must shorten the source")
+                raise PydanticCustomError("summary_not_shorter", "summary must shorten the source")
             return self
 
     return SourceSummary
