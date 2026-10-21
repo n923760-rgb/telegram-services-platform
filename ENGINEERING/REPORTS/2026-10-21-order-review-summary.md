@@ -36,6 +36,10 @@ are needed by these focused tests. Test counts overlap with the broader invocati
 PASS: all three existing architecture gates invoked directly; global ruff lint/format and
 whitespace checks. Locked development dependencies installed without lock changes.
 
+Updated the existing DB-backed navigation confirmation expectation for the inserted summary;
+it still asserts the standalone unchanged price, confirmation state and zero created orders.
+Its hosted execution is required; it cannot run without the disposable PostgreSQL fixture.
+
 BLOCKED_ENV: a broader invocation additionally selected 37 existing catalog/unified-service
 cases whose shared PostgreSQL autouse fixture could not connect to localhost:55432;
 73 passed and 37 setup errors. No assertion failures in that invocation. Do not treat the
