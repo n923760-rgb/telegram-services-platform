@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## PDF section-heading pagination — 2026-10-21
+
+- FACT: Main 070492b can leave an Arabic/English section heading at a page foot with its opening content on the next page. Twelve new boundary assertions reproduce the defect before the fix.
+- CHANGE: Keep all heading lines and leading source blank spacers with the first content flowable, allowing the rest of a long section to paginate. Heading-only sections remain independent; oversized prefixes retain the splitting fallback. Preserve text, dates/numbers, styling, contracts/versions, prices, activation and prepared replay. No provider, financial-policy or deployment change.
+- PASS LOCALLY: 13 new real-export cases; all eight pages of four before/after AR/EN PDFs rendered and visually inspected. Broader invocation has 116 PASS (includes the new cases) plus 30 ERROR_ENV from unrelated PostgreSQL-dependent setup. Eight existing PDF date/source assertions pass in a DB-free harness; three architecture gates, lint/format/diff and embedded worker syntax pass. Four native-worker assertions pass locally; exact-head hosted full tests and container qualification required before merge.
+- LIMIT: Prefixes larger than a page may split to preserve source whitespace and avoid layout failure. This fixes the reproduced section-heading transition; live-provider semantics, arbitrary layout and mobile qualification remain separate.
+- Evidence: [pagination finding, checks and limits](REPORTS/2026-10-21-pdf-heading-pagination.md).
+
 ## Processing choice before source input — 2026-10-21
 
 - FACT: Main 1688401 provides early mixed-service availability hints, but Text PDF and PDF tables still ask for the source first. Owner requests continuation.
