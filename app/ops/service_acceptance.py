@@ -274,6 +274,12 @@ def inspect_output(name, data, case):
         raise ServiceError("acceptance_output_invalid")
     if any(token not in text for token in case.tokens):
         raise ServiceError("acceptance_source_token_missing")
+    if name in case.changed_text_files:
+        # Only fixtures with known errors or an actual language change opt in.
+        # Whitespace-only changes do not demonstrate editing/translation value.
+        if " ".join(text.split()) == " ".join(case.inputs["text"].split()):
+            raise ServiceError("acceptance_text_unchanged")
+        details["text_changed"] = True
     return {"name": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), **details}
 
 
@@ -483,6 +489,7 @@ async def run_case(case, adapter, backend, output):
             "diagnostics": diagnostics,
             "approvals": approvals,
             "artifacts": delivery.files,
+            "manual_review_checks": list(case.review_checks),
             "usage": [
                 {
                     "calculated_sar": str(u.cost_sar),

@@ -90,6 +90,32 @@ async def test_latest_native_acceptance_cases_pass_without_provider_calls(tmp_pa
         assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 4
 
 
+async def test_long_bilingual_bundle_acceptance_uses_native_export_without_provider(
+    tmp_path, monkeypatch
+):
+    from docx import Document
+    from pypdf import PdfReader
+
+    monkeypatch.setattr(acceptance.registry.types["echo"], "admin_only", True)
+    path = configure(tmp_path, monkeypatch)
+    case = next(c for c in acceptance.cases(acceptance.ASSETS) if c.name == "word_pdf_direct")
+    call = AsyncMock(side_effect=AssertionError("no network"))
+    monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
+    assert await acceptance.execute([case.name]) == 0
+    report = json.loads((path / "report.json").read_text())
+    record = report["cases"][0]
+    assert report["provider_calls"] == 0 and report["calculated_usage_sar"] == "0"
+    assert report["active_orders"] == report["wallet_reserved_halala"] == 0
+    assert record["manual_review_checks"] == list(case.review_checks)
+    assert len(PdfReader(path / case.name / "result.pdf").pages) >= 2
+    doc = Document(path / case.name / "result.docx")
+    assert "\n".join(p.text for p in doc.paragraphs) == case.inputs["text"]
+    call.assert_not_awaited()
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(CostHold.id))) == 0
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 1
+
+
 @pytest.mark.parametrize(
     "failure", ["missing_sheet", "missing_file", "reordered_images", "reordered_pdf"]
 )
@@ -132,7 +158,7 @@ async def test_failed_output_contract_never_counts_pass_or_captures_credit(
         assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "release")) == 1
 
 
-@pytest.mark.parametrize("failure", ["cap", "transport", "none"])
+@pytest.mark.parametrize("failure", ["cap", "transport", "echo", "none"])
 async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
     tmp_path, monkeypatch, failure
 ):
@@ -145,6 +171,8 @@ async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
             "text_translation",
             {"text": "Hello 00123", "language": "ar", "style": "formal"},
             ("00123",),
+            changed_text_files=("translation.txt",),
+            review_checks=("Translate the source into Arabic.",),
         ),
         Case("direct", "text_to_pdf", {"text": "Invoice 00123", "mode": "direct"}, ("00123",)),
     ]
@@ -159,7 +187,13 @@ async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
         content = (
             '{"accepted":true,"issues":[]}'
             if review
-            else '{"segments":[{"id":1,"text":"مرحبا 00123"}]}'
+            else json.dumps(
+                {
+                    "segments": [
+                        {"id": 1, "text": "Hello 00123" if failure == "echo" else "مرحبا 00123"}
+                    ]
+                }
+            )
         )
         return httpx.Response(
             200,
@@ -179,7 +213,11 @@ async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
     assert code == (0 if failure == "none" else 1)
     assert report["active_orders"] == report["wallet_reserved_halala"] == 0
     assert report["cases"][1]["status"] == "PASS"
-    assert report["provider_calls"] == (2 if failure == "none" else 1)
+    assert report["provider_calls"] == (2 if failure in {"none", "echo"} else 1)
+    assert report["cases"][0]["manual_review_checks"] == ["Translate the source into Arabic."]
+    if failure == "echo":
+        assert report["cases"][0]["status"] == "FAIL"
+        assert not report["cases"][0]["artifacts"]
     if failure == "none":
         assert [e["stage"] for e in report["cases"][0]["diagnostics"]] == ["generation", "review"]
         assert report["cases"][0]["diagnostics"][-1]["accepted"] is True
@@ -187,6 +225,15 @@ async def test_live_adapter_fixtures_keep_failures_costs_and_direct_independent(
     async with sessions() as db:
         assert await db.scalar(select(func.count(User.id))) == 1
         assert await db.scalar(select(func.count(Order.id))) == 2
+        if failure == "echo":
+            failed = report["cases"][0]
+            assert failed["error"] == "acceptance_text_unchanged"
+            assert (
+                await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == 1
+            )  # Only the independent direct case succeeds.
+            assert (
+                await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "release")) == 1
+            )
         holds = list((await db.scalars(select(CostHold))).all())
         assert all(
             h.status == ("uncertain" if failure == "transport" else "settled") for h in holds

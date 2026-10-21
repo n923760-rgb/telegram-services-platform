@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Representative editing, translation and multi-page acceptance — 2026-10-22
+
+- FACT: Operator reports successful deployment of 4a53ceb with healthy application services; native inspection of the subsequent PPTX ZIP confirms three English slides, exact order/amount values and the unapproved payment meaning. This qualifies that synthetic sample, not all input lengths or mobile Office behavior.
+- CHANGE: Strengthen six existing cases without adding services/jobs: English proofreading with errors, formal rewriting of colloquial Arabic, actual translation in both directions, a twelve-paragraph summary and a long bilingual direct Word/PDF source. Require multiple PDF pages and all twelve section markers. Reject unchanged/whitespace-only revision or translation files only for these known-change fixtures, and include fixed manual review criteria in the report.
+- PASS LOCALLY: 83 focused acceptance checks, three architecture gates, global lint/format/diff and a real native Word/PDF export. Source preservation and visual review remain separate from live-provider output quality. Two added DB scenarios require hosted checks: echo rejected despite an accepted scripted model review, and native long-source export with no provider calls.
+- LIMIT: Existing 29 cases, 16 services, SAR 5/96-call run caps and per-job limits remain; longer sources can cost more. No production service contract, price, setting, dependency, migration or container change. These operational files are already mounted read-only by the isolated wrapper. Live six-case results must be inspected before qualification.
+- Evidence: [scope and readiness limits](REPORTS/2026-10-22-representative-acceptance.md).
+
 ## Uploaded service-output review and PowerPoint language preservation — 2026-10-22
 
 - FACT: Uploaded ZIP matches all 45 artifact hashes and records 29/29 cases, 16 services, 40 calls and zero pending accounting. Visual review covers all 16 PDF pages, three unpaired DOCX pages, three PPTX slides and 12 workbook tabs. Actual native PPTX translates the English fixture into Arabic despite the existing source-language contract; model review accepted it. Native checks passing do not certify professional content.

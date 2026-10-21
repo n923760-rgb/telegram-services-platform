@@ -29,6 +29,111 @@ class Case:
     pdf_page_tokens: tuple[tuple[str, ...], ...] = ()
     pdf_image_sources: tuple[str, ...] = ()
     pdf_image_hashes: tuple[str, ...] = ()
+    changed_text_files: tuple[str, ...] = ()
+    review_checks: tuple[str, ...] = ()
+
+
+def representative_cases(result):
+    """Strengthen existing cases without increasing the live run/call allowance."""
+    proofreading = (
+        "The report contain several error and need a careful review.\n"
+        "Order 00123 have not been approved for payment of 125.50 SAR.\n"
+        "Please sends the corrected copy to demo@example.invalid before 2026-10-30."
+    )
+    rewrite = (
+        "يا فريق، الكلام في التقرير مبعثر ونحتاج نخليه واضح قبل ما نرسله للإدارة.\n"
+        "الطلب 00123 بمبلغ 125.50 SAR ما اعتمدناه، ولا ترسلونه للمحاسبة على أنه معتمد.\n"
+        "رتبوا النسخة وأرسلوها إلى demo@example.invalid قبل 2026-10-30 بدون إضافة وعود جديدة."
+    )
+    arabic_translation = (
+        "لم تعتمد اللجنة دفع مبلغ 125.50 SAR للطلب 00123، ولم ترفض الطلب نهائيا.\n"
+        "يجب إرسال المستند الناقص إلى demo@example.invalid قبل 2026-10-30.\n"
+        "لا يبدأ التنفيذ إلا بعد موافقة مكتوبة؛ الموعد المقترح ليس التزاما بالتسليم."
+    )
+    summary = "\n".join(
+        [
+            "The operations committee reviewed order 00123 for 125.50 SAR and did not approve payment because the supporting receipt was missing.",
+            "The request remains open for review; the committee did not reject the order permanently and did not authorize delivery.",
+            "Sam must send the missing receipt to demo@example.invalid before 2026-10-30. The finance team will then check it before any approval decision.",
+            "A proposed delivery date of 2026-11-02 is provisional. It must not be described as a confirmed commitment to the customer.",
+            "The warehouse reported that the requested items were available at the time of the meeting, but no stock reservation was approved.",
+            "The team discussed using a shorter internal form to reduce repeated data entry. This was a suggestion rather than an approved process change.",
+            "The current form asks staff to record the customer reference, attach the receipt, and identify the person responsible for the next review.",
+            "Several staff members described delays caused by unclear handovers. Their examples were background discussion and introduced no new deadlines.",
+            "The support team requested clearer messages when a document is missing, so customers can distinguish a pending request from a rejected one.",
+            "The committee agreed that status messages must reflect the actual decision. A request for more information must not be presented as payment approval.",
+            "The meeting also covered the layout of internal reports. No purchase of software, extra staffing, or budget increase was approved.",
+            "At the close of the meeting, the payment remained unapproved. The immediate next action was to obtain the receipt and return it for finance review.",
+        ]
+    )
+    document = "\n\n".join(
+        f"SEC-{number:02d}: "
+        "The operations team records each handover before sending the file for review. "
+        "A missing receipt keeps the request pending; availability alone does not authorize delivery. "
+        "Order 00123 remains unapproved for payment of 125.50 SAR.\n"
+        "يراجع الفريق المستندات قبل إحالة الطلب للاعتماد، ويحفظ مسؤول المتابعة الملاحظات في السجل. "
+        "وجود الأصناف لا يعني الموافقة على التسليم، ولا يجوز تحويل الموعد المقترح إلى وعد مؤكد."
+        for number in range(1, 13)
+    )
+    overrides = {
+        "editing_proofread": {
+            "text": proofreading,
+            "checks": (
+                "Correct the actual English grammar errors; preserve negation, amounts, contacts and deadline.",
+            ),
+        },
+        "editing_rewrite": {
+            "text": rewrite,
+            "checks": (
+                "Rewrite colloquial Arabic in formal prose; preserve the unapproved status and add no promises.",
+            ),
+        },
+        "translation_en": {
+            "text": arabic_translation,
+            "checks": (
+                "Translate Arabic prose into English; distinguish not approved from permanently rejected and proposed from confirmed.",
+            ),
+        },
+        "translation_ar": {
+            "text": "Order 00123\nAmount 125.50 SAR\nThe payment has not been approved.",
+            "checks": (
+                "Translate English prose into Arabic; preserve the unapproved payment status and exact source values.",
+            ),
+        },
+        "summary": {
+            "text": summary,
+            "checks": (
+                "Compress twelve paragraphs to at most three grounded points; retain the payment decision, next action and provisional delivery status.",
+            ),
+        },
+        "word_pdf_direct": {
+            "text": document,
+            "checks": (
+                "Inspect every PDF page for clipping and Arabic/English reading order; compare editable Word with the full source.",
+            ),
+        },
+    }
+    strengthened = []
+    for case in result:
+        override = overrides.get(case.name)
+        if override:
+            case = replace(
+                case,
+                inputs=case.inputs | {"text": override["text"]},
+                review_checks=override["checks"],
+            )
+            if case.name.startswith("editing_"):
+                case = replace(case, changed_text_files=("revision.txt",))
+            elif case.name.startswith("translation_"):
+                case = replace(case, changed_text_files=("translation.txt",))
+            elif case.name == "word_pdf_direct":
+                case = replace(
+                    case,
+                    pdf_pages=2,
+                    tokens=tuple(f"SEC-{n:02d}" for n in range(1, 13)) + ("00123", "125.50"),
+                )
+        strengthened.append(case)
+    return strengthened
 
 
 def picture(*, shaded=False, mixed=False):
@@ -253,7 +358,9 @@ def cases(assets):
     }
     if set(deliverables) != {case.name for case in result}:
         raise ValueError("Every acceptance case must declare its exact deliverables")
-    result = [replace(case, expected_files=deliverables[case.name]) for case in result]
+    result = representative_cases(
+        [replace(case, expected_files=deliverables[case.name]) for case in result]
+    )
     from app.ops.service_portfolio import customer_slugs
 
     if {case.slug for case in result} != set(customer_slugs()):
