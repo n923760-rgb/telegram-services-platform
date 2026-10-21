@@ -57,7 +57,6 @@ jobs:
           import asyncio
           import os
           import re
-          import pdfplumber
           from tests.ocr_fixtures import printed, processor
           from tests.ocr_fixtures import detailed as detailed_ocr_source
           from tests.word_pdf_fixtures import document, renderer, table_document
@@ -136,9 +135,9 @@ jobs:
               print('Non-root worker: smart Word/PDF source fidelity and native output PASS with network disabled')
               for language in ('ar', 'en'):
                   for wrapped in (False, True):
-                      with pdfplumber.open(BytesIO(text_pdf.build(boundary_document(language, wrapped=wrapped)))) as paginated:
-                          assert len(paginated.pages) == 2
-                          pages = [''.join(char['text'] for char in page.chars) for page in paginated.pages]
+                      paginated = PdfReader(BytesIO(text_pdf.build(boundary_document(language, wrapped=wrapped))))
+                      assert len(paginated.pages) == 2
+                      pages = [page.extract_text(extraction_mode='layout') or '' for page in paginated.pages]
                       assert '00123' not in pages[0]
                       assert '00123' in pages[1] and '125.50' in pages[1]
                       assert all(f'Record {i:02d} retained.' in '\n'.join(pages) for i in range(20))

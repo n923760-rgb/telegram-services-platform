@@ -41,9 +41,15 @@ the pagination fix. No provider calls or financial/runtime policy changes.
   three executable architecture gates; global ruff lint/format/diff and embedded
   workflow Python syntax. Counts overlap and are not an aggregate test total.
 - PASS LOCALLY: Four new native-worker assertions for AR/EN short/wrapped
-  headings using reopened PDFs. Add them to the existing non-root, network-off
+  headings using layout-preserving pypdf readback of reopened PDFs. Add them to the existing non-root, network-off
   worker qualification; the actual container and full DB suite require hosted CI
   success on the exact candidate before merge.
+
+Hosted first attempt: 2828 tests PASS, but worker qualification fails because its
+new assertion imported development-only pdfplumber. Correct the assertion to use
+the already-installed pypdf layout extractor; keep pdfplumber glyph checks in
+unit tests. No runtime dependency or builder change for this correction. Require
+the full workflow to pass again on the corrected source before merging.
 
 The PDF skill informed real-page rendering and visual inspection. Synthetic
 fixtures verify this pagination defect, not every possible PDF layout, title-page
