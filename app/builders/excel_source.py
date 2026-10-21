@@ -77,7 +77,7 @@ def build(table, lines, row_ids, quotes):
             )
     source = book.create_sheet("Source")
     source.sheet_view.showGridLines = False
-    source.sheet_view.rightToLeft = is_rtl(" ".join(lines))
+    source.sheet_view.rightToLeft = excel._reading_rtl(" ".join(lines))
     source.append([tr("excel_source_title", language), "", ""])
     source["A1"].font = Font(name="DejaVu Sans", size=16, bold=True)
     source["A1"].alignment = Alignment(
@@ -109,16 +109,12 @@ def build(table, lines, row_ids, quotes):
                 horizontal="center"
                 if cell.column < 3
                 else "right"
-                if is_rtl(str(cell.value))
+                if excel._reading_rtl(str(cell.value))
                 else "left",
                 vertical="center",
                 indent=0 if cell.column < 3 else 1,
                 wrap_text=True,
-                readingOrder=1
-                if str(cell.value).lstrip()[:1].isascii()
-                else 2
-                if is_rtl(str(cell.value))
-                else 1,
+                readingOrder=2 if excel._reading_rtl(str(cell.value)) else 1,
             )
             if cell.row == 3:
                 cell.fill = excel.HEADER_FILL
