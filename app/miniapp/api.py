@@ -13,6 +13,7 @@ from app.core.i18n import tr
 from app.core.models import Order, Service, User
 from app.core.settings import config
 from app.miniapp.auth import InvalidMiniAppAuth, verify_init_data
+from app.orders.state import ALLOWED
 from app.services.catalog import CATEGORY_KEYS, ordered
 from app.services.registry import registry
 from app.wallet.ledger import balance, sar
@@ -131,7 +132,14 @@ async def overview(payload: OverviewRequest, response: Response):
                 "reference": str(order.id)[:8],
                 "name_ar": service.name_ar,
                 "name_en": service.name_en,
-                "status": order.status,
+                "status_ar": tr(
+                    f"status_{order.status}" if order.status in ALLOWED else "status_unknown",
+                    "ar",
+                ),
+                "status_en": tr(
+                    f"status_{order.status}" if order.status in ALLOWED else "status_unknown",
+                    "en",
+                ),
                 "created_at": order.created_at.isoformat() if order.created_at else None,
             }
             for order, service in orders
