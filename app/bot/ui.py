@@ -7,7 +7,6 @@ from aiogram.types import (
     KeyboardButton,
     Message,
     ReplyKeyboardMarkup,
-    WebAppInfo,
 )
 
 from app.core.i18n import tr
@@ -62,11 +61,6 @@ def home_keyboard(lang="ar", *, admin=False):
         [KeyboardButton(text=menu_label(key, lang)) for key in HOME_ITEMS[i : i + 2]]
         for i in range(0, len(HOME_ITEMS), 2)
     ]
-    if config().miniapp_url:
-        web_button = KeyboardButton(
-            text=tr("miniapp_open", lang), web_app=WebAppInfo(url=config().miniapp_url)
-        )
-        rows.insert(0, [web_button])
     if admin:
         rows.append([KeyboardButton(text=tr("admin_panel", lang))])
     return ReplyKeyboardMarkup(

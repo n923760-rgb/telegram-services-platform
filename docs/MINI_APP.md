@@ -50,7 +50,7 @@ not fork money or service business logic in JavaScript.
 2. Publish the HTTPS API origin through the existing proxy; ensure `/miniapp`,
    `/miniapp/app.js`, `/miniapp/styles.css` and
    `/miniapp/api/overview` remain same-origin. No browser token storage.
-3. After HTTPS staging acceptance set `MINIAPP_URL=https://<YOUR-HTTPS-HOST>/miniapp` in the staging environment to expose the optional bot keyboard launch button, then configure BotFather's Menu Button to open `https://<YOUR-HTTPS-HOST>/miniapp`
+3. After HTTPS staging acceptance set `MINIAPP_URL=https://<YOUR-HTTPS-HOST>/miniapp` in the staging environment, then run `docker compose exec -T bot python -m app.ops.miniapp_menu` or configure BotFather's Menu Button to open that URL
    on a dedicated test bot; do not paste tokens. `WebApp.initDataUnsafe` is not
    authentication; the API must receive the unmodified signed raw initData.
 4. Test valid, forged, expired and group launches; banned/other user's orders;
@@ -83,3 +83,15 @@ restoration, translated labels, no unexpected close and no extra overview
 request. Verify unavailable hints and prices in both catalog and detail. Check
 error/outside-Telegram notices in both languages. Actual iOS/Android rendering,
 safe areas, theme integration and mobile assistive technology remain unqualified.
+
+## Authenticated launch requirement
+
+Use the bot Menu Button (or an inline WebApp button), not a reply KeyboardButton.
+Telegram documents that WebAppInitData is empty for keyboard-button launches:
+https://core.telegram.org/bots/webapps#webappinitdata . This interface requires
+verified user data; never weaken that check to make a simple keyboard launch work.
+The explicit `python -m app.ops.miniapp_menu` command sets the default bot menu
+from validated MINIAPP_URL and fails on missing URL or rejected Telegram response.
+It sends no customer messages and runs only when the operator invokes it after
+HTTPS reachability checks. Clearing MINIAPP_URL does not reset a previously
+registered remote menu; reset that via BotFather when rolling back.

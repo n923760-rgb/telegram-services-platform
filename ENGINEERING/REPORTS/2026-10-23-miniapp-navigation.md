@@ -72,3 +72,20 @@ existing owner-scope integration cases and complete hosted checks before merge.
 Deployment authorization does not prove server access. This workspace has no
 connected VPS installation or SSH configuration; operator execution of the
 source-pinned deployment commands remains required. No deployment is claimed.
+
+## Authenticated launch correction
+
+FACT: Telegram's official WebAppInitData contract says keyboard-button launches
+have empty init data (https://core.telegram.org/bots/webapps#webappinitdata).
+The initial reply keyboard launch was incompatible with server-authenticated
+overview. Remove that entry and retain the original bot keyboard. Add an
+explicit, validated MenuButtonWebApp operator command; never accept unsigned
+identities or call setup automatically. Unit tests cover the serialized menu
+type/URL, false response and missing-URL refusal.
+
+PASS: Chromium 138 desktop headless with 390x844 viewport and mocked Telegram/API
+now runs the navigation smoke checks successfully after temporary browser
+installation. Service detail, AR/EN, native/on-page back callbacks, filter/focus,
+price/pause hints, tab reset, no horizontal overflow and translated auth/outside
+errors passed. This supersedes the earlier browser-tool blockage only; actual
+Telegram client/authentication/theme/mobile behavior remains unqualified.
