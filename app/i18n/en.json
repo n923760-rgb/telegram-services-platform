@@ -616,5 +616,6 @@
   "review_edit_submitted": "This request has already been submitted and cannot be edited. Track it in My orders.",
   "intake_direct_only": "Direct options are available. Some processing options are temporarily unavailable and will be marked accordingly.",
   "intake_choice_unavailable": "{choice} — unavailable",
-  "intake_option_unavailable": "This option is temporarily unavailable. Choose a direct option or try later; your draft has not changed."
+  "intake_option_unavailable": "This option is temporarily unavailable. Choose a direct option or try later; your draft has not changed.",
+  "miniapp_open": "Open app"
 }
