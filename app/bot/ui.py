@@ -63,10 +63,10 @@ def home_keyboard(lang="ar", *, admin=False):
         for i in range(0, len(HOME_ITEMS), 2)
     ]
     if config().miniapp_url:
-        rows.insert(
-            0,
-            [KeyboardButton(text=tr("miniapp_open", lang), web_app=WebAppInfo(url=config().miniapp_url))],
+        web_button = KeyboardButton(
+            text=tr("miniapp_open", lang), web_app=WebAppInfo(url=config().miniapp_url)
         )
+        rows.insert(0, [web_button])
     if admin:
         rows.append([KeyboardButton(text=tr("admin_panel", lang))])
     return ReplyKeyboardMarkup(
