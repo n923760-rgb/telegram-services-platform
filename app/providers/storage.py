@@ -101,8 +101,22 @@ class LocalStorage(Storage):
             fcntl.flock(lock, fcntl.LOCK_EX)
             self._check_quota_locked(user_id, len(data), 1)
             path.parent.mkdir(parents=True, exist_ok=True)
-            temporary.write_bytes(data)
-            temporary.replace(path)
+            try:
+                temporary.write_bytes(data)
+                temporary.replace(path)
+            except BaseException:
+                # A failed upload/render must not consume quota with partial bytes.
+                # Preserve the original failure even when cleanup is unavailable;
+                # age-based retention can still recover a surviving temporary file.
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    pass
+                try:
+                    path.parent.rmdir()
+                except OSError:
+                    pass
+                raise
         return Artifact(key=key, filename=filename, mime=mime)
 
     def read(self, key, user_id):

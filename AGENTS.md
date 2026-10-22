@@ -5,8 +5,8 @@ Build an Arabic-first service platform with independent, deterministic plugins.
 Use Python 3.12, FastAPI, aiogram 3, PostgreSQL, SQLAlchemy 2 async, Alembic,
 Redis, ARQ, Pydantic v2, ruff, pytest and typed Office/PDF builders.
 Keep echo for verification; retain approved OCR/Office/PDF plugins disabled by default.
-Treat SAR balances as administrator-issued test credit; require a separate Stars
-payment design before selling digital services inside Telegram.
+Treat SAR balances as administrator-issued test credit; use the separately reviewed
+docs/STARS_DESIGN.md for direct Stars checkout, never convert historic SAR balances.
 
 ## Structure and boundaries
 Keep Telegram adapters in app/bot and HTTP adapters in app/api.
@@ -20,13 +20,14 @@ Never import Telegram, HTTP clients or vendor SDKs from a service plugin.
 Never branch on a specific service slug in wallet/orders/jobs/core policy.
 Use abstract, injected providers; never change services to swap an AI vendor.
 Generate customer menus and intake from the registered input schema.
+Sell outcomes, not engines; select bounded implementations internally within the confirmed price. Retire duplicates via replaced_by, preserving history and meaningful output/consent choices.
 Treat plugin code as trusted executable code; do not describe it as sandboxed.
 
 ## Financial governance
 Use integer halalas for credit and Decimal for finer provider costs.
 Compute available/reserved balances from immutable signed ledger entries.
 Never update/delete ledger history or maintain a mutable balance column.
-Reserve before execution; capture after required delivery; release on failure.
+Reserve/capture/release test credit; Stars charge upfront and refund via confirmed Telegram evidence.
 Refund captured orders once using a compensating entry; never confuse release/refund.
 Bind each wallet operation key globally to its customer/order/amount/payload.
 Lock customer before order/job; acquire provider budgets global-first, then user, then job.
@@ -52,7 +53,8 @@ Validate file content, paths, ownership and decoded image limits.
 Delete files after terminal work; recover pending deletion and expire abandoned files.
 Purge customer content on schedule while preserving minimal financial audit data.
 Change schemas only through Alembic; never create_all in production.
-Keep payment gateways, dashboards, unapproved services, agent loops and n8n out of scope.
+Direct Stars checkout is owner-authorized for V1 completion; external payment gateways,
+dashboards, unapproved services, agent loops and n8n remain out of scope.
 
 ## Add a service
 1. Create app/services/<slug>/ with __init__.py, schema.py, prompt.py, service.py
@@ -107,10 +109,11 @@ Keep local build evidence separate from hosted CI and real Telegram/provider qua
 
 ## Current phase
 Foundation and recovery phases are retained as historical milestones in ENGINEERING/MASTER_ROADMAP.md.
-Baseline main b3deb01 includes the PDF date correction; its workflow passed 340 tests.
-Current bounded round rejects mixed raster/text PDFs before PDF-to-Word extraction or AI calls.
+Baseline main 6ce0c5e includes OCR numeric safeguards; its workflow passed 383 tests.
+Current bounded round preserves Arabic-adjacent numeric text during PDF-to-Word extraction.
 Keep Office/provider visual acceptance separate from schema, font metrics and mocked lifecycle tests.
 PR #5 PDF-to-Word is merged and remains disabled by default.
+PDF-to-Word v3 collects bounded pypdf visitor fragments; preserve admin gates and prices.
 Keep original page-layout/OCR reconstruction out of this text-based conversion; require representative real-provider acceptance before enabling it.
 Use docs/TELEGRAM_ACCEPTANCE.md; distinguish operator-reported runtime evidence from checks run here.
 Treat SAR balances as test credits and configure secrets only on the operating machine.

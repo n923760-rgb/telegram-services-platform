@@ -57,11 +57,18 @@ class Guard(BaseMiddleware):
         user = getattr(event, "from_user", None)
         if not user:
             return
+        if getattr(event, "successful_payment", None) or getattr(event, "refunded_payment", None):
+            return await handler(event, data)
         try:
             count = await self.redis.eval(RATE_LUA, 1, f"rate:{user.id}", 60)
             async with sessions() as db:
                 row = await db.get(User, user.id)
-            allowed = not (row and row.banned) and count <= 30
+            content = getattr(event, "text", None) or ""
+            command = content.split(maxsplit=1)[0].split("@")[0] if content else ""
+            support = command in {"/paysupport", "/support", "/terms"}
+            if data.get("state") and content and not content.startswith("/"):
+                support = support or await data["state"].get_state() == "support"
+            allowed = (not (row and row.banned) or support) and count <= 30
         except Exception:
             allowed = False
         if not allowed:

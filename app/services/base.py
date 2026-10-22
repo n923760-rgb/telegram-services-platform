@@ -12,6 +12,7 @@ class InputField(BaseModel):
     required: bool = True
     skip_key: str = "skip_field"
     single_line: bool = False
+    preserve_image: bool = False
     choices: list[str] = []
     choice_keys: list[str] = []
     max_length: int = Field(default=12000, ge=1, le=12000)
@@ -22,6 +23,8 @@ class InputField(BaseModel):
 
     @model_validator(mode="after")
     def valid(self):
+        if self.preserve_image and self.kind != "image":
+            raise ValueError("image preservation requires an image field")
         if not re.fullmatch(r"[a-z][a-z0-9_]{0,40}", self.name):
             raise ValueError("invalid field name")
         if len(set(self.choices)) != len(self.choices):
@@ -77,6 +80,9 @@ class InputSchema(BaseModel):
         return self
 
     def validate_inputs(self, inputs):
+        if not isinstance(inputs, dict) or any(not isinstance(key, str) for key in inputs):
+            raise ServiceError("input_invalid")
+
         def known_fields(fields, values):
             if not isinstance(values, dict) or set(values) - {field.name for field in fields}:
                 raise ServiceError("input_invalid")
@@ -139,7 +145,12 @@ class Artifact(BaseModel):
 class Result(BaseModel):
     text: str = ""
     artifacts: list[Artifact] = []
+    preview_artifacts: list[Artifact] = []
+    prepared_delivery: bool = False
     preview: str = ""
+    preview_localizations: dict[Literal["ar", "en"], str] = {}
+    review_details: str = ""
+    review_details_localizations: dict[Literal["ar", "en"], str] = {}
     needs_confirmation: bool = False
     continuation: dict = {}
     cost_sar: Decimal = Decimal("0")
@@ -150,7 +161,21 @@ class Result(BaseModel):
             raise ValueError("empty result")
         if self.needs_confirmation and not self.continuation:
             raise ValueError("missing continuation")
-        if len(self.text) > 50000 or len(self.preview) > 3000:
+        if len(self.preview_artifacts) > 1 or any(
+            image.mime != "image/png" for image in self.preview_artifacts
+        ):
+            raise ValueError("invalid visual preview")
+        if self.prepared_delivery and (
+            not self.needs_confirmation or not self.artifacts or not self.preview_artifacts
+        ):
+            raise ValueError("invalid prepared delivery")
+        if (
+            len(self.text) > 50000
+            or len(self.preview) > 3000
+            or any(len(value) > 3000 for value in self.preview_localizations.values())
+            or len(self.review_details) > 50000
+            or any(len(value) > 50000 for value in self.review_details_localizations.values())
+        ):
             raise ValueError("oversized result")
         return self
 
@@ -161,8 +186,34 @@ class ServiceError(Exception):
         super().__init__(key)
 
 
+class TextFollowup(BaseModel):
+    """Trusted plugin declaration; source is always the retained result text."""
+
+    service: str = Field(pattern=r"^[a-z][a-z0-9_]{0,39}$")
+    field: str = Field(pattern=r"^[a-z][a-z0-9_]{0,40}$")
+    label_key: str = Field(pattern=r"^[a-z][a-z0-9_]{0,60}$")
+
+
+WORKER_REQUIREMENTS = frozenset(
+    {
+        "office_export",
+        "pdf_tables",
+        "document_images",
+        "image_pdf",
+        "pdf_previews",
+        "native_ocr",
+        "pdf_font",
+    }
+)
+
+
 class BaseService:
+    worker_requirements: tuple[str, ...] = ()
+    optional_worker_requirements: tuple[str, ...] = ()
     version = "1"
+    category = "other"
+    menu_order = 100
+    admin_only = False
     slug: str
     name_ar: str
     name_en: str
@@ -171,7 +222,28 @@ class BaseService:
     input_schema: InputSchema
     enabled_by_default = True
     requires_ai = False
+    optional_ai = False  # Presentation only; needs_ai(inputs) remains authoritative.
+    ai_intake_choices: dict[str, tuple[str, ...]] = {}  # Read-only UI hints, not admission.
     runtime: Any = None
+    text_followups: tuple[TextFollowup, ...] = ()
+    # Retain historical execution, but never sell a second implementation of one result.
+    replaced_by: str | None = None
+
+    @classmethod
+    def validate_followup_text(cls, name: str, text: str) -> None:
+        # Only the first, unconditional, free-text field can be prefilled. Intake then
+        # continues normally; no choices, uploads or purchase confirmation are skipped.
+        field = cls.input_schema.conversation()[0]
+        if (
+            field.name != name
+            or field.kind != "text"
+            or field.choices
+            or field.when
+            or not text.strip()
+            or len(text) > field.max_length
+            or (field.single_line and any(c in text for c in "\r\n\u2028\u2029"))
+        ):
+            raise ServiceError("input_invalid")
 
     @classmethod
     def needs_ai(cls, inputs: dict) -> bool:
@@ -183,3 +255,28 @@ class BaseService:
 
     async def run(self, inputs: dict) -> Result:
         raise NotImplementedError
+
+
+def ai_policy(plugin):
+    """Describe the declared capability without inventing inputs or running a plugin."""
+    if getattr(plugin, "requires_ai", False) is True:
+        return "required"
+    return "conditional" if getattr(plugin, "optional_ai", False) is True else "none"
+
+
+def validate_ai_intake_choices(plugin):
+    """Choice hints only; validated needs_ai(inputs) still owns actual admission."""
+    mapping = plugin.ai_intake_choices
+    if type(mapping) is not dict or (mapping and not plugin.optional_ai):
+        raise ValueError("invalid AI intake choices")
+    fields = {field.name: field for field in plugin.input_schema.conversation()}
+    for name, values in mapping.items():
+        if (
+            name not in fields
+            or type(values) is not tuple
+            or not values
+            or any(type(value) is not str for value in values)
+            or len(set(values)) != len(values)
+            or not set(values).issubset(fields[name].choices)
+        ):
+            raise ValueError("invalid AI intake choices")

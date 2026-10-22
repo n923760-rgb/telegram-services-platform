@@ -6,14 +6,19 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
 
+from app.bot.availability import declared_ai_choices, mandatory_ai_unavailable, mixed_ai_unavailable
+from app.bot.draft_edit import abort_edit, accepted_draft, advance, begin_edit, next_index
+from app.bot.order_review import confirmation_text, field_label
 from app.bot.ui import buttons, home_keyboard, leave_support, menu
 from app.core.db import sessions
+from app.core.display import order_reference
 from app.core.i18n import tr
 from app.core.models import Order, Service
 from app.core.settings import config
 from app.core.users import set_language
 from app.orders.engine import register, submit
 from app.services.base import InputSchema, ServiceError, active_field, get_input, set_input
+from app.services.registry import registry
 from app.wallet.ledger import WalletError, apply, balance, halalas, sar
 
 
@@ -28,9 +33,7 @@ def create_router():
         """
         data = await state.get_data()
         fields = InputSchema.model_validate(data["schema"]).conversation()
-        index = data["index"]
-        while index < len(fields) and not active_field(fields[index], data["inputs"]):
-            index += 1
+        index = next_index(data, fields)
         if index != data["index"]:
             data["index"] = index
         data["pending_prompt"] = True
@@ -38,12 +41,18 @@ def create_router():
         if index >= len(fields):
             await state.set_state("confirm")
             await message.answer(
-                tr("confirmation_title", lang, name=data.get(f"name_{lang}", data["slug"]))
-                + "\n\n"
-                + tr("confirm_price", lang, amount=sar(data["price"])),
+                confirmation_text(data, lang),
+                parse_mode=None,
                 reply_markup=buttons(
                     [
-                        (tr("confirm", lang), f"confirm:{data['key']}"),
+                        (
+                            tr(
+                                "stars_agree" if data.get("payment_mode") == "stars" else "confirm",
+                                lang,
+                            ),
+                            f"confirm:{data['key']}",
+                        ),
+                        (tr("review_edit", lang), f"edit:{data['key']}"),
                         (tr("cancel", lang), f"cancel:{data['key']}"),
                     ]
                 ),
@@ -51,6 +60,11 @@ def create_router():
         else:
             await state.set_state("collect")
             field = fields[index]
+            ai_unavailable = await mixed_ai_unavailable(data)
+            blocked_choices = (
+                declared_ai_choices(data).get(field.name, ()) if ai_unavailable else ()
+            )
+            notice = tr("intake_direct_only", lang) + "\n\n" if ai_unavailable else ""
             heading = tr(
                 "intake_step",
                 lang,
@@ -58,29 +72,47 @@ def create_router():
                 step=sum(active_field(f, data["inputs"]) for f in fields[:index]) + 1,
             )
             cancel_item = (tr("cancel", lang), f"cancel:{data['key']}")
+            exit_items = (
+                [(tr("review_edit_abort", lang), f"editabort:{data['key']}")]
+                if "_edit_queue" in data
+                else []
+            ) + [cancel_item]
             values = get_input(data["inputs"], field.name)
             if field.multiple and isinstance(values, list) and 0 < len(values) < field.max_items:
                 await message.answer(
                     heading
                     + "\n\n"
+                    + notice
                     + tr("files_received", lang, count=len(values), maximum=field.max_items)
                     + "\n"
                     + tr("more_files", lang),
                     reply_markup=buttons(
-                        [(tr("done_files", lang), f"done:{data['key']}:{index}"), cancel_item]
+                        [(tr("done_files", lang), f"done:{data['key']}:{index}")] + exit_items
                     ),
                 )
             else:
                 items = [
-                    (tr(k, lang), f"choice:{data['key']}:{index}:{i}")
+                    (
+                        tr("intake_choice_unavailable", lang, choice=tr(k, lang))
+                        if field.choices[i] in blocked_choices
+                        else tr(k, lang),
+                        f"choice:{data['key']}:{index}:{i}",
+                    )
                     for i, k in enumerate(field.choice_keys)
                 ]
-                if not field.required:
+                # A skip alias already offered as a choice needs only one visible button.
+                if not field.required and field.skip_key not in field.choice_keys:
                     items.append((tr(field.skip_key, lang), f"skip:{data['key']}:{index}"))
-                items.append(cancel_item)
+                items.extend(exit_items)
                 await message.answer(
-                    heading + "\n\n" + tr(field.prompt_key, lang),
-                    reply_markup=buttons(items, columns=2 if field.choices else 1),
+                    heading
+                    + "\n\n"
+                    + notice
+                    + (tr("review_edit_notice", lang) + "\n\n" if "_edit_queue" in data else "")
+                    + tr(field.prompt_key, lang),
+                    reply_markup=buttons(
+                        items, columns=2 if field.choices else 1, separate_last=bool(field.choices)
+                    ),
                 )
         data["pending_prompt"] = False
         await state.set_data(data)
@@ -93,14 +125,11 @@ def create_router():
             return True
         return False
 
-    @router.callback_query(F.data.startswith("service:"))
-    async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
-        await register(callback.from_user.id)
-        async with sessions() as db:
-            service = await db.get(Service, callback.data.split(":", 1)[1])
-        await callback.answer()
-        if not service or not service.enabled:
-            await callback.message.answer(tr("unavailable", lang))
+    async def start_draft(message, state, service, lang, *, inputs=None, index=0):
+        from app.payments.stars import terms_hash
+
+        if await mandatory_ai_unavailable(service.slug):
+            await message.answer(tr("service_ai_unavailable", lang), reply_markup=menu(lang))
             return
         await state.set_state("collect")
         await state.set_data(
@@ -111,12 +140,68 @@ def create_router():
                 "schema": service.input_schema,
                 "price": service.price_halala,
                 "version": service.version,
-                "inputs": {},
-                "index": 0,
+                "inputs": inputs or {},
+                "index": index,
                 "key": uuid4().hex,
+                "payment_mode": "stars" if config().stars_enabled else "test_credit",
+                "stars_price": service.price_stars if config().stars_enabled else None,
+                "terms_version": config().stars_terms_version if config().stars_enabled else None,
+                "terms_hash": terms_hash() if config().stars_enabled else None,
+                "terms": {"ar": config().stars_terms_ar, "en": config().stars_terms_en},
             }
         )
-        await ask(callback.message, state, lang)
+        await ask(message, state, lang)
+
+    @router.callback_query(F.data.startswith("service:"))
+    async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        await register(callback.from_user.id)
+        async with sessions() as db:
+            slug = registry.customer_slug(callback.data.split(":", 1)[1])
+            service = await db.get(Service, slug) if slug else None
+        await callback.answer()
+        if (
+            not service
+            or not service.enabled
+            or not registry.can_request(
+                service.slug, admin=callback.from_user.id in config().admin_ids
+            )
+        ):
+            await callback.message.answer(tr("unavailable", lang))
+            return
+        if config().stars_enabled and service.price_stars is None:
+            await callback.message.answer(tr("unavailable", lang))
+            return
+        await start_draft(callback.message, state, service, lang)
+
+    @router.callback_query(F.data.startswith("follow:"))
+    async def follow_result(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        from app.bot.followups import available_followups, parse_callback
+        from app.bot.ui import section_controls
+
+        try:
+            order_id, index = parse_callback(callback.data)
+            action = (await available_followups(callback.from_user.id, order_id)).get(index)
+            if not action:
+                raise ServiceError("followup_unavailable")
+        except ServiceError as error:
+            await callback.answer(tr(error.key, lang), show_alert=True)
+            return
+        # Repeated clicks recover a pending prompt, never overwrite an active draft.
+        if (await state.get_data()).get("key"):
+            await callback.answer()
+            if await _resume_if_pending(callback.message, state, lang):
+                return
+            await callback.message.answer(
+                tr("followup_draft_exists", lang),
+                reply_markup=buttons(await section_controls(state, lang)),
+            )
+            return
+        followup, service, text = action
+        await callback.answer()
+        # Keep the original result/order untouched and use the usual target intake.
+        await start_draft(
+            callback.message, state, service, lang, inputs={followup.field: text}, index=1
+        )
 
     @router.callback_query(F.data.startswith("lang:"))
     async def language_choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
@@ -132,6 +217,69 @@ def create_router():
         )
         if (await state.get_data()).get("key"):
             await ask(callback.message, state, new_lang)
+
+    @router.callback_query(StateFilter("confirm"), F.data.startswith("edit:"))
+    async def edit_menu(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        data = await state.get_data()
+        if callback.data != f"edit:{data.get('key')}":
+            await callback.answer(tr("stale_button", lang), show_alert=True)
+            return
+        if await _resume_if_pending(callback.message, state, lang):
+            await callback.answer()
+            return
+        if await accepted_draft(callback.from_user.id, data["key"]):
+            await callback.answer(tr("review_edit_submitted", lang), show_alert=True)
+            return
+        fields = InputSchema.model_validate(data["schema"]).conversation()
+        items = [
+            (field_label(field, index + 1, lang), f"editfield:{data['key']}:{index}")
+            for index, field in enumerate(fields)
+            if active_field(field, data["inputs"])
+        ]
+        items.append((tr("review_edit_back", lang), "draft:resume"))
+        await callback.answer()
+        await callback.message.answer(tr("review_edit_choose", lang), reply_markup=buttons(items))
+
+    @router.callback_query(StateFilter("confirm"), F.data.startswith("editfield:"))
+    async def edit_field(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        data = await state.get_data()
+        try:
+            _, key, index = callback.data.split(":")
+            if key != data.get("key"):
+                await callback.answer(tr("stale_button", lang), show_alert=True)
+                return
+            if not index.isascii() or not index.isdecimal() or str(int(index)) != index:
+                raise ValueError("invalid index")
+            if await _resume_if_pending(callback.message, state, lang):
+                await callback.answer()
+                return
+            if await accepted_draft(callback.from_user.id, key):
+                await callback.answer(tr("review_edit_submitted", lang), show_alert=True)
+                return
+            edited = begin_edit(data, int(index))
+        except (ValueError, KeyError):
+            await callback.answer(tr("invalid_request", lang), show_alert=True)
+            return
+        edited["key"] = uuid4().hex
+        edited["pending_prompt"] = True
+        await state.set_data(edited)
+        await state.set_state("collect")
+        await callback.answer()
+        await ask(callback.message, state, lang)
+
+    @router.callback_query(StateFilter("collect"), F.data.startswith("editabort:"))
+    async def edit_abort(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        data = await state.get_data()
+        if callback.data != f"editabort:{data.get('key')}" or "_edit_original" not in data:
+            await callback.answer(tr("stale_button", lang), show_alert=True)
+            return
+        restored = abort_edit(data)
+        restored["key"] = uuid4().hex
+        restored["pending_prompt"] = True
+        await state.set_data(restored)
+        await state.set_state("confirm")
+        await callback.answer()
+        await ask(callback.message, state, lang)
 
     @router.callback_query(
         StateFilter("collect", "confirm", "support"), F.data.startswith("cancel:")
@@ -169,7 +317,14 @@ def create_router():
         if field.required or get_input(data["inputs"], field.name) is not None:
             await callback.message.answer(tr("invalid_request", lang))
             return
-        data["index"] += 1
+        blocked = declared_ai_choices(data).get(field.name, ())
+        if any(
+            value in blocked and field.choice_keys[index] == field.skip_key
+            for index, value in enumerate(field.choices)
+        ) and await mixed_ai_unavailable(data):
+            await callback.message.answer(tr("intake_option_unavailable", lang))
+            return
+        advance(data)
         await state.set_data(data)
         await ask(callback.message, state, lang)
 
@@ -194,12 +349,17 @@ def create_router():
             await callback.answer(tr("invalid_request", lang), show_alert=True)
             return
         value = field.choices[selected_index]
+        if value in declared_ai_choices(data).get(field.name, ()) and await mixed_ai_unavailable(
+            data
+        ):
+            await callback.answer(tr("intake_option_unavailable", lang), show_alert=True)
+            return
         await callback.answer()
         await collect_value(callback.message, state, data, field.name, value, lang)
 
     async def collect_value(message, state, data, name, value, lang):
         set_input(data["inputs"], name, value)
-        data["index"] += 1
+        advance(data)
         await state.set_data(data)
         await ask(message, state, lang)
 
@@ -259,14 +419,26 @@ def create_router():
                 data["price"],
                 data["key"],
                 data["version"],
+                expected_stars=data.get("stars_price"),
+                terms_version=data.get("terms_version"),
+                expected_terms_hash=data.get("terms_hash"),
             )
+            if data.get("payment_mode") == "stars":
+                from app.bot.payments import invoice
+
+                await invoice(callback.bot, order_id, callback.from_user.id, lang)
             await state.clear()
             try:
                 await callback.message.edit_reply_markup()
             except Exception:
                 pass
             await callback.message.answer(
-                tr("queued", lang, order_id=order_id), reply_markup=menu(lang)
+                tr(
+                    "stars_invoice_sent" if data.get("payment_mode") == "stars" else "queued",
+                    lang,
+                    order_id=order_reference(order_id),
+                ),
+                reply_markup=menu(lang),
             )
         except (ServiceError, WalletError) as error:
             await callback.message.answer(tr(error.key, lang))
@@ -291,7 +463,8 @@ def create_router():
             from app.files.telegram import receive
 
             try:
-                value = await receive(message, field.kind, message.from_user.id)
+                options = {"preserve_image": True} if field.preserve_image else {}
+                value = await receive(message, field.kind, message.from_user.id, **options)
             except ServiceError as error:
                 await message.answer(tr(error.key, lang))
                 return
@@ -341,6 +514,11 @@ def create_router():
         if not data.get("key") or "schema" not in data:
             await callback.message.answer(tr("resume_none", lang), reply_markup=menu(lang))
             return
+        if await mandatory_ai_unavailable(data["slug"]):
+            await callback.message.answer(
+                tr("service_ai_unavailable", lang), reply_markup=menu(lang)
+            )
+            return
         await ask(callback.message, state, lang)
 
     @router.message(Command("resume"))
@@ -349,6 +527,9 @@ def create_router():
         data = await state.get_data()
         if not data.get("key") or "schema" not in data:
             await message.answer(tr("resume_none", lang))
+            return
+        if await mandatory_ai_unavailable(data["slug"]):
+            await message.answer(tr("service_ai_unavailable", lang), reply_markup=menu(lang))
             return
         await ask(message, state, lang)
 
@@ -384,10 +565,14 @@ def create_router():
 
         await callback.answer()
         try:
+            parts = callback.data.split(":")
+            if len(parts) not in {2, 3} or (len(parts) == 3 and parts[2] != "visual"):
+                raise ServiceError("invalid_request")
             await confirm_structure(
-                UUID(callback.data.split(":")[1]),
+                UUID(parts[1]),
                 callback.from_user.id,
                 callback.data.startswith("approve:"),
+                expected_prepared=len(parts) == 3,
             )
             try:
                 await callback.message.edit_reply_markup()

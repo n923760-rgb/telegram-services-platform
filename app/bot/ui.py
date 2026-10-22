@@ -10,6 +10,7 @@ from aiogram.types import (
 )
 
 from app.core.i18n import tr
+from app.core.settings import config
 
 HOME_ITEMS = ("services", "orders", "balance", "support", "language", "help")
 
@@ -17,28 +18,51 @@ HOME_ITEMS = ("services", "orders", "balance", "support", "language", "help")
 class MenuButton(Filter):
     def __init__(self, key):
         self.labels = {tr(key, lang) for lang in ("ar", "en")}
+        if key == "balance":
+            self.labels.update(tr("payments", lang) for lang in ("ar", "en"))
 
     async def __call__(self, message: Message) -> bool:
         return message.text in self.labels
 
 
-def buttons(items, columns=1):
-    items = [InlineKeyboardButton(text=text, callback_data=data) for text, data in items]
-    return InlineKeyboardMarkup(
-        inline_keyboard=[items[i : i + columns] for i in range(0, len(items), columns)]
-    )
+def buttons(items, columns=1, *, separate_last=False):
+    controls = [InlineKeyboardButton(text=text, callback_data=data) for text, data in items]
+    tail = controls.pop() if separate_last and controls else None
+    rows, pending = [], []
+    for button in controls:
+        # Telegram does not wrap button labels. Give long labels the whole row.
+        if columns == 1 or len(button.text) > 18:
+            if pending:
+                rows.append(pending)
+                pending = []
+            rows.append([button])
+        else:
+            pending.append(button)
+            if len(pending) == columns:
+                rows.append(pending)
+                pending = []
+    if pending:
+        rows.append(pending)
+    if tail:
+        rows.append([tail])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def menu(lang="ar"):
-    return buttons([(tr(key, lang), f"menu:{key}") for key in HOME_ITEMS], columns=2)
+    return buttons([(menu_label(key, lang), f"menu:{key}") for key in HOME_ITEMS], columns=2)
 
 
-def home_keyboard(lang="ar"):
+def menu_label(key, lang):
+    return tr("payments" if key == "balance" and config().stars_enabled else key, lang)
+
+
+def home_keyboard(lang="ar", *, admin=False):
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=tr(key, lang)) for key in HOME_ITEMS[i : i + 2]]
+            [KeyboardButton(text=menu_label(key, lang)) for key in HOME_ITEMS[i : i + 2]]
             for i in range(0, len(HOME_ITEMS), 2)
-        ],
+        ]
+        + ([[KeyboardButton(text=tr("admin_panel", lang))]] if admin else []),
         resize_keyboard=True,
         is_persistent=True,
         input_field_placeholder=tr("menu_placeholder", lang),

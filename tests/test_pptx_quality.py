@@ -41,6 +41,17 @@ def sample_plan():
     }
 
 
+def sample_source():
+    """Actual text/numeric inputs for the explicit response fixture, not AI evidence."""
+    parts = []
+    for slide in sample_plan()["slides"]:
+        parts.extend([slide["title"], *slide.get("bullets", [])])
+        if "table" in slide:
+            parts.extend(slide["table"]["columns"])
+            parts.extend(cell for row in slide["table"]["rows"] for cell in row)
+    return "\n".join(parts)
+
+
 def test_pptx_native_text_table_source_values_fonts_and_editability():
     data = Deck.model_validate(sample_plan())
     content = pptx.build(data)
@@ -66,7 +77,9 @@ def test_pptx_native_text_table_source_values_fonts_and_editability():
                         for run in p.runs
                     )
     body = next(s for s in prs.slides[1].shapes if s.name == "Slide content")
-    assert [p.text for p in body.text_frame.paragraphs] == data.slides[1].bullets
+    assert [p.text.replace("\u200e", "") for p in body.text_frame.paragraphs] == data.slides[
+        1
+    ].bullets
     assert [p._p.pPr.get("rtl") for p in body.text_frame.paragraphs] == ["1", "1", "0"]
     for paragraph in body.text_frame.paragraphs:
         assert paragraph._p.pPr.find(qn("a:buChar")) is not None

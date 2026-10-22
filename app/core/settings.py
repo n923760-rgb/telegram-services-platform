@@ -1,6 +1,7 @@
 from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,14 +17,22 @@ class Config(BaseSettings):
     )
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     telegram_mode: str = "polling"
+    telegram_api_environment: Literal["production", "test"] = "production"
     telegram_webhook_secret: SecretStr = SecretStr("")
+    stars_enabled: bool = False
+    stars_terms_version: str = ""
+    stars_terms_ar: str = ""
+    stars_terms_en: str = ""
     ai_provider: str = "openai_compatible"
     ai_api_key: SecretStr = SecretStr("")
     ai_base_url: str = "https://api.openai.com/v1"
     ai_image_token_bound: int = 20000
     ai_max_output_tokens: int = 8192
+    ai_token_limit_parameter: Literal["auto", "max_tokens", "max_completion_tokens"] = "auto"
+    ai_deepseek_thinking: Literal["disabled", "enabled"] = "disabled"
     ai_model: str = "gpt-4.1-mini"
     ai_enabled: bool = False
+    document_visual_review: bool = False
     ai_input_usd_per_million: Decimal = Decimal("0")
     ai_output_usd_per_million: Decimal = Decimal("0")
     usd_to_sar: Decimal = Decimal("3.75")
@@ -47,6 +56,19 @@ class Config(BaseSettings):
 
     @model_validator(mode="after")
     def validate_config(self):
+        if self.stars_enabled and (
+            self.telegram_mode != "webhook"
+            or not 1 <= len(self.stars_terms_version) <= 80
+            or not self.stars_terms_version.strip()
+            or any(
+                not 20 <= len(text) <= 2500 for text in (self.stars_terms_ar, self.stars_terms_en)
+            )
+            or any(
+                len(text.encode("utf-16-le")) // 2 > 2500 or not text.strip()
+                for text in (self.stars_terms_ar, self.stars_terms_en)
+            )
+        ):
+            raise ValueError("Stars requires authenticated webhook mode and configured terms")
         if self.telegram_mode not in {"polling", "webhook"}:
             raise ValueError("invalid Telegram mode")
         if self.telegram_mode == "webhook" and not self.telegram_webhook_secret.get_secret_value():

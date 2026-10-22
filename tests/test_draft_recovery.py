@@ -144,23 +144,29 @@ async def test_failed_choice_prompt_recovers():
     await message("/start")
     await callback("menu:services")
     await callback("service:text_to_office")
-    assert transport.messages[-1].text.endswith(tr("office_text"))
+    assert transport.messages[-1].text.endswith(tr("office_target"))
     transport.fail_next_sends = 1
     with pytest.raises(SimulatedSendFailure):
-        await message("المحتوى")  # the target choice question fails
-    await message("المحتوى")  # re-renders the choice question instead of consuming again
-    assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    # Selecting Word advances straight to purchase confirmation.
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    await message("retry")  # recovers the mode prompt without consuming customer text
+    assert transport.messages[-1].text.endswith(tr("office_word_mode"))
+    assert (await dp.fsm.get_context(bot=bot, chat_id=user.id, user_id=user.id).get_data())[
+        "inputs"
+    ] == {"target": "word"}
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    assert transport.messages[-1].text.endswith(tr("office_text"))
+    await message("المحتوى")
     assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()
     await bot.session.close()
 
 
 async def test_failed_more_files_prompt_recovers(monkeypatch):
+    monkeypatch.setattr(config(), "ai_enabled", True)
     import app.files.telegram as telegram_module
 
-    async def fake_receive(message, kind, user_id):
+    async def fake_receive(message, kind, user_id, *, preserve_image=False):
+        assert preserve_image is True
         return f"1/{'a' * 32}/input.jpg"
 
     monkeypatch.setattr(telegram_module, "receive", fake_receive)
@@ -178,7 +184,7 @@ async def test_failed_more_files_prompt_recovers(monkeypatch):
     assert transport.messages[-1].text.endswith(tr("more_files"))
     assert button_by_prefix(transport.messages[-1].reply_markup, "done:")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "done:"))
-    assert button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()
     await bot.session.close()
 
@@ -206,6 +212,7 @@ async def test_resume_rerenders_current_prompt():
 
 
 async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
+    monkeypatch.setattr(config(), "ai_enabled", True)
     """A distinct image B arriving while A's more_files acknowledgement is pending must not be
     consumed: an explicit notice says it was not applied and only A is retained."""
     import app.files.telegram as telegram_module
@@ -214,7 +221,8 @@ async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
     monkeypatch.setattr(config(), "ai_enabled", True)
     counter = {"n": 0}
 
-    async def fake_receive(message, kind, user_id):
+    async def fake_receive(message, kind, user_id, *, preserve_image=False):
+        assert preserve_image is True
         counter["n"] += 1
         hexpart = ("a" if counter["n"] == 1 else "b") * 32
         return f"1/{hexpart}/input.jpg"
@@ -235,7 +243,6 @@ async def test_new_image_after_failed_more_files_is_not_applied(monkeypatch):
     assert transport.messages[-1].text.endswith(tr("more_files"))
     # Complete the draft: only A was accepted, B was never received.
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "done:"))
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     assert counter["n"] == 1
     async with sessions() as db:

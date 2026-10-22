@@ -7,12 +7,13 @@ from sqlalchemy import select
 
 import app.services
 from app.core.models import Service
-from app.services.base import BaseService
+from app.services.base import WORKER_REQUIREMENTS, BaseService, validate_ai_intake_choices
+from app.services.catalog import CATEGORY_KEYS
 from app.wallet.ledger import halalas
 
 
 def _input_contract(schema):
-    """Ignore only the no-op defaults added to InputField in the title upgrade.
+    """Ignore only known no-op defaults added to InputField.
 
     Preserve unknown keys and every other difference so real changes still need a bump.
     Copy rather than mutate the DB snapshot or a plugin's schema.
@@ -25,6 +26,8 @@ def _input_contract(schema):
                 field.pop("skip_key")
             if field.get("single_line") is False:
                 field.pop("single_line")
+            if field.get("preserve_image") is False:
+                field.pop("preserve_image")
             normalize(field.get("fields", []))
 
     normalize(result.get("fields", []))
@@ -38,10 +41,36 @@ class Registry:
     def discover(self):
         for info in pkgutil.iter_modules(app.services.__path__):
             if info.ispkg:
+                # AGENTS.md trusts local plugin code; discovery names are not customer input.
+                # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
                 module = importlib.import_module(f"app.services.{info.name}.service")
                 cls = module.SERVICE
                 if not issubclass(cls, BaseService) or cls.slug != info.name:
                     raise ValueError("invalid service plugin")
+                if cls.category not in CATEGORY_KEYS:
+                    raise ValueError("invalid service category")
+                if type(cls.menu_order) is not int or not 0 <= cls.menu_order <= 1000:
+                    raise ValueError("invalid service menu order")
+                if type(cls.admin_only) is not bool:
+                    raise ValueError("invalid service audience")
+                if (
+                    type(cls.requires_ai) is not bool
+                    or type(cls.optional_ai) is not bool
+                    or (cls.requires_ai and cls.optional_ai)
+                ):
+                    raise ValueError("invalid service AI metadata")
+                validate_ai_intake_choices(cls)
+                required, optional = cls.worker_requirements, cls.optional_worker_requirements
+                if (
+                    type(required) is not tuple
+                    or type(optional) is not tuple
+                    or any(
+                        type(value) is not str or value not in WORKER_REQUIREMENTS
+                        for value in required + optional
+                    )
+                    or len(set(required + optional)) != len(required + optional)
+                ):
+                    raise ValueError("invalid worker requirements")
                 if not re.fullmatch(r"[a-z][a-z0-9_]{0,39}", cls.slug) or not re.fullmatch(
                     r"[A-Za-z0-9_.-]{1,32}", cls.version
                 ):
@@ -49,6 +78,25 @@ class Registry:
                 if cls.slug in self.types:
                     raise ValueError("duplicate service")
                 self.types[cls.slug] = cls
+        from app.core.i18n import CATALOGS
+
+        for cls in self.types.values():
+            if cls.replaced_by is not None:
+                target = self.types.get(cls.replaced_by)
+                if not target or target is cls or target.replaced_by is not None:
+                    raise ValueError("invalid service replacement")
+            if len(cls.text_followups) > 3:
+                raise ValueError("too many result followups")
+            for action in cls.text_followups:
+                target = self.types.get(action.service)
+                if (
+                    not target
+                    or target.replaced_by is not None
+                    or any(action.label_key not in CATALOGS[lang] for lang in ("ar", "en"))
+                ):
+                    raise ValueError("invalid result followup")
+                # Validate declaration structure without a runtime/provider or customer content.
+                BaseService.validate_followup_text.__func__(target, action.field, "x")
         return self
 
     def get(self, slug, runtime=None):
@@ -56,12 +104,31 @@ class Registry:
         service.runtime = runtime
         return service
 
+    def customer_slug(self, slug):
+        """Resolve an old selection to a fresh canonical draft, never an existing order."""
+        cls = self.types.get(slug)
+        return (getattr(cls, "replaced_by", None) or slug) if cls else None
+
+    def customer_visible(self, slug):
+        cls = self.types.get(slug)
+        return cls is not None and getattr(cls, "replaced_by", None) is None
+
+    def can_request(self, slug, *, admin=False):
+        return self.customer_visible(slug) and (not self.types[slug].admin_only or admin is True)
+
     async def sync(self, db):
         from sqlalchemy.dialects.postgresql import insert
 
         from app.core.i18n import CATALOGS
 
         for slug, cls in self.types.items():
+            category_key = CATEGORY_KEYS[cls.category]
+            if any(
+                key not in CATALOGS[lang]
+                for lang in ("ar", "en")
+                for key in (category_key, category_key + "_description")
+            ):
+                raise ValueError("missing category i18n")
             for field in cls.input_schema.conversation():
                 if any(
                     key not in CATALOGS["ar"] or key not in CATALOGS["en"]

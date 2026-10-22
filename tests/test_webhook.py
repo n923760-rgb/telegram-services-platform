@@ -5,12 +5,23 @@ from aiogram import Bot
 from aiogram.fsm.storage.memory import MemoryStorage
 from pydantic import SecretStr
 
-from app.api.main import app
+from app.api.main import app, lifespan
 from app.bot.main import create_dispatcher
 from app.core.db import sessions
 from app.core.models import User
 from app.core.settings import config
 from tests.test_bot_flow import Session
+
+
+async def test_webhook_lifespan_uses_the_selected_test_api(monkeypatch):
+    monkeypatch.setattr(config(), "telegram_mode", "webhook")
+    monkeypatch.setattr(config(), "telegram_api_environment", "test")
+    monkeypatch.setattr(config(), "telegram_webhook_secret", SecretStr("fixture-secret"))
+    async with lifespan(app):
+        token = config().bot_token.get_secret_value()
+        assert app.state.bot.session.api.api_url(token, "sendInvoice") == (
+            f"https://api.telegram.org/bot{token}/test/sendInvoice"
+        )
 
 
 async def test_webhook_secret_stream_limit_and_real_dispatch(monkeypatch):

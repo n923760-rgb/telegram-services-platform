@@ -17,6 +17,7 @@ from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
 from app.wallet.ledger import balance
 from app.workers.runner import deliver_confirmations, deliver_failures, execute_job
+from tests.ocr_fixtures import printed
 from tests.test_file_layers import Provider
 from tests.test_foundation import fund, job_for
 
@@ -61,7 +62,7 @@ async def setup(slug, responses, tmp_path, monkeypatch):
     return store, provider, delivery, ctx, price
 
 
-async def test_real_ocr_success_translation_and_capture(tmp_path, monkeypatch):
+async def test_real_ocr_original_text_and_capture(tmp_path, monkeypatch):
     store, provider, delivery, ctx, price = await setup(
         "image_to_text",
         ['{"readable":true,"confidence":.99,"text":"مرحبا 123"}', '{"text":"Hello 123"}'],
@@ -70,11 +71,11 @@ async def test_real_ocr_success_translation_and_capture(tmp_path, monkeypatch):
     )
     # JSON requires a leading zero, so use the valid provider response below.
     provider.responses[0] = '{"readable":true,"confidence":0.99,"text":"مرحبا 123"}'
-    file = store.save(1, "input.jpg", b"test image", "image/jpeg")
+    file = store.save(1, "input.jpg", printed(), "image/jpeg")
     oid = await submit(
         1,
         "image_to_text",
-        {"images": [file.key], "language": "en", "style": "formal"},
+        {"images": [file.key]},
         price,
         "ocr",
     )
@@ -82,19 +83,17 @@ async def test_real_ocr_success_translation_and_capture(tmp_path, monkeypatch):
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).available == 1000 - price
-        assert (await db.get(Job, await job_for(oid))).cost_sar == Decimal(".008")
-    assert delivery.results[0].text == "Hello 123"
-    assert provider.calls == 2
+        assert (await db.get(Job, await job_for(oid))).cost_sar == Decimal(".004")
+    assert delivery.results[0].text == "مرحبا 123"
+    assert provider.calls == 1 and len(provider.responses) == 1
 
 
 async def test_real_ocr_unreadable_releases_and_notifies(tmp_path, monkeypatch):
     store, provider, delivery, ctx, price = await setup(
         "image_to_text", ['{"readable":false,"confidence":0,"text":""}'], tmp_path, monkeypatch
     )
-    file = store.save(1, "input.jpg", b"test", "image/jpeg")
-    oid = await submit(
-        1, "image_to_text", {"images": [file.key], "language": "none"}, price, "bad-image"
-    )
+    file = store.save(1, "input.jpg", printed(), "image/jpeg")
+    oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "bad-image")
     await execute_job(ctx, str(await job_for(oid)))
     await deliver_failures(ctx)
     await deliver_failures(ctx)
@@ -111,7 +110,7 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
         "text_to_office",
         [
             '{"document":{"title":"تقرير","sections":[{"paragraphs":["بيانات مؤكدة"]}]}}',
-            '{"table":{"title":"مبيعات","columns":["المنتج","العدد"],"rows":[["تفاح",12]]}}',
+            '{"table":{"title":"مبيعات","columns":["المنتج","العدد"],"rows":[["تفاح",12]]},"evidence":[{"source_id":1,"quotes":["تفاح","12"]}]}',
         ],
         tmp_path,
         monkeypatch,
@@ -121,8 +120,9 @@ async def test_real_word_and_excel_outputs(tmp_path, monkeypatch):
             1,
             "text_to_office",
             {
-                "text": "المعلومات",
+                "text": "تفاح 12" if target == "excel" else "المعلومات",
                 "target": target,
+                **({"mode": "smart"} if target == "word" else {}),
             },
             price,
             target,
@@ -172,6 +172,7 @@ async def test_professional_word_table_delivery_and_single_capture(
         1,
         "text_to_office",
         {
+            "mode": "smart",
             "text": "مذكرة: الطلب 00123، المبلغ 125.50 ريال، التاريخ 2026-10-08.",
             "target": "word",
         },
@@ -210,7 +211,7 @@ async def test_invalid_word_table_after_one_repair_releases_credit(tmp_path, mon
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "00123", "target": "word"},
+        {"mode": "smart", "text": "00123", "target": "word"},
         price,
         "invalid-table",
     )
@@ -232,7 +233,9 @@ async def test_ambiguity_confirm_resumes_without_second_ai_charge(tmp_path, monk
         tmp_path,
         monkeypatch,
     )
-    oid = await submit(1, "text_to_office", {"text": "نص", "target": "word"}, price, "ambiguous")
+    oid = await submit(
+        1, "text_to_office", {"mode": "smart", "text": "نص", "target": "word"}, price, "ambiguous"
+    )
     jid = await job_for(oid)
     await execute_job(ctx, str(jid))
     await deliver_confirmations(ctx)
@@ -253,7 +256,7 @@ async def test_ambiguity_cancel_releases(tmp_path, monkeypatch):
     _, _, delivery, ctx, price = await setup(
         "text_to_office",
         [
-            '{"ambiguous":true,"question":"هل تعتمد؟","table":{"title":"جدول","columns":["عنصر"],"rows":[["نص"]]}}'
+            '{"ambiguous":true,"question":"هل تعتمد؟","table":{"title":"جدول","columns":["عنصر"],"rows":[["نص"]]},"evidence":[{"source_id":1,"quotes":["نص"]}]}'
         ],
         tmp_path,
         monkeypatch,
@@ -273,7 +276,7 @@ async def test_real_service_invalid_json_releases_credit(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "نص", "target": "word"},
+        {"mode": "smart", "text": "نص", "target": "word"},
         price,
         "invalid-json",
     )
@@ -295,10 +298,8 @@ async def test_long_ocr_delivers_txt_docx_and_deletes_all_files(tmp_path, monkey
         tmp_path,
         monkeypatch,
     )
-    file = store.save(1, "input.jpg", b"test image", "image/jpeg")
-    oid = await submit(
-        1, "image_to_text", {"images": [file.key], "language": "none"}, price, "long-ocr"
-    )
+    file = store.save(1, "input.jpg", printed(), "image/jpeg")
+    oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "long-ocr")
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"
@@ -306,7 +307,7 @@ async def test_long_ocr_delivers_txt_docx_and_deletes_all_files(tmp_path, monkey
     assert delivery.files[0][0] == "result.txt"
     assert delivery.files[0][1].decode() == text.strip()
     doc = Word(BytesIO(delivery.files[1][1]))
-    assert " ".join(p.text for p in doc.paragraphs[1:]) == text.strip()
+    assert "".join(p.text for p in doc.paragraphs[1:]) == text.strip()
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
@@ -322,7 +323,7 @@ async def test_missing_information_releases_reservation(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "غير مكتمل", "target": "word"},
+        {"mode": "smart", "text": "غير مكتمل", "target": "word"},
         price,
         "missing-info",
     )
@@ -348,7 +349,9 @@ async def test_ambiguity_expiry_releases_reservation(tmp_path, monkeypatch):
         monkeypatch,
     )
     monkeypatch.setattr(config(), "storage_root", tmp_path)
-    oid = await submit(1, "text_to_office", {"text": "محتوى", "target": "word"}, price, "expired")
+    oid = await submit(
+        1, "text_to_office", {"mode": "smart", "text": "محتوى", "target": "word"}, price, "expired"
+    )
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions.begin() as db:
         (await db.get(Order, oid)).updated_at = datetime.now(UTC) - timedelta(minutes=31)
@@ -367,10 +370,9 @@ async def test_early_plugin_cancellation_eventually_deletes_uploaded_files(tmp_p
     store, _, _, ctx, price = await setup("image_to_text", [], tmp_path, monkeypatch)
     monkeypatch.setattr(config(), "storage_root", tmp_path)
     file = store.save(1, "input.jpg", b"fixture", "image/jpeg")
-    oid = await submit(
-        1, "image_to_text", {"images": [file.key], "language": "none"}, price, "cancel-before-run"
-    )
-    monkeypatch.setattr(registry.types["image_to_text"], "version", "2")
+    oid = await submit(1, "image_to_text", {"images": [file.key]}, price, "cancel-before-run")
+    plugin = registry.types["image_to_text"]
+    monkeypatch.setattr(plugin, "version", plugin.version + "-next")
     await execute_job(ctx, str(await job_for(oid)))
     await cleanup_terminal_files()
     await cleanup_terminal_files()
@@ -397,7 +399,7 @@ async def test_database_abort_after_generation_reuses_saved_result(tmp_path, mon
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "بيانات", "target": "word"},
+        {"mode": "smart", "text": "بيانات", "target": "word"},
         price,
         "db-abort-output",
     )
@@ -469,7 +471,7 @@ async def test_real_pdf_output(tmp_path, monkeypatch):
         tmp_path,
         monkeypatch,
     )
-    oid = await submit(1, "text_to_pdf", {"text": "المعلومات", "mode": "smart"}, price, "pdf")
+    oid = await submit(1, "text_to_pdf", {"text": "بيانات 123", "mode": "smart"}, price, "pdf")
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "completed"

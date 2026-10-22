@@ -7,20 +7,19 @@ from sqlalchemy import text
 
 from app.core.db import engine, sessions
 from app.core.settings import config
+from app.providers.telegram import create_bot
 
 
 @asynccontextmanager
 async def lifespan(app):
     cfg = config()
     if cfg.telegram_mode == "webhook":
-        from aiogram import Bot
-
         from app.bot.main import create_dispatcher
         from app.services.registry import registry
 
         async with sessions.begin() as db:
             await registry.sync(db)
-        app.state.bot = Bot(cfg.bot_token.get_secret_value())
+        app.state.bot = create_bot()
         app.state.dispatcher = create_dispatcher()
     try:
         yield
@@ -82,5 +81,16 @@ async def telegram(request: Request, x_telegram_bot_api_secret_token: str = Head
         update = Update.model_validate_json(body, context={"bot": app.state.bot})
     except ValueError:
         raise HTTPException(422, "invalid update") from None
-    await app.state.dispatcher.feed_update(app.state.bot, update)
+    # Money updates must not wait for or be dropped by customer FSM/rate/ban gates.
+    # An unavailable database propagates HTTP 500 so Telegram can retry the update.
+    from app.bot.payments import handle_precheckout, handle_receipt, handle_refunded
+
+    if update.pre_checkout_query:
+        await handle_precheckout(update.pre_checkout_query, app.state.bot)
+    elif update.message and update.message.successful_payment:
+        await handle_receipt(update.message, app.state.bot)
+    elif update.message and update.message.refunded_payment:
+        await handle_refunded(update.message)
+    else:
+        await app.state.dispatcher.feed_update(app.state.bot, update)
     return {"ok": True}

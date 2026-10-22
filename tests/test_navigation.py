@@ -116,11 +116,11 @@ async def test_language_switch_resends_current_question_without_losing_inputs(fl
         (await db.get(Service, "text_to_office")).enabled = True
     await message("/start")
     await callback("service:text_to_office")
-    await message("محتوى العميل")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     saved = await state.get_data()
     await callback("lang:en")
     assert await state.get_data() == saved
-    assert transport.messages[-1].text.endswith(tr("office_target", "en"))
+    assert transport.messages[-1].text.endswith(tr("office_word_mode", "en"))
     assert "Step 2" in transport.messages[-1].text
     assert transport.sent_methods[-2].reply_markup.keyboard[0][0].text == tr("services", "en")
 
@@ -136,15 +136,21 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
     await set_service(slug, enabled=True)
     await message("/start")
     await callback(f"service:{slug}")
-    text = (
-        "بدون تعديل النص\n" if slug == "text_to_office" else ""
-    ) + "  نص جاهز 00123\n\nEnglish & <tag>  "
-    await message(text)
+    text = "  نص جاهز 00123\n\nEnglish & <tag>  "
     if slug == "text_to_office":
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    if slug == "text_to_pdf":
+        assert transport.messages[-1].text.endswith(tr("office_word_mode", lang))
+        assert not any(
+            b.callback_data.startswith("skip:")
+            for row in transport.messages[-1].reply_markup.inline_keyboard
+            for b in row
+        )
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    else:
         assert transport.messages[-1].text.endswith(tr("document_mode", lang))
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
+    await message(text)
+    if slug == "text_to_pdf":
         assert transport.messages[-1].text.endswith(tr("document_title", lang))
         await message("عنوان العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
@@ -155,8 +161,9 @@ async def test_direct_document_intake_is_explicit_and_preserves_customer_text(fl
         if slug == "text_to_pdf":
             assert order.inputs["mode"] == "direct" and order.inputs["title"] == "عنوان العميل"
         else:
-            assert set(order.inputs) == {"text", "target"}
-        assert order.service_version == ("5" if slug == "text_to_office" else "3")
+            assert order.inputs["mode"] == "direct"
+            assert set(order.inputs) == {"text", "target", "mode"}
+        assert order.service_version == ("8" if slug == "text_to_office" else "5")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
@@ -171,11 +178,8 @@ async def test_optional_title_rejects_multiline_then_skips_without_losing_body(f
     await message("/start")
     await callback(f"service:{slug}")
     text = "نص 00123\n\nEnglish 125.50"
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     await message(text)
-    if slug == "text_to_office":
-        await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
-    await callback(choice.rsplit(":", 1)[0] + (":1" if slug == "text_to_office" else ":0"))
     markup = transport.messages[-1].reply_markup
     skip = button_by_prefix(markup, "skip:")
     assert any(
@@ -194,7 +198,7 @@ async def test_optional_title_rejects_multiline_then_skips_without_losing_body(f
         assert (await balance(db, 1)).reserved == order.price_halala
 
 
-async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
+async def test_smart_word_mode_rejects_disabled_provider_before_source(flow):
     from app.ops.admin import set_service
 
     transport, message, callback, state = flow
@@ -202,14 +206,80 @@ async def test_smart_word_mode_skips_title_and_rejects_disabled_provider(flow):
     await set_service("text_to_office", enabled=True)
     await message("/start")
     await callback("service:text_to_office")
-    await message("نص العميل")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    assert await state.get_state() == "confirm"
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
-    assert transport.messages[-1].text == tr("provider_config")
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    saved = await state.get_data()
+    await callback(choice.rsplit(":", 1)[0] + ":1")
+    assert await state.get_state() == "collect"
+    assert await state.get_data() == saved
+    assert saved["inputs"] == {"target": "word"}
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
         assert (await balance(db, 1)).reserved == 0
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_excel_intake_skips_word_mode_and_preserves_source(flow, lang, monkeypatch):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await set_language(1, lang)
+    monkeypatch.setattr(config(), "ai_enabled", True)
+    await set_service("text_to_office", enabled=True)
+    await message("/start")
+    await callback("service:text_to_office")
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + ":1")
+    assert transport.messages[-1].text.endswith(tr("office_text", lang))
+    text = "00123 | Sample | 125.50"
+    await message(text)
+    assert await state.get_state() == "confirm"
+    assert (await state.get_data())["inputs"] == {"target": "excel", "text": text}
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("selected,output_format", [(0, "both"), (1, "word"), (2, "pdf")])
+@pytest.mark.parametrize("legacy_skip", [False, True])
+async def test_document_format_choice_is_retained_through_purchase(
+    flow, lang, selected, output_format, legacy_skip
+):
+    from app.ops.admin import set_service
+
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    await set_service("text_to_word_pdf", enabled=True)
+    await message("/start")
+    await callback("service:text_to_word_pdf")
+    assert transport.messages[-1].text.endswith(tr("document_output_format", lang))
+    choice = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    await callback(choice.rsplit(":", 1)[0] + f":{selected}")
+    mode_buttons = [
+        button for row in transport.messages[-1].reply_markup.inline_keyboard for button in row
+    ]
+    assert [button.text for button in mode_buttons] == [
+        tr("word_pdf_direct", lang),
+        tr("intake_choice_unavailable", lang, choice=tr("word_pdf_smart", lang)),
+        tr("cancel", lang),
+    ]
+    assert button_by_prefix(transport.messages[-1].reply_markup, "skip:") is None
+    draft = await state.get_data()
+    await callback(
+        f"skip:{draft['key']}:{draft['index']}"
+        if legacy_skip
+        else button_by_prefix(transport.messages[-1].reply_markup, "choice:")
+    )
+    await message("Source 00123")
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
+    assert await state.get_state() == "confirm"
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
+    async with sessions() as db:
+        order = await db.scalar(select(Order))
+        assert order.inputs == {"output_format": output_format, "text": "Source 00123"} | (
+            {} if legacy_skip else {"mode": "direct"}
+        )
+        assert order.service_version == "3"
+        assert (await balance(db, 1)).reserved == order.price_halala
 
 
 async def test_navigation_preserves_pending_prompt_recovery(flow):
@@ -391,3 +461,72 @@ async def test_all_order_states_have_localized_labels():
         for lang in ("ar", "en"):
             assert status_label(status, lang) != f"status_{status}"
     assert status_label("unexpected", "en") == tr("status_unknown", "en")
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_waiting_history_and_notification_show_complete_localized_preview(
+    flow, tmp_path, lang
+):
+    from app.providers.storage import LocalStorage
+    from app.workers.runner import deliver_confirmations
+    from tests.test_real_services import Delivery
+
+    transport, message, callback, _ = flow
+    await fund()
+    await set_language(1, lang)
+    oid = await submit(1, "echo", {"text": "content"}, 100, "preview-language")
+    previews = {
+        "ar": "عربي " + "🙂" * 2700 + "آخر عمود",
+        "en": "English " + "🙂" * 2700 + "LAST COLUMN",
+    }
+    async with sessions.begin() as db:
+        order = await db.get(Order, oid)
+        order.status = "waiting_confirmation"
+        order.result = {
+            "preview": "Legacy English",
+            "preview_localizations": previews,
+            "continuation": {"accepted": True},
+        }
+    delivery = Delivery(LocalStorage(tmp_path))
+    await deliver_confirmations({"delivery": delivery})
+    assert delivery.confirmations[0][1] == previews[lang]
+    await message("/orders")
+    before = len(transport.messages)
+    await callback(f"order:{oid}")
+    messages = transport.messages[before:]
+    assert previews[lang] in "".join(m.text for m in messages)
+    assert all(len(m.text.encode("utf-16-le")) // 2 <= 3500 for m in messages)
+    assert all(m.reply_markup is None for m in messages[:-1])
+    data = [b.callback_data for row in messages[-1].reply_markup.inline_keyboard for b in row]
+    assert f"approve:{oid}" in data and f"reject:{oid}" in data
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+async def test_service_buttons_show_name_and_price_only_at_confirmation(flow, lang):
+    transport, message, callback, state = flow
+    await fund()
+    await set_language(1, lang)
+    async with sessions.begin() as db:
+        service = await db.get(Service, "echo")
+        service.price_halala = 1234
+        service.name_ar = "خدمة تجريبية PDF إلى Excel"
+        service.name_en = "PDF to Excel demo"
+    await message("/services")
+    await callback("catalog:other:0")
+    markup = transport.messages[-1].reply_markup
+    control = next(
+        b for row in markup.inline_keyboard for b in row if b.callback_data == "service:echo"
+    )
+    assert control.text == ("خدمة تجريبية PDF إلى Excel" if lang == "ar" else "PDF to Excel demo")
+    assert "12.34" not in transport.messages[-1].text
+    await callback(control.callback_data)
+    await message("Customer content")
+    review = transport.messages[-1].text
+    assert tr("confirm_price", lang, amount="12.34") in review
+    assert review.split("\n\n")[1].startswith(tr("review_heading", lang))
+    assert "\n\n" + tr("confirm_price", lang, amount="12.34") in review
+    assert tr("review_text_size", lang, count=len("Customer content")) in review
+    assert "Customer content" not in review
+    assert await state.get_state() == "confirm"
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(Order)) == 0

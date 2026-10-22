@@ -7,9 +7,12 @@ from app.services.registry import registry
 
 
 @pytest.fixture(autouse=True)
-async def database():
+async def database(monkeypatch):
     if not config().database_url.get_secret_value().split("?")[0].endswith("_test"):
         pytest.fail("Tests require a disposable database ending in _test")
+    # Existing lifecycle/security tests use echo as a synthetic public plugin, not
+    # as a production verification tool. Dedicated audience tests restore True.
+    monkeypatch.setattr(registry.types["echo"], "admin_only", False)
     async with sessions.begin() as db:
         from app.core.models import Base
 

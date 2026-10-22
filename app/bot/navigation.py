@@ -9,10 +9,15 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 
+from app.bot.availability import ai_admission_available
+from app.bot.catalog import parse_callback
+from app.bot.catalog import view as catalog_view
 from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, section_controls
 from app.core.db import sessions
+from app.core.display import message_parts, order_reference, result_preview
 from app.core.i18n import tr
-from app.core.models import Order, Service
+from app.core.models import Order, Service, StarCharge
+from app.core.settings import config
 from app.orders.engine import register
 from app.orders.state import ALLOWED
 from app.wallet.ledger import balance, sar
@@ -30,7 +35,10 @@ def create_router():
     async def home(message, state, user_id, lang):
         await register(user_id)
         await leave_support(state)
-        await message.answer(tr("welcome", lang), reply_markup=home_keyboard(lang))
+        await message.answer(
+            tr("stars_welcome" if config().stars_enabled else "welcome", lang),
+            reply_markup=home_keyboard(lang, admin=user_id in config().admin_ids),
+        )
         if (await state.get_data()).get("key"):
             await message.answer(
                 tr("draft_saved", lang),
@@ -47,7 +55,7 @@ def create_router():
         await callback.answer()
         await home(callback.message, state, callback.from_user.id, lang)
 
-    async def show_services(message, state, lang):
+    async def show_services(message, state, lang, *, user_id, category=None, page=0):
         await leave_support(state)
         async with sessions() as db:
             rows = (
@@ -55,36 +63,61 @@ def create_router():
                     select(Service).where(Service.enabled.is_(True)).order_by(Service.slug)
                 )
             ).all()
-        items = [
-            (
-                f"{s.name_ar if lang == 'ar' else s.name_en} — "
-                f"{sar(s.price_halala)} {tr('sar', lang)}",
-                f"service:{s.slug}",
-            )
-            for s in rows
-        ]
-        items.extend(await section_controls(state, lang))
-        await message.answer(
-            tr("choose_service" if rows else "no_services", lang), reply_markup=buttons(items)
+            ai_available = await ai_admission_available(db)
+        if config().stars_enabled:
+            rows = [service for service in rows if service.price_stars is not None]
+        text, items = catalog_view(
+            rows,
+            lang,
+            category=category,
+            page=page,
+            admin=user_id in config().admin_ids,
+            ai_available=ai_available,
         )
+        items.extend(await section_controls(state, lang))
+        await message.answer(text, reply_markup=buttons(items))
 
     @router.message(Command("services"))
     @router.message(MenuButton("services"))
     async def services_command(message: Message, state: FSMContext, lang: str = "ar"):
-        await show_services(message, state, lang)
+        await show_services(message, state, lang, user_id=message.from_user.id)
 
     @router.callback_query(F.data == "menu:services")
     async def services_callback(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await callback.answer()
-        await show_services(callback.message, state, lang)
+        await show_services(callback.message, state, lang, user_id=callback.from_user.id)
+
+    @router.callback_query(F.data.startswith("catalog:"))
+    async def category_callback(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
+        parsed = parse_callback(callback.data)
+        if parsed is None:
+            await callback.answer(tr("invalid_request", lang))
+            return
+        await callback.answer()
+        await show_services(
+            callback.message,
+            state,
+            lang,
+            user_id=callback.from_user.id,
+            category=parsed[0],
+            page=parsed[1],
+        )
 
     async def show_balance(message, state, user_id, lang):
         await leave_support(state)
+        if config().stars_enabled:
+            await message.answer(
+                tr("stars_balance_details", lang),
+                reply_markup=buttons(
+                    [(tr("services", lang), "menu:services")] + await section_controls(state, lang)
+                ),
+            )
+            return
         async with sessions() as db:
             funds = await balance(db, user_id)
         await message.answer(
             tr(
-                "balance_details",
+                "stars_balance_details" if config().stars_enabled else "balance_details",
                 lang,
                 available=sar(funds.available),
                 reserved=sar(funds.reserved),
@@ -125,7 +158,8 @@ def create_router():
     async def show_help(message, state, lang):
         await leave_support(state)
         await message.answer(
-            tr("help_text", lang), reply_markup=buttons(await section_controls(state, lang))
+            tr("stars_help_text" if config().stars_enabled else "help_text", lang),
+            reply_markup=buttons(await section_controls(state, lang)),
         )
 
     @router.message(Command("help"))
@@ -154,7 +188,7 @@ def create_router():
         items = [
             (
                 f"{(service.name_ar if lang == 'ar' else service.name_en)[:45]} · "
-                f"{status_label(order.status, lang)} · {str(order.id)[:8]}",
+                f"{status_label(order.status, lang)} · {order_reference(order.id)}",
                 f"order:{order.id}",
             )
             for order, service in rows[:PAGE_SIZE]
@@ -199,6 +233,17 @@ def create_router():
                     .where(Order.id == order_id, Order.user_id == callback.from_user.id)
                 )
             ).first()
+            charge = (
+                await db.scalar(
+                    select(StarCharge).where(
+                        StarCharge.order_id == order_id,
+                        StarCharge.user_id == callback.from_user.id,
+                        StarCharge.accepted.is_(True),
+                    )
+                )
+                if row and row[0].payment_mode == "stars"
+                else None
+            )
         if row is None:
             await callback.answer(tr("order_unavailable", lang), show_alert=True)
             return
@@ -206,28 +251,58 @@ def create_router():
         await leave_support(state)
         order, service = row
         text = tr(
-            "order_details",
+            "stars_order_details" if order.payment_mode == "stars" else "order_details",
             lang,
             order_id=order.id,
             name=service.name_ar if lang == "ar" else service.name_en,
             status=status_label(order.status, lang),
-            amount=sar(order.price_halala),
+            amount=order.price_stars if order.payment_mode == "stars" else sar(order.price_halala),
             created=order.created_at.astimezone(ZoneInfo("Asia/Riyadh")).strftime("%Y-%m-%d %H:%M"),
         )
         items = []
+        if charge:
+            text += "\n" + tr("stars_charge_" + charge.state, lang)
+        if order.status == "awaiting_payment":
+            items.extend(
+                [
+                    (tr("stars_pay", lang), f"pay:{order.id}"),
+                    (tr("cancel_order", lang), f"paycancel:{order.id}"),
+                ]
+            )
         if order.status == "waiting_confirmation":
-            preview = (order.result or {}).get("preview", "")
+            review_suffix = ":visual" if (order.result or {}).get("prepared_delivery") else ""
+            if (order.result or {}).get("preview_artifacts"):
+                from app.providers.delivery import TelegramDelivery
+                from app.providers.runtime import storage
+                from app.services.base import Result
+
+                await TelegramDelivery(callback.bot, storage()).send_preview_images(
+                    order.user_id, Result.model_validate(order.result)
+                )
+            preview = result_preview(order.result or {}, lang)
             text += "\n\n" + tr(
-                "confirmation_waiting", lang, order_id=order.id, preview=str(preview)[:2500]
+                "confirmation_waiting", lang, order_id=order_reference(order.id), preview=preview
             )
             items.extend(
                 [
-                    (tr("approve_structure", lang), f"approve:{order.id}"),
-                    (tr("cancel_order", lang), f"reject:{order.id}"),
+                    (
+                        tr(
+                            "approve_delivery"
+                            if (order.result or {}).get("prepared_delivery")
+                            else "approve_structure",
+                            lang,
+                        ),
+                        f"approve:{order.id}{review_suffix}",
+                    ),
+                    (tr("cancel_order", lang), f"reject:{order.id}{review_suffix}"),
                 ]
             )
         items.extend([(tr("refresh", lang), f"order:{order.id}"), (tr("orders", lang), "orders:0")])
         items.extend(await section_controls(state, lang))
-        await callback.message.answer(text, reply_markup=buttons(items))
+        parts = list(message_parts(text))
+        for index, part in enumerate(parts):
+            await callback.message.answer(
+                part, reply_markup=buttons(items) if index == len(parts) - 1 else None
+            )
 
     return router

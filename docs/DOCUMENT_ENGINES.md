@@ -1,0 +1,200 @@
+# Document engines and adoption sequence
+
+Owner-approved direction, 2026-10-09: professional outputs by default, deterministic
+tools and templates for rendering, AI for content understanding when required.
+Use the existing registry, typed plans and job-scoped providers. This is the staged
+adoption record; an approved candidate is not an installed or qualified feature.
+
+## Implemented first slice
+
+- `docxtpl` 0.20.2 renders a source-owned reusable professional Word template from
+  the existing validated Word plan. The template contains title, conditional headings,
+  paragraphs and bullets; the existing builder inserts editable tables in source order.
+  Native A4 layout, direction, date isolation, repeated table headers and footer are retained.
+- Customer text is escaped context, never template source. Cache only immutable empty
+  template bytes; each request has a new renderer and opaque table placeholders.
+  Literal Word requests retain the existing untemplated builder and no AI calls.
+- All four builders validate generated files before returning them to owner-bound
+  storage. Office checks bounded ZIP structure, XML parsing and expected main-part root;
+  PDF checks strict parsing, nonempty page tree and positive page dimensions.
+- This structural gate does not qualify visual layout, source fidelity, native Office
+  interoperability, all relationships or spreadsheet formula correctness. No original
+  PDF layout reconstruction is promised. Rendered fixtures are developer evidence only.
+- No new intake fields, prices, financial policy, service enablement, provider call or
+  schema migration. Professional planning still requires the existing AI call; template
+  rendering adds none. A failed gate follows the existing generic failure/release path.
+
+## Local printed-text recognition
+
+The PDF slice implements merge, selected-page extraction and explicit additional
+clockwise page rotation through `pdf_tools` v2 with existing pypdf, without qpdf
+or AI. Rotation accepts one PDF, selected page numbers and 90/180/270 degrees;
+all source pages remain in their original order, with selected rotation normalized
+modulo 360. Native content streams, images and page boxes are copied unchanged.
+The plugin retains bounded multifile intake and rejects forms/signatures.
+It remains disabled until operator acceptance. This does not qualify the remaining
+candidates below or claim production deployment.
+
+The original `local_ocr` plugin is now historical execution only, not a separate
+customer product. Canonical `image_to_text` v4 uses the injected `DocumentProcessor`
+with mixed source language internally, then existing job-scoped AI for classified
+unclear/unavailable recognition. One confirmed price, original text only, optional
+independent translation afterwards. Admin prices/gates remain DB-owned; no automatic
+activation or price transfer from the retired plugin. See the unified-service report.
+
+Native packages are installed only in the `document-worker` Docker target; Compose
+selects that target for the existing worker. Bot/API/migrations retain the lean image.
+Each worker process serializes local OCR with a five-second queue wait. Each native
+child has 512 MiB address-space, 20-second CPU and 2 MiB output-file limits, one
+OpenMP thread and a 25-second wall timeout. Cancellation/timeout kills and reaps the
+process group before removing its private temporary directory. These are process
+bounds, not a sandbox or complete worker/container resource quota. Multiple worker
+processes have independent slots. Queue pressure uses the existing bounded job retry.
+
+Intake limits: five images, 10 MiB each/20 MiB total, existing decoded-pixel/EXIF
+validation and 1024-pixel normalization, maximum 50,000 output characters. Dense
+pages, handwriting, tables and layout reconstruction are unqualified. TSV words
+retain native line order, with no numeric rewriting; character-weighted confidence
+below 0.70 or a numeric word below 0.85 rejects the request. These scores are only
+heuristics: a confidently incorrect recognition can pass. The result asks users to
+compare text/numbers with the source. Long text includes a UTF-8 TXT download.
+No original page structure, translation or Word reconstruction is promised.
+
+Synthetic native fixtures qualify a small printed-text case in Arabic, English and
+mixed mode; English fixture compares an identifier with leading zeros, amount and
+date exactly. Full CI adds native lifecycle checks and builds/runs the non-root
+worker image with network disabled. Representative customer images, real Telegram
+staging, throughput and server installation remain separate acceptance gates.
+
+Tesseract upstream: https://github.com/tesseract-ocr/tesseract (Apache-2.0).
+Language data upstream: https://github.com/tesseract-ocr/tessdata_fast (Apache-2.0).
+Use the distribution's `tesseract-ocr`, `tesseract-ocr-ara`, `tesseract-ocr-eng`
+packages; retain their packaged copyright/license notices. No model weights or
+upstream implementation are vendored. Package versions come from the base image's
+distribution repositories; image-build qualification does not freeze these versions.
+See https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html for the native
+interface and https://tesseract-ocr.github.io/tessdoc/Installation.html for packages.
+
+## Source-owned Word/PDF export
+
+Next bounded source slice: separate `text_to_word_pdf`, disabled by default, SAR 3.00
+administrator-issued test credit. It accepts final text plus optional title, applies
+our professional Word template and exports that same DOCX with native LibreOffice.
+It does not rewrite/translate text or accept Office uploads. Existing AI services
+and their prices/contracts remain unchanged. The injected renderer accepts typed
+WordDocument data; raw uploaded Office bytes are rejected. Only our builder creates
+DOCX input. Do not reuse the lightweight artifact gate as an upload security boundary.
+
+Reuse the builder's date-direction formatting: invisible LTR marks around recognized
+date runs in Arabic paragraphs/table cells prevent reversed visual dates. Content
+is not rewritten, but formatted DOCX is not character-for-character identical due
+to these direction marks. PDF text extraction alone can miss reversed glyph order;
+a native regression checks positions as well as source numbers. Native Word views
+may paginate differently because their fonts/rendering engines differ.
+
+LibreOffice Writer is installed only in the document-worker target. OCR/export
+share one slot per ARQ worker loop, with five-second queue admission and existing
+bounded retries. Each export child has 1 GiB address-space, 60 CPU seconds, 90 wall
+seconds, 10 MiB per-file output and zero core dumps. Private fresh user profile with
+high macro security; supported LibreOffice launcher handles cold-profile startup,
+fixed headless writer_pdf_Export command, no UNO listener,
+no customer command/filter/path options, child credentials/environment cleared.
+Success/failure/cancellation reaps the launcher and kills remaining process-group
+children before temporary cleanup. These are process bounds, not a sandbox or
+aggregate container quota; worker replicas have independent capacity.
+
+Inputs: 12,000 characters, optional 200-character single-line title; export at most
+50 pages and 10 MiB. Validate DOCX and PDF structurally before owner-bound storage;
+render both in memory before saving either. If a later save fails, attempt deletion
+of earlier saved artifacts; crash/deletion failure can leave unreferenced files for
+the existing TTL sweep. Required delivery includes both files before credit capture.
+Retry uses prepared files; at-least-once delivery can duplicate Word if PDF sending
+failed after Word was accepted. No exactly-once or deployment claim.
+
+CI installs Writer for mandatory native tests and builds/runs the real non-root
+worker image with network disabled. Local developer LibreOfficeDev 26.8 alpha
+qualification is distinct from distribution-packaged Ubuntu/Debian image checks.
+Synthetic Arabic/bilingual text and a 55-row native table cover numeric/date and
+page bounds, embedded fonts, repeated headers and visual review; representative
+customer layouts/native Office/staging/load acceptance remain separate.
+
+Upstream: https://www.libreoffice.org/licenses/ and
+https://help.libreoffice.org/latest/en-US/text/shared/guide/start_parameters.html.
+LibreOffice is available under MPL-2.0, with additional component licenses; retain
+distribution copyright/license notices and source access (distribution source
+packages or https://www.libreoffice.org/download/download-libreoffice/).
+No upstream code is vendored or modified; no unoserver listener is installed.
+Package versions come from the distribution repositories and are not frozen by a
+successful image-build check. Conversion of arbitrary Office uploads requires a
+separate security/format qualification and is outside this contract.
+
+## Remaining candidates
+
+CV formatting reuses this renderer for a separate structured, source-preserving
+Word/PDF service with AR/EN headings. Generic Word alignment defaults to auto;
+the CV selects a consistent right/left document edge without changing script
+direction. Source/native/lifecycle evidence: ENGINEERING/REPORTS/2026-10-09-cv-formatting.md.
+Useful service sequence: [service portfolio](SERVICE_PORTFOLIO.md).
+
+| Candidate | Decision and qualification required |
+| --- | --- |
+| XlsxWriter | Already installed transitively by python-pptx; explicitly declare it only when used for a measured feature. Retain openpyxl for reading/editing and the current working renderer. Compare native charts/formatting with source-preservation and phone Excel acceptance. |
+| PptxGenJS | Compare representative editable Arabic layouts before adding a second language/runtime. Current native python-pptx density safeguards remain the baseline. |
+| LibreOffice / unoserver | Source-owned Word/PDF export implemented in this slice, with serialized headless subprocesses and limits. No listener or uploaded Office conversion. Qualify further formats separately. |
+| Tesseract | Bounded local provider and printed-image plugin in this source slice. Require representative Arabic/English customer-image acceptance before enablement. No automatic AI fallback. |
+| OCRmyPDF | Searchable scanned-PDF service after the isolated conversion/OCR worker exists. Review licenses of the exact installed components and test large/mixed PDFs. |
+| qpdf | No extra installation for merge/extract: pypdf serves the new bounded plugin. Consider qpdf only for an unmet operation; preserve generic multifile intake. |
+| WeasyPrint | Introduce only for an approved HTML/CSS PDF design unmet by ReportLab. Restrict URL fetching, fonts, input size and execution resources; preserve the tested Arabic/date baseline. |
+| pdfplumber | Already a locked development dependency. Promote to runtime only when a specific table-extraction service is implemented and qualified. |
+| MarkItDown | Structured source extraction with document-specific fidelity fixtures and explicit omissions; not a reconstruction engine. |
+| Docling | Separate resource-limited experimental worker; benchmark memory, duration, Arabic and table fidelity before enabling a customer service. |
+| Argos Translate / rembg | Later isolated services. Validate language/model availability, model licensing and actual Arabic/image quality before paid use. |
+| Agent skills | Development guidance, not bot-runtime capabilities. Do not copy source-available Office skill code without exact license review. No uncontrolled agent loops or downloaded customer templates. |
+
+Implement each slice on its own branch, lock only used dependencies, add architecture
+and lifecycle checks, require exact-head CI and representative output acceptance.
+Keep one canonical roadmap in `ENGINEERING/MASTER_ROADMAP.md`. Installation on the
+operator's server and service enablement are separate from source integration.
+
+## Dependency attribution
+
+The unchanged `docxtpl` 0.20.2 package is installed through standard Python dependency
+management. Upstream: https://github.com/elapouya/python-docx-template.
+License: LGPL 2.1 (`LICENSE.txt`, reviewed upstream blob
+`19e307187ac8b9abc086be686dc81b0f09523ef1`); preserve package notices and source access
+when distributing it. This project does not vendor or modify upstream implementation
+or use upstream sample templates. The template source is authored in this repository.
+The wheel retains its license; both uv and container requirements are locked.
+Do not generalize this review to the other candidate libraries or their models.
+
+## Bounded Camelot table extraction
+
+Camelot 2.0.0 (MIT), https://github.com/camelot-dev/camelot, is installed unchanged
+for the default-disabled independent PDF-table service. Only native lattice/stream
+are used; no ML/OCR extras, model downloads, Ghostscript or customer URLs. Provider,
+resource bounds and customer acceptance limits are recorded in
+[the slice report](../ENGINEERING/REPORTS/2026-10-10-pdf-tables-excel.md).
+
+Runtime lock adds numpy, pandas, playa-pdf, opencv-python-headless, tabulate,
+python-dateutil, six and mypy-extensions; pypdfium2 moves from development-only to
+runtime through Camelot. Preserve all distributed package LICENSE/NOTICE files.
+Camelot/playa use MIT; pandas/numpy BSD-family notices; OpenCV wheel Apache-2.0
+and bundled third-party notices; PDFium/pypdfium2 include BSD/Apache and component
+notices. Dependencies have their own terms; this is not a blanket license assertion
+for optional models or every bundled library. No upstream code is vendored/modified.
+OpenCV here is Camelot's extraction dependency, not a customer image-enhancement
+feature. Further tools from the research list remain unimplemented proposals.
+
+## Optional source-owned PDF visual review
+
+`DOCUMENT_VISUAL_REVIEW=false` is the default. After staging qualification, enabling it adds a first-page PNG review to builder-owned Word/PDF pairs (Word/PDF bundle, CV and minutes). The worker stores the final files before review; customer approval delivers those same bytes without another AI/export. Page count is displayed; the preview does not show all pages. pypdfium2 uses the existing locked dependency and package attribution above.
+
+Preview child uses private temporary files and fixed bounds (PDF 10 MiB / 50 pages; PNG 960x1440 / 3 MiB; 512 MiB address space, 15 CPU / 20 wall seconds). It shares native capacity with OCR/export. Native limits are not a sandbox or server/container quota. Preview images follow owner access, active-order protection and terminal deletion. Reviews expire after the existing 30-minute window; SAR releases / Stars refund evidence remain distinct. Validate Telegram image readability and server capacity before enabling. See the 2026-10-11 visual-review report.
+
+## Conservative document image contrast
+
+Independent default-disabled document_image_enhancement v2 uses the existing OpenCV/numpy packages. One image input selects conservative processing internally: detected high-frequency noise gets blended bilateral filtering; bright, uneven paper receives bounded illumination correction from a foreground-filled background estimate to avoid text/stamp halos; blended luminance CLAHE retains color channels. No sharpening, binarization, geometric correction, cropping, AI synthesis or OCR fallback.
+
+The trusted image field opts into exact validated Telegram-received bytes via generic preserve_image metadata. Default intake still normalizes other services to 1024-pixel JPEG; no global OCR contract change. Enhancement decodes EXIF-oriented RGB directly from source without intermediate JPEG, bounded to 2048 pixels on the longest side (no upscaling). The comparison is downsampled to 1024 pixels per panel; exact received source is delivered separately. Sending an image as a Telegram file avoids Telegram photo compression but cannot restore lost source detail.
+
+Output order is enhanced PNG, comparison PNG, received source. Input/output byte limits, decoded pixel limits, owner storage quotas and cleanup remain. Processing uses a thread, not a sandbox or hard CPU/container quota; the larger bound raises per-job work. Default-disabled/admin-owned activation and prices remain. Queued v1 contracts cancel/release; prepared results replay unchanged. Synthetic illumination/stamp/numeric OCR checks do not prove universal readability or screen-photo moire removal. See the 2026-10-11 document-image-v2 report. OpenCV references: [filtering](https://docs.opencv.org/4.x/d4/d86/group__imgproc__filter.html), [CLAHE](https://docs.opencv.org/4.x/d6/db6/classcv_1_1CLAHE.html).

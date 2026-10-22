@@ -1,38 +1,47 @@
+import asyncio
 from decimal import Decimal
 
 from app.builders.schema import Document, Section
 from app.builders.word import build
 from app.core.i18n import tr
-from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.files.validation import image
+from app.providers.documents.base import DocumentError
+from app.services.base import (
+    BaseService,
+    InputField,
+    InputSchema,
+    Result,
+    ServiceError,
+    TextFollowup,
+)
 from app.services.image_to_text.prompt import EXTRACT
-from app.services.image_to_text.schema import Extracted, Inputs, Translation
+from app.services.image_to_text.schema import Extracted, Inputs
 
 
 class ImageToText(BaseService):
+    version = "6"
     slug = "image_to_text"
+    optional_worker_requirements = ("native_ocr",)
+    menu_order = 10
+    category = "images"
     name_ar = tr("ocr_name")
     name_en = tr("ocr_name", "en")
     description_ar = tr("ocr_description")
     price_sar = Decimal("3.00")
     enabled_by_default = False
     requires_ai = True
+    text_followups = (
+        TextFollowup(service="text_translation", field="text", label_key="translate_result"),
+    )
     input_schema = InputSchema(
         fields=[
             InputField(
-                name="images", kind="image", prompt_key="ocr_images", multiple=True, max_items=5
-            ),
-            InputField(
-                name="language",
-                prompt_key="ocr_language",
-                choices=["none", "ar", "en"],
-                choice_keys=["no_translation", "arabic", "english"],
-            ),
-            InputField(
-                name="style",
-                prompt_key="translation_style",
-                choices=["formal", "business", "academic", "casual"],
-                choice_keys=["formal", "business", "academic", "casual"],
-                when={"language": ["ar", "en"]},
+                name="images",
+                kind="image",
+                prompt_key="ocr_images",
+                multiple=True,
+                max_items=5,
+                preserve_image=True,
             ),
         ]
     )
@@ -40,15 +49,37 @@ class ImageToText(BaseService):
     async def run(self, inputs):
         values = Inputs.model_validate(inputs)
         images = [self.runtime.storage.read(key) for key in values.images]
-        extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=images)
+        extracted = None
+        documents = getattr(self.runtime, "documents", None)
+        if documents is not None and sum(map(len, images)) <= 20 * 1024 * 1024:
+            try:
+                recognized = await documents.recognize(images, "mixed")
+                if recognized.confidence >= 0.90 and recognized.text.strip():
+                    extracted = Extracted(
+                        readable=True, confidence=recognized.confidence, text=recognized.text
+                    )
+            except DocumentError as error:
+                # Invalid files, resource/security failures and other errors do not
+                # authorize an outbound fallback. Both engines share one order/price.
+                if error.key not in {"ocr_unclear", "local_ocr_unavailable"}:
+                    raise ServiceError(error.key, transient=error.transient) from None
+        if self.runtime.ai is not None:
+            # Strip metadata and validate before any outbound call; the adapter expects JPEG.
+            review_images = [
+                await asyncio.to_thread(image, data, 10 * 1024 * 1024, max_side=2048)
+                for data in images
+            ]
+        if extracted is not None and self.runtime.ai is not None:
+            extracted = await self.runtime.ai.review_candidate(
+                extracted, "", EXTRACT, images=review_images
+            )
+        if extracted is None:
+            if self.runtime.ai is None:
+                raise ServiceError("provider_config")
+            extracted = await self.runtime.ai.extract(Extracted, "", EXTRACT, images=review_images)
         if not extracted.readable or extracted.confidence < 0.7 or not extracted.text.strip():
             raise ServiceError("ocr_unclear")
         text = extracted.text.strip()
-        if values.language != "none":
-            translated = await self.runtime.ai.extract(
-                Translation, text, language=values.language, style=values.style
-            )
-            text = translated.text
         artifacts = []
         if len(text) > 3500:
             artifacts.append(
@@ -61,9 +92,11 @@ class ImageToText(BaseService):
                 if end < len(remaining):
                     boundary = max(remaining.rfind(" ", 0, end), remaining.rfind("\n", 0, end))
                     if boundary > 0:
-                        end = boundary
+                        end = boundary + 1
                 paragraphs.append(remaining[:end])
-                remaining = remaining[end:].lstrip()
+                # Chunking limits Word paragraphs, not source whitespace. Keep
+                # the delimiter and any indentation/blank lines in the next chunk.
+                remaining = remaining[end:]
             document = Document(
                 title=tr("ocr_document_title"),
                 sections=[Section(paragraphs=[paragraph]) for paragraph in paragraphs],

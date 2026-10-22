@@ -8,28 +8,13 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16-bookworm
-        env:
-          POSTGRES_USER: services
-          POSTGRES_PASSWORD: test-only-password
-          POSTGRES_DB: services_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U services -d services_test"
-          --health-interval 5s --health-timeout 5s --health-retries 20
-      redis:
-        image: redis:7-alpine
-        ports: ['6379:6379']
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s --health-timeout 5s --health-retries 20
+    # The full suite plus native OCR/Office qualification can exceed 15 minutes.
+    timeout-minutes: 20
     env:
       APP_ENV: test
-      DATABASE_URL: postgresql+asyncpg://services:test-only-password@localhost:5432/services_test
-      REDIS_URL: redis://localhost:6379/0
+      CI_INFRA_PROJECT: tsp-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      DATABASE_URL: postgresql+asyncpg://services:test-only-password@127.0.0.1:5432/services_test
+      REDIS_URL: redis://127.0.0.1:6379/0
       BOT_TOKEN: '123456:TEST_TOKEN_ONLY'
       AI_ENABLED: 'false'
       STORAGE_ROOT: ./data/test-files
@@ -41,11 +26,22 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.12'
+      - name: Pull official CI images with bounded registry fallback
+        id: images
+        run: python .github/scripts/ci_images.py
+      - name: Start disposable PostgreSQL and Redis
+        env:
+          CI_POSTGRES_IMAGE: ${{ steps.images.outputs.postgres_image }}
+          CI_REDIS_IMAGE: ${{ steps.images.outputs.redis_image }}
+        run: docker compose -f .github/compose.ci.yml -p "$CI_INFRA_PROJECT" up -d --wait --wait-timeout 120 --pull never
       - run: python -m pip install uv==0.12.19
-      - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng libreoffice-writer
       - run: uv sync --locked --group dev
       - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - name: Check formatting with diagnostic diff
+        run: |
+          uv run ruff format --diff .
+          uv run ruff format --check .
       - run: uv run alembic upgrade head
       - run: uv run pytest -q
       - run: uv run alembic check
@@ -53,3 +49,424 @@ jobs:
         run: |
           cp .env.example .env
           docker compose --env-file .env.example config --quiet
+      - name: Build and qualify the document worker image
+        env:
+          CI_PYTHON_IMAGE: ${{ steps.images.outputs.python_image }}
+        run: |
+          docker build --pull=false --build-arg "PYTHON_IMAGE=$CI_PYTHON_IMAGE" --target document-worker -t services-document-worker .
+          docker run --rm -i --network none --entrypoint python services-document-worker - <<'PY'
+          import asyncio
+          import os
+          import re
+          from tests.ocr_fixtures import printed, processor
+          from tests.ocr_fixtures import detailed as detailed_ocr_source
+          from tests.word_pdf_fixtures import document, renderer, table_document
+          from tests.word_pdf_ai_fixtures import inputs as smart_document_inputs, revision as smart_document_revision
+          from tests.excel_source_fixtures import inputs as source_excel_inputs, plan as source_excel_plan
+          from app.services.text_to_office.schema import Inputs as SourceOfficeInputs
+          from app.services.document_fidelity import source_document_schema
+          from app.services.text_to_office.schema import WordPlan
+          from app.services.text_to_pdf.schema import PdfPlan
+          from app.builders import pdf as text_pdf
+          from app.services.text_to_office.excel_source import source_excel_schema
+          from app.builders.excel_source import build as source_excel
+          from app.builders.schema import Table as NativeTable
+          from docx import Document as Word
+          from app.services.text_to_word_pdf.schema import Inputs as SmartDocumentInputs, revision_schema as smart_document_schema, refined_document
+          from tests.minutes_fixtures import inputs as minute_inputs, plan as minute_plan
+          from tests.minutes_fixtures import action_plan as minute_action_plan
+          from app.services.meeting_minutes.schema import Inputs as MinuteInputs, classification_schema, document as minute_document
+          from tests.images_pdf_fixtures import picture
+          from app.builders.images_pdf import build as images_pdf
+          from app.builders.pdf_tools import PdfToolError, build as pdf_tools
+          from app.builders import pptx as native_pptx
+          from app.services.text_to_pptx.schema import source_plan_schema as pptx_source_schema
+          from pptx import Presentation
+          from app.providers.documents.images_pdf import NativeImagePdf
+          from tests.csv_review_fixtures import inputs as csv_inputs
+          from app.services.csv_review.schema import Inputs as CsvInputs
+          from app.builders.csv_review import build as csv_review
+          from openpyxl import load_workbook
+          from tests.pdf_tables_fixtures import table_pdf
+          from tests.pdf_pagination_fixtures import boundary_document
+          from app.providers.tables.camelot import CamelotTables
+          from app.services.pdf_tables_excel.schema import direct_labels, source_labels
+          from app.builders.pdf_tables import build as tables_excel
+          from tests.cv_fixtures import inputs as cv_inputs, planned as cv_planned
+          from pypdf import PdfReader
+          from io import BytesIO
+          from PIL import Image
+          from app.providers.documents.previews import PdfPreviews
+          from app.builders.document_image import build as enhance_image
+          from tests.document_image_fixtures import shaded, check_quality
+          from tests.csv_similarity_fixtures import inputs as similarity_inputs
+          from app.services.image_to_text.service import ImageToText
+          from app.services.images_to_pdf.service import ImagesToPdf
+          from app.services.pdf_tools.service import PdfTools
+          from app.services.pdf_to_word.service import PdfToWord
+          from app.services.base import ServiceError
+          from tests.pdf_form_fixtures import form_pdf
+          from app.services.pdf_tables_excel.service import PdfTablesExcel
+          from app.providers.storage import LocalStorage, OwnedStorage
+          from types import SimpleNamespace
+          from tempfile import TemporaryDirectory
+          from unittest.mock import AsyncMock
+          from app.ops.worker_capabilities import probe_worker
+          assert os.getuid() == 10001
+          async def verify():
+              assert all((await probe_worker()).values())
+              source_text = 'Order 00123 total 125.50 email sample@example.invalid'
+              candidate = {'document': {'title': 'Report', 'sections': [{'paragraphs': [source_text]}]}}
+              for model in (WordPlan, PdfPlan):
+                  schema = source_document_schema(model, source_text)
+                  source_plan = schema.model_validate(candidate)
+                  if model is WordPlan:
+                      rendered = await renderer().word_pdf(source_plan.document)
+                      assert '00123' in Word(BytesIO(rendered.docx)).paragraphs[1].text
+                      data = rendered.pdf
+                  else:
+                      data = text_pdf.build(source_plan.document)
+                  text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(data)).pages)
+                  assert text.count('00123') == text.count('125.50') == text.count('sample@example.invalid') == 1
+                  try:
+                      schema.model_validate({'document': {'title': 'Invented 999', 'sections': [{'paragraphs': [source_text]}]}})
+                  except ValueError:
+                      pass
+                  else:
+                      raise AssertionError('unbound document accepted')
+              print('Non-root worker: smart Word/PDF source fidelity and native output PASS with network disabled')
+              for language in ('ar', 'en'):
+                  for wrapped in (False, True):
+                      paginated = PdfReader(BytesIO(text_pdf.build(boundary_document(language, wrapped=wrapped))))
+                      assert len(paginated.pages) == 2
+                      pages = [page.extract_text(extraction_mode='layout') or '' for page in paginated.pages]
+                      assert '00123' not in pages[0]
+                      assert '00123' in pages[1] and '125.50' in pages[1]
+                      assert all(f'Record {i:02d} retained.' in '\n'.join(pages) for i in range(20))
+              print('Non-root worker: Arabic/English PDF section headings stay with content across page breaks PASS with network disabled')
+              for language in ('ar','en'):
+                  values = SourceOfficeInputs.parse(source_excel_inputs(language))
+                  plan = source_excel_schema(values).model_validate(source_excel_plan(language))
+                  content = source_excel(plan.table, values.lines(), [row.source_id for row in plan.evidence], [row.quotes for row in plan.evidence])
+                  book = load_workbook(BytesIO(content))
+                  assert book.sheetnames == ['Data','Source']
+                  assert book['Data']['A4'].value == '00123' and book['Data']['A4'].data_type == 's'
+                  assert book['Data']['C4'].value == 125.5 and book['Data']['C4'].number_format == '#,##0.00'
+                  assert book['Data']['E4'].value == .125 and book['Data']['E4'].number_format == '0.0%'
+                  assert book['Data']['G4'].value == 'L001' and book['Data'].tables['Records'].ref == 'A3:G6'
+                  assert [book['Source'].cell(r,3).value for r in range(4,7)] == values.lines()
+                  assert not any(c.data_type == 'f' or c.hyperlink for sheet in book for row in sheet for c in row)
+              for language in ('ar', 'en'):
+                  contact = 'procurement.contracts.and.customer.accounts@example-company.invalid'
+                  note = ('يرجى التواصل عبر ' if language == 'ar' else 'Please contact ') + contact
+                  raw = contact + (' يرجى مراجعة الطلب' if language == 'ar' else ' Please review the order')
+                  table = NativeTable(title='Source', columns=['الملاحظات', 'التواصل'] if language == 'ar' else ['Notes', 'Contact'], rows=[[note, contact]])
+                  book = load_workbook(BytesIO(source_excel(table, [raw], [1], [[None, None]])))
+                  assert book['Data'].sheet_view.rightToLeft == (language == 'ar')
+                  assert book['Source'].sheet_view.rightToLeft == (language == 'ar')
+                  assert book['Data']['A4'].value == note and book['Source']['C4'].value == raw
+                  assert book['Data']['A4'].alignment.readingOrder == (2 if language == 'ar' else 1)
+                  assert book['Source']['C4'].alignment.readingOrder == (2 if language == 'ar' else 1)
+                  assert book['Data']['B4'].value == contact and book['Data']['B4'].alignment.readingOrder == 1
+                  assert book['Data']['C4'].value == book['Source']['A4'].value == 'L001'
+              print('Non-root worker: Arabic/English Excel contact prose and literal source references retain native direction PASS with network disabled')
+              source = picture(1800, 1200, color='white')
+              native_pdf = await NativeImagePdf().render([source], 'auto')
+              embedded = PdfReader(BytesIO(native_pdf)).pages[0].images[0].image
+              with Image.open(BytesIO(source)) as original:
+                  assert embedded.size == original.size == (1800, 1200)
+                  assert embedded.tobytes() == original.convert('RGB').tobytes()
+              with TemporaryDirectory() as directory:
+                  from pathlib import Path
+                  storage = OwnedStorage(LocalStorage(Path(directory)), 1)
+                  for kind in ('acroform', 'widget', 'widget_indirect', 'permissions', 'empty_form'):
+                      source_form = storage.save('form.pdf', form_pdf(kind, later=True), 'application/pdf')
+                      blocked_ai = SimpleNamespace(extract=AsyncMock())
+                      converter = PdfToWord()
+                      converter.runtime = SimpleNamespace(storage=storage, ai=blocked_ai)
+                      before = storage.storage.usage(1)[1]
+                      try:
+                          await converter.run({'pdf': source_form.key})
+                      except ServiceError as error:
+                          assert error.key == 'pdf_word_form'
+                      else:
+                          raise AssertionError('interactive PDF converted without preserving field content')
+                      blocked_ai.extract.assert_not_awaited()
+                      assert storage.storage.usage(1)[1] == before
+                  image_document_for_forms = images_pdf([picture()])
+                  for kind in ('acroform', 'widget', 'widget_indirect', 'permissions', 'empty_form', 'empty_permissions'):
+                      form_data = form_pdf(kind, later=True)
+                      for operation in ('merge', 'extract', 'rotate'):
+                          files = [image_document_for_forms, form_data] if operation == 'merge' else [form_data]
+                          args = {'operation': operation}
+                          if operation != 'merge':
+                              args['pages'] = '1'
+                          if operation == 'rotate':
+                              args['rotation'] = '90'
+                          try:
+                              pdf_tools(files, **args)
+                          except PdfToolError as error:
+                              assert error.key == 'pdf_tools_form'
+                          else:
+                              raise AssertionError('unsupported interactive PDF accepted by page operation')
+                  print('Non-root worker: PDF tools reject form declarations and orphan widgets in merge/extract/rotate PASS with network disabled')
+                  source_images = [picture(), picture(240, 120, color='blue'), picture(color='green')]
+                  keys = [storage.save(f'{index}.png', data, 'image/png').key for index, data in enumerate(source_images)]
+                  ordered_service = ImagesToPdf()
+                  ordered_service.runtime = SimpleNamespace(storage=storage, image_pdf=NativeImagePdf(), ai=None)
+                  ordered_result = await ordered_service.run({'images': keys, 'orientation': 'auto', 'page_order': '٣، ١، ٢'})
+                  ordered_pages = PdfReader(BytesIO(storage.read(ordered_result.artifacts[0].key))).pages
+                  assert len(ordered_pages) == 3
+                  for page, number in zip(ordered_pages, (3, 1, 2), strict=True):
+                      with Image.open(BytesIO(source_images[number - 1])) as source_image:
+                          assert page.images[0].image.tobytes() == source_image.convert('RGB').tobytes()
+                  assert all('3, 1, 2' in preview for preview in ordered_result.preview_localizations.values())
+                  original_pdf = storage.read(ordered_result.artifacts[0].key)
+                  pdf_files = [storage.save(f'part{number}.pdf', pdf_tools([original_pdf], operation='extract', pages=number), 'application/pdf').key for number in ('1', '2')]
+                  merge_service = PdfTools()
+                  merge_service.runtime = SimpleNamespace(storage=storage, ai=None)
+                  merged_result = await merge_service.run({'operation': 'merge', 'files': pdf_files, 'file_order': '٢،١'})
+                  merged_pages = PdfReader(BytesIO(storage.read(merged_result.artifacts[0].key))).pages
+                  assert len(merged_pages) == 2
+                  assert [page.images[0].data for page in merged_pages] == [ordered_pages[number].images[0].data for number in (1, 0)]
+                  image = storage.save('source.png', printed(), 'image/png')
+                  service = ImageToText()
+                  service.runtime = SimpleNamespace(storage=storage, documents=processor(), ai=None)
+                  result = await service.run({'images': [image.key]})
+                  assert result.text == 'Invoice 00123\nTotal 125.50\nDate 2026-10-09'
+                  # Isolate export fidelity from OCR accuracy with injected recognition.
+                  for label in ('السجل', 'Record'):
+                      long_text = (label + ' 00123\t125.50\n') * 800
+                      long_text = (long_text[:11999] + ' \t\n\n  ' + long_text[11999:]).strip()
+                      service.runtime = SimpleNamespace(storage=storage, ai=None, documents=SimpleNamespace(recognize=AsyncMock(return_value=SimpleNamespace(confidence=.99, text=long_text))))
+                      exported = await service.run({'images': [image.key]})
+                      exports = {artifact.filename: storage.read(artifact.key) for artifact in exported.artifacts}
+                      assert exported.text == exports['result.txt'].decode('utf-8') == long_text
+                      body = Word(BytesIO(exports['result.docx'])).paragraphs[1:]
+                      assert len(body) > 1 and all(0 < len(p.text) <= 12000 for p in body)
+                      assert ''.join(p.text for p in body) == long_text
+                  for language in ('ar', 'en'):
+                      for ruled in (True, False):
+                          data, rows = table_pdf(language, ruled=ruled)
+                          source = storage.save('source.pdf', data, 'application/pdf')
+                          table_service = PdfTablesExcel()
+                          table_service.runtime = SimpleNamespace(storage=storage, tables=CamelotTables(), ai=None)
+                          result = await table_service.run({'pdf': source.key, 'mode': 'direct', 'language': language})
+                          assert result.continuation['extraction']['tables'][0]['rows'] == rows
+              detailed = await processor().recognize([detailed_ocr_source()], "en")
+              assert detailed.text == "Invoice 00123\nTotal 125.50\nDate 2026-10-09"
+              for language, text in [
+                  ('en', 'Invoice 00123\nTotal 125.50\nDate 2026-10-09'),
+                  ('ar', 'مرحبا بكم\nخدمة قراءة النصوص'),
+                  ('mixed', 'مرحبا بكم\nInvoice 00123'),
+              ]:
+                  result = await processor().recognize([printed(text)], language)
+                  assert result.text.replace('\u200f', '') == text
+              for mode in ("contrast", "grayscale"):
+                  expected = "Invoice 00123\nTotal 125.50\nDate 2026-10-09"
+                  _, _, enhanced, comparison = enhance_image(printed(expected), mode)
+                  with Image.open(BytesIO(enhanced)) as after, Image.open(BytesIO(comparison)) as pair:
+                      assert pair.size == (after.width * 2, after.height)
+                  recognition = await processor().recognize([enhanced], "en")
+                  assert recognition.text == expected
+              for language, expected in [
+                  ("en", "Invoice 00123\nTotal 125.50\nDate 2026-10-09"),
+                  ("mixed", "مرحبا بكم\nInvoice 00123\nTotal 125.50"),
+              ]:
+                  _, _, enhanced, _ = enhance_image(shaded(expected))
+                  recognition = await processor().recognize([enhanced], language)
+                  assert recognition.text.replace('\u200f', '') == expected
+              _, _, enhanced, _ = enhance_image(shaded())
+              check_quality(enhanced)
+              rendered = await renderer().word_pdf(document())
+              preview = await PdfPreviews().first_page(rendered.pdf)
+              assert preview.pages == 1
+              with Image.open(BytesIO(preview.png)) as image:
+                  assert image.width <= 960 and image.height <= 1440
+                  assert min(image.convert("L").getextrema()) < 100
+              text = PdfReader(BytesIO(rendered.pdf)).pages[0].extract_text()
+              assert text.count('00123') == text.count('125.50') == text.count('2026-10-09') == 2
+              table = await renderer().word_pdf(table_document())
+              pages = PdfReader(BytesIO(table.pdf)).pages
+              assert 2 <= len(pages) <= 5
+              text = '\n'.join(page.extract_text() for page in pages)
+              assert all(text.count(f'{index:05d}') == 1 for index in range(100, 155))
+              for language in ('ar', 'en'):
+                  values = MinuteInputs.parse(minute_inputs(language))
+                  plan = classification_schema(values.lines()).model_validate(minute_plan())
+                  minutes = await renderer().word_pdf(minute_document(values, plan))
+                  text = PdfReader(BytesIO(minutes.pdf)).pages[0].extract_text()
+                  assert '00123' in text and '125.50' in text and '00017' in text
+                  tracked = await renderer().word_pdf(minute_document(values, classification_schema(values.lines()).model_validate(minute_action_plan(language))))
+                  tracked_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(tracked.pdf)).pages)
+                  assert tracked_text.count('2026-10-12') == 2
+                  owner = 'د. سام' if language == 'ar' else 'Dr. Sam'
+                  original = 'سام' if language == 'ar' else 'Sam'
+                  titled_values = MinuteInputs.parse({**minute_inputs(language), 'notes': minute_inputs(language)['notes'].replace(original, owner)})
+                  titled_plan = minute_action_plan(language)
+                  titled_plan['assignments'][2]['assignee'] = owner
+                  titled = await renderer().word_pdf(minute_document(titled_values, classification_schema(titled_values.lines()).model_validate(titled_plan)))
+                  titled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(titled.pdf)).pages)
+                  assert titled_text.count('2026-10-12') == 2 and titled_text.count('00017') == 1
+                  untitled_source = minute_inputs(language)
+                  del untitled_source['title']
+                  untitled_values = MinuteInputs.parse(untitled_source)
+                  untitled_plan = classification_schema(untitled_values.lines()).model_validate(minute_plan())
+                  untitled = await renderer().word_pdf(minute_document(untitled_values, untitled_plan))
+                  assert Word(BytesIO(untitled.docx)).paragraphs[0].text.replace('\u200e', '') == untitled_values.document_title()
+                  untitled_text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(untitled.pdf)).pages)
+                  assert all(untitled_text.count(token) == 1 for token in ('00123', '125.50', '00017'))
+                  cv = await renderer().word_pdf(cv_planned(cv_inputs(language)))
+                  pages = PdfReader(BytesIO(cv.pdf)).pages
+                  assert len(pages) == 1
+                  text = pages[0].extract_text()
+                  assert '0500123456' in text and 'sample@example.invalid' in text
+              for theme in ('modern', 'classic', 'editorial'):
+                  bilingual = await renderer().word_pdf(cv_planned(cv_inputs() | {'language': 'bilingual'}, theme=theme))
+                  pages = PdfReader(BytesIO(bilingual.pdf)).pages
+                  assert len(pages) == 2
+                  assert 'Sam Example' not in pages[0].extract_text() and 'Sam Example' in pages[1].extract_text()
+                  for page in pages:
+                      text = page.extract_text()
+                      assert text.count('0500123456') == text.count('sample@example.invalid') == 1
+                      for token in ('00123', '125.50', '00017'):
+                          assert len(re.findall(r'(?<!\d)' + re.escape(token) + r'(?!\d)', text)) == 1
+              for language in ('ar', 'en'):
+                  source = smart_document_inputs(language)
+                  for theme in ('modern', 'classic', 'editorial'):
+                      plan = smart_document_schema(SmartDocumentInputs.parse(source)).model_validate(smart_document_revision(source, theme))
+                      pair = await renderer().word_pdf(refined_document(plan))
+                      assert len(PdfReader(BytesIO(pair.pdf)).pages) == 1
+                      paragraphs = [p.text for p in Word(BytesIO(pair.docx)).paragraphs]
+                      assert source['text'].splitlines()[1] in paragraphs
+                      text = PdfReader(BytesIO(pair.pdf)).pages[0].extract_text()
+                      assert '0500123456' in text and 'sample@example.invalid' in text
+                      for token in ('00123', '125.50', '2026-10-14'):
+                          assert len(re.findall(r'(?<!\d)' + re.escape(token) + r'(?!\d)', text)) == 1
+                  for method in ('lattice', 'stream'):
+                      data, rows = table_pdf(language, ruled=method == 'lattice')
+                      result = await CamelotTables().extract(data, method)
+                      assert result.tables[0].rows == rows
+                      data = tables_excel(result, direct_labels(result, language), language=language, enhanced=False)
+                      book = load_workbook(BytesIO(data))
+                      for name in ('Data1', 'Source1'):
+                          assert [[book[name].cell(r, c).value for c in range(1, 4)] for r in range(4, 7)] == rows
+                          assert book[name]['C5'].data_type == 's'
+                      headed = tables_excel(result, source_labels(result, language), language=language, enhanced=False, source_headers=True)
+                      book = load_workbook(BytesIO(headed))
+                      assert [book['Data1'].cell(3,c).value for c in range(1,4)] == rows[0]
+                      assert [[book['Data1'].cell(r,c).value for c in range(1,4)] for r in range(4,6)] == rows[1:]
+                      assert book['Data1']['D4'].value == 'T1:R2'
+                      assert [book['Source1'].cell(4,c).value for c in range(1,4)] == rows[0]
+                      assert book['Source1']['D4'].value == 'T1:R1'
+                      assert not any(cell.data_type == 'f' or cell.hyperlink for sheet in book for row in sheet for cell in row)
+          from app.services.text_summary.schema import Inputs as SummaryInputs, render as summary_render, summary_schema
+          from app.core.i18n import tr
+          for language in ('ar', 'en'):
+              source = 'Source 00123\n\nContact sample@example.invalid\nSource background'
+              values = SummaryInputs.parse({'text': source, 'length': 'short', 'language': language})
+              plan = summary_schema(values).model_validate({'points': [{'text': 'Contact sample@example.invalid for 00123', 'source_ids': [2, 1]}]})
+              summary, report = summary_render(values, plan)
+              assert tr('text_summary_point_sources', language, references='[1], [2]') in summary
+              assert '[1] [1], [2]' in report and report.encode('utf-8').decode('utf-8').endswith(source)
+              assert plan.points[0].source_ids == [2, 1]
+          print('Non-root worker: bilingual summary source references and literal UTF-8 report PASS with network disabled')
+          image_document = images_pdf([picture(), picture(240, 120, color='blue')])
+          pages = PdfReader(BytesIO(image_document)).pages
+          assert len(pages) == 2
+          assert pages[0].images[0].image.getpixel((0, 0)) == (255, 0, 0)
+          assert pages[1].images[0].image.getpixel((0, 0)) == (0, 0, 255)
+          rotated = PdfReader(BytesIO(pdf_tools([image_document], operation='rotate', pages='2', rotation='90'))).pages
+          assert len(rotated) == 2 and [page.rotation for page in rotated] == [0, 90]
+          assert [page.images[0].data for page in rotated] == [page.images[0].data for page in pages]
+          assert [page.mediabox for page in rotated] == [page.mediabox for page in pages]
+          print('Non-root worker: selected PDF page rotation retains source order, images and page boxes PASS with network disabled')
+          for count in (1, 3, 30):
+              plan = pptx_source_schema('Source content', count).model_validate({'deck': {'slides': [{'title': 'Section', 'bullets': ['Source content']} for _ in range(count)]}})
+              deck = Presentation(BytesIO(native_pptx.build(plan.deck)))
+              assert len(deck.slides) == count
+              assert any(shape.has_text_frame and shape.text == f'{count} / {count}' for shape in deck.slides[-1].shapes)
+          print('Non-root worker: explicit PowerPoint counts match editable native output at 1, 3 and 30 slides PASS with network disabled')
+          contact_text = 'تواصل: help@demo.invalid'
+          contact_plan = pptx_source_schema(contact_text + '\n' + contact_text, 1).model_validate({'deck': {'slides': [{'title': contact_text, 'bullets': [contact_text]}]}})
+          contact_deck = Presentation(BytesIO(native_pptx.build(contact_plan.deck)))
+          for shape in contact_deck.slides[0].shapes:
+              if shape.name in ('Slide title', 'Slide content'):
+                  paragraph = shape.text_frame.paragraphs[0]
+                  assert paragraph.text == contact_text and paragraph._p.pPr.get('rtl') == '1'
+          print('Non-root worker: Arabic PowerPoint contact prose retains RTL and exact email text PASS with network disabled')
+          from tests.pptx_table_fixtures import table_slide
+          from app.builders.schema import Deck
+          from app.builders.pptx_layout import BODY_HEIGHT, plan_slide
+          for language in ('ar', 'en'):
+              source = table_slide(language)
+              plan = Deck.model_validate({'slides': [source]})
+              layout = plan_slide(plan.slides[0])
+              deck = Presentation(BytesIO(native_pptx.build(plan)))
+              shape = next(shape for shape in deck.slides[0].shapes if shape.has_table)
+              assert sum(layout.row_heights) <= BODY_HEIGHT
+              assert sum(column.width for column in shape.table.columns) == shape.width
+              assert shape.table.columns[1].width > shape.table.columns[0].width
+              assert [[cell.text for cell in row.cells] for row in shape.table.rows] == [source['table']['columns'], *source['table']['rows']]
+              shape.table.cell(1, 2).text = '250.75'
+              edited = BytesIO()
+              deck.save(edited)
+              reopened = Presentation(BytesIO(edited.getvalue()))
+              assert next(shape.table for shape in reopened.slides[0].shapes if shape.has_table).cell(1, 2).text == '250.75'
+          print('Non-root worker: Arabic/English uneven PowerPoint table widths retain source records and edit/save/reopen PASS with network disabled')
+          for language in ('ar', 'en'):
+              values = CsvInputs.parse(csv_inputs(language))
+              headers, rows = values.records()
+              data, counts = csv_review(headers, rows, trim=True, language=language)
+              workbook = load_workbook(BytesIO(data))
+              assert workbook['Data']['A4'].value == '00123'
+              assert workbook['Data']['C5'].value == '0'
+              assert workbook['Data']['B7'].value == '=1+1'
+              assert workbook['Data']['B7'].data_type == 's'
+              assert workbook['Source']['B4'].value == ' أحمد '
+              assert workbook['Review']['C6'].value == 1
+              assert counts == {'rows': 4, 'blanks': 2, 'duplicates': 1, 'changes': 1}
+              assert workbook['Columns'].tables['ColumnsRecords'].ref == 'A3:G7'
+              assert [workbook['Columns'].cell(5, c).value for c in range(4, 8)] == [3, 1, 2, 1]
+              values = CsvInputs.parse(similarity_inputs(language))
+              headers, rows = values.records()
+              data, counts = csv_review(headers, rows, trim=False, language=language, similarity=True)
+              workbook = load_workbook(BytesIO(data))
+              assert counts['similar_pairs'] == 2 and counts['omitted_pairs'] == 0
+              assert workbook['Similarities']['A4'].value == 1 and workbook['Similarities']['B4'].value == 2
+              assert workbook['Data']['A4'].value == '00123'
+              assert workbook['Data']['C4'].value == '=1+1' and workbook['Data']['C4'].data_type == 's'
+              assert workbook['Data'].max_row == workbook['Source'].max_row == 8
+          asyncio.run(verify())
+          print('Non-root worker: Arabic, English and mixed OCR PASS with network disabled')
+          print('Non-root worker: PDF-to-Word form/widget/signature declarations reject before provider calls or output PASS with network disabled')
+          print('Non-root worker: long Arabic/English OCR text export retains internal whitespace in editable Word and TXT PASS with network disabled')
+          print('Non-root worker: declared worker capability preflight PASS with network disabled')
+          print('Non-root worker: Word/PDF and 55-row Arabic table PASS with network disabled')
+          print('Non-root worker: source-bound AI Word/PDF fixtures in Arabic and English across three designs PASS with network disabled')
+          print('Non-root worker: source-bound Excel records, typed conversions, precision and sortable references PASS with network disabled')
+          print('Non-root worker: Arabic and English CV PASS with network disabled')
+          print('Non-root worker: single-entry AI CV response fixtures, three named bilingual Word/PDF designs and fresh English page PASS with network disabled')
+          print('Non-root worker: ordered images-to-PDF PASS with network disabled')
+          print('Non-root worker: explicit Arabic-digit image order retains every source image and pixels PASS with network disabled')
+          print('Non-root worker: explicit PDF file merge order retains native source page images PASS with network disabled')
+          print('Non-root worker: Arabic/English source-bound minutes export PASS with network disabled')
+          print('Non-root worker: Arabic/English source-bound action register and exact deadline export PASS with network disabled')
+          print('Non-root worker: Arabic/English titled task owner retains source unit and exact deadline PASS with network disabled')
+          print('Non-root worker: optional minutes title uses document language and retains source numbers in native pair PASS with network disabled')
+          print('Non-root worker: CSV source/text/formula safety and audit references PASS with network disabled')
+          print('Non-root worker: Arabic/English CSV column summary preserves literal values and exact counts PASS with network disabled')
+          print('Non-root worker: Arabic/English PDF tables to literal Excel PASS with network disabled')
+          print('Non-root worker: Arabic/English first-row PDF headers and original row references PASS with network disabled')
+          print('Non-root worker: source-owned PDF first-page PNG preview PASS with network disabled')
+          print('Non-root worker: document image contrast/grayscale and numeric OCR fixture PASS with network disabled')
+          print('Non-root worker: Arabic/English lexical CSV candidates, numeric exclusions and literal source retention PASS with network disabled')
+          print('Non-root worker: automatic document illumination, colored stamp and mixed numeric OCR fixture PASS with network disabled')
+          print('Non-root worker: unified mixed-language OCR and automatic Arabic/English ruled/unruled table extraction PASS with network disabled')
+          PY
+      - name: Remove disposable CI resources
+        if: always()
+        env:
+          CI_POSTGRES_IMAGE: ${{ steps.images.outputs.postgres_image }}
+          CI_REDIS_IMAGE: ${{ steps.images.outputs.redis_image }}
+        run: docker compose -f .github/compose.ci.yml -p "$CI_INFRA_PROJECT" down --volumes

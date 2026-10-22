@@ -4,23 +4,37 @@
 
 Python 3.12 bot for Saudi customers, with Arabic menus, immutable SAR credit accounting,
 durable PostgreSQL orders, ARQ workers, operational controls, and independently discovered services.
-All four requested phases are implemented. No payment gateway or dashboard is included.
+Foundation phases are implemented; live qualification remains a separate launch gate.
+No external payment gateway or dashboard is included.
 
 **Payment constraint:** SAR credit is administrator-issued test credit here. Telegram requires Stars
 for digital-service sales inside Telegram ([official policy](https://core.telegram.org/bots/payments-stars)).
-This project is not cleared for a paid SAR checkout launch. Resolve that business requirement before
-selling services; the implementation does not silently add a different payment system.
+Direct Stars checkout is implemented separately and disabled by default; it never converts SAR
+test credits or mixes their accounting. Configure owner-approved terms and independent Stars prices
+and pass [Stars acceptance](docs/STARS_ACCEPTANCE.md) before enabling commercial sales.
 
 ## Services and architecture
 
 | Service | Default | Test price | Behavior |
 | --- | --- | --- | --- |
 | `echo` | Enabled | SAR 1 | Proves collection → confirmation → reservation → worker → delivery → capture. |
-| `image_to_text` | Disabled | SAR 3 | Up to five images, Arabic/English OCR, optional Arabic/English translation and style; long output includes TXT and DOCX. |
+| `image_to_text` | Disabled | SAR 3 | One original-text extraction service: bounded native recognition and classified AI fallback internally, same order/price; long output includes TXT and DOCX. Optional independent translation has its own confirmation. |
 | `text_to_office` | Disabled | SAR 5 | Automatic professional Word with sections/editable tables; explicit first-line directive preserves text without AI. Excel uses AI organization; asks for structure approval only for material ambiguity. |
 | `text_to_pptx` | Disabled | SAR 5 | Text to an editable PowerPoint deck; asks for structure approval only when the validated plan is ambiguous. |
 | `text_to_pdf` | Disabled | SAR 5 | Explicit direct conversion without AI, or existing AI-organized printable PDF; asks for approval when the AI plan is ambiguous. |
 | `pdf_to_word` | Disabled | SAR 5 | Extracted PDF text to editable Word; rejects scanned or mixed scanned/text PDFs, encrypted and oversized input. Original page layout, images and tables are not reproduced. |
+| `local_ocr` | Retired from customer selection | Historic DB-owned test price | Kept for historical execution only; old selection opens a new `image_to_text` draft at its current price. |
+| `text_to_word_pdf` | Disabled | DB-owned test price | Word with a locally rendered PDF. |
+| `pdf_tools` | Disabled | DB-owned test price | Bounded PDF operations without an AI provider. |
+| `cv_formatting` | Disabled | DB-owned test price | Source-bound CV formatting, not invented CV content. |
+| `images_to_pdf` | Disabled | DB-owned test price | Ordered images to PDF. |
+| `meeting_minutes` | Disabled | DB-owned test price | Source-bound classification and meeting document. |
+| `csv_review` | Disabled | DB-owned test price | Source-preserving CSV workbook and static review. |
+| `pdf_tables_excel` | Disabled | SAR 5 test credit | Bounded text PDF tables to literal Excel; optional AI headings and mandatory structure approval. |
+
+Stars prices are unset until explicitly set with `/setstars SLUG INTEGER`; the SAR column above
+describes test credits only, not sale prices or an exchange rate. The V1 completion scope is these
+registered services plus generic customer/admin/recovery/payment flows, not every portfolio candidate.
 
 Word, Excel, PowerPoint and PDF builders are shared infrastructure. Blank, unreadable or empty OCR
 is rejected and credit released.
@@ -138,6 +152,7 @@ reconciliation. See [operations](docs/OPERATIONS.md). No credentials are require
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | PostgreSQL container initialization; keep DSN consistent. |
 | `APP_ENV`, `STORAGE_ROOT` | Environment; temporary file path (`/data/files` in Compose). |
 | `TELEGRAM_MODE`, `TELEGRAM_WEBHOOK_SECRET` | `polling` by default; secret required for `webhook`. |
+| `TELEGRAM_API_ENVIRONMENT` | `production` by default; explicit `test` selects Telegram's separate test server for all processes and file downloads. Independent of `APP_ENV`; other values are rejected. |
 | `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, `AI_ENABLED` | Provider selection/configuration; AI disabled by default. |
 | `AI_INPUT_USD_PER_MILLION`, `AI_OUTPUT_USD_PER_MILLION`, `USD_TO_SAR` | Operator-maintained current rates; rate defaults are zero to prevent accidental AI activation. |
 | `AI_IMAGE_TOKEN_BOUND`, `AI_MAX_OUTPUT_TOKENS` | Conservative image bound 20000; output maximum 8192 tokens (configurable up to 32768). |
@@ -179,6 +194,13 @@ Use an HTTPS reverse proxy in front of the loopback API. Set `TELEGRAM_MODE=webh
 `/webhooks/telegram` URL with Telegram `setWebhook`, passing the same `secret_token`. Registration is
 an operator action; no token-bearing URL is logged by this project. Remove the webhook before returning
 to polling. `/health/live` is liveness, `/health` checks DB and Redis. `/webhooks/payment` returns 501.
+
+For dedicated Telegram test-server setup, use [Stars acceptance](docs/STARS_ACCEPTANCE.md).
+Set `TELEGRAM_API_ENVIRONMENT=test` on an isolated installation with test-server bot/user/admin
+credentials, separate database/Redis/file volumes, and its own webhook. Restart API, worker,
+monitor and any polling process together after changing this setting. `APP_ENV=test` alone
+does not change the Telegram endpoint. Never switch an existing database containing unpaid
+orders, payment receipts or refunds between Telegram environments; qualify a fresh installation.
 
 ## Add a service without changing bot/core
 

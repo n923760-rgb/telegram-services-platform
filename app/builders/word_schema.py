@@ -1,5 +1,7 @@
 """Bounded Word-only structure; PDF and other service plans keep their contracts."""
 
+from typing import Literal
+
 from pydantic import Field, model_validator
 
 from app.builders.schema import Document, Section, StrictModel
@@ -23,22 +25,60 @@ class WordTable(StrictModel):
         return self
 
 
+class WordBlock(StrictModel):
+    text: str = Field(min_length=1, max_length=4000)
+    kind: Literal["paragraph", "bullet", "lead"] = "paragraph"
+
+
 class WordSection(Section):
+    alignment: Literal["auto", "left", "right"] = "auto"
+    title: str = Field(default="", max_length=200)
+    subtitle: str = Field(default="", max_length=200)
+    blocks: list[WordBlock] = Field(default_factory=list, max_length=160)
+    page_break_before: bool = False
     tables: list[WordTable] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def titled_break(self):
+        if self.page_break_before and not (self.title or self.heading or self.subtitle):
+            raise ValueError("page break requires a titled section")
+        return self
+
+
+class WordDesign(StrictModel):
+    """Named typography choices, never model-supplied code, font paths or coordinates."""
+
+    theme: Literal["modern", "classic", "editorial"] = "modern"
+    density: Literal["comfortable", "compact"] = "comfortable"
 
 
 class WordDocument(Document):
+    layout: Literal["standard", "resume"] = "standard"
+    design: WordDesign | None = None
+    alignment: Literal["auto", "left", "right"] = "auto"
     sections: list[WordSection] = Field(min_length=1, max_length=100)
 
     @model_validator(mode="after")
     def nonempty(self):
-        if not any(s.heading or s.paragraphs or s.bullets or s.tables for s in self.sections):
+        if not any(
+            s.title or s.subtitle or s.blocks or s.heading or s.paragraphs or s.bullets or s.tables
+            for s in self.sections
+        ):
             raise ValueError("empty Word document")
         if len(self.model_dump_json()) > 100000 or sum(len(s.tables) for s in self.sections) > 10:
             raise ValueError("Word document too large")
         text = [self.title]
         for section in self.sections:
-            text.extend([section.heading, *section.paragraphs, *section.bullets])
+            text.extend(
+                [
+                    section.title,
+                    section.subtitle,
+                    section.heading,
+                    *section.paragraphs,
+                    *section.bullets,
+                ]
+            )
+            text.extend(block.text for block in section.blocks)
             for table in section.tables:
                 text.extend([table.caption, *table.columns])
                 text.extend(cell for row in table.rows for cell in row)

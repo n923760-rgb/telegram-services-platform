@@ -7,6 +7,7 @@ from app.services.echo.schema import EchoInput
 
 class Echo(BaseService):
     slug = "echo"
+    admin_only = True
     name_ar = tr("echo_name")
     name_en = tr("echo_name", "en")
     description_ar = tr("echo_description")

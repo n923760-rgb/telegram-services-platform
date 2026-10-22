@@ -19,7 +19,10 @@ ALLOWED_FILE_MIMES = {
 }
 
 
-def image(data: bytes, max_bytes: int) -> bytes:
+def image_pixels(data: bytes, max_bytes: int, *, max_side: int = 1024) -> Image.Image:
+    """Decode/validate once into metadata-free RGB, with a fixed caller-owned bound."""
+    if type(max_side) is not int or not 32 <= max_side <= 2048:
+        raise ValueError("invalid image processing bound")
     if not data or len(data) > max_bytes:
         raise ServiceError("file_invalid")
     try:
@@ -38,10 +41,9 @@ def image(data: bytes, max_bytes: int) -> bytes:
                     < 3
                 ):
                     raise ServiceError("image_unclear")
-                picture.thumbnail((1024, 1024))
-                output = BytesIO()
-                picture.save(output, format="JPEG", quality=88, optimize=True)
-                return output.getvalue()
+                picture.thumbnail((max_side, max_side))
+                picture.info.clear()
+                return picture
     except ServiceError:
         raise
     except (
@@ -52,6 +54,17 @@ def image(data: bytes, max_bytes: int) -> bytes:
         Image.DecompressionBombWarning,
     ):
         raise ServiceError("file_invalid") from None
+
+
+def image(data: bytes, max_bytes: int, *, max_side: int = 1024) -> bytes:
+    # Default intake retains its 1024px bound; trusted OCR opts into 2048px.
+    picture = image_pixels(data, max_bytes, max_side=max_side)
+    output = BytesIO()
+    try:
+        picture.save(output, format="JPEG", quality=88, optimize=True)
+    except (OSError, ValueError):
+        raise ServiceError("file_invalid") from None
+    return output.getvalue()
 
 
 def validate_file(data, mime, max_bytes):

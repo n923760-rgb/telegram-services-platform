@@ -45,7 +45,7 @@ async def test_failed_deletion_preserves_references_for_retry(tmp_path, monkeypa
     oid = await submit(
         1,
         "image_to_text",
-        {"images": [file.key], "language": "none"},
+        {"images": [file.key]},
         await _price("image_to_text"),
         "retry-refs",
     )
@@ -111,7 +111,7 @@ async def test_aged_active_input_survives_expiry(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "image_to_text",
-        {"images": [file.key], "language": "none"},
+        {"images": [file.key]},
         await _price("image_to_text"),
         "active-input",
     )
@@ -137,7 +137,7 @@ async def test_aged_prepared_artifact_survives_expiry(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "نص", "target": "word"},
+        {"mode": "smart", "text": "نص", "target": "word"},
         await _price("text_to_office"),
         "artifact",
     )
@@ -175,7 +175,7 @@ async def test_successful_terminal_purge_clears_references(tmp_path, monkeypatch
     oid = await submit(
         1,
         "image_to_text",
-        {"images": [file.key], "language": "none"},
+        {"images": [file.key]},
         await _price("image_to_text"),
         "purge",
     )
@@ -200,7 +200,7 @@ async def test_malformed_input_schema_fails_closed(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "image_to_text",
-        {"images": [file.key], "language": "none"},
+        {"images": [file.key]},
         await _price("image_to_text"),
         "malformed-schema",
     )
@@ -229,7 +229,7 @@ async def test_malformed_artifact_result_fails_closed(tmp_path, monkeypatch):
     oid = await submit(
         1,
         "text_to_office",
-        {"text": "نص", "target": "word"},
+        {"mode": "smart", "text": "نص", "target": "word"},
         await _price("text_to_office"),
         "malformed-result",
     )

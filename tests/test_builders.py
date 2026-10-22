@@ -146,7 +146,8 @@ def test_excel_preserves_protection_and_adaptive_direction():
     assert sheet["A5"].data_type == "s" and sheet["A5"].value.startswith("'")
     assert sheet["B5"].value == "00123"
     assert sheet.freeze_panes == "A4"
-    assert sheet.auto_filter.ref == "A3:B5"
+    assert sheet.auto_filter.ref is None
+    assert sheet.tables["Records"].autoFilter.ref == "A3:B5"
     assert sheet.tables["Records"].ref == "A3:B5"
 
     english = Table(title="Data", columns=["Name", "Value"], rows=[["Item", 1]])

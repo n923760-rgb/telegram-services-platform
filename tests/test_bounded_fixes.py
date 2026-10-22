@@ -541,7 +541,6 @@ async def test_negative_choice_index_is_rejected():
     await message("/start")
     await callback("menu:services")
     await callback("service:text_to_office")
-    await message("المحتوى")
     valid = button_by_prefix(transport.messages[-1].reply_markup, "choice:")
     malicious = ":".join(valid.split(":")[:-1] + ["-1"])
     await callback(malicious)
@@ -552,9 +551,11 @@ async def test_negative_choice_index_is_rejected():
 
 
 async def test_malformed_done_callback_is_rejected(monkeypatch):
+    monkeypatch.setattr(config(), "ai_enabled", True)
     import app.files.telegram as telegram_module
 
-    async def fake_receive(message, kind, user_id):
+    async def fake_receive(message, kind, user_id, *, preserve_image=False):
+        assert preserve_image is True
         return f"1/{'a' * 32}/input.jpg"
 
     monkeypatch.setattr(telegram_module, "receive", fake_receive)

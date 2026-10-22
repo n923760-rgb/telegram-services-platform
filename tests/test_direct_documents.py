@@ -1,5 +1,6 @@
 """Direct modes use the same order/ledger/delivery safeguards without a provider."""
 
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
@@ -42,8 +43,9 @@ async def prepare(tmp_path, monkeypatch, slug):
 def direct_inputs(slug):
     if slug == "text_to_office":
         return {
-            "text": "بدون تعديل النص\n  محتوى 00123\n\nEnglish <tag> & data 456  ",
+            "text": "  محتوى 00123\n\nEnglish <tag> & data 456  ",
             "target": "word",
+            "mode": "direct",
         }
     return {
         "text": "  محتوى 00123\n\nEnglish <tag> & data 456  ",
@@ -63,7 +65,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "5" if slug == "text_to_office" else "3"
+    version = "8" if slug == "text_to_office" else "5"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -84,7 +86,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     assert not list(tmp_path.glob("[0-9]*/*/*"))
     if slug == "text_to_office":
         doc = Document(BytesIO(delivery.files[0][1]))
-        assert "\n".join(p.text for p in doc.paragraphs) == inputs["text"].partition("\n")[2]
+        assert "\n".join(p.text for p in doc.paragraphs) == inputs["text"]
 
 
 @pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
@@ -92,7 +94,7 @@ async def test_smart_mode_still_blocked_before_reserve_without_ai(tmp_path, monk
     price = await prepare(tmp_path, monkeypatch, slug)
     inputs = {
         "text": "المحتوى",
-        **({"mode": "smart"} if slug == "text_to_pdf" else {}),
+        "mode": "smart",
         **({"target": "word"} if slug == "text_to_office" else {}),
     }
     with pytest.raises(ServiceError, match="provider_config"):
@@ -107,6 +109,20 @@ async def test_excel_still_requires_provider(tmp_path, monkeypatch):
     price = await prepare(tmp_path, monkeypatch, "text_to_office")
     with pytest.raises(ServiceError, match="provider_config"):
         await submit(1, "text_to_office", {"text": "بيانات", "target": "excel"}, price, "excel")
+
+
+@pytest.mark.parametrize("mode", [None, "automatic"])
+async def test_word_mode_required_before_any_order_or_reservation(tmp_path, monkeypatch, mode):
+    price = await prepare(tmp_path, monkeypatch, "text_to_office")
+    inputs = {"target": "word", "text": "Content"}
+    if mode is not None:
+        inputs["mode"] = mode
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(1, "text_to_office", inputs, price, "missing-mode")
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
 
 
 @pytest.mark.parametrize("failure", ["build", "delivery"])
@@ -194,7 +210,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
         await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
-        assert row.version == "3" and row.enabled and row.price_halala == 700
+        assert row.version == "5" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
     )
@@ -202,3 +218,47 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         assert (await db.get(Order, oid)).status == "cancelled"
         assert (await db.get(Order, oid)).error_key == "service_changed"
         assert (await balance(db, 1)).reserved == 0
+
+
+@pytest.mark.parametrize("cached", [False, True])
+async def test_pdf_v4_intake_upgrade_keeps_admin_settings_and_prepared_delivery(
+    tmp_path, monkeypatch, cached
+):
+    from app.builders import pdf
+
+    price = await prepare(tmp_path, monkeypatch, "text_to_pdf")
+    oid = await submit(1, "text_to_pdf", direct_inputs("text_to_pdf"), price, "pdf-v4")
+    jid = await job_for(oid)
+    delivery = Delivery(LocalStorage(tmp_path))
+    send = delivery.send
+    if cached:
+
+        async def offline(*args):
+            raise OSError("synthetic offline")
+
+        monkeypatch.setattr(delivery, "send", offline)
+        await execute_job({"delivery": delivery}, str(jid))
+    async with sessions.begin() as db:
+        service = await db.get(Service, "text_to_pdf")
+        old = deepcopy(service.input_schema)
+        old["fields"][:2] = reversed(old["fields"][:2])
+        service.version, service.input_schema = "4", old
+        service.price_halala, service.price_stars = 777, 25
+        order = await db.get(Order, oid)
+        order.service_version, order.input_schema_snapshot = "4", old
+        (await db.get(Job, jid)).next_run_at = datetime.now(UTC) - timedelta(seconds=1)
+    async with sessions.begin() as db:
+        await registry.sync(db)
+    async with sessions() as db:
+        service = await db.get(Service, "text_to_pdf")
+        assert service.version == "5" and service.enabled
+        assert service.price_halala == 777 and service.price_stars == 25
+    monkeypatch.setattr(pdf, "build", no_provider)
+    monkeypatch.setattr(delivery, "send", send)
+    await execute_job({"delivery": delivery}, str(jid))
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == ("completed" if cached else "cancelled")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if cached else 1000, 0)
+    assert len(delivery.files) == int(cached)
