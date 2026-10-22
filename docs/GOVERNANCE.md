@@ -1,6 +1,41 @@
 # Governance provenance and enforcement
 
-## Reviewed reference
+## Reviewed reference update — 2026-10-09
+
+Selected reference: [engineering-governance at f3ec2dc](https://github.com/n923760-rgb/engineering-governance/tree/f3ec2dcca8851d185c2fb0ab96214a6662e52c6c),
+version **2.0.0-dev.1 (unreleased)**. This branch proposes the update; effective
+project policy changes only after review and owner-authorized acceptance.
+The complete required source hashes are recorded in
+[the governance lock](../governance/GOVERNANCE_LOCK.json); project adaptations and
+remaining qualification are recorded in
+[the project profile](../governance/project-profile.json) and
+[the retained re-baseline](../ENGINEERING/REPORTS/MASTER_ENGINEERING_BASELINE_REPORT.md).
+A matching lock verifies attribution, not production or executor qualification.
+
+The update preserves root AGENTS.md, service/financial/security contracts, the
+single roadmap, existing tests and historical evidence. It adds explicit
+reference attribution and draft adoption records rather than running bootstrap
+against an existing project. Project risk is HIGH because credit, customer data
+and external delivery are involved; each bounded task still selects its actual
+impact profile. This documentation-only round is LIGHT and grants no protected
+product action.
+
+For new automated task/result packets, use the pinned v2 schemas and validators:
+select the approved task independently, bind its exact bytes/hash, and retain
+source/environment-bound evidence. Older evidence keeps its original contracts.
+Existing human LIGHT reviews can remain concise; no agent loop or automated
+controller is introduced. Review docs/AUTHORITY_MODEL.md, RISK_PROFILES.md,
+UNTRUSTED_CONTENT_POLICY.md, CONTROLLER_EXECUTOR_MODEL.md, EVIDENCE_POLICY.md,
+STOP_CONDITIONS.md and GOVERNANCE_VERSIONING.md from this pinned reference.
+
+Preserve the existing test/deployment commands. The reference update is not an
+instruction to reinstall project dependencies, enable a service, change payment
+policy, merge another PR, deploy, or disable operating-system isolation. Real
+provider/native Office acceptance and actual AI tool-boundary qualification remain
+separate gates. Roll back a rejected update by preserving the previous adoption;
+a later accepted rollback uses a reviewed corrective commit, never history rewrite.
+
+## Historical initial reference — 2026-10-04
 
 Use [n923760-rgb/engineering-governance](https://github.com/n923760-rgb/engineering-governance)
 as the reviewed engineering reference, identified through the owner's available GitHub repositories.

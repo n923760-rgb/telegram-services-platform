@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-10-08T23:41:15.096007+00:00",
+  "task": "Existing-project governance reference adoption review",
+  "execution_environment": "ChatGPT Work local Python 3.12/Git/uv workspace",
+  "source_baseline": "6415e57da8cec22d198c4bd941d4ffa864dc3c98",
+  "reference_source": "f3ec2dcca8851d185c2fb0ab96214a6662e52c6c",
+  "status": "PASS",
+  "input_sha256": {
+    "docs/GOVERNANCE.md": "c8be3a132197bf471f2776ef23a6708e7e9081964f34b1c70bfe3a41f7a39d05",
+    "governance/GOVERNANCE_LOCK.json": "ec35bac0383f8ff3f607fd63deba78513cdba9d6b57f7b01df5c97837486aece",
+    "governance/project-profile.json": "e2bd1fcd8999d425a600cf05307e1bdef9343a2ab6be8c5d546c41a578273f06",
+    "ENGINEERING/REPORTS/MASTER_ENGINEERING_BASELINE_REPORT.md": "409bc543f503baa2c51b9c8adfbae868665a0f47b7eaf823f71e46a75f3a6187",
+    "ENGINEERING/EVIDENCE/2026-10-09-governance-source-review.json": "0cbf4286dead20c58574ae08c636f7fcf2e34de32701114f5d6752365f513988"
+  },
+  "checks": [
+    {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit_code": 0,
+      "stdout": "169 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "additional_checks": [
+    "Project profile passed pinned schema",
+    "Complete lock passed clean exact-source integrity verification",
+    "Root instructions, roadmap, navigation, workflow and dependency locks unchanged",
+    "New report/provenance relative links resolve"
+  ],
+  "limits": [
+    "Full project integration suite NOT RUN locally: disposable PostgreSQL/Redis not configured here; hosted exact-head CI will perform it.",
+    "Local checks bind the listed reviewed bytes, not a claim of production or VPS agent qualification."
+  ]
+}
