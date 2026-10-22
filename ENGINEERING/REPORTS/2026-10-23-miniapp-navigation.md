@@ -56,3 +56,19 @@ reviewed on main and does not requalify all summaries or other services. Formal
 Arabic rewriting still needs its isolated real-provider rerun and content review.
 Mini App remains a draft, read-only interface pending hosted and mobile checks.
 No server, checkout, upload, balance, price, credential or deployment changed.
+
+## Authorized merge preparation and CI correction
+
+Owner explicitly authorizes merging and publishing pending project work on
+2026-10-23. Hosted run 39856052973 failed four tests, with 2964 passing:
+Mini App serialization accessed nonexistent Service.description_en (two cases),
+and an older keyboard test's SimpleNamespace omitted the new miniapp_url (two).
+Use the persisted Arabic description as the English-view fallback; translated
+service names and interface labels remain available. No column/migration is
+introduced. Update the test configuration fixture and add a DB-free regression
+that serializes a real mapped Service in both payment modes. Require the
+existing owner-scope integration cases and complete hosted checks before merge.
+
+Deployment authorization does not prove server access. This workspace has no
+connected VPS installation or SSH configuration; operator execution of the
+source-pinned deployment commands remains required. No deployment is claimed.

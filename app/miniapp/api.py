@@ -74,9 +74,7 @@ def visible_services(rows, *, user_id: int, stars: bool, ai_available: bool):
                 "name_ar": service.name_ar,
                 "name_en": service.name_en,
                 "description_ar": service.description_ar,
-                "description_en": service.description_ar
-                if not service.description_en
-                else service.description_en,
+                "description_en": service.description_ar,
                 "price": service.price_stars if stars else sar(service.price_halala),
                 "ai_unavailable": not ai_available and plugin.requires_ai,
                 "ai_options_unavailable": not ai_available and plugin.optional_ai,

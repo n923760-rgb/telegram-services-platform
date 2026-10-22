@@ -85,3 +85,26 @@ def test_auth_window_uses_received_timestamp():
     assert verify_init_data(signed(issued=now - 3500), TOKEN, now=now) == 55
     with pytest.raises(InvalidMiniAppAuth):
         verify_init_data(signed(issued=now - 3601), TOKEN, now=now)
+
+
+def test_catalog_serializes_the_persisted_service_model_without_an_english_column():
+    from app.core.models import Service
+    from app.miniapp.api import visible_services
+    from app.services.registry import registry
+
+    plugin = registry.types["csv_review"]
+    row = Service(
+        slug="csv_review",
+        name_ar=plugin.name_ar,
+        name_en=plugin.name_en,
+        description_ar="وصف محفوظ",
+        price_halala=300,
+        price_stars=8,
+        enabled=True,
+    )
+    for stars, price in ((False, "3.00"), (True, 8)):
+        result = visible_services([row], user_id=11, stars=stars, ai_available=False)
+        assert len(result) == 1
+        assert result[0]["description_ar"] == result[0]["description_en"] == "وصف محفوظ"
+        assert result[0]["price"] == price
+        assert result[0]["name_en"] == plugin.name_en

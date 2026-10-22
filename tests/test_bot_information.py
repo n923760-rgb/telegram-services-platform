@@ -45,7 +45,9 @@ async def test_profile_false_response_stops_without_claiming_success():
 
 @pytest.mark.parametrize("enabled", [False, True])
 def test_payment_labels_remain_compatible_and_admin_button_is_separate(monkeypatch, enabled):
-    monkeypatch.setattr(ui, "config", lambda: SimpleNamespace(stars_enabled=enabled))
+    monkeypatch.setattr(
+        ui, "config", lambda: SimpleNamespace(stars_enabled=enabled, miniapp_url="")
+    )
     for lang in ("ar", "en"):
         expected = tr("payments" if enabled else "balance", lang)
         keyboard = ui.home_keyboard(lang, admin=True)
