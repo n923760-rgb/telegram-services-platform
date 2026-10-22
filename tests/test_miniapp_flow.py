@@ -69,9 +69,7 @@ async def test_stars_catalog_requires_explicit_price_and_never_exposes_sar_credi
     data = response.json()
     assert data["payment_mode"] == "stars"
     assert data["credit"] is None
-    assert [(item["slug"], item["price"]) for item in data["services"]] == [
-        ("csv_review", 8)
-    ]
+    assert [(item["slug"], item["price"]) for item in data["services"]] == [("csv_review", 8)]
 
 
 async def test_unsigned_identity_cannot_query_other_orders(monkeypatch):

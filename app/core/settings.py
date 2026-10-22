@@ -18,6 +18,7 @@ class Config(BaseSettings):
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     telegram_mode: str = "polling"
     telegram_api_environment: Literal["production", "test"] = "production"
+    miniapp_url: str = ""
     telegram_webhook_secret: SecretStr = SecretStr("")
     stars_enabled: bool = False
     stars_terms_version: str = ""
@@ -115,6 +116,18 @@ class Config(BaseSettings):
             raise ValueError("administrator IDs must be positive and unique")
         from urllib.parse import urlsplit
 
+        if self.miniapp_url:
+            web_app = urlsplit(self.miniapp_url)
+            if (
+                web_app.scheme != "https"
+                or not web_app.hostname
+                or web_app.username
+                or web_app.password
+                or web_app.query
+                or web_app.fragment
+                or web_app.path.rstrip("/") != "/miniapp"
+            ):
+                raise ValueError("Mini App requires a plain HTTPS /miniapp URL")
         endpoint = urlsplit(self.ai_base_url)
         if (
             endpoint.scheme not in {"https", "http"}

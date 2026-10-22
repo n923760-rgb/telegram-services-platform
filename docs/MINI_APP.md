@@ -50,7 +50,7 @@ not fork money or service business logic in JavaScript.
 2. Publish the HTTPS API origin through the existing proxy; ensure \`/miniapp\`,
    \`/miniapp/app.js\`, \`/miniapp/styles.css\` and
    \`/miniapp/api/overview\` remain same-origin. No browser token storage.
-3. Configure BotFather's Menu Button to open \`https://<YOUR-HTTPS-HOST>/miniapp\`
+3. After HTTPS staging acceptance set `MINIAPP_URL=https://<YOUR-HTTPS-HOST>/miniapp` in the staging environment to expose the optional bot keyboard launch button, then configure BotFather's Menu Button to open \`https://<YOUR-HTTPS-HOST>/miniapp\`
    on a dedicated test bot; do not paste tokens. \`WebApp.initDataUnsafe\` is not
    authentication; the API must receive the unmodified signed raw initData.
 4. Test valid, forged, expired and group launches; banned/other user's orders;
