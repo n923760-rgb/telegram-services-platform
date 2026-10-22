@@ -64,13 +64,13 @@ def test_fixed_labels_identify_rejection_without_exposing_source_or_candidate(
     assert "Private source" not in json.dumps(labels) and "00123" not in json.dumps(labels)
 
 
-def test_valid_contract_and_public_json_schema_are_unchanged():
+def test_valid_payload_and_public_schema_use_the_selected_bound():
     schema = summary_schema(values())
     payload = {"points": [point()]}
     assert schema.model_validate(payload).model_dump() == payload
     public = schema.model_json_schema()
     assert set(public["properties"]) == {"points"}
-    assert public["properties"]["points"]["maxItems"] == 7
+    assert public["properties"]["points"]["maxItems"] == 3
     assert "diagnostic_categories" not in json.dumps(public)
 
 

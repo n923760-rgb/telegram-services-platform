@@ -3,9 +3,10 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import func, select
 
 from app.core.db import sessions
-from app.core.models import Job, Order
+from app.core.models import CostHold, CostUsage, Job, Ledger, Order
 from app.core.settings import config
 from app.orders.engine import submit
 from app.providers.ai.gateway import AI
@@ -81,6 +82,40 @@ async def test_invalid_summary_after_one_repair_releases_credit(tmp_path, monkey
         assert (funds.available, funds.reserved) == (1000, 0)
     assert provider.calls == 2 and not delivery.results and not delivery.files
     assert len(provider.responses) == 1
+
+
+@pytest.mark.parametrize("repair_succeeds", [True, False])
+async def test_selected_point_limit_repairs_or_releases_once(
+    tmp_path, monkeypatch, repair_succeeds
+):
+    invalid = json.dumps({"points": [{"text": chr(65 + n), "source_ids": [1]} for n in range(4)]})
+    responses = [invalid, json.dumps(PLAN) if repair_succeeds else invalid]
+    _, provider, delivery, ctx, price = await setup(
+        "text_summary", responses, tmp_path, monkeypatch
+    )
+    oid = await submit(1, "text_summary", values(length="short"), price, "selected-limit")
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    assert provider.calls == 2
+    assert len(delivery.results) == int(repair_succeeds)
+    assert len(delivery.files) == int(repair_succeeds)
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("completed" if repair_succeeds else "failed")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if repair_succeeds else 1000, 0)
+        assert await db.scalar(select(func.count(CostUsage.id))) == 2
+        assert len(list((await db.scalars(select(CostHold))).all())) == 2
+        assert all(h.status == "settled" for h in (await db.scalars(select(CostHold))).all())
+        for kind, expected in (
+            ("capture", int(repair_succeeds)),
+            ("release", int(not repair_succeeds)),
+        ):
+            assert (
+                await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == kind))
+                == expected
+            )
+    assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
 @pytest.mark.parametrize("old_version", [None, "1", "2"])

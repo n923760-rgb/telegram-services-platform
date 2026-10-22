@@ -2,7 +2,14 @@ import json
 from collections import Counter
 from typing import Annotated, ClassVar, Literal
 
-from pydantic import Field, StrictInt, StringConstraints, ValidationError, model_validator
+from pydantic import (
+    Field,
+    StrictInt,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 from app.builders.schema import StrictModel
@@ -76,6 +83,16 @@ def summary_schema(values):
     count, limit = len(values.lines()), values.limit()
 
     class SourceSummary(Summary):
+        # The provider sees this exact selected bound on generation and repair.
+        points: list[Point] = Field(min_length=1, max_length=limit)
+
+        @field_validator("points", mode="before")
+        @classmethod
+        def selected_point_limit(cls, value):
+            if isinstance(value, list) and len(value) > limit:
+                raise PydanticCustomError("summary_point_limit", "summary point limit")
+            return value
+
         @model_validator(mode="after")
         def grounded_points(self):
             if len(self.points) > limit:
