@@ -9,6 +9,8 @@
   let lang = "ar";
   let tab = "services";
   let category = "all";
+  let selectedService = null;
+  let noticeKey = "loading";
 
   const words = {
     ar: {
@@ -22,6 +24,7 @@
       detail: "الطلب والدفع متاحان حاليًا من محادثة البوت. هذه النسخة للتصفح والمتابعة فقط.",
       loading: "جارٍ التحميل...", failure: "تعذر تحميل البيانات. أعد فتح التطبيق من تيليجرام.",
       outside: "افتح هذه الصفحة من داخل بوت تيليجرام لاستخدامها بأمان.",
+      back: "العودة للخدمات", navigation: "التنقل", language: "تغيير اللغة إلى الإنجليزية",
       close: "العودة إلى البوت", status: "حالة الطلب", reference: "مرجع"
     },
     en: {
@@ -35,6 +38,7 @@
       detail: "Ordering and payment remain in the bot chat. This first version is read-only.",
       loading: "Loading...", failure: "Could not load data. Reopen from Telegram.",
       outside: "Open this page inside the Telegram bot to authenticate securely.",
+      back: "Back to services", navigation: "Navigation", language: "Switch language to Arabic",
       close: "Return to bot", status: "Status", reference: "Ref."
     }
   };
@@ -57,6 +61,9 @@
     document.getElementById("heading").textContent = t("heading");
     document.getElementById("subtitle").textContent = t("subtitle");
     document.getElementById("lang").textContent = lang === "ar" ? "EN" : "عربي";
+    document.getElementById("lang").setAttribute("aria-label", t("language"));
+    tabs.setAttribute("aria-label", t("navigation"));
+    notice.textContent = t(noticeKey);
     for (const button of tabs.querySelectorAll("button")) {
       button.textContent = t(button.dataset.tab);
       button.classList.toggle("active", button.dataset.tab === tab);
@@ -82,6 +89,7 @@
       const button = element("button", "filter" + (category === group.key ? " active" : ""),
         group[lang]);
       button.type = "button";
+      button.setAttribute("aria-pressed", String(category === group.key));
       button.addEventListener("click", function () { category = group.key; render(); });
       filters.appendChild(button);
     }
@@ -95,6 +103,7 @@
     for (const service of selected) {
       const card = element("button", "card service");
       card.type = "button";
+      card.dataset.service = service.slug;
       card.appendChild(element("h3", "", service["name_" + lang]));
       card.appendChild(element("p", "sub", service["description_" + lang]));
       card.appendChild(element("div", "price", String(service.price) + " " +
@@ -104,11 +113,9 @@
           t(service.ai_unavailable ? "paused" : "optionsPaused")));
       }
       card.addEventListener("click", function () {
-        screen.replaceChildren();
-        const detail = pane(service["name_" + lang]);
-        detail.appendChild(element("p", "sub", service["description_" + lang]));
-        botReturn(detail);
-        screen.appendChild(detail);
+        selectedService = service;
+        render();
+        document.getElementById("service-back").focus();
       });
       list.appendChild(card);
     }
@@ -116,6 +123,34 @@
     const info = pane(t("returnBot"));
     botReturn(info);
     screen.appendChild(info);
+  }
+  function backToServices() {
+    if (!selectedService) return;
+    const slug = selectedService.slug;
+    selectedService = null;
+    render();
+    // Compare data directly; slugs are never interpolated into a CSS selector.
+    const cards = screen.querySelectorAll("[data-service]");
+    for (const card of cards) {
+      if (card.dataset.service === slug) { card.focus(); break; }
+    }
+  }
+  function renderServiceDetail() {
+    const detail = pane(selectedService["name_" + lang]);
+    const back = element("button", "filter", t("back"));
+    back.id = "service-back";
+    back.type = "button";
+    back.addEventListener("click", backToServices);
+    detail.prepend(back);
+    detail.appendChild(element("p", "sub", selectedService["description_" + lang]));
+    detail.appendChild(element("div", "price", String(selectedService.price) + " " +
+      (data.payment_mode === "stars" ? t("priceStars") : t("sar"))));
+    if (selectedService.ai_unavailable || selectedService.ai_options_unavailable) {
+      detail.appendChild(element("span", "pill",
+        t(selectedService.ai_unavailable ? "paused" : "optionsPaused")));
+    }
+    botReturn(detail);
+    screen.appendChild(detail);
   }
   function renderOrders() {
     const list = element("div", "stack");
@@ -142,24 +177,36 @@
     screen.appendChild(card);
   }
   function render() {
-    if (!data) return;
     updateChrome();
+    if (!data) return;
     screen.replaceChildren();
-    if (tab === "services") renderServices();
+    if (tg && tg.BackButton) {
+      if (selectedService) tg.BackButton.show();
+      else tg.BackButton.hide();
+    }
+    if (tab === "services") {
+      if (selectedService) renderServiceDetail();
+      else renderServices();
+    }
     if (tab === "orders") renderOrders();
     if (tab === "account") renderAccount();
   }
   for (const button of tabs.querySelectorAll("button")) {
     button.addEventListener("click", function () {
+      selectedService = null;
       tab = button.dataset.tab; render();
     });
   }
   document.getElementById("lang").addEventListener("click", function () {
     lang = lang === "ar" ? "en" : "ar"; render();
   });
+  if (tg && tg.BackButton) {
+    tg.BackButton.hide();
+    tg.BackButton.onClick(backToServices);
+  }
   async function boot() {
     if (tg) { tg.ready(); tg.expand(); }
-    if (!tg || !tg.initData) { notice.textContent = t("outside"); return; }
+    if (!tg || !tg.initData) { noticeKey = "outside"; updateChrome(); return; }
     try {
       const result = await fetch("/miniapp/api/overview", {
         method: "POST",
@@ -171,10 +218,11 @@
       if (!result.ok) throw new Error("overview unavailable");
       data = await result.json();
       lang = data.language === "en" ? "en" : "ar";
-      notice.textContent = t("detail");
+      noticeKey = "detail";
       render();
     } catch (_) {
-      notice.textContent = t("failure");
+      noticeKey = "failure";
+      updateChrome();
     }
   }
   updateChrome();

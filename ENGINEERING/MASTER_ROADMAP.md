@@ -16,6 +16,14 @@
 
 # Master engineering roadmap
 
+## Mini App navigation review — 2026-10-23
+
+- FACT: Owner requests continued implementation from the latest review. Main d905c7e and draft Mini App PR #138 head 1a9972d verified. Its latest hosted run 39780251917 was cancelled during pytest; later checks were skipped, not passed.
+- CHANGE: Preserve service detail across language changes; add in-page and Telegram BackButton navigation with selected-category and keyboard-focus restoration. Keep price and AI availability hints on details. Localize navigation/accessibility labels and loading, authentication failure and outside-Telegram notices even before overview succeeds.
+- PASS LOCALLY: 24 existing DB-free Mini App auth/assets/entry checks, JavaScript syntax, global Ruff lint/format and diff checks. Executable jsdom journeys cover AR/EN details, both back paths, focus/category retention, tab resets, price/pause hints, bot return and translated failure/outside states without additional API calls.
+- LIMIT: Chromium download unavailable; DOM simulation is not browser/mobile visual qualification. PostgreSQL-backed ownership tests, full hosted verification, real Telegram iOS/Android and formal Arabic provider rerun remain open. No checkout, upload, provider call, production deployment or merge in this round.
+- Evidence: [scope and validation](REPORTS/2026-10-23-miniapp-navigation.md).
+
 ## Formal Arabic rewriting register qualification — 2026-10-22
 
 - FACT: Native review of the earlier representative ZIP accepts proofreading, both translation samples and the exact-source two-page Word/PDF export. Formal Arabic rewriting retains colloquial grammar (`ولا ترسلونه`) despite an accepted model review and operational PASS. The new summary-only ZIP separately passes generation/review with three correctly grounded points, two calls and calculated usage 0.003909 SAR; this qualifies that sample, not all summaries or a deployment.

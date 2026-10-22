@@ -10,10 +10,10 @@ not fork money or service business logic in JavaScript.
 
 ### Implemented in this PR — read-only first stage
 
-- Same-origin mobile RTL/LTR interface under GET \`/miniapp\` with catalog, latest
+- Same-origin mobile RTL/LTR interface under GET `/miniapp` with catalog, latest
   owner-scoped order statuses, and owner-scoped test-credit summary (Stars mode
   states checkout method, not a fictitious Stars wallet).
-- POST \`/miniapp/api/overview\` requires signed Telegram \`WebApp.initData\`
+- POST `/miniapp/api/overview` requires signed Telegram `WebApp.initData`
   verified on the backend with current bot token and bounded freshness (one hour).
   Unknown/duplicate fields, stale signature, invalid user ID and nonprivate chat
   type fail closed. All identity and order ownership come from verified data.
@@ -47,11 +47,11 @@ not fork money or service business logic in JavaScript.
 1. Review exact-head CI, browser/mobile AR/EN and source diff. Deploy only to
    **isolated staging** after authorization; do not change production provider
    pause, Stars flag, price, migration, or customer balances.
-2. Publish the HTTPS API origin through the existing proxy; ensure \`/miniapp\`,
-   \`/miniapp/app.js\`, \`/miniapp/styles.css\` and
-   \`/miniapp/api/overview\` remain same-origin. No browser token storage.
-3. After HTTPS staging acceptance set `MINIAPP_URL=https://<YOUR-HTTPS-HOST>/miniapp` in the staging environment to expose the optional bot keyboard launch button, then configure BotFather's Menu Button to open \`https://<YOUR-HTTPS-HOST>/miniapp\`
-   on a dedicated test bot; do not paste tokens. \`WebApp.initDataUnsafe\` is not
+2. Publish the HTTPS API origin through the existing proxy; ensure `/miniapp`,
+   `/miniapp/app.js`, `/miniapp/styles.css` and
+   `/miniapp/api/overview` remain same-origin. No browser token storage.
+3. After HTTPS staging acceptance set `MINIAPP_URL=https://<YOUR-HTTPS-HOST>/miniapp` in the staging environment to expose the optional bot keyboard launch button, then configure BotFather's Menu Button to open `https://<YOUR-HTTPS-HOST>/miniapp`
+   on a dedicated test bot; do not paste tokens. `WebApp.initDataUnsafe` is not
    authentication; the API must receive the unmodified signed raw initData.
 4. Test valid, forged, expired and group launches; banned/other user's orders;
    stars-price-disabled services; paused AI; test-credit balances, empty history,
@@ -68,3 +68,18 @@ CSRF/replay/idempotency controls and transaction-safe admission checks. No stabl
 production mini-app URL or Telegram setup has been configured automatically.
 
 Official reference: https://core.telegram.org/bots/webapps
+
+## Navigation follow-up — 2026-10-23
+
+Service detail retains its selected service when switching AR/EN, including price
+and availability hints. Use either the visible Back to services button or
+Telegram's native BackButton to return to the selected category; keyboard focus
+returns to the opened service. Switching a bottom tab clears detail state.
+Language switching also works before authentication succeeds and on errors.
+
+Manual staging checks: choose a category, open a service, change language, use
+each back control, then switch tabs from a detail. Confirm category/focus
+restoration, translated labels, no unexpected close and no extra overview
+request. Verify unavailable hints and prices in both catalog and detail. Check
+error/outside-Telegram notices in both languages. Actual iOS/Android rendering,
+safe areas, theme integration and mobile assistive technology remain unqualified.
