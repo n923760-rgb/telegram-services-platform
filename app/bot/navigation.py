@@ -45,7 +45,7 @@ def create_router():
                 reply_markup=buttons(await section_controls(state, lang)),
             )
 
-    @router.message(CommandStart())
+    @router.message(CommandStart(magic=~F.args.startswith("request_")))
     @router.message(Command("menu"))
     async def home_command(message: Message, state: FSMContext, lang: str = "ar"):
         await home(message, state, message.from_user.id, lang)

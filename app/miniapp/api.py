@@ -78,6 +78,11 @@ def visible_services(rows, *, user_id: int, stars: bool, ai_available: bool):
                 "price": service.price_stars if stars else sar(service.price_halala),
                 "ai_unavailable": not ai_available and plugin.requires_ai,
                 "ai_options_unavailable": not ai_available and plugin.optional_ai,
+                "request_url": (
+                    f"https://t.me/{config().miniapp_bot_username}?start=request_{service.slug}"
+                    if config().miniapp_bot_username and (ai_available or not plugin.requires_ai)
+                    else None
+                ),
             }
         )
     return result

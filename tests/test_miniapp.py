@@ -108,3 +108,46 @@ def test_catalog_serializes_the_persisted_service_model_without_an_english_colum
         assert result[0]["description_ar"] == result[0]["description_en"] == "وصف محفوظ"
         assert result[0]["price"] == price
         assert result[0]["name_en"] == plugin.name_en
+
+
+@pytest.mark.parametrize("ai_available", [False, True])
+@pytest.mark.parametrize("username", ["", "ExampleBot"])
+def test_request_links_are_configured_registry_routes_not_checkout(
+    monkeypatch, ai_available, username
+):
+    from app.core.models import Service
+    from app.core.settings import config
+    from app.miniapp.api import visible_services
+    from app.services.registry import registry
+
+    monkeypatch.setattr(config(), "miniapp_bot_username", username)
+    rows = [
+        Service(slug=slug, name_ar=slug, name_en=slug, description_ar="test", price_halala=300)
+        for slug in ("csv_review", "text_summary")
+    ]
+    result = visible_services(rows, user_id=11, stars=False, ai_available=ai_available)
+    assert len(result) == 2
+    for item in result:
+        expected = username and (ai_available or not registry.types[item["slug"]].requires_ai)
+        assert item["request_url"] == (
+            f"https://t.me/{username}?start=request_{item['slug']}" if expected else None
+        )
+
+
+@pytest.mark.parametrize("args", [None, "other", "request_echo", "request_", "request_echo extra"])
+async def test_start_filters_keep_home_and_handoff_disjoint(args):
+    from aiogram import F
+    from aiogram.filters import CommandStart
+    from aiogram.filters.command import CommandException
+
+    home = CommandStart(magic=~F.args.startswith("request_"))
+    handoff = CommandStart(deep_link=True, magic=F.args.startswith("request_"))
+    text = "/start" + (f" {args}" if args else "")
+    matched = []
+    for filter_ in (home, handoff):
+        try:
+            await filter_.parse_command(text, object())
+            matched.append(True)
+        except CommandException:
+            matched.append(False)
+    assert matched == ([False, True] if args and args.startswith("request_") else [True, False])
