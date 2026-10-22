@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Formal Arabic rewriting register qualification — 2026-10-22
+
+- FACT: Native review of the earlier representative ZIP accepts proofreading, both translation samples and the exact-source two-page Word/PDF export. Formal Arabic rewriting retains colloquial grammar (`ولا ترسلونه`) despite an accepted model review and operational PASS. The new summary-only ZIP separately passes generation/review with three correctly grounded points, two calls and calculated usage 0.003909 SAR; this qualifies that sample, not all summaries or a deployment.
+- CHANGE: Clarify formal Arabic rewriting as natural Modern Standard Arabic syntax, including transformation of colloquial constructions and preservation of prohibition strength/conditions. The same task contract reaches content review, which should reject remaining colloquial grammar as quality. Respect direct address and literal quotations; retain proofreading/casual register and already suitable formal prose. No word blacklist or deterministic grammar guarantee.
+- PASS LOCALLY: 64 focused professional-quality/gateway/acceptance checks, three architecture gates and global lint/format/diff. Add the observed failure to existing scripted correction/refusal tests and three valid-register unit cases; two inherited parameterized PostgreSQL scenarios require hosted full checks before merge.
+- LIMIT: Scripted verdicts prove pipeline behavior, not real model judgement. Build the worker image and rerun only editing_rewrite in isolation; inspect the actual result before qualification. Keep contract/version, per-call budgets, one-correction envelope, prices/gates, dependencies, migrations and production containers unchanged.
+- Evidence: [review finding and bounded improvement](REPORTS/2026-10-22-formal-arabic-rewrite.md).
+
 ## Selected summary point limit in provider schema — 2026-10-22
 
 - FACT: Operator's 6d7323b summary-only run and uploaded report both record two generation rejections as `summary_point_limit`, no delivered artifacts and zero active orders/reserved synthetic credit. Calculated usage is 0.005908 SAR. Exact candidate content/count is unavailable. Code advertises maxItems=7 for short summaries while the prompt and runtime require at most three: a reproduced schema contradiction.

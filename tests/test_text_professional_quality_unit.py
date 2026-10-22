@@ -57,6 +57,16 @@ CASES = [
         "يا صاحبي أرسل الطلب 00123 اليوم إذا تقدر!",
         "يرجى إرسال الطلب 00123 اليوم إن أمكن.",
     ),
+    (
+        TextEditing,
+        {
+            "text": "الطلب 00123 بمبلغ 125.50 SAR ما اعتمدناه، ولا ترسلونه للمحاسبة على أنه معتمد.",
+            "mode": "rewrite",
+            "tone": "formal",
+        },
+        "الطلب 00123 بمبلغ 125.50 SAR لم نعتمده، ولا ترسلونه إلى المحاسبة على أنه معتمد.",
+        "لم نعتمد الطلب 00123 بمبلغ 125.50 SAR، فلا ترسلوه إلى المحاسبة على أنه معتمد.",
+    ),
 ]
 
 
@@ -110,6 +120,15 @@ async def test_quality_repair_is_bounded_and_artifacts_wait_for_accepted_review(
     "service_type,inputs",
     [
         (TextEditing, {"text": "Please send order 00123.", "mode": "proofread"}),
+        (TextEditing, {"text": "هذا الطلب 00123 ما اعتمدناه.", "mode": "proofread"}),
+        (
+            TextEditing,
+            {"text": "لم نعتمد الطلب 00123 بعد.", "mode": "rewrite", "tone": "formal"},
+        ),
+        (
+            TextEditing,
+            {"text": "هذا الطلب 00123 ما اعتمدناه.", "mode": "rewrite", "tone": "casual"},
+        ),
         (
             TextTranslation,
             {"text": "Please send order 00123.", "language": "en", "style": "formal"},

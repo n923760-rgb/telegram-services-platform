@@ -1,5 +1,14 @@
 # Operations
 
+For formal Arabic rewriting qualification, inspect the actual revision even if the
+wrapper and model review pass. Formal prose should use natural Modern Standard
+Arabic grammar rather than retain colloquial constructions with punctuation edits.
+Proofreading/casual tone and required verbatim quotations retain their own register.
+After updating the worker image, rerun only
+`bash scripts/service-acceptance.sh editing_rewrite` and compare all source lines,
+especially unapproved payment, prohibition, identifiers, amount, contact and date.
+Prompt clarification and scripted tests do not prove a real-provider correction.
+
 ## Isolated synthetic all-service acceptance
 
 After owner authorization for live testing, run `bash scripts/service-acceptance.sh`
