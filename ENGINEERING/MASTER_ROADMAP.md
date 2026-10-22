@@ -1,5 +1,13 @@
 # Master engineering roadmap
 
+## Selected summary point limit in provider schema — 2026-10-22
+
+- FACT: Operator's 6d7323b summary-only run and uploaded report both record two generation rejections as `summary_point_limit`, no delivered artifacts and zero active orders/reserved synthetic credit. Calculated usage is 0.005908 SAR. Exact candidate content/count is unavailable. Code advertises maxItems=7 for short summaries while the prompt and runtime require at most three: a reproduced schema contradiction.
+- CHANGE: Specialize the generated points field to the selected 3/7 bound, shared by initial generation and the existing correction. Retain a fixed point-limit diagnostic before field-length rejection and the existing post-validation guard. No truncation, extra retry, relaxed point/reference/numeric/compression rule or content logging. Accepted payloads, service version, prices/gates and prepared replay remain unchanged; only the provider's declared constraint is corrected.
+- PASS LOCALLY: 58 focused summary/reference/acceptance checks (nine new), three architecture gates and global lint/format/diff. Four scripted real-gateway cases verify identical selected maxItems on both generation attempts, review only after a valid correction, and per-call admission/settlement. Add two PostgreSQL order/replay/capture/release/cleanup cases; hosted full checks required before merge.
+- LIMIT: This fixes the observed contract inconsistency, not proof of live-provider success. Build the new worker image and rerun summary in isolation without replacing production containers or changing pause/budgets. The uploaded ZIP contains only this failed report; the prior five passing outputs remain unreviewed.
+- Evidence: [finding, fix and remaining acceptance](REPORTS/2026-10-22-summary-point-limit.md).
+
 ## Specific content-free summary validation diagnostics — 2026-10-22
 
 - FACT: Operator's 497edd9 targeted run passes five of six representative cases. Summary fails generation twice as `provider_invalid` with only `constraint`; no candidate text or detailed validation cause was retained. Run reports ten calls, calculated usage 0.016179 SAR, zero active orders/reserved credit, production pause unchanged. Five passing outputs still require inspection of the ZIP.

@@ -58,6 +58,15 @@ Build the updated worker image before `bash scripts/service-acceptance.sh summar
 no production container replacement or provider setting change is needed for
 this isolated diagnostic rerun. Inspect any passing summary against its source.
 
+The provider's generated summary schema now declares the selected point bound:
+maxItems=3 for short and 7 for standard, with minItems=1. Previously it advertised
+7 for both choices despite the correct short-summary prompt/runtime limit of 3.
+Initial generation and the existing correction share the same selected schema;
+over-limit arrays still reject as `summary_point_limit`, never truncate. Accepted
+outputs, budgets, review and historical prepared replay stay unchanged. Rebuild
+the worker image before the targeted isolated summary run; live output acceptance
+remains separate from schema/CI checks.
+
 Default `python -m app.ops.service_acceptance` prints the pure plan without live
 calls. Execution requires the wrapper's explicit isolated environment. The run
 reserves at most SAR 5 in cumulative conservative call bounds and permits at most
