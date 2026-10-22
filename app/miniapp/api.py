@@ -73,7 +73,9 @@ def visible_services(rows, *, user_id: int, stars: bool, ai_available: bool):
                 "name_ar": service.name_ar,
                 "name_en": service.name_en,
                 "description_ar": service.description_ar,
-                "description_en": service.description_ar if not service.description_en else service.description_en,
+                "description_en": service.description_ar
+                if not service.description_en
+                else service.description_en,
                 "price": service.price_stars if stars else sar(service.price_halala),
                 "ai_unavailable": not ai_available and plugin.requires_ai,
                 "ai_options_unavailable": not ai_available and plugin.optional_ai,
@@ -94,9 +96,7 @@ async def overview(payload: OverviewRequest, response: Response):
     async with sessions() as db:
         user = await db.get(User, user_id)
         if user and user.banned:
-            raise HTTPException(
-                403, "access denied", headers={"Cache-Control": "no-store"}
-            )
+            raise HTTPException(403, "access denied", headers={"Cache-Control": "no-store"})
         language = user.language if user and user.language in ("ar", "en") else "ar"
         stars = config().stars_enabled
         services = (
@@ -136,7 +136,9 @@ async def overview(payload: OverviewRequest, response: Response):
             }
             for order, service in orders
         ],
-        "credit": None if funds is None else {
+        "credit": None
+        if funds is None
+        else {
             "available_sar": sar(funds.available),
             "reserved_sar": sar(funds.reserved),
         },
