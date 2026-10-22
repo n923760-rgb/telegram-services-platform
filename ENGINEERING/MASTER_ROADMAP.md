@@ -1,3 +1,19 @@
+## Telegram Mini App — phased customer interface (2026-10-22)
+
+- OWNER: Approved the Mini App roadmap alongside, **not instead of**, P0 professional
+  deliverable/output quality and service acceptance. Keep the existing Telegram bot,
+  registered 16 services, wallet, orders, payment gates and customer history authoritative.
+- SLICE 1: Read-only same-origin mobile Mini App catalog, verified Telegram signed
+  initData, private recent order overview, test-credit display and AR/EN responsive UI.
+  Purchasing and uploading intentionally stay in the bot pending dedicated contractual
+  work; no false launch/Stars qualification or automatic production change.
+- GATES: Hosted exact-head CI; invalid/future/expired/duplicate auth; real
+  Telegram iOS/Android, private ownership, banned account, service activation and
+  provider-pause UX; production remains unchanged. Follow \`docs/MINI_APP.md\`.
+- NEXT: Dedicated generic drafts/file validation/consent slice; later reuse existing
+  Stars flows, true mobile file-delivery acceptance and BotFather HTTPS menu launch.
+  Quality P0 tracked in issue #124 remains the first launch gate.
+
 # Master engineering roadmap
 
 ## Formal Arabic rewriting register qualification — 2026-10-22
