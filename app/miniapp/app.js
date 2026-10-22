@@ -125,7 +125,7 @@
       const card = element("article", "card");
       card.appendChild(element("h3", "", order["name_" + lang]));
       card.appendChild(element("p", "sub", t("reference") + ": " + order.reference));
-      card.appendChild(element("span", "pill", t("status") + ": " + order.status));
+      card.appendChild(element("span", "pill", t("status") + ": " + order["status_" + lang]));
       list.appendChild(card);
     }
     screen.appendChild(list);
