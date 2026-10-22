@@ -21,7 +21,8 @@
       reserved: "المحجوز", stars: "الدفع عبر نجوم تيليجرام", priceStars: "نجمة",
       sar: "ريال رصيد تجريبي", paused: "غير متاحة مؤقتًا",
       optionsPaused: "بعض الخيارات غير متاحة حاليًا", returnBot: "تابع الطلب في محادثة البوت",
-      detail: "الطلب والدفع متاحان حاليًا من محادثة البوت. هذه النسخة للتصفح والمتابعة فقط.",
+      detail: "ابدأ طلب الخدمة في البوت لرفع الملفات ومراجعة السعر وتأكيد الطلب والدفع.",
+      startRequest: "بدء الطلب في البوت",
       loading: "جارٍ التحميل...", failure: "تعذر تحميل البيانات. أعد فتح التطبيق من تيليجرام.",
       outside: "افتح هذه الصفحة من داخل بوت تيليجرام لاستخدامها بأمان.",
       back: "العودة للخدمات", navigation: "التنقل", language: "تغيير اللغة إلى الإنجليزية",
@@ -35,7 +36,8 @@
       reserved: "Reserved", stars: "Telegram Stars checkout", priceStars: "Stars",
       sar: "SAR test credit", paused: "Temporarily unavailable",
       optionsPaused: "Some options are unavailable", returnBot: "Continue in bot chat",
-      detail: "Ordering and payment remain in the bot chat. This first version is read-only.",
+      detail: "Start your request in bot chat to upload files, review the price and confirm your order and payment.",
+      startRequest: "Start request in bot",
       loading: "Loading...", failure: "Could not load data. Reopen from Telegram.",
       outside: "Open this page inside the Telegram bot to authenticate securely.",
       back: "Back to services", navigation: "Navigation", language: "Switch language to Arabic",
@@ -148,6 +150,15 @@
     if (selectedService.ai_unavailable || selectedService.ai_options_unavailable) {
       detail.appendChild(element("span", "pill",
         t(selectedService.ai_unavailable ? "paused" : "optionsPaused")));
+    }
+    const url = selectedService.request_url;
+    if (typeof url === "string" && /^https:\/\/t\.me\/[A-Za-z][A-Za-z0-9_]{1,28}bot\?start=request_[a-z][a-z0-9_]{0,39}$/i.test(url)
+        && tg && typeof tg.openTelegramLink === "function") {
+      const request = element("button", "primary", t("startRequest"));
+      request.type = "button";
+      request.id = "service-request";
+      request.addEventListener("click", function () { tg.openTelegramLink(url); });
+      detail.appendChild(request);
     }
     botReturn(detail);
     screen.appendChild(detail);

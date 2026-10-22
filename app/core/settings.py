@@ -19,6 +19,7 @@ class Config(BaseSettings):
     telegram_mode: str = "polling"
     telegram_api_environment: Literal["production", "test"] = "production"
     miniapp_url: str = ""
+    miniapp_bot_username: str = ""
     telegram_webhook_secret: SecretStr = SecretStr("")
     stars_enabled: bool = False
     stars_terms_version: str = ""
@@ -116,6 +117,11 @@ class Config(BaseSettings):
             raise ValueError("administrator IDs must be positive and unique")
         from urllib.parse import urlsplit
 
+        if self.miniapp_bot_username:
+            import re
+
+            if not re.fullmatch(r"(?i:[a-z][a-z0-9_]{1,28}bot)", self.miniapp_bot_username):
+                raise ValueError("Mini App bot username must be a plain bot username")
         if self.miniapp_url:
             web_app = urlsplit(self.miniapp_url)
             if (

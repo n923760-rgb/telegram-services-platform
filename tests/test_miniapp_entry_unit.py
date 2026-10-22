@@ -66,3 +66,50 @@ async def test_missing_menu_url_does_not_call_telegram():
 def test_invalid_launch_configuration_rejected(bad):
     with pytest.raises(ValidationError, match="Mini App requires"):
         Config(miniapp_url=bad)
+
+
+@pytest.mark.parametrize("username", ["abbot", "Example_Bot", "a" * 29 + "bot", ""])
+def test_plain_bot_username_configuration(username):
+    assert Config(miniapp_bot_username=username).miniapp_bot_username == username
+
+
+@pytest.mark.parametrize(
+    "username",
+    [
+        "@ExampleBot",
+        "https://t.me/ExampleBot",
+        "OtherUser",
+        "ExampleBot?start=other",
+        "ab bot",
+        "a" * 30 + "bot",
+        "بوت",
+    ],
+)
+def test_reject_bot_username_url_or_payload_injection(username):
+    with pytest.raises(ValidationError, match="plain bot username"):
+        Config(miniapp_bot_username=username)
+
+
+@pytest.mark.parametrize("matches", [False, True])
+async def test_menu_configuration_checks_actual_bot_identity_before_writing(matches):
+    from types import SimpleNamespace
+
+    from app.ops.miniapp_menu import configure_menu
+
+    class Bot:
+        written = False
+
+        async def get_me(self):
+            return SimpleNamespace(username="ExampleBot" if matches else "DifferentBot")
+
+        async def set_chat_menu_button(self, **kwargs):
+            self.written = True
+            return True
+
+    bot = Bot()
+    if matches:
+        await configure_menu(bot, "https://mini.example.com/miniapp", username="examplebot")
+    else:
+        with pytest.raises(RuntimeError, match="username_mismatch"):
+            await configure_menu(bot, "https://mini.example.com/miniapp", username="examplebot")
+    assert bot.written is matches

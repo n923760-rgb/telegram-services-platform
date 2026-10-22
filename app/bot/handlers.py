@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from aiogram import F, Router
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
@@ -154,24 +154,45 @@ def create_router():
 
     @router.callback_query(F.data.startswith("service:"))
     async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
-        await register(callback.from_user.id)
-        async with sessions() as db:
-            slug = registry.customer_slug(callback.data.split(":", 1)[1])
-            service = await db.get(Service, slug) if slug else None
         await callback.answer()
+        await choose_service(
+            callback.message, state, callback.from_user.id, callback.data.split(":", 1)[1], lang
+        )
+
+    async def choose_service(message, state, user_id, requested_slug, lang):
+        await register(user_id)
+        async with sessions() as db:
+            slug = registry.customer_slug(requested_slug)
+            service = await db.get(Service, slug) if slug else None
         if (
             not service
             or not service.enabled
-            or not registry.can_request(
-                service.slug, admin=callback.from_user.id in config().admin_ids
-            )
+            or not registry.can_request(service.slug, admin=user_id in config().admin_ids)
         ):
-            await callback.message.answer(tr("unavailable", lang))
+            await message.answer(tr("unavailable", lang))
             return
         if config().stars_enabled and service.price_stars is None:
-            await callback.message.answer(tr("unavailable", lang))
+            await message.answer(tr("unavailable", lang))
             return
-        await start_draft(callback.message, state, service, lang)
+        await start_draft(message, state, service, lang)
+
+    @router.message(CommandStart(deep_link=True, magic=F.args.startswith("request_")))
+    async def request_link(
+        message: Message, state: FSMContext, command: CommandObject, lang: str = "ar"
+    ):
+        from app.bot.ui import section_controls
+
+        # Public routing hint only: identity is the Telegram sender, never the payload.
+        # Reopening a link must not overwrite a saved draft or create a new purchase key.
+        if (await state.get_data()).get("key"):
+            if await _resume_if_pending(message, state, lang):
+                return
+            await message.answer(
+                tr("draft_saved", lang), reply_markup=buttons(await section_controls(state, lang))
+            )
+            return
+        await leave_support(state)
+        await choose_service(message, state, message.from_user.id, command.args[8:], lang)
 
     @router.callback_query(F.data.startswith("follow:"))
     async def follow_result(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):

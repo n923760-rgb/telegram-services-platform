@@ -15,7 +15,7 @@ not fork money or service business logic in JavaScript.
   states checkout method, not a fictitious Stars wallet).
 - POST `/miniapp/api/overview` requires signed Telegram `WebApp.initData`
   verified on the backend with current bot token and bounded freshness (one hour).
-  Unknown/duplicate fields, stale signature, invalid user ID and nonprivate chat
+  Duplicate fields, stale signature, invalid user ID and nonprivate chat
   type fail closed. All identity and order ownership come from verified data.
 - Displayed services follow registry category, visibility, activation, payment-price
   and AI-pause hints. This is a browse-only hint, **not** admission or payment
@@ -68,6 +68,41 @@ CSRF/replay/idempotency controls and transaction-safe admission checks. No stabl
 production mini-app URL or Telegram setup has been configured automatically.
 
 Official reference: https://core.telegram.org/bots/webapps
+
+## Service-to-chat handoff — 2026-10-23
+
+This is a bounded bridge, **not completion of Stage 2**. Service details offer
+"Start request in bot" only when `MINIAPP_BOT_USERNAME` is configured and the
+service is not unconditionally AI-blocked. Set the plain username of **this same
+bot**, without `@` or a URL. Empty configuration retains the close-to-chat fallback.
+There is no new HTTP write, upload endpoint, invoice path or purchase on opening.
+
+The button calls Telegram `openTelegramLink` with
+`https://t.me/<bot_username>?start=request_<registered_slug>` on a user gesture.
+Telegram may show a Start button that the customer must press. The payload is
+only a public service hint, never identity, price, consent, an order key or auth.
+The bot uses its existing private-chat/rate/ban guards, registry visibility and
+current service/payment/AI gates, then the usual schema-driven intake. An active
+draft is preserved rather than replaced; a pending failed prompt is recoverable.
+Uploads, review, explicit confirmation, idempotent submission and payment stay
+in the existing bot flows. The bot's current price/contract is reviewed there.
+
+After configuring the username, run the explicit menu command with MINIAPP_URL
+as before. It checks `getMe` matches the configured username **before** changing
+the menu, failing closed on mismatch; it never changes `.env` or settings itself.
+Recreate the API/bot containers after an environment change; a plain restart
+does not reload Compose `env_file`. Clearing the username removes request links
+after recreation; existing public links still pass all normal bot guards.
+
+Operator reports phase-1 HTTPS 200, unsigned overview 401, menu setup and initial
+opening/display acceptance on the production deployment. This is not a complete
+iOS/Android, payment, file-delivery or provider-output qualification. Verify the
+handoff with a dedicated test account: both languages, different service while
+a draft exists, disabled/admin-only/paused/unpriced service, failed prompt recovery,
+no charge before confirmation, then exactly one normal confirmed order.
+
+References: https://core.telegram.org/bots/features#deep-linking and
+https://core.telegram.org/bots/webapps#initializing-mini-apps .
 
 ## Navigation follow-up — 2026-10-23
 

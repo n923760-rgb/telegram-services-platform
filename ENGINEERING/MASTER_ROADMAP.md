@@ -1,3 +1,21 @@
+## Mini App service-to-chat request bridge — 2026-10-23
+
+- FACT: Live main a26eb68 verified; no open PRs at start. Owner reports phase-1
+  HTTPS/menu deployment and initial display success. Full mobile/payment/provider
+  acceptance remains separate; professional output-quality P0 is unchanged.
+- CHANGE: Add an optional configured same-bot request link in service details,
+  using public Telegram start payloads. Reuse guarded bot intake/current gates;
+  preserve active drafts and recover pending prompts. No purchase on opening,
+  HTTP mutation, browser uploads, new payment engine, migration or dependency.
+- PASS LOCALLY: 54 DB-free Mini App auth/assets/config/entry checks, three
+  architecture gates, global Ruff lint/format, JS syntax and diff checks.
+  Headless Chromium smoke covers 320/390px, AR/EN selected-service links,
+  absent/malicious URL fallback and prior navigation. Telegram/API mocked.
+- GATE: New PostgreSQL dispatcher/replay/admission tests and the complete exact-head
+  hosted workflow required before merge. Actual Telegram handoff acceptance and
+  production rollout are not claimed. Dedicated in-Mini-App drafts/uploads are next,
+  not completed by this bridge. See docs/MINI_APP.md.
+
 ## Telegram Mini App — phased customer interface (2026-10-22)
 
 - OWNER: Approved the Mini App roadmap alongside, **not instead of**, P0 professional
