@@ -557,6 +557,42 @@ h3 {
 .order-status {
   font-size: 12px;
 }
+.order-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.order-filter {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--muted);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 12px;
+}
+.order-filter[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--soft);
+  border-color: var(--accent);
+}
+.order-next {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.order-amount,
+.order-window {
+  font-size: 12px;
+  line-height: 1.9;
+}
+.order-chat {
+  margin-top: 9px;
+}
+.orders-chat {
+  margin-top: 18px;
+}
 .account-credit h2 {
   font-size: 17px;
 }

@@ -1,14 +1,16 @@
 """Database-backed Mini App privacy, activation and payment-view tests."""
 
 from datetime import UTC, datetime
+from uuid import UUID
 
 import httpx
+import pytest
 from pydantic import SecretStr
 from sqlalchemy import func, select
 
 from app.api.main import app
 from app.core.db import sessions
-from app.core.models import Order, Service, User
+from app.core.models import Job, Ledger, Order, Service, User
 from app.core.settings import config
 from app.orders.engine import submit
 from tests.test_foundation import fund
@@ -83,3 +85,71 @@ async def test_unsigned_identity_cannot_query_other_orders(monkeypatch):
     ) as client:
         response = await client.post("/miniapp/api/overview", json={"init_data": raw})
     assert response.status_code == 401
+
+
+@pytest.mark.parametrize("current_stars", [False, True])
+async def test_order_windows_keep_older_active_work_and_historical_prices_private_and_read_only(
+    monkeypatch, current_stars
+):
+    monkeypatch.setattr(config(), "bot_token", SecretStr(TOKEN))
+    monkeypatch.setattr(config(), "stars_enabled", current_stars)
+    monkeypatch.setattr(config(), "miniapp_bot_username", "ExampleBot")
+    await fund(11)
+    await fund(22)
+    # Synthetic read fixtures: no submission, provider, Telegram or financial work.
+    async with sessions.begin() as db:
+        service = await db.get(Service, "echo")
+        service.enabled, service.price_halala = False, 9900
+        for i in range(1, 31):
+            stars = i == 20
+            db.add(
+                Order(
+                    id=UUID(f"{i:08x}-0000-0000-0000-000000000001"),
+                    user_id=11 if i <= 20 else 22,
+                    service_slug="echo",
+                    price_halala=375,
+                    payment_mode="stars" if stars else "test_credit",
+                    price_stars=9 if stars else None,
+                    terms_version="synthetic" if stars else None,
+                    terms_hash="synthetic" if stars else None,
+                    terms_snapshot={"ar": "synthetic", "en": "synthetic"} if stars else None,
+                    idempotency_key=f"read-fixture-{i}",
+                    input_hash="synthetic",
+                    inputs={"text": "private payload"},
+                    result={"text": "private output"},
+                    status="waiting_confirmation"
+                    if i == 10
+                    else "queued"
+                    if i < 10
+                    else "future_status"
+                    if i == 20
+                    else "completed",
+                    created_at=datetime(2026, 9 if i <= 10 else 10, 1, tzinfo=UTC),
+                )
+            )
+    async with sessions() as db:
+        before = [
+            await db.scalar(select(func.count()).select_from(model))
+            for model in (Order, Job, Ledger)
+        ]
+    response = await overview_for(11)
+    assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+    data = response.json()
+    assert data["orders_window"] == 8 and data["bot_url"] == "https://t.me/ExampleBot"
+    rows = data["orders"]
+    assert [item["reference"] for item in rows] == [
+        f"{i:08x}" for i in [*range(20, 12, -1), *range(10, 2, -1)]
+    ]
+    assert any(item["status"] == "waiting_confirmation" for item in rows)
+    assert rows[0]["amount"] == 9 and rows[0]["payment_mode"] == "stars"
+    assert rows[0]["status"] == "unknown"
+    assert all(
+        item["amount"] == "3.75" and item["payment_mode"] == "test_credit" for item in rows[1:]
+    )
+    assert "private payload" not in response.text and "private output" not in response.text
+    async with sessions() as db:
+        after = [
+            await db.scalar(select(func.count()).select_from(model))
+            for model in (Order, Job, Ledger)
+        ]
+    assert before == after == [30, 0, 2]

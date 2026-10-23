@@ -1,3 +1,23 @@
+## Mini App order tracking and next actions — 2026-10-23
+
+- FACT: Live main d7eb612 and no open PRs verified. Operator reports applying the
+  preceding confirmation update; independent VPS/mobile verification NOT RUN.
+- CHANGE: All/In progress/Finished filters, state-specific next steps and safe
+  same-bot chat actions; historical order payment amounts retain SAR/Stars labels
+  across current price/mode changes. No automatic payment or repeated submission.
+- READ CONTRACT: Separate eight-active/eight-other recent owner windows in one
+  SQL snapshot, stable creation/ID ordering, explicit displayed-count limits.
+  Unknown states remain visible in All; disabled services retain order history.
+  No inputs/results/storage/terms/error payloads or order/job/ledger writes.
+- LOCAL EVIDENCE: 92 focused unit cases, three architecture gates, global lint/
+  format/diff; synthetic browser catalog, confirmation and tracking PASS, including
+  filter/language/focus preservation, history labels, state changes, safe chat
+  actions, privacy, unknown/empty states, AR/EN accessibility and responsive themes.
+  Hosted PostgreSQL window/privacy/read-only tests required before merge.
+- ROLLOUT: API only, no flag/configuration/migration/dependency change. Preserve
+  bot/worker/provider/payment settings and proxy/edge networks. Real Telegram
+  mobile/result quality and commercial payment acceptance remain separate.
+
 ## Explicit Mini App test-credit confirmation — 2026-10-23
 
 - OWNER AUTHORITY: Continue the organized Mini App service journey and retain the

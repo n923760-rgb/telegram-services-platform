@@ -8,6 +8,7 @@
   let data = null;
   let lang = "ar";
   let tab = "services";
+  let orderFilter = "all";
   let category = null;
   let query = "";
   let selectedService = null;
@@ -24,6 +25,7 @@
           focus("service-start");
         },
         orders: function () {
+          orderFilter = "all";
           chooseTab("orders");
           boot();
         },
@@ -92,6 +94,28 @@
       firstOrder: "اختر خدمة تناسبك، وستجد حالة طلبك هنا.",
       explore: "استكشف الخدمات",
       refresh: "تحديث الطلبات",
+      allOrders: "الكل",
+      activeOrders: "الجارية",
+      closedOrders: "المنتهية",
+      filterOrders: "تصفية الطلبات المعروضة",
+      noFilteredOrders: "لا توجد طلبات ضمن هذا التصنيف",
+      shownOrders: "الأعداد تخص الطلبات المعروضة فقط.",
+      orderWindow: "نعرض أحدث {n} طلبات جارية وأحدث {n} طلبات أخرى.",
+      orderAmount: "مبلغ الطلب",
+      openChat: "فتح محادثة البوت",
+      reviewInBot: "راجع النتيجة في البوت",
+      payInBot: "استكمل الدفع في البوت",
+      resultInBot: "افتح المحادثة للنتيجة",
+      orderQueued: "طلبك في الانتظار. لا تحتاج إلى إرساله مجددًا.",
+      orderProcessing: "جارٍ تنفيذ طلبك. نرسل النتيجة في محادثة البوت.",
+      orderDelivering: "جارٍ إرسال النتيجة إلى محادثة البوت.",
+      orderReview: "بانتظار مراجعتك للنتيجة في البوت قبل المتابعة.",
+      orderPayment: "بانتظار إكمال الدفع في البوت لبدء التنفيذ.",
+      orderCompleted: "اكتمل الطلب. راجع النتيجة والملفات في محادثة البوت.",
+      orderFailed: "تعذر إكمال الطلب. راجع محادثة البوت للتفاصيل والمساعدة.",
+      orderCancelled: "أُلغي هذا الطلب. راجع محادثة البوت للتفاصيل.",
+      orderRefunded: "سُجل رد مبلغ الطلب. راجع محادثة البوت للتفاصيل.",
+      orderUnknown: "الحالة غير متاحة. حدّث الطلبات أو راجع محادثة البوت.",
       available: "الرصيد المتاح",
       reserved: "قيد الحجز",
       trial: "رصيدك التجريبي",
@@ -176,6 +200,33 @@
       firstOrder: "Choose a service and follow its progress here.",
       explore: "Explore services",
       refresh: "Refresh orders",
+      allOrders: "All",
+      activeOrders: "In progress",
+      closedOrders: "Finished",
+      filterOrders: "Filter displayed orders",
+      noFilteredOrders: "No orders in this view",
+      shownOrders: "Counts cover displayed orders only.",
+      orderWindow:
+        "Showing up to {n} latest active and {n} other recent orders.",
+      orderAmount: "Order amount",
+      openChat: "Open bot chat",
+      reviewInBot: "Review result in bot",
+      payInBot: "Continue payment in bot",
+      resultInBot: "Open chat for result",
+      orderQueued:
+        "Your request is queued. You do not need to submit it again.",
+      orderProcessing:
+        "Your request is being processed. Results arrive in bot chat.",
+      orderDelivering: "Your result is being sent to bot chat.",
+      orderReview: "Review the result in bot chat before processing continues.",
+      orderPayment: "Complete payment in bot chat before processing starts.",
+      orderCompleted:
+        "Request complete. Find the result and files in bot chat.",
+      orderFailed:
+        "The request could not finish. Check bot chat for details and help.",
+      orderCancelled: "This request was cancelled. Check bot chat for details.",
+      orderRefunded: "A refund was recorded. Check bot chat for details.",
+      orderUnknown: "Status unavailable. Refresh orders or check bot chat.",
       available: "Available credit",
       reserved: "Reserved",
       trial: "Your test credit",
@@ -490,6 +541,7 @@
       if (data.orders.length) {
         const order = data.orders[0];
         const recent = button("", "recent-order", function () {
+          orderFilter = "all";
           chooseTab("orders");
         });
         const copy = element("div", "");
@@ -668,8 +720,36 @@
     detail.appendChild(action);
     screen.append(control, detail, steps);
   }
+  const orderStates = {
+    awaiting_payment: ["active", "orderPayment", "payInBot"],
+    waiting_confirmation: ["active", "orderReview", "reviewInBot"],
+    queued: ["active", "orderQueued"],
+    processing: ["active", "orderProcessing"],
+    delivering: ["active", "orderDelivering"],
+    completed: ["closed", "orderCompleted", "resultInBot"],
+    failed: ["closed", "orderFailed"],
+    cancelled: ["closed", "orderCancelled"],
+    refunded: ["closed", "orderRefunded"],
+  };
+  function orderState(order) {
+    return Object.hasOwn(orderStates, order.status)
+      ? orderStates[order.status]
+      : ["unknown", "orderUnknown"];
+  }
+  function openBotChat() {
+    if (
+      tg &&
+      typeof tg.openTelegramLink === "function" &&
+      typeof data.bot_url === "string" &&
+      /^https:\/\/t\.me\/[A-Za-z][A-Za-z0-9_]{1,28}bot$/i.test(data.bot_url)
+    )
+      tg.openTelegramLink(data.bot_url);
+    else closeToBot();
+  }
   function orderCard(order) {
+    const state = orderState(order);
     const card = element("article", "card order-card");
+    card.dataset.orderGroup = state[0];
     const top = element("div", "order-card-top");
     top.append(
       icon("orders", "order-icon"),
@@ -695,7 +775,31 @@
     card.append(
       meta,
       element("span", "pill order-status", order["status_" + lang]),
+      element("p", "order-next", t(state[1])),
     );
+    if (
+      order.amount !== null &&
+      order.amount !== undefined &&
+      ["test_credit", "stars"].includes(order.payment_mode)
+    ) {
+      const amount = element("p", "order-amount");
+      amount.append(
+        element("span", "", t("orderAmount") + ": "),
+        element("bdi", "", String(order.amount)),
+        document.createTextNode(
+          " " +
+            t(order.payment_mode === "stars" ? "priceStars" : "sar") +
+            (order.payment_mode === "test_credit"
+              ? " · " + t("trialLabel")
+              : ""),
+        ),
+      );
+      card.appendChild(amount);
+    }
+    if (state[2])
+      card.appendChild(
+        button(t(state[2]), "secondary order-chat", openBotChat),
+      );
     return card;
   }
   function renderOrders() {
@@ -708,6 +812,41 @@
     refresh.appendChild(icon("refresh"));
     top.appendChild(refresh);
     screen.appendChild(top);
+    if (data.orders.length) {
+      const filters = element("div", "order-filters");
+      filters.setAttribute("role", "group");
+      filters.setAttribute("aria-label", t("filterOrders"));
+      for (const [key, label] of [
+        ["all", "allOrders"],
+        ["active", "activeOrders"],
+        ["closed", "closedOrders"],
+      ]) {
+        const count = data.orders.filter(
+          (order) => key === "all" || orderState(order)[0] === key,
+        ).length;
+        const filter = button(
+          t(label) + " · " + count,
+          "order-filter",
+          function () {
+            orderFilter = key;
+            render();
+            focus("order-filter-" + key);
+          },
+        );
+        filter.id = "order-filter-" + key;
+        filter.setAttribute("aria-pressed", String(orderFilter === key));
+        filters.appendChild(filter);
+      }
+      screen.append(filters, element("p", "mini-label", t("shownOrders")));
+      if (Number.isInteger(data.orders_window) && data.orders_window > 0)
+        screen.appendChild(
+          element(
+            "p",
+            "sub order-window",
+            t("orderWindow").replaceAll("{n}", data.orders_window),
+          ),
+        );
+    }
     if (!data.orders.length) {
       const empty = element("div", "card empty");
       empty.append(
@@ -721,8 +860,17 @@
       screen.appendChild(empty);
     } else {
       const list = element("div", "order-list");
-      for (const order of data.orders) list.appendChild(orderCard(order));
+      const filtered = data.orders.filter(
+        (order) =>
+          orderFilter === "all" || orderState(order)[0] === orderFilter,
+      );
+      for (const order of filtered) list.appendChild(orderCard(order));
+      if (!filtered.length)
+        list.appendChild(element("p", "card empty", t("noFilteredOrders")));
       screen.appendChild(list);
+      screen.appendChild(
+        button(t("openChat"), "text-button orders-chat", openBotChat),
+      );
     }
   }
   function renderAccount() {
