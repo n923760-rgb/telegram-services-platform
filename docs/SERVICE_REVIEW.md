@@ -6,6 +6,13 @@ Live source baseline: `267803ac3e188f62580536fe142de7b74e5e32fa`.
 
 ## Routing and customer choices
 
+Named standard Word designs use a 24-point title ceiling and 20-point runs for
+titles longer than 30 characters, including explicit complex-script sizing.
+This is a presentation rule, not a one-line-fit guarantee. It preserves the full
+reviewed text, tables, explicit page breaks and resume-specific typography.
+Unthemed and literal exports retain their existing behavior. No additional AI
+call or service-version change is involved; generated captions remain intact.
+
 The v7 rendering correction removes an opening section title/heading duplicating
 the main title only when a single exact source title line confirms the redundancy.
 It preserves protected numeric/contact titles, repeated/later source headings,

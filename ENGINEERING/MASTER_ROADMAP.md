@@ -1,3 +1,24 @@
+## Standard Word report title scale — 2026-10-24
+
+- BASELINE: PR #151 merged as ade24addf42c56507bb7d1d8a0c1ad5f93436356;
+  hosted checks passed 3204 tests and 34 native worker cases. This confirms bot
+  source behavior, not operator deployment or Telegram mobile acceptance.
+- FACT: The owner's generated project report preserves requested facts and its
+  editable task table, but a 28-point modern title wraps with excessive emphasis.
+- CHANGE: Named standard-document designs cap title styles at 24 points and use
+  20-point title runs above 30 characters, setting both Latin and complex-script
+  sizes. Keep full title text, subsequent titles/page breaks, body and tables.
+  Resume typography, unthemed exports and literal no-title exports are unchanged.
+- BOUNDARY: Native rendering only; no prompt, validated plan, service version,
+  AI call, reservation, provider, migration or dependency changes. Do not infer
+  semantic redundancy to delete customer headings/captions.
+- GATE: 67 local title/template/CV/PDF-title checks pass with the configured local
+  LibreOffice binary. Arabic/English report fixtures rendered and visually reviewed.
+  Full hosted/native CI required before merge; worker-only rollout after bot home.
+- CI: Run 40028631796 exhausted the 20-minute job budget after slow Office package
+  setup and stopped at 49 percent of pytest without an observed test failure.
+  Allow 30 minutes for setup plus the unchanged full/native gates; no test is skipped.
+
 ## Compact bot home with Mini App intake — 2026-10-24
 
 - OWNER: Continue service quality work and simplify the bot now that services live
