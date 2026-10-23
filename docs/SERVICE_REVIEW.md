@@ -6,6 +6,13 @@ Live source baseline: `267803ac3e188f62580536fe142de7b74e5e32fa`.
 
 ## Routing and customer choices
 
+The v7 rendering correction removes an opening section title/heading duplicating
+the main title only when a single exact source title line confirms the redundancy.
+It preserves protected numeric/contact titles, repeated/later source headings,
+page-break intent and heading-only bodies. The reviewed plan remains unchanged;
+this native display correction adds no AI calls and keeps the v7 schema/version.
+Roll out the worker image while preserving provider admission settings.
+
 PDF-to-Word v7 additionally permits native editable Word tables using the existing
 bounded Word builder (6 columns, 100 rows/table, 10 tables/document). AI reconstructs
 only clear supplied headings/rows and keeps ambiguous or larger extracted content
