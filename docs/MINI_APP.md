@@ -1,5 +1,20 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Bot home — 2026-10-24
+
+When `MINIAPP_URL` and `MINIAPP_INTAKE_ENABLED` are configured, the bot home shows
+Services, My orders, Support and Help. `/start`, `/menu` and Services offer an
+inline Web App launch with signed Telegram user data. The persistent reply
+keyboard itself never launches a simple Web App. The global bot menu remains
+available; its operator configuration command is unchanged.
+
+The app handles service browsing/intake and account views. Chat remains the
+delivery, support and compatible fulfillment surface (including bot-only decisions
+and Stars invoices). `/wallet` and `/lang` still work, as do old catalog callbacks
+and saved bot drafts. Existing keyboards refresh after `/start` or `/menu`.
+Without a URL or with intake disabled, retain the six-item bot home and catalog.
+No customer migration, service version change or provider pause update is needed.
+
 ## Automatic document intake — 2026-10-23
 
 New Word/Excel, PDF and paired Word/PDF requests no longer ask the customer to

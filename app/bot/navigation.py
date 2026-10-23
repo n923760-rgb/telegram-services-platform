@@ -12,7 +12,15 @@ from sqlalchemy import select
 from app.bot.availability import ai_admission_available
 from app.bot.catalog import parse_callback
 from app.bot.catalog import view as catalog_view
-from app.bot.ui import MenuButton, buttons, home_keyboard, leave_support, section_controls
+from app.bot.ui import (
+    MenuButton,
+    buttons,
+    home_keyboard,
+    leave_support,
+    miniapp_launch,
+    miniapp_services_enabled,
+    section_controls,
+)
 from app.core.db import sessions
 from app.core.display import message_parts, order_reference, result_preview
 from app.core.i18n import tr
@@ -36,9 +44,18 @@ def create_router():
         await register(user_id)
         await leave_support(state)
         await message.answer(
-            tr("stars_welcome" if config().stars_enabled else "welcome", lang),
+            tr(
+                ("miniapp_stars_welcome" if config().stars_enabled else "miniapp_welcome")
+                if miniapp_services_enabled()
+                else ("stars_welcome" if config().stars_enabled else "welcome"),
+                lang,
+            ),
             reply_markup=home_keyboard(lang, admin=user_id in config().admin_ids),
         )
+        if miniapp_services_enabled():
+            await message.answer(
+                tr("miniapp_services_entry", lang), reply_markup=miniapp_launch(lang)
+            )
         if (await state.get_data()).get("key"):
             await message.answer(
                 tr("draft_saved", lang),
@@ -57,6 +74,12 @@ def create_router():
 
     async def show_services(message, state, lang, *, user_id, category=None, page=0):
         await leave_support(state)
+        if category is None and miniapp_services_enabled():
+            await message.answer(
+                tr("miniapp_services_entry", lang),
+                reply_markup=miniapp_launch(lang, await section_controls(state, lang)),
+            )
+            return
         async with sessions() as db:
             rows = (
                 await db.scalars(
@@ -158,7 +181,12 @@ def create_router():
     async def show_help(message, state, lang):
         await leave_support(state)
         await message.answer(
-            tr("stars_help_text" if config().stars_enabled else "help_text", lang),
+            tr(
+                ("miniapp_stars_help" if config().stars_enabled else "miniapp_help")
+                if miniapp_services_enabled()
+                else ("stars_help_text" if config().stars_enabled else "help_text"),
+                lang,
+            ),
             reply_markup=buttons(await section_controls(state, lang)),
         )
 

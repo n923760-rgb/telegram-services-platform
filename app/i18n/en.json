@@ -617,5 +617,10 @@
   "intake_direct_only": "Smart processing is temporarily unavailable. Requests that do not need it can continue; availability is checked before credit is reserved.",
   "intake_choice_unavailable": "{choice} — unavailable",
   "intake_option_unavailable": "This option is temporarily unavailable. Choose a direct option or try later; your draft has not changed.",
+  "miniapp_welcome": "Welcome to Yusr 👋\nChoose services and place your order in the app. Results and files arrive here in this chat.\n\nCurrent credit is for testing only.",
+  "miniapp_stars_welcome": "Welcome to Yusr 👋\nChoose services and place your order in the app. Results and files arrive here in this chat.\n\nReview each order's price; pay with Telegram Stars through the bot invoice.",
+  "miniapp_services_entry": "Your services in one place\nOpen the app to choose a service, send content and review the price before confirming. Track orders and view your account in the app; receive results here.",
+  "miniapp_help": "Start with Services, open the app and choose your service. Send content and review the price before confirming; your result arrives here in this chat.\n\nMy orders tracks progress; Support provides help. Credit is for testing and is reserved only after confirmation. Save files when they arrive.\n\n/wallet Credit\n/lang Language\n/resume Resume a bot draft\n/cancel Cancel draft or leave support\n/menu Home",
+  "miniapp_stars_help": "Start with Services, open the app and choose your service. Review the price and terms, then pay the Telegram invoice in the bot. Execution starts after confirmed payment; results arrive here.\n\nMy orders tracks progress; Support provides help. Save files when they arrive.\n/terms Terms\n/paysupport Payment support\n/lang Language\n/resume Resume a bot draft\n/cancel Cancel draft or leave support\n/menu Home",
   "miniapp_open": "Open app"
 }
