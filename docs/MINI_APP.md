@@ -1,5 +1,43 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Order tracking and next actions — 2026-10-23
+
+My orders separates All / In progress / Finished, keeps the chosen filter when
+switching language or refreshing, and describes the next step for each known
+order state. Awaiting payment and waiting for review direct the customer to bot
+chat; completed orders point to chat for results. Opening chat is a plain link
+to the configured same bot, not an order deep link, automatic payment or repeated
+submission. Missing/invalid links fall back to closing into bot chat. Unknown
+future statuses stay visible in All with a refresh/chat hint rather than being
+classified as completed or actionable.
+
+Overview reserves independent windows of up to eight active orders and eight
+other recent orders, selected in a single SQL statement and sorted newest first
+with stable ID tie-breaking. Newer finished work cannot push older active work
+out of its reserved window. Both branches and the outer selection are owner-scoped;
+disabled services remain visible in their customer's history. These are bounded
+recent windows, not a complete archive or total account counts. The UI discloses
+the limits and counts only displayed rows.
+
+Order amounts use the order's original payment mode and frozen SAR/Stars price,
+independent of current prices and checkout mode. No inputs, results, storage keys,
+terms payloads or provider error details are exposed. Existing signed launch,
+ban checks and no-store responses apply. Failed refresh preserves the last view;
+authentication rejection clears private cards and filters. This change only reads
+orders; it does not change order status, ledger entries, invoices or jobs.
+
+Developer qualification: `MINIAPP_TEST_ORDERS=1 MINIAPP_AXE=1 node
+scripts/check-miniapp-ui.cjs` runs synthetic state/filter, transition, owner-view
+privacy, historical payment labels, chat-link, keyboard-focus and AR/EN light/dark
+320/390/768px checks. Also run the ordinary catalog and native confirmation checks.
+Hosted database tests cover both window bounds, timestamp ties, owner isolation,
+old active requests, disabled services, historical payment, unknown state and no
+order/job/ledger writes. Live Telegram/mobile qualification remains separate.
+
+Rollout only rebuilds/recreates API from the reviewed SHA. Preserve existing Mini
+App flags, bot/worker, provider settings, Stars configuration and proxy networks.
+No migration, dependency or environment change is required.
+
 ## Explicit test-credit confirmation — 2026-10-23
 
 With both `MINIAPP_INTAKE_ENABLED=true` and `MINIAPP_CONFIRM_ENABLED=true`,

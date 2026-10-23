@@ -20,6 +20,10 @@ from app.wallet.ledger import balance, sar
 
 router = APIRouter()
 ASSETS = Path(__file__).resolve().parent
+ACTIVE_ORDER_STATES = frozenset(
+    {"awaiting_payment", "waiting_confirmation", "queued", "processing", "delivering"}
+)
+ORDER_WINDOW = 8
 
 CSP = (
     "default-src 'none'; script-src 'self' https://telegram.org; "
@@ -95,6 +99,25 @@ def visible_services(rows, *, user_id: int, stars: bool, ai_available: bool):
     return result
 
 
+def order_summary(order, service):
+    status = order.status if order.status in ALLOWED else "unknown"
+    return {
+        "reference": str(order.id)[:8],
+        "name_ar": service.name_ar,
+        "name_en": service.name_en,
+        "status": status,
+        "status_ar": tr(f"status_{status}", "ar"),
+        "status_en": tr(f"status_{status}", "en"),
+        "created_at": order.created_at.isoformat() if order.created_at else None,
+        "payment_mode": order.payment_mode,
+        "amount": order.price_stars
+        if order.payment_mode == "stars"
+        else sar(order.price_halala)
+        if order.payment_mode == "test_credit"
+        else None,
+    }
+
+
 @router.post("/miniapp/api/overview")
 async def overview(payload: OverviewRequest, response: Response):
     response.headers["Cache-Control"] = "no-store"
@@ -116,13 +139,24 @@ async def overview(payload: OverviewRequest, response: Response):
             )
         ).all()
         ai_available = await ai_admission_available(db)
+        # Reserve a separate bounded window for active work, so newer finished
+        # orders cannot hide an older request waiting for customer action.
+        membership = Order.status.in_(ACTIVE_ORDER_STATES)
+        owned_ids = (
+            select(Order.id)
+            .where(Order.user_id == user_id)
+            .order_by(Order.created_at.desc(), Order.id.desc())
+            .limit(ORDER_WINDOW)
+        )
+        window = owned_ids.where(membership).union_all(owned_ids.where(~membership)).subquery()
+        # One statement gives both windows the same database snapshot while a
+        # worker is transitioning an order between active and terminal states.
         orders = (
             await db.execute(
                 select(Order, Service)
                 .join(Service, Service.slug == Order.service_slug)
-                .where(Order.user_id == user_id)
+                .where(Order.user_id == user_id, Order.id.in_(select(window.c.id)))
                 .order_by(Order.created_at.desc(), Order.id.desc())
-                .limit(8)
             )
         ).all()
         funds = None if stars else await balance(db, user_id)
@@ -132,6 +166,10 @@ async def overview(payload: OverviewRequest, response: Response):
         "intake_enabled": config().miniapp_intake_enabled,
         "confirmation_enabled": config().miniapp_confirm_enabled and not config().stars_enabled,
         "payment_mode": "stars" if stars else "test_credit",
+        "bot_url": f"https://t.me/{config().miniapp_bot_username}"
+        if config().miniapp_bot_username
+        else None,
+        "orders_window": ORDER_WINDOW,
         "categories": [
             {"key": key, "ar": tr(label, "ar"), "en": tr(label, "en")}
             for key, label in CATEGORY_KEYS.items()
@@ -139,23 +177,7 @@ async def overview(payload: OverviewRequest, response: Response):
         "services": visible_services(
             services, user_id=user_id, stars=stars, ai_available=ai_available
         ),
-        "orders": [
-            {
-                "reference": str(order.id)[:8],
-                "name_ar": service.name_ar,
-                "name_en": service.name_en,
-                "status_ar": tr(
-                    f"status_{order.status}" if order.status in ALLOWED else "status_unknown",
-                    "ar",
-                ),
-                "status_en": tr(
-                    f"status_{order.status}" if order.status in ALLOWED else "status_unknown",
-                    "en",
-                ),
-                "created_at": order.created_at.isoformat() if order.created_at else None,
-            }
-            for order, service in orders
-        ],
+        "orders": [order_summary(order, service) for order, service in orders],
         "credit": None
         if funds is None
         else {

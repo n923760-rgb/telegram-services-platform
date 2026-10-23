@@ -29,7 +29,9 @@ rows = [Service(slug=p.slug, name_ar=p.name_ar, name_en=p.name_en,
 print(json.dumps({"language": "ar", "payment_mode": "test_credit", "categories": [],
     "services": visible_services(rows, user_id=4242, stars=False, ai_available=True),
     "orders": [{"reference": "demo0001", "name_ar": "مستند تجريبي", "name_en": "Demo document",
+    "status": "completed", "payment_mode": "test_credit", "amount": "3.00",
     "status_ar": "مكتمل", "status_en": "Completed", "created_at": "2026-10-22T10:00:00Z"}],
+    "bot_url": "https://t.me/ExampleBot", "orders_window": 8,
     "credit": {"available_sar": "12.00", "reserved_sar": "0.00"}}))
 `,
     ],
@@ -58,10 +60,11 @@ async function main() {
       : ["--no-sandbox", "--disable-dev-shm-usage"],
   });
   try {
-    const page = await browser.newPage({
+    const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
       colorScheme: "light",
     });
+    const page = await context.newPage();
     const errors = [];
     const requests = [];
     let mode = "ok";
@@ -115,6 +118,35 @@ async function main() {
             body: "{}",
           });
         const data = structuredClone(snapshot);
+        if (mode.startsWith("tracking")) {
+          data.orders = [
+            "queued",
+            "awaiting_payment",
+            "waiting_confirmation",
+            "processing",
+            "delivering",
+            "completed",
+            "failed",
+            "cancelled",
+            "refunded",
+            "__proto__",
+          ].map((status, i) => ({
+            reference: "track" + String(i + 1).padStart(3, "0"),
+            name_ar: "طلب تجريبي " + (i + 1),
+            name_en: "Demo request " + (i + 1),
+            status:
+              mode === "tracking-updated" && i === 2 ? "completed" : status,
+            status_ar: "حالة تجريبية",
+            status_en: "Sample status",
+            payment_mode: i === 1 ? "stars" : "test_credit",
+            amount: i === 1 ? 9 : "3.75",
+            created_at: "2026-10-22T22:15:00Z",
+          }));
+          if (mode === "tracking-unsafe")
+            data.bot_url = "https://evil.example/ExampleBot";
+          if (mode === "tracking-finished")
+            data.orders = data.orders.filter((o) => o.status === "completed");
+        }
         if (mode === "empty") {
           data.services = [];
           data.orders = [];
@@ -191,6 +223,177 @@ async function main() {
         .click();
     }
 
+    if (process.env.MINIAPP_TEST_ORDERS === "1") {
+      mode = "tracking";
+      await load();
+      await page.locator('[data-tab="orders"]').click();
+      assert.equal(await page.locator(".order-card").count(), 10);
+      assert.equal(
+        await page.locator("#order-filter-active").innerText(),
+        "الجارية · 5",
+      );
+      assert.equal(
+        await page.locator("#order-filter-closed").innerText(),
+        "المنتهية · 4",
+      );
+      const beforeFilter = requests.length;
+      await page.locator("#order-filter-active").click();
+      assert.equal(await page.locator(".order-card").count(), 5);
+      assert.equal(
+        await page
+          .locator("#order-filter-active")
+          .evaluate((el) => el === document.activeElement),
+        true,
+      );
+      await page.locator("#lang").click();
+      assert.equal(
+        await page.locator("#order-filter-active").getAttribute("aria-pressed"),
+        "true",
+      );
+      const payment = page
+        .locator(".order-card")
+        .filter({ hasText: "track002" });
+      assert.match(
+        await payment.locator(".order-amount").innerText(),
+        /9 Stars/,
+      );
+      assert.doesNotMatch(
+        await payment.locator(".order-amount").innerText(),
+        /SAR|Test credit/,
+      );
+      assert.match(
+        await page
+          .locator(".order-card")
+          .filter({ hasText: "track001" })
+          .locator(".order-amount")
+          .innerText(),
+        /3.75 SAR · Test credit/,
+      );
+      await page
+        .getByRole("button", { name: "Review result in bot", exact: true })
+        .click();
+      assert.deepEqual(await page.evaluate(() => window.uiTest.links), [
+        "https://t.me/ExampleBot",
+      ]);
+      assert.equal(
+        requests.length,
+        beforeFilter,
+        "filter, language and chat actions must not mutate or refresh",
+      );
+      mode = "tracking-updated";
+      await page.locator("#refresh-orders").click();
+      await page.waitForFunction(
+        () =>
+          document.getElementById("order-filter-active").textContent ===
+          "In progress · 4",
+      );
+      assert.equal(await page.locator(".order-card").count(), 4);
+      assert.equal(
+        await page.locator("#order-filter-active").getAttribute("aria-pressed"),
+        "true",
+      );
+      await page.locator("#order-filter-closed").click();
+      assert.equal(await page.locator(".order-card").count(), 5);
+      assert.match(
+        await page
+          .locator(".order-card")
+          .filter({ hasText: "track007" })
+          .locator(".order-next")
+          .innerText(),
+        /could not finish/,
+      );
+      await page.locator("#order-filter-all").click();
+      assert.match(
+        await page
+          .locator(".order-card")
+          .filter({ hasText: "track010" })
+          .locator(".order-next")
+          .innerText(),
+        /Status unavailable/,
+      );
+      assert.equal(
+        await page
+          .locator(".order-card")
+          .filter({ hasText: "track010" })
+          .locator("button")
+          .count(),
+        0,
+      );
+      for (const scheme of ["light", "dark"]) {
+        await page.emulateMedia({ colorScheme: scheme });
+        for (const language of ["en", "ar"]) {
+          if ((await page.locator("html").getAttribute("lang")) !== language)
+            await page.locator("#lang").click();
+          if (process.env.MINIAPP_AXE === "1") {
+            const AxeBuilder = require("@axe-core/playwright").default;
+            const result = await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+              .analyze();
+            assert.deepEqual(
+              result.violations.map((v) => ({
+                id: v.id,
+                targets: v.nodes.map((n) => n.target),
+              })),
+              [],
+            );
+          }
+          for (const width of [320, 390, 768]) {
+            await page.setViewportSize({ width, height: 844 });
+            await noOverflow();
+            if (width === 390 && process.env.MINIAPP_SCREENSHOT_DIR) {
+              fs.mkdirSync(process.env.MINIAPP_SCREENSHOT_DIR, {
+                recursive: true,
+              });
+              await page.screenshot({
+                path: path.join(
+                  process.env.MINIAPP_SCREENSHOT_DIR,
+                  `orders-${language}-${scheme}.png`,
+                ),
+                fullPage: true,
+              });
+            }
+          }
+        }
+      }
+      mode = "tracking-finished";
+      await load();
+      await page.locator('[data-tab="orders"]').click();
+      await page.locator("#order-filter-active").click();
+      assert.equal(await page.locator(".order-card").count(), 0);
+      await page
+        .getByText("لا توجد طلبات ضمن هذا التصنيف", { exact: true })
+        .waitFor();
+      mode = "tracking-unsafe";
+      await load();
+      await page.locator('[data-tab="orders"]').click();
+      await page
+        .getByRole("button", { name: "راجع النتيجة في البوت", exact: true })
+        .click();
+      assert.equal(await page.evaluate(() => window.uiTest.closed), 1);
+      assert.deepEqual(await page.evaluate(() => window.uiTest.links), []);
+      mode = "500";
+      await page.locator("#refresh-orders").click();
+      await page.locator("#notice.error").waitFor();
+      assert.equal(await page.locator(".order-card").count(), 10);
+      mode = "401";
+      await page.locator("#refresh-orders").click();
+      await page.waitForFunction(
+        () => document.querySelectorAll(".order-card").length === 0,
+      );
+      assert.equal(await page.locator(".order-filter").count(), 0);
+      assert.deepEqual(errors, []);
+      assert.ok(
+        requests.every(
+          (r) =>
+            r.method === "POST" &&
+            JSON.stringify(r.body) === '{"init_data":"synthetic-init-data"}',
+        ),
+      );
+      console.log(
+        "PASS: synthetic order state filters, focus/language, historical payment, review/result chat-only actions, refreshed transitions, empty/unknown states, unsafe-link fallback, privacy, AR/EN accessibility and light/dark 320/390/768px layouts.",
+      );
+      return;
+    }
     await load();
     assert.equal(await page.locator("[data-group]").count(), 4);
     assert.equal(await page.locator("[data-service]").count(), 0);

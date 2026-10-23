@@ -110,6 +110,35 @@ def test_catalog_serializes_the_persisted_service_model_without_an_english_colum
         assert result[0]["name_en"] == plugin.name_en
 
 
+@pytest.mark.parametrize(
+    "mode,stars,amount", [("test_credit", None, "3.75"), ("stars", 9, 9), ("future", None, None)]
+)
+def test_order_summary_uses_historical_payment_and_never_returns_private_payload(
+    mode, stars, amount
+):
+    from uuid import uuid4
+
+    from app.core.models import Order, Service
+    from app.miniapp.api import order_summary
+
+    row = Order(
+        id=uuid4(),
+        status="future_status",
+        payment_mode=mode,
+        price_halala=375,
+        price_stars=stars,
+        inputs={"text": "private content"},
+        result={"files": [{"key": "private/storage/key"}]},
+        terms_snapshot={"private": True},
+    )
+    service = Service(name_ar="خدمة", name_en="Service", price_halala=9900)
+    result = order_summary(row, service)
+    assert result["amount"] == amount and result["payment_mode"] == mode
+    assert result["status"] == "unknown"
+    assert not {"inputs", "result", "terms_snapshot", "id", "user_id"} & result.keys()
+    assert "private" not in str(result)
+
+
 @pytest.mark.parametrize("ai_available", [False, True])
 @pytest.mark.parametrize("username", ["", "ExampleBot"])
 def test_request_links_are_configured_registry_routes_not_checkout(
