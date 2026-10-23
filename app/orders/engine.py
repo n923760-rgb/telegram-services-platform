@@ -24,6 +24,16 @@ def input_digest(inputs):
     return hashlib.sha256(content).hexdigest()
 
 
+def review_revision(order, attempts):
+    """Bind consent to one result and worker attempt, including identical later rounds.
+
+    Notification updates do not invalidate a review. Job attempts never reset on
+    continuation, so a later review cannot reuse a prior round's consent.
+    """
+    value = [str(order.id), order.payment_mode, attempts, order.result]
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
+
+
 @transaction_retry
 async def register(user_id: int):
     if user_id <= 0:
@@ -182,7 +192,9 @@ async def complete_locked(db, order):
 
 
 @transaction_retry
-async def confirm_structure(order_id, user_id, approved, *, expected_prepared=None):
+async def confirm_structure(
+    order_id, user_id, approved, *, expected_prepared=None, expected_revision=None
+):
     from datetime import UTC, datetime
 
     async with sessions.begin() as db:
@@ -194,6 +206,15 @@ async def confirm_structure(order_id, user_id, approved, *, expected_prepared=No
             raise ServiceError("not_allowed")
         if order.status != "waiting_confirmation":
             raise ServiceError("invalid_request")
+        if expected_revision is not None:
+            reviewed_job = await db.scalar(
+                select(Job).where(Job.order_id == order.id).with_for_update()
+            )
+            if (
+                reviewed_job is None
+                or review_revision(order, reviewed_job.attempts) != expected_revision
+            ):
+                raise ServiceError("stale_button")
         if (
             expected_prepared is not None
             and bool((order.result or {}).get("prepared_delivery")) != expected_prepared

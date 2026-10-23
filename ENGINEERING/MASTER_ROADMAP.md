@@ -1,3 +1,24 @@
+## Mini App native test-credit result decisions — 2026-10-23
+
+- FACT: Live main 7c92dee verified; owner continues the organized Mini App journey.
+  Previous production/mobile rollout is not independently verified here.
+- CHANGE: Explicit result consent, prepared-file delivery approval, structural
+  continuation and two-step cancellation inside Mini App, using existing engine.
+  Existing intake/confirmation flags only; Stars and missing-preview fallback stay
+  in bot. No new reserve, financial policy, migration or dependency.
+- SECURITY: Owner/purpose/one-hour proof binds exact Result, payment and monotonic
+  Job attempt, checked under customer/order/job locks. Notification updates do not
+  stale consent; identical later worker rounds do. No provider/Telegram HTTP call.
+- REPLAY: At most one decision applies. Lost committed response is ambiguous;
+  frozen same-decision retry returns 409 and directs refresh, not a durable receipt.
+- LOCAL PASS: 119 focused unit cases, three architecture gates, global lint/
+  format/diff checks and synthetic native/legacy browser journeys with consent,
+  AR/EN, accessibility, responsive layouts, stale/late/auth and ambiguous retries.
+  Hosted PostgreSQL/Redis financial/race, cached-delivery and postcommit tests
+  are required before merge; results recorded in the PR.
+- ROLLOUT: API only; preserve bot/worker/provider/payment/proxy configuration.
+  Actual Telegram/mobile consent, file delivery and output quality remain separate.
+
 ## Mini App read-only result review — 2026-10-23
 
 - FACT: Live main 3f8e843 and no open PRs verified; owner asks to continue the

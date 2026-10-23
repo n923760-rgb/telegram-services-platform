@@ -1,13 +1,48 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Native test-credit result decisions — 2026-10-23
+
+With both existing intake/confirmation flags enabled and Stars disabled, an
+owner's current test-credit review offers an explicit consent checkbox and
+Approve button. Prepared results approve delivery of the cached original files;
+structural results continue the existing request. Cancellation requires a second
+confirmation and uses the existing engine's reserve release. Results still arrive
+in bot chat. Opening a review does not apply a decision or reserve more credit.
+Missing review text or an unavailable/failed image retains the bot fallback;
+the browser cannot approve a prepared result before its image has loaded.
+
+POST `/miniapp/api/result-decision` accepts fresh signed `init_data`, a server
+review token and strict `approved`/`accepted` booleans only. The owner-bound,
+one-hour HMAC uses a separate purpose from purchase confirmation and binds the
+order, payment mode, exact stored Result and monotonic Job attempt. Under the
+existing customer/order/job locks, a changed phase, result or later review round
+rejects the old proof. Notification timestamp changes alone do not invalidate it.
+Existing rate/FSM locks and origin/deadline guards apply; bot support data remains
+untouched. Stars decisions stay in the bot. No new provider, Telegram, wallet
+policy, migration, flag or dependency is introduced.
+
+A successful response shows the decision and current order status. Repeated or
+competing bot/API decisions cannot apply twice. There is no durable HTTP receipt
+replay: if the decision committed but its response was lost, retrying the same
+proof returns 409 and the customer must refresh My orders. On ambiguous failure,
+the UI freezes the original decision for retry; it cannot switch to cancellation.
+Navigation/authentication clearing also invalidates pending response rendering.
+
+Run `MINIAPP_TEST_DECISION=1 MINIAPP_AXE=1 node scripts/check-miniapp-result.cjs`
+alongside the legacy read-only journey. Hosted PostgreSQL/Redis tests cover
+approval/rejection, cached delivery and settlement, stale/identical later rounds,
+HTTP/bot races and lost postcommit responses. API-only rollout is compatible with
+existing bot callers. Real Telegram/mobile acceptance remains separate.
+
 ## Read-only result review — 2026-10-23
 
 With the existing `MINIAPP_INTAKE_ENABLED=true`, a waiting-confirmation order
 offers View result review. The owner can read the complete existing AR/EN review
 and, where available, the stored PNG first-page preview. The image is explicitly
 labeled as the first page, not a complete visual inspection of every output page.
-Text-only structural reviews work too. Approve/cancel remains in the existing bot
-flow, reached through a plain same-bot chat link. Opening this view never decides,
+Text-only structural reviews work too. With native confirmation disabled,
+approve/cancel remains in the existing bot flow, reached through a plain same-bot
+chat link. Opening this view never decides,
 restarts, pays, releases or delivers an order.
 
 POST `/miniapp/api/result-review` accepts only signed fresh raw `init_data` and

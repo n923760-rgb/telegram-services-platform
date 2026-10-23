@@ -1,6 +1,6 @@
 "use strict";
 
-window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
+window.MiniAppResultReview = function ({ tg, back, denied, chat, orders }) {
   let container,
     lang = "ar",
     orderId = null,
@@ -9,6 +9,13 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
     busy = false;
   let controller = null,
     generation = 0;
+  let agreed = false,
+    cancelling = false,
+    attempted = false,
+    retryDecision = null;
+  let receipt = null,
+    imageReady = false,
+    imageFailed = false;
   const words = {
     ar: {
       back: "العودة لطلباتي",
@@ -25,6 +32,23 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
       failure: "تعذر تحميل المراجعة. حاول مجددًا أو استكمل في البوت.",
       changed: "تغيّرت حالة الطلب أو مراجعته. ارجع لطلباتي وحدّث الحالة.",
       rate: "طلبات كثيرة. انتظر دقيقة ثم أعد المحاولة.",
+      agree: "راجعت الملخص والمعاينة المتاحة وأوافق على المتابعة",
+      approvePrepared: "أوافق على إرسال الملفات",
+      approveStructure: "أوافق على متابعة التنفيذ",
+      nativeHint:
+        "المبلغ محجوز مسبقًا لهذا الطلب. الموافقة تتابع الطلب الحالي، والنتائج تصل في البوت.",
+      reject: "إلغاء هذا الطلب",
+      cancelQuestion: "هل تريد إلغاء الطلب؟ لن تتم متابعة تنفيذه بعد الإلغاء.",
+      confirmCancel: "نعم، إلغاء الطلب",
+      keep: "العودة للمراجعة",
+      approved: "سُجلت موافقتك",
+      cancelled: "تم إلغاء الطلب",
+      checking:
+        "تحقق من الحالة في طلباتي، أو أعد المحاولة بالقرار نفسه. قد يكون القرار سُجل بالفعل.",
+      orders: "متابعة طلباتي",
+      openChat: "فتح محادثة البوت",
+      receiptHint:
+        "تابع حالة الطلب في طلباتي. الملفات النهائية تصل في محادثة البوت.",
     },
     en: {
       back: "Back to my orders",
@@ -43,6 +67,25 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
       changed:
         "The order or review changed. Return to My orders and refresh its status.",
       rate: "Too many requests. Wait a minute and try again.",
+      agree:
+        "I reviewed the summary and available preview and agree to continue",
+      approvePrepared: "Approve and send files",
+      approveStructure: "Approve and continue processing",
+      nativeHint:
+        "Credit is already reserved for this request. Approval continues the existing order; results arrive in bot chat.",
+      reject: "Cancel this request",
+      cancelQuestion:
+        "Cancel this request? Processing will not continue after cancellation.",
+      confirmCancel: "Yes, cancel request",
+      keep: "Return to review",
+      approved: "Your approval was recorded",
+      cancelled: "Request cancelled",
+      checking:
+        "Check My orders, or retry the same decision. It may already have been recorded.",
+      orders: "Follow my orders",
+      openChat: "Open bot chat",
+      receiptHint:
+        "Follow the request in My orders. Final files arrive in bot chat.",
     },
   };
   const t = (key) => words[lang][key];
@@ -65,7 +108,11 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
     container.setAttribute("aria-busy", String(busy));
     container.appendChild(button(t("back"), "back-button", back));
     const card = el("section", "card result-review-card");
-    const title = el("h2", "section-title", t("title"));
+    const title = el(
+      "h2",
+      "section-title",
+      t(receipt ? (receipt.approved ? "approved" : "cancelled") : "title"),
+    );
     title.id = "result-review-title";
     title.tabIndex = -1;
     card.appendChild(title);
@@ -86,26 +133,129 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
       if (
         typeof image === "string" &&
         image.length <= 4 * 1024 * 1024 + 22 &&
-        /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(image)
+        /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(image) &&
+        !imageFailed
       ) {
         const figure = el("figure", "result-review-image");
         const picture = el("img");
         picture.src = image;
         picture.alt = t("image");
+        const shown = review,
+          version = generation;
+        picture.addEventListener("load", () => {
+          if (version === generation && review === shown && !imageReady) {
+            imageReady = true;
+            draw();
+          }
+        });
         picture.addEventListener("error", () => {
-          figure.replaceChildren(el("figcaption", "sub", t("missing")));
+          if (version === generation && review === shown) {
+            imageReady = false;
+            imageFailed = true;
+            draw();
+          }
         });
         figure.append(picture, el("figcaption", "sub", t("scope")));
         card.appendChild(figure);
       } else if (review.image_unavailable || image)
         card.appendChild(el("p", "availability", t("missing")));
+      if (review.decision) {
+        const allowed =
+          Boolean(text?.trim()) &&
+          (!review.decision.prepared || imageReady) &&
+          !imageFailed;
+        if (cancelling) {
+          card.appendChild(el("p", "availability", t("cancelQuestion")));
+          const confirm = button(t("confirmCancel"), "secondary", () =>
+            decide({
+              token: review.decision.token,
+              approved: false,
+              accepted: true,
+            }),
+          );
+          confirm.id = "confirm-review-cancel";
+          confirm.disabled = busy || attempted;
+          const keep = button(t("keep"), "text-button", () => {
+            cancelling = false;
+            draw();
+          });
+          keep.disabled = busy || attempted;
+          card.append(confirm, keep);
+        } else {
+          const label = el("label", "confirmation-consent");
+          const check = el("input");
+          check.type = "checkbox";
+          check.id = "review-consent";
+          check.checked = agreed;
+          check.disabled = busy || attempted || !allowed;
+          const approve = button(
+            t(
+              review.decision.prepared ? "approvePrepared" : "approveStructure",
+            ),
+            "primary",
+            () => {
+              if (agreed && allowed && !busy && !attempted)
+                decide({
+                  token: review.decision.token,
+                  approved: true,
+                  accepted: true,
+                });
+            },
+          );
+          approve.id = "approve-review";
+          approve.disabled = busy || attempted || !allowed || !agreed;
+          check.addEventListener("change", () => {
+            agreed = check.checked;
+            approve.disabled = busy || attempted || !allowed || !agreed;
+          });
+          label.append(check, el("span", "", t("agree")));
+          const reject = button(t("reject"), "text-button", () => {
+            cancelling = true;
+            draw();
+          });
+          reject.id = "reject-review";
+          reject.disabled = busy || attempted;
+          card.append(label, approve, reject);
+        }
+      }
     }
+    if (receipt)
+      card.append(
+        el("p", "mini-label", t("reference")),
+        el("bdi", "receipt-reference", receipt.reference),
+        el("p", "pill", receipt["status_" + lang]),
+      );
     if (error && error !== "changed") {
-      const retry = button(t("retry"), "secondary", load);
+      const retry = button(t("retry"), "secondary", () =>
+        retryDecision ? decide(retryDecision) : load(),
+      );
       retry.disabled = busy;
       card.appendChild(retry);
     }
-    card.append(el("p", "sub", t("hint")), button(t("chat"), "primary", chat));
+    card.appendChild(
+      el(
+        "p",
+        "sub",
+        t(
+          attempted && !receipt
+            ? "checking"
+            : receipt
+              ? "receiptHint"
+              : review?.decision
+                ? "nativeHint"
+                : "hint",
+        ),
+      ),
+    );
+    if ((receipt || attempted) && orders)
+      card.appendChild(button(t("orders"), "primary", orders));
+    card.appendChild(
+      button(
+        t(review?.decision || receipt || attempted ? "openChat" : "chat"),
+        "secondary",
+        chat,
+      ),
+    );
     container.appendChild(card);
     if (focused) title.focus();
   }
@@ -142,7 +292,66 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
         return;
       }
       const result = await response.json();
-      if (version === generation) review = result.review;
+      if (version === generation) {
+        review = result.review;
+        agreed = false;
+        cancelling = false;
+        attempted = false;
+        retryDecision = null;
+        imageReady = false;
+        imageFailed = false;
+      }
+    } catch (_) {
+      if (version === generation) error = "failure";
+    } finally {
+      clearTimeout(timer);
+      if (version === generation) {
+        busy = false;
+        controller = null;
+        draw();
+      }
+    }
+  }
+  async function decide(operation) {
+    if (busy || !review) return;
+    busy = true;
+    attempted = true;
+    error = "";
+    retryDecision = { ...operation };
+    const version = ++generation;
+    const requestController = new AbortController();
+    controller = requestController;
+    const timer = setTimeout(() => requestController.abort(), 20000);
+    draw();
+    try {
+      const response = await fetch("/miniapp/api/result-decision", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: requestController.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ init_data: tg.initData, ...operation }),
+      });
+      if (version !== generation) return;
+      if (response.status === 401 || response.status === 403) {
+        denied();
+        return;
+      }
+      if (!response.ok) {
+        if ([400, 404, 409].includes(response.status)) {
+          review = null;
+          retryDecision = null;
+          error = "changed";
+        } else error = response.status === 429 ? "rate" : "failure";
+        return;
+      }
+      const result = await response.json();
+      if (version === generation) {
+        receipt = result.receipt;
+        review = null;
+        retryDecision = null;
+        agreed = false;
+      }
     } catch (_) {
       if (version === generation) error = "failure";
     } finally {
@@ -173,6 +382,13 @@ window.MiniAppResultReview = function ({ tg, back, denied, chat }) {
       review = null;
       error = "";
       busy = false;
+      agreed = false;
+      cancelling = false;
+      attempted = false;
+      retryDecision = null;
+      receipt = null;
+      imageReady = false;
+      imageFailed = false;
       container?.removeAttribute("aria-busy");
       container = null;
     },

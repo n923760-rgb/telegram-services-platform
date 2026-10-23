@@ -24,6 +24,11 @@
         tg,
         back,
         chat: openBotChat,
+        orders: function () {
+          orderFilter = "all";
+          chooseTab("orders");
+          boot();
+        },
         denied: function () {
           clearPrivate();
           noticeKey = "failure";
