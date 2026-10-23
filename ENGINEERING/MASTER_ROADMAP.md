@@ -1,3 +1,25 @@
+## Mini App service presentation — 2026-10-23
+
+- FACT: Live main def9e18 and no open PRs verified at start. Owner requests a
+  simple, organized customer experience and a clear role for bot chat.
+- CHANGE: Category-first catalog, normalized search, concise priced service
+  details, Services/Orders/Account navigation, recent orders and clear credit
+  labels. Group registry categories rather than named services; preserve verified
+  bot handoff, selection/back/focus, payment gates and paused/mixed availability.
+  Clear stale private views on authentication/ban rejection during refresh.
+- PASS LOCALLY: Headless Chromium with synthetic Telegram/API covers grouping,
+  search, selected-service handoff, focus/back/language, refresh/error privacy,
+  Stars/empty/unknown/untrusted data and AR/EN light/dark at 320/390/768px.
+  Review images inspected; 54 existing DB-free Mini App/bot unit checks, three
+  architecture gates, Ruff, JS syntax/format and diff checks pass locally.
+  No production Telegram/provider claim is made.
+- GATE: Complete exact-head hosted workflow before merge. UI rollout rebuilds API
+  only; preserve production
+  environment, proxy networks, provider state and all financial history.
+- NEXT: Bot retains input/files, authoritative review/confirmation, payment,
+  delivery and support. Native Mini App drafts/uploads remain a dedicated slice;
+  professional output-quality P0 remains unchanged. See docs/MINI_APP.md.
+
 ## Mini App service-to-chat request bridge — 2026-10-23
 
 - FACT: Live main a26eb68 verified; no open PRs at start. Owner reports phase-1
