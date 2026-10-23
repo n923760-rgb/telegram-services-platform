@@ -65,7 +65,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "8" if slug == "text_to_office" else "5"
+    version = "9" if slug == "text_to_office" else "6"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -111,13 +111,15 @@ async def test_excel_still_requires_provider(tmp_path, monkeypatch):
         await submit(1, "text_to_office", {"text": "بيانات", "target": "excel"}, price, "excel")
 
 
-@pytest.mark.parametrize("mode", [None, "automatic"])
-async def test_word_mode_required_before_any_order_or_reservation(tmp_path, monkeypatch, mode):
+@pytest.mark.parametrize("mode,error", [(None, "provider_config"), ("automatic", "input_invalid")])
+async def test_word_automatic_admission_and_invalid_mode_never_reserve(
+    tmp_path, monkeypatch, mode, error
+):
     price = await prepare(tmp_path, monkeypatch, "text_to_office")
     inputs = {"target": "word", "text": "Content"}
     if mode is not None:
         inputs["mode"] = mode
-    with pytest.raises(ServiceError, match="input_invalid"):
+    with pytest.raises(ServiceError, match=error):
         await submit(1, "text_to_office", inputs, price, "missing-mode")
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
@@ -210,7 +212,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
         await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
-        assert row.version == "5" and row.enabled and row.price_halala == 700
+        assert row.version == "6" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
     )
@@ -251,7 +253,7 @@ async def test_pdf_v4_intake_upgrade_keeps_admin_settings_and_prepared_delivery(
         await registry.sync(db)
     async with sessions() as db:
         service = await db.get(Service, "text_to_pdf")
-        assert service.version == "5" and service.enabled
+        assert service.version == "6" and service.enabled
         assert service.price_halala == 777 and service.price_stars == 25
     monkeypatch.setattr(pdf, "build", no_provider)
     monkeypatch.setattr(delivery, "send", send)

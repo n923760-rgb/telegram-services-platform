@@ -287,7 +287,7 @@ def cases(assets):
         Case(
             "word_smart",
             "text_to_office",
-            {"text": text, "target": "word", "mode": "smart"},
+            {"text": text, "target": "word"},
             ("00123",),
         ),
         Case(
@@ -297,7 +297,12 @@ def cases(assets):
             ("00123",),
         ),
         *[
-            Case("text_pdf_" + mode, "text_to_pdf", {"text": text, "mode": mode}, ("00123",))
+            Case(
+                "text_pdf_" + mode,
+                "text_to_pdf",
+                {"text": text, **({"mode": mode} if mode == "direct" else {})},
+                ("00123",),
+            )
             for mode in ("direct", "smart")
         ],
         Case(
@@ -311,7 +316,11 @@ def cases(assets):
             Case(
                 "word_pdf_" + mode,
                 "text_to_word_pdf",
-                {"text": text, "mode": mode, "output_format": "both"},
+                {
+                    "text": text,
+                    "output_format": "both",
+                    **({"mode": mode} if mode == "direct" else {}),
+                },
                 ("00123",),
             )
             for mode in ("direct", "smart")

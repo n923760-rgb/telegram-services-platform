@@ -37,9 +37,10 @@ async def setup(tmp_path, monkeypatch, slug="text_to_word_pdf", inputs=None):
             ai=None, storage=OwnedStorage(store, uid), renderer=renderer, previews=PdfPreviews()
         ),
     }
-    oid = await submit(
-        1, slug, inputs or {"text": "Invoice 00123", "output_format": "both"}, price, "visual"
-    )
+    payload = inputs or {"text": "Invoice 00123", "output_format": "both"}
+    if slug == "text_to_word_pdf":
+        payload = {"mode": "direct", **payload}
+    oid = await submit(1, slug, payload, price, "visual")
     return oid, await job_for(oid), ctx, renderer, store, price
 
 

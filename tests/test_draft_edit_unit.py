@@ -94,6 +94,8 @@ async def test_conditional_mode_is_recollected_or_removed_but_source_is_retained
     handlers, state, message, callback = intake
     data = await confirmed(state, {"target": "word", "mode": "smart", "text": "Preserved source"})
     data["schema"] = TextToOffice.input_schema.model_dump()
+    for field in data["schema"]["fields"]:
+        field["legacy_only"] = False
     await state.set_data(data)
     callback.data = "editfield:draft:0"
     await handlers["edit_field"](callback, state, lang)
@@ -250,8 +252,11 @@ async def test_stale_edit_controls_do_not_modify_current_draft(intake, action):
 
 
 def test_inactive_field_cannot_be_selected_for_editing():
+    schema = TextToOffice.input_schema.model_dump()
+    for field in schema["fields"]:
+        field["legacy_only"] = False
     data = {
-        "schema": TextToOffice.input_schema.model_dump(),
+        "schema": schema,
         "inputs": {"target": "excel", "text": "Source"},
         "index": 3,
     }

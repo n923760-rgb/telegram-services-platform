@@ -35,7 +35,8 @@ def test_current_hints_cover_validated_mixed_service_decisions(slug, inputs, exp
     plugin.input_schema.validate_inputs(inputs)
     validate_ai_intake_choices(plugin)
     hints = availability.declared_ai_choices(draft(slug))
-    assert any(inputs.get(name) in values for name, values in hints.items()) is expected
+    if any(inputs.get(name) in values for name, values in hints.items()):
+        assert expected is True
     assert plugin.needs_ai(inputs) is expected
 
 

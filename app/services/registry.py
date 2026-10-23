@@ -28,6 +28,8 @@ def _input_contract(schema):
                 field.pop("single_line")
             if field.get("preserve_image") is False:
                 field.pop("preserve_image")
+            if field.get("legacy_only") is False:
+                field.pop("legacy_only")
             normalize(field.get("fields", []))
 
     normalize(result.get("fields", []))

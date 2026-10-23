@@ -1,4 +1,4 @@
-"""Shared explicit document modes; never infer intent from customer prose."""
+"""Automatic document improvement with explicit literal-preservation compatibility."""
 
 from typing import Annotated, Literal
 
@@ -12,7 +12,7 @@ class DocumentInputs(StrictModel):
     text: Annotated[str, StringConstraints(strip_whitespace=False)] = Field(
         min_length=1, max_length=12000
     )
-    # Legacy programmatic callers retain smart behavior; Telegram requires an explicit choice.
+    # Normal requests improve automatically; legacy explicit modes remain valid.
     mode: Literal["direct", "smart"] = "smart"
     title: str | None = Field(default=None, min_length=1, max_length=200)
 
@@ -54,6 +54,18 @@ class DocumentInputs(StrictModel):
     @classmethod
     def parse(cls, inputs):
         try:
-            return cls.model_validate({k: v for k, v in inputs.items() if not k.startswith("__")})
+            values = {k: v for k, v in inputs.items() if not k.startswith("__")}
+            # A complete first-line directive expresses consent to literal output.
+            # Do not keyword-match body prose or silently downgrade AI failures.
+            if "mode" not in values and values.get("target") != "excel":
+                text = values.get("text")
+                if isinstance(text, str):
+                    first, _, body = text.replace("\r\n", "\n").replace("\r", "\n").partition("\n")
+                    if first.strip().removesuffix(":").strip().casefold() in {
+                        "بدون تعديل النص",
+                        "keep text unchanged",
+                    }:
+                        values.update(text=body, mode="direct")
+            return cls.model_validate(values)
         except ValidationError:
             raise ServiceError("input_invalid") from None

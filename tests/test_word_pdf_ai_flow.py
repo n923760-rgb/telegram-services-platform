@@ -45,7 +45,9 @@ async def test_smart_native_pair_reviewed_cost_recorded_and_reused_on_delivery_r
     tmp_path, monkeypatch
 ):
     provider, delivery, price = await prepare(tmp_path, monkeypatch)
-    oid = await submit(1, "text_to_word_pdf", inputs(), price, "smart-retry")
+    source = inputs()
+    source.pop("mode")
+    oid = await submit(1, "text_to_word_pdf", source, price, "smart-retry")
     jid = await job_for(oid)
     original = delivery.send
     delivery.send = AsyncMock(side_effect=ConnectionError("synthetic offline"))
@@ -171,7 +173,7 @@ async def test_upgrade_retains_admin_price_gate_and_releases_old_unprepared_orde
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "text_to_word_pdf")
-        assert row.version == "3" and row.price_halala == 777 and row.enabled
+        assert row.version == "4" and row.price_halala == 777 and row.enabled
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"

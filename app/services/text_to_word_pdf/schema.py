@@ -12,7 +12,7 @@ from app.services.translation import NUMERIC_TOKEN
 
 
 class Inputs(DocumentInputs):
-    mode: Literal["direct", "smart"] = "direct"
+    mode: Literal["direct", "smart"] = "smart"
     output_format: Literal["word", "pdf", "both"] = "both"
 
     @model_validator(mode="after")

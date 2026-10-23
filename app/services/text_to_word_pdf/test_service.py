@@ -24,7 +24,12 @@ class Renderer:
 @pytest.mark.parametrize("title", [None, "تقرير الطلبات"])
 async def test_service_preserves_text_uses_injected_renderer_and_saves_two_files(tmp_path, title):
     text = "  Invoice 00123\n\nالطلب 2026-10-09 بقيمة 125.50"
-    inputs = {"output_format": "both", "text": text, **({"title": title} if title else {})}
+    inputs = {
+        "output_format": "both",
+        "text": text,
+        "mode": "direct",
+        **({"title": title} if title else {}),
+    }
     service = TextToWordPdf()
     storage = OwnedStorage(LocalStorage(tmp_path), 1)
     renderer = Renderer()
@@ -70,7 +75,7 @@ async def test_render_failures_never_save_partial_artifacts(tmp_path, key, trans
         renderer=Renderer(DocumentError(key, transient=transient)),
     )
     with pytest.raises(ServiceError) as error:
-        await service.run({"output_format": "both", "text": "Invoice 00123"})
+        await service.run({"output_format": "both", "text": "Invoice 00123", "mode": "direct"})
     assert error.value.key == ("input_invalid" if key == "document_render_limit" else key)
     assert error.value.transient == transient
     assert not list(tmp_path.glob("[0-9]*/*/*"))
@@ -99,5 +104,5 @@ async def test_second_save_failure_deletes_first_artifact(tmp_path, monkeypatch)
     service = TextToWordPdf()
     service.runtime = SimpleNamespace(ai=None, storage=storage, renderer=Renderer())
     with pytest.raises(ServiceError, match="storage_quota"):
-        await service.run({"output_format": "both", "text": "Invoice 00123"})
+        await service.run({"output_format": "both", "text": "Invoice 00123", "mode": "direct"})
     assert not list(tmp_path.glob("[0-9]*/*/*"))

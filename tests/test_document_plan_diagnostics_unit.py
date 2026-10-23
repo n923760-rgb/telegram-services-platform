@@ -114,7 +114,8 @@ async def test_valid_missing_information_is_observable_without_clarification_con
         1,
         diagnostics=events,
     )
-    assert (await ai._extract(schema, SOURCE)).missing_information
+    with pytest.raises(ServiceError, match="needs_information"):
+        await ai._extract(schema, SOURCE)
     assert events == [
         {
             "call": 1,

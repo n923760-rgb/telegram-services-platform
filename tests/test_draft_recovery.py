@@ -148,13 +148,11 @@ async def test_failed_choice_prompt_recovers():
     transport.fail_next_sends = 1
     with pytest.raises(SimulatedSendFailure):
         await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    await message("retry")  # recovers the mode prompt without consuming customer text
-    assert transport.messages[-1].text.endswith(tr("office_word_mode"))
+    await message("retry")  # recovers the content prompt without consuming customer text
+    assert transport.messages[-1].text.endswith(tr("office_text"))
     assert (await dp.fsm.get_context(bot=bot, chat_id=user.id, user_id=user.id).get_data())[
         "inputs"
     ] == {"target": "word"}
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    assert transport.messages[-1].text.endswith(tr("office_text"))
     await message("المحتوى")
     assert button_by_prefix(transport.messages[-1].reply_markup, "confirm:")
     await dp.storage.close()

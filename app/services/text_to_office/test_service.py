@@ -297,10 +297,9 @@ def test_empty_literal_body_is_rejected_before_reservation(text):
         TextToOffice.needs_ai({"target": "word", "text": text})
 
 
-def test_office_intake_asks_format_and_word_mode_before_content():
+def test_office_intake_asks_format_then_content_with_automatic_improvement():
     assert [field.name for field in TextToOffice.input_schema.conversation()] == [
         "target",
-        "mode",
         "text",
     ]
     assert TextToOffice.needs_ai({"target": "word", "text": "نص"})

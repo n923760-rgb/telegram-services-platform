@@ -71,13 +71,12 @@ async def test_paused_direct_pdf_journey_still_submits_without_provider(flow, mo
         db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
     await message("/start")
     await callback("service:text_to_pdf")
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    await message("Literal 00123")
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
+    await message("Keep text unchanged\nLiteral 00123")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     async with sessions() as db:
         order = await db.scalar(select(Order))
-        assert order.status == "queued" and order.inputs["mode"] == "direct"
+        assert order.status == "queued" and "mode" not in order.inputs
+        assert not registry.types["text_to_pdf"].needs_ai(order.inputs)
         assert await db.scalar(select(func.count(CostHold.id))) == 0
         assert (await balance(db, 1)).reserved == order.price_halala
 
@@ -182,6 +181,13 @@ async def test_mixed_choice_pause_recheck_preserves_draft_without_admission(
     await message("/start")
     await callback("service:" + slug)
     data = await state.get_data()
+    # Resume a real pre-upgrade choice schema rather than a new automatic intake.
+    if slug != "pdf_tables_excel":
+        schema = registry.types[slug].input_schema.model_copy(deep=True)
+        for field in schema.fields:
+            field.legacy_only = False
+        monkeypatch.setattr(registry.types[slug], "input_schema", schema)
+        data["schema"] = schema.model_dump()
     data.update(index=index, inputs=inputs, pending_prompt=False)
     await state.set_data(data)
     await callback("draft:resume")
@@ -231,6 +237,13 @@ async def test_mode_is_first_and_unavailable_choice_never_requests_source(
             db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
     await message("/start")
     await callback("service:" + slug)
+    if slug == "text_to_pdf":
+        schema = registry.types[slug].input_schema.model_copy(deep=True)
+        for field in schema.fields:
+            field.legacy_only = False
+        monkeypatch.setattr(registry.types[slug], "input_schema", schema)
+        await state.update_data(schema=schema.model_dump())
+        await callback("draft:resume")
     saved = await state.get_data()
     fields = registry.types[slug].input_schema.conversation()
     assert saved["index"] == 0 and saved["inputs"] == {} and fields[0].name == "mode"
