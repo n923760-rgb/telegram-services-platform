@@ -1,5 +1,8 @@
 ## Standard Word report title scale — 2026-10-24
 
+- BASELINE: PR #151 merged as ade24addf42c56507bb7d1d8a0c1ad5f93436356;
+  hosted checks passed 3204 tests and 34 native worker cases. This confirms bot
+  source behavior, not operator deployment or Telegram mobile acceptance.
 - FACT: The owner's generated project report preserves requested facts and its
   editable task table, but a 28-point modern title wraps with excessive emphasis.
 - CHANGE: Named standard-document designs cap title styles at 24 points and use
