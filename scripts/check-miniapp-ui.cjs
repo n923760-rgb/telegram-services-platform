@@ -71,7 +71,7 @@ async function main() {
     let releaseFetch;
     page.on("pageerror", (error) => errors.push(error.message));
     await page.addInitScript(() => {
-      window.uiTest = { links: [], closed: 0, backVisible: false };
+      window.uiTest = { links: [], closed: 0, events: [], backVisible: false };
       window.Telegram = {
         WebApp: {
           initData: "synthetic-init-data",
@@ -79,9 +79,12 @@ async function main() {
           ready() {},
           expand() {},
           close() {
+            window.uiTest.events.push("close");
             window.uiTest.closed++;
           },
           openTelegramLink(url) {
+            window.uiTest.events.push("open");
+            if (window.uiTest.throwLink) throw new Error("Unsupported link");
             window.uiTest.links.push(url);
           },
           onEvent() {},
@@ -276,6 +279,30 @@ async function main() {
       assert.deepEqual(await page.evaluate(() => window.uiTest.links), [
         "https://t.me/ExampleBot",
       ]);
+      assert.equal(await page.evaluate(() => window.uiTest.closed), 1);
+      assert.deepEqual(await page.evaluate(() => window.uiTest.events), [
+        "open", "close",
+      ]);
+      await page.evaluate(() => {
+        window.uiTest.throwLink = true;
+        window.uiTest.events = [];
+      });
+      await page
+        .getByRole("button", { name: "Review result in bot", exact: true })
+        .click();
+      assert.equal(await page.evaluate(() => window.uiTest.closed), 2);
+      assert.deepEqual(await page.evaluate(() => window.uiTest.events), [
+        "open", "close",
+      ]);
+      await page.evaluate(() => {
+        delete window.Telegram.WebApp.openTelegramLink;
+        window.uiTest.events = [];
+      });
+      await page
+        .getByRole("button", { name: "Review result in bot", exact: true })
+        .click();
+      assert.equal(await page.evaluate(() => window.uiTest.closed), 3);
+      assert.deepEqual(await page.evaluate(() => window.uiTest.events), ["close"]);
       assert.equal(
         requests.length,
         beforeFilter,
