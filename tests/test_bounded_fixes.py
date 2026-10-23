@@ -88,7 +88,7 @@ def button_by_prefix(markup, prefix):
         return None
     for row in markup.inline_keyboard:
         for button in row:
-            if button.callback_data.startswith(prefix):
+            if button.callback_data and button.callback_data.startswith(prefix):
                 return button.callback_data
     return None
 

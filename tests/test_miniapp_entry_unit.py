@@ -35,6 +35,7 @@ def test_compact_home_requires_configured_intake_and_preserves_admin(
 def test_launch_is_authenticated_inline_and_retains_draft_controls(monkeypatch, lang):
     from app.bot.ui import miniapp_launch
     from app.core.i18n import tr
+    from tests.test_bounded_fixes import button_by_prefix
 
     monkeypatch.setattr(config(), "miniapp_url", "https://mini.example.com/miniapp")
     keyboard = miniapp_launch(lang, [("Resume", "draft:resume")])
@@ -43,6 +44,7 @@ def test_launch_is_authenticated_inline_and_retains_draft_controls(monkeypatch, 
     assert launch.callback_data is None and launch.url is None
     assert launch.text == tr("miniapp_open", lang)
     assert resume.callback_data == "draft:resume"
+    assert button_by_prefix(keyboard, "draft:resume") == "draft:resume"
 
 
 def test_default_has_no_webapp_button(monkeypatch):
