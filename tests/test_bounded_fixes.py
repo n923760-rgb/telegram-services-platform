@@ -287,7 +287,7 @@ async def test_intake_telegram_download_failure_is_retryable(monkeypatch, tmp_pa
 
 
 async def test_intake_storage_failure_is_retryable(monkeypatch, tmp_path):
-    from app.files import telegram
+    from app.files import telegram, uploads
 
     monkeypatch.setattr(config(), "storage_root", tmp_path)
 
@@ -303,11 +303,11 @@ async def test_intake_storage_failure_is_retryable(monkeypatch, tmp_path):
         def save(self, *args, **kwargs):
             raise OSError("disk full")
 
-    monkeypatch.setattr(telegram, "validate_file", lambda content, mime, max_bytes: content)
+    monkeypatch.setattr(uploads, "validate_file", lambda content, mime, max_bytes: content)
     monkeypatch.setattr(telegram, "storage", lambda: BrokenStorage())
     message = SimpleNamespace(
         bot=FakeBot(),
-        document=SimpleNamespace(file_id="file", file_size=4, mime_type="text/plain"),
+        document=SimpleNamespace(file_id="file", file_size=4, mime_type="application/pdf"),
     )
     with pytest.raises(ServiceError, match="input_retry"):
         await telegram.receive(message, "file", 1)
