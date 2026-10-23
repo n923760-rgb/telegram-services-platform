@@ -1,3 +1,16 @@
+## Mini App return to result chat — 2026-10-23
+
+- OWNER: Completed-order chat button appears unresponsive on Telegram mobile.
+- FACT: The shared chat action opened a validated bot link without closing the
+  Mini App; modern Telegram clients no longer close it automatically.
+- CHANGE: Open the validated bot chat first, then explicitly close the Mini App.
+  Missing/unsupported link APIs retain the return-to-launching-chat fallback.
+  Shared result-review and orders actions use the same behavior.
+- GATE: Synthetic browser checks cover open-before-close, throwing/missing link
+  API, untrusted URLs and unchanged service-entry handoff. Actual mobile behavior
+  requires operator confirmation after API-only deployment. No provider, payment,
+  service version, migration or bot/worker configuration change.
+
 ## Automatic document intake and service execution review — 2026-10-23
 
 - OWNER: Review all services and make AI use depend on the task; remove customer

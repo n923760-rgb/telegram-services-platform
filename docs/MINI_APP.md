@@ -415,3 +415,12 @@ from validated MINIAPP_URL and fails on missing URL or rejected Telegram respons
 It sends no customer messages and runs only when the operator invokes it after
 HTTPS reachability checks. Clearing MINIAPP_URL does not reset a previously
 registered remote menu; reset that via BotFather when rolling back.
+
+## Returning to bot chat
+
+The result and orders chat actions open the validated same-bot Telegram link and
+explicitly close the Mini App, since modern Telegram clients keep it open after
+`openTelegramLink`. If that API is missing or throws, the action closes back to
+the launching chat. This navigation does not resend files, regenerate results,
+or change an order. Verify the transition in Telegram on mobile after rollout;
+synthetic browser checks cannot certify the native client transition.

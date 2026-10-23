@@ -771,14 +771,21 @@
       : ["unknown", "orderUnknown"];
   }
   function openBotChat() {
-    if (
-      tg &&
-      typeof tg.openTelegramLink === "function" &&
-      typeof data.bot_url === "string" &&
-      /^https:\/\/t\.me\/[A-Za-z][A-Za-z0-9_]{1,28}bot$/i.test(data.bot_url)
-    )
-      tg.openTelegramLink(data.bot_url);
-    else closeToBot();
+    try {
+      if (
+        tg &&
+        typeof tg.openTelegramLink === "function" &&
+        data &&
+        typeof data.bot_url === "string" &&
+        /^https:\/\/t\.me\/[A-Za-z][A-Za-z0-9_]{1,28}bot$/i.test(data.bot_url)
+      )
+        tg.openTelegramLink(data.bot_url);
+    } catch {
+      // Returning to the launching chat still works if link opening is unsupported.
+    } finally {
+      // Modern Telegram clients keep the Mini App open after openTelegramLink.
+      closeToBot();
+    }
   }
   function orderCard(order) {
     const state = orderState(order);
