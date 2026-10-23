@@ -8,6 +8,7 @@ from sqlalchemy import text
 from app.core.db import engine, sessions
 from app.core.settings import config
 from app.miniapp.api import router as miniapp_router
+from app.miniapp.confirmation import router as miniapp_confirmation_router
 from app.miniapp.drafts import router as miniapp_drafts_router
 from app.providers.telegram import create_bot
 
@@ -34,6 +35,7 @@ async def lifespan(app):
 
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.include_router(miniapp_router)
+app.include_router(miniapp_confirmation_router)
 app.include_router(miniapp_drafts_router)
 
 

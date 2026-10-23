@@ -1,3 +1,23 @@
+## Explicit Mini App test-credit confirmation — 2026-10-23
+
+- OWNER AUTHORITY: Continue the organized Mini App service journey and retain the
+  bot for chat delivery/support; merge reviewed ready changes.
+- CHANGE: Default-disabled MINIAPP_CONFIRM_ENABLED extends shared intake with
+  complete review, current test-credit price, explicit consent and a receipt linked
+  to Orders. Stars retains existing bot confirmation/invoice/receipt.
+- INVARIANTS: Owner-bound short-lived revision proof, shared FSM lock/rate/deadline,
+  server-side current admission and existing orders.engine.submit. Durable order
+  replay recovers ambiguous commits/cleanup without duplicate reserve or deleting
+  a newer draft/support session. No provider/Telegram/payment API call from HTTP,
+  migration, dependency, wallet-policy or production configuration change.
+- LOCAL EVIDENCE: 141 focused unit cases; synthetic consent/ambiguous-success
+  receipt, catalog and legacy intake journeys pass AR/EN, accessibility and
+  responsive light/dark checks; three architecture gates and global lint/format.
+  Hosted PostgreSQL/Redis financial and bot/API race tests required before merge.
+- NOT RUN: VPS rollout, real Telegram/mobile consent/file delivery and live
+  provider/output qualification. Output-quality P0 and commercial Stars acceptance
+  remain open.
+
 ## Shared Mini App request drafts and uploads — 2026-10-23
 
 - FACT: Main 31c592e and no open PRs verified at start; owner asks to continue

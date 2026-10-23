@@ -717,6 +717,35 @@ h3 {
 .intake-card .fine-print {
   margin-top: 20px;
 }
+.confirmation-amount {
+  font-weight: 700;
+  margin: 18px 0;
+}
+.confirmation-consent {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 18px 0;
+  cursor: pointer;
+}
+.confirmation-consent input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+.receipt-reference {
+  display: block;
+  font:
+    700 24px ui-monospace,
+    monospace;
+  margin: 12px 0;
+}
+.intake-card > .primary {
+  margin-top: 18px;
+}
 .skeleton .category-card {
   height: 190px;
   background: var(--soft);

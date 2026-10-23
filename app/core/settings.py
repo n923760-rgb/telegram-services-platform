@@ -21,6 +21,7 @@ class Config(BaseSettings):
     miniapp_url: str = ""
     miniapp_bot_username: str = ""
     miniapp_intake_enabled: bool = False
+    miniapp_confirm_enabled: bool = False
     telegram_webhook_secret: SecretStr = SecretStr("")
     stars_enabled: bool = False
     stars_terms_version: str = ""

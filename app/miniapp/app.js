@@ -23,6 +23,10 @@
           render();
           focus("service-start");
         },
+        orders: function () {
+          chooseTab("orders");
+          boot();
+        },
       })
     : null;
 
@@ -116,6 +120,9 @@
       startInside: "ابدأ الطلب",
       insideHint: "أدخل بياناتك وارفع ملفاتك هنا، ثم أكّد الطلب في البوت.",
       step1AppHint: "استكمل البيانات أو ارفع الملف داخل التطبيق.",
+      insideConfirmHint:
+        "أدخل بياناتك وارفع ملفاتك، ثم راجع السعر وأكّد الطلب هنا.",
+      step2AppHint: "راجع البيانات والسعر ثم أكّد حجز الرصيد التجريبي.",
       handoff: "ستنتقل إلى محادثة البوت لاستكمال هذا الطلب.",
       fallback: "افتح الخدمات في محادثة البوت واختر هذه الخدمة للمتابعة.",
       close: "العودة إلى البوت",
@@ -201,6 +208,10 @@
       insideHint:
         "Enter your details and upload files here, then confirm in bot chat.",
       step1AppHint: "Enter the details or upload your file in the app.",
+      insideConfirmHint:
+        "Enter your details and upload files, then review the price and confirm here.",
+      step2AppHint:
+        "Review the details and price, then confirm the test-credit reservation.",
       handoff: "Continue this request in the bot conversation.",
       fallback:
         "Open Services in bot chat and select this service to continue.",
@@ -604,7 +615,9 @@
           t(
             index === 1 && data.intake_enabled
               ? "step1AppHint"
-              : "step" + index + "Hint",
+              : index === 2 && data.intake_enabled && data.confirmation_enabled
+                ? "step2AppHint"
+                : "step" + index + "Hint",
           ),
         ),
       );
@@ -631,7 +644,14 @@
       });
       start.id = "service-start";
       start.prepend(icon("chat"));
-      action.append(start, element("p", "action-hint", t("insideHint")));
+      action.append(
+        start,
+        element(
+          "p",
+          "action-hint",
+          t(data.confirmation_enabled ? "insideConfirmHint" : "insideHint"),
+        ),
+      );
     } else if (valid && tg && typeof tg.openTelegramLink === "function") {
       const request = button(t("startRequest"), "primary", function () {
         tg.openTelegramLink(url);

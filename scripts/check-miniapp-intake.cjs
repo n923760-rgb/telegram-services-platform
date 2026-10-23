@@ -70,6 +70,9 @@ async function main() {
       count = 0,
       failAfterSave = true,
       reject = false;
+    const nativeConfirm = process.env.MINIAPP_TEST_CONFIRM === "1";
+    let registered = false,
+      confirmationCalls = 0;
     const seen = new Map(),
       requests = [];
     const service = {
@@ -85,6 +88,7 @@ async function main() {
     const overview = {
       language: "ar",
       intake_enabled: true,
+      confirmation_enabled: nativeConfirm,
       payment_mode: "test_credit",
       services: [service],
       orders: [],
@@ -126,6 +130,10 @@ async function main() {
         name_en: service.name_en,
         revision: String(stage * 10 + count + 1).padStart(64, "0"),
         ready: stage === 3,
+        confirmation:
+          stage === 3 && nativeConfirm
+            ? { token: "synthetic-review", amount_sar: "3.00" }
+            : null,
         editing: false,
         field: stage === 3 ? null : field,
         review:
@@ -148,6 +156,39 @@ async function main() {
           body: JSON.stringify(data),
         });
       if (url.pathname === "/miniapp/api/overview") return json(overview);
+      if (url.pathname === "/miniapp/api/confirm") {
+        const payload = route.request().postDataJSON();
+        assert.deepEqual(payload, {
+          init_data: "synthetic",
+          token: "synthetic-review",
+          accepted: true,
+        });
+        confirmationCalls++;
+        if (!registered) {
+          registered = true;
+          overview.orders = [
+            {
+              reference: "demo0002",
+              name_ar: service.name_ar,
+              name_en: service.name_en,
+              status_ar: "في الانتظار",
+              status_en: "Queued",
+              created_at: "2026-10-23T01:00:00Z",
+            },
+          ];
+          return json({}, 503);
+        }
+        return json({
+          receipt: {
+            reference: "demo0002",
+            status: "queued",
+            status_ar: "في الانتظار",
+            status_en: "Queued",
+            price_sar: "3.00",
+            payment_mode: "test_credit",
+          },
+        });
+      }
       if (url.pathname.startsWith("/miniapp/api/draft")) {
         if (reject) return json({ detail: "not_allowed" }, 403);
         const upload = url.pathname.endsWith("/upload");
@@ -254,6 +295,70 @@ async function main() {
     await page
       .getByRole("button", { name: "Done adding files", exact: true })
       .click();
+    if (nativeConfirm) {
+      await page.locator("#confirm-request").waitFor();
+      assert.equal(confirmationCalls, 0, "opening a review must not submit");
+      assert.equal(await page.locator("#confirm-request").isDisabled(), true);
+      await page.locator("#confirm-consent").check();
+      await review("confirmation-consent");
+      await page.locator("#lang").click();
+      assert.equal(await page.locator("#confirm-consent").isChecked(), true);
+      await page.locator("#lang").click();
+      await page.locator("#confirm-request").click();
+      await page
+        .getByRole("button", { name: "Try again", exact: true })
+        .waitFor();
+      assert.equal(await page.locator("#confirm-request").isDisabled(), true);
+      assert.equal(await page.locator(".intake-edit").count(), 0);
+      assert.equal(
+        (await page.locator(".fine-print").innerText()).includes(
+          "have not started",
+        ),
+        false,
+        "uncertain confirmation cannot claim no reservation",
+      );
+      await page
+        .getByRole("button", { name: "Try again", exact: true })
+        .click();
+      await page
+        .getByRole("heading", {
+          name: "Your request is registered",
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(confirmationCalls, 2);
+      assert.equal(
+        await page.locator(".receipt-reference").innerText(),
+        "demo0002",
+      );
+      assert.equal(await page.locator("#confirm-request").count(), 0);
+      assert.deepEqual(await page.evaluate(() => window.testLinks), []);
+      for (const scheme of ["light", "dark"]) {
+        await page.emulateMedia({ colorScheme: scheme });
+        await review("confirmation-receipt-" + scheme);
+        for (const width of [320, 390, 768]) {
+          await page.setViewportSize({ width, height: 844 });
+          assert.equal(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+            true,
+          );
+        }
+      }
+      await page
+        .getByRole("button", { name: "Follow my orders", exact: true })
+        .click();
+      await page
+        .locator(".order-reference")
+        .getByText("demo0002", { exact: true })
+        .waitFor();
+      assert.deepEqual(errors, []);
+      console.log(
+        "PASS: synthetic explicit test-credit consent, no purchase on review, exact confirmation payload, ambiguous-success retry, receipt/Orders, AR/EN preservation and light/dark responsive receipt.",
+      );
+      return;
+    }
     await page
       .getByRole("button", { name: "Review and confirm in bot", exact: true })
       .click();
