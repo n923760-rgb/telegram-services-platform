@@ -71,13 +71,12 @@ async def test_paused_direct_pdf_journey_still_submits_without_provider(flow, mo
         db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
     await message("/start")
     await callback("service:text_to_pdf")
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
-    await message("Literal 00123")
-    await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
+    await message("Keep text unchanged\nLiteral 00123")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     async with sessions() as db:
         order = await db.scalar(select(Order))
-        assert order.status == "queued" and order.inputs["mode"] == "direct"
+        assert order.status == "queued" and "mode" not in order.inputs
+        assert not registry.types["text_to_pdf"].needs_ai(order.inputs)
         assert await db.scalar(select(func.count(CostHold.id))) == 0
         assert (await balance(db, 1)).reserved == order.price_halala
 

@@ -111,13 +111,15 @@ async def test_excel_still_requires_provider(tmp_path, monkeypatch):
         await submit(1, "text_to_office", {"text": "بيانات", "target": "excel"}, price, "excel")
 
 
-@pytest.mark.parametrize("mode", [None, "automatic"])
-async def test_word_mode_required_before_any_order_or_reservation(tmp_path, monkeypatch, mode):
+@pytest.mark.parametrize("mode,error", [(None, "provider_config"), ("automatic", "input_invalid")])
+async def test_word_automatic_admission_and_invalid_mode_never_reserve(
+    tmp_path, monkeypatch, mode, error
+):
     price = await prepare(tmp_path, monkeypatch, "text_to_office")
     inputs = {"target": "word", "text": "Content"}
     if mode is not None:
         inputs["mode"] = mode
-    with pytest.raises(ServiceError, match="input_invalid"):
+    with pytest.raises(ServiceError, match=error):
         await submit(1, "text_to_office", inputs, price, "missing-mode")
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0
