@@ -327,7 +327,7 @@ def build(
             if paragraph.style.name == "Heading 1":
                 paragraph.paragraph_format.keep_with_next = True
     if data.design is not None:
-        _design(doc, data.design)
+        _design(doc, data.design, layout=data.layout)
         if data.layout == "resume":
             _resume_design(doc, data.design)
     else:
@@ -386,11 +386,13 @@ def _resume_design(doc, design):
                 run.font.color.rgb = muted
 
 
-def _design(doc, design):
+def _design(doc, design, *, layout="standard"):
     """Generic source-owned typography; all content remains editable body paragraphs."""
     compact = design.density == "compact"
     sizes = {"modern": (28, 12), "classic": (24, 12), "editorial": (26, 11)}
     title_size, heading_size = sizes[design.theme]
+    if layout == "standard":
+        title_size = min(title_size, 24)
     normal = doc.styles["Normal"]
     normal.font.size = Pt(11)
     normal.paragraph_format.space_after = Pt(3 if compact else 5)
@@ -439,9 +441,19 @@ def _design(doc, design):
         if design.theme == "modern" and in_header:
             paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
         if name in {"Title", "Heading 1", "Heading 2", "Subtitle"}:
+            size = doc.styles[name].font.size
+            if name == "Title" and layout == "standard" and len(paragraph.text.strip()) > 30:
+                size = Pt(20)
             for run in paragraph.runs:
                 # Also replace direct formatting from the non-template authoring path.
-                run.font.size = doc.styles[name].font.size
+                run.font.size = size
+                if name == "Title" and layout == "standard":
+                    properties = run._r.get_or_add_rPr()
+                    cs_size = properties.find(qn("w:szCs"))
+                    if cs_size is None:
+                        cs_size = OxmlElement("w:szCs")
+                        properties.append(cs_size)
+                    cs_size.set(qn("w:val"), str(int(size.pt * 2)))
                 run.font.color.rgb = DARK
             if design.theme == "modern" and name in {"Title", "Subtitle"}:
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
