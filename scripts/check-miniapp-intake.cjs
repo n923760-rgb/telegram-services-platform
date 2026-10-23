@@ -241,7 +241,13 @@ async function main() {
           ? "index.html"
           : url.pathname.split("/").pop();
       assert.ok(
-        ["index.html", "app.js", "styles.css", "intake.js"].includes(asset),
+        [
+          "index.html",
+          "app.js",
+          "styles.css",
+          "intake.js",
+          "result-review.js",
+        ].includes(asset),
       );
       return route.fulfill({
         contentType: asset.endsWith(".js")

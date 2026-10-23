@@ -1,5 +1,51 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Read-only result review — 2026-10-23
+
+With the existing `MINIAPP_INTAKE_ENABLED=true`, a waiting-confirmation order
+offers View result review. The owner can read the complete existing AR/EN review
+and, where available, the stored PNG first-page preview. The image is explicitly
+labeled as the first page, not a complete visual inspection of every output page.
+Text-only structural reviews work too. Approve/cancel remains in the existing bot
+flow, reached through a plain same-bot chat link. Opening this view never decides,
+restarts, pays, releases or delivers an order.
+
+POST `/miniapp/api/result-review` accepts only signed fresh raw `init_data` and
+the order UUID supplied in its owner's overview. Same-origin checks, bounded JSON
+(10 KiB), shared rate bucket/FSM lock and deadlines reuse intake guards; no FSM
+data is read or changed. Server-side registration/ban, order ownership, current
+waiting phase and valid confirmation Result are required. A second database read
+rejects a review changed during storage access or an account banned meanwhile.
+
+The endpoint returns only reference, service names, localized review text and an
+optional inline PNG. It never returns storage keys, original artifacts, continuation
+instructions, provider cost metadata or delivery payloads. Review text uses the
+existing `result_preview` contract without truncating its bounded full details
+(up to 50,000 characters per language). PNG bytes use owner-scoped storage and
+content validation: one frame, at most 3 MiB, 2048x3072 dimensions and four million
+pixels. Missing, expired, wrong-owner, malformed or oversized images produce an
+explicit unavailable-image hint while keeping the text review and bot route.
+No preview generation, provider call, notification or original-file download occurs.
+
+Responses are no-store; the browser renders plain text and validated PNG data
+URLs only, with no external image requests or persistent browser storage. Language
+switching preserves the loaded review without refetching. Back/tab navigation
+aborts requests and clears review content; response generations prevent late
+results replacing a newer view. Authentication rejection clears the whole private
+overview and preview. Changed phases clear the preview and direct the customer
+to refresh My orders. Late overview responses cannot restore data after review
+authentication is rejected. Native Back and focus return preserve the selected filter.
+
+Qualification: `MINIAPP_AXE=1 node scripts/check-miniapp-result.cjs`, alongside
+catalog, tracking and confirmation browser checks. Synthetic journeys cover full
+text/image, safe image fallback, first-page scope, AR/EN responsive themes,
+accessibility, focus/back/filter, aborted/late responses, retry and auth privacy.
+Hosted DB/Redis tests repeat reads of structural/visual reviews and verify one
+unchanged reservation, job/result/notification state, retained original files and
+an independent bot support session. Real Telegram/mobile and provider output
+acceptance remain separate. Rollout rebuilds API only with existing flags; no
+new environment option, migration, dependency or financial-policy change.
+
 ## Order tracking and next actions — 2026-10-23
 
 My orders separates All / In progress / Finished, keeps the chosen filter when
