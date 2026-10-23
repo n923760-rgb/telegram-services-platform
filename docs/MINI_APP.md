@@ -1,5 +1,42 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Customer navigation and channel roles — 2026-10-23
+
+The Mini App is the browsing and tracking surface. Bot chat continues to collect
+schema-driven inputs/files, show the authoritative review and current price,
+confirm purchases, deliver results and provide support. Opening a service never
+creates an order or reserves credit. Native Mini App intake/uploads remain Stage 2.
+
+The Services home shows search and four outcome-oriented groups, generated from
+registered category metadata: Documents & PDF (documents/pdf), Writing &
+translation (text), Images & scanning (images), and Work & data
+(professional/data). Empty groups disappear; unknown future categories fall back
+to More services. All services remains available without hard-coded service lists.
+Service detail shows the description, price/payment label, accurate availability,
+one continuation action, and the three steps completed in bot chat.
+
+Bottom navigation is Services / My orders / Account. Search supports Arabic
+normalization and both service-name languages. Returning from detail restores the
+query, group, list scroll and service focus; AR/EN switching preserves selection.
+Orders show the latest server-provided history with manual refresh. Account
+distinguishes administrator-issued test credit from Stars checkout. Failed
+authentication or a banned-account response clears previously displayed private
+data; transient server failure preserves the last successful view for retry.
+
+No new backend endpoint, migration, payment path, production dependency or
+provider-setting change is introduced. Existing authenticated Telegram launch and
+server-validated service-to-chat links remain authoritative.
+
+Developer browser check: with Playwright available in the development environment
+and its Chromium installed, run `node scripts/check-miniapp-ui.cjs`.
+`MINIAPP_CHROMIUM_PATH` and JSON `MINIAPP_CHROMIUM_ARGS` optionally select an
+existing local browser; `MINIAPP_SCREENSHOT_DIR` captures review images. The check
+uses synthetic Telegram/overview responses and current registered catalog metadata,
+never a production account or database. It covers grouping/search, focus/back,
+language, links, availability, refresh/privacy, empty/Stars/untrusted data and
+320/390/768px layouts in both themes. Actual Telegram iOS/Android, assistive
+technology, checkout and delivered-file acceptance remain separate checks.
+
 ## Product contract and current slice
 
 The Mini App is a **new customer interface**, not a replacement backend, service
