@@ -1,3 +1,24 @@
+## Compact bot home with Mini App intake — 2026-10-24
+
+- OWNER: Continue service quality work and simplify the bot now that services live
+  in the Mini App. Main ee6bd4a verified before this bounded navigation round.
+- FACT: Owner's new Arabic PDF Word result has one title, exact editable table
+  values and complete notes. A separate generated Word report preserves supplied
+  facts but has an oversized title and a redundant table caption; those rendering
+  improvements remain a separate round, not bundled into navigation.
+- CHANGE: When both Mini App URL and intake are enabled, the home keyboard and
+  inline menus show Services, My orders, Support and Help. Services and /start
+  offer an authenticated inline Web App launch; no simple reply-keyboard launch.
+  Welcome/help explain app ordering and chat delivery, with payment-mode copy.
+- COMPATIBILITY: Missing URL or disabled intake retains the complete bot catalog
+  and six-item home. Historic callbacks, language/balance commands, admin entry,
+  support, saved drafts and bot fulfillment/decisions remain supported. No order,
+  payment, provider admission, budget, service contract or database changes.
+- GATE: AR/EN UI unit checks and real dispatcher tests for launch, drafts and
+  payment copy; hosted full/native CI required before merge. Bot-only rollout;
+  existing customers receive the new reply keyboard after /start or /menu.
+  Actual inline launch on Telegram mobile requires operator confirmation.
+
 ## PDF Word opening-title presentation — 2026-10-23
 
 - FACT: Main 0d54649 verified. Owner deployed v7 and resumed provider admission.

@@ -52,6 +52,50 @@ async def test_home_has_persistent_two_column_keyboard(flow, lang):
     ]
 
 
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("via_callback", [False, True])
+async def test_miniapp_services_entry_preserves_bot_draft(flow, monkeypatch, lang, via_callback):
+    transport, message, callback, state = flow
+    await set_language(1, lang)
+    await message("/start")
+    await callback("service:echo")
+    saved = await state.get_data()
+    monkeypatch.setattr(config(), "miniapp_url", "https://mini.example.com/miniapp")
+    monkeypatch.setattr(config(), "miniapp_intake_enabled", True)
+    if via_callback:
+        await callback("menu:services")
+    else:
+        await message("/services")
+    reply = transport.sent_methods[-1]
+    assert reply.text == tr("miniapp_services_entry", lang)
+    assert reply.reply_markup.inline_keyboard[0][0].web_app.url == config().miniapp_url
+    assert button_by_prefix(reply.reply_markup, "draft:resume")
+    assert await state.get_data() == saved
+    assert await state.get_state() == "collect"
+    await callback("draft:resume")
+    await message("Saved customer content")
+    assert (await state.get_data())["inputs"] == {"text": "Saved customer content"}
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("stars", [False, True])
+async def test_miniapp_start_and_help_use_current_payment_mode(flow, monkeypatch, lang, stars):
+    transport, message, _, _ = flow
+    await set_language(1, lang)
+    monkeypatch.setattr(config(), "miniapp_url", "https://mini.example.com/miniapp")
+    monkeypatch.setattr(config(), "miniapp_intake_enabled", True)
+    monkeypatch.setattr(config(), "stars_enabled", stars)
+    await message("/start")
+    welcome, entry = transport.sent_methods[-2:]
+    assert welcome.text == tr("miniapp_stars_welcome" if stars else "miniapp_welcome", lang)
+    assert [len(row) for row in welcome.reply_markup.keyboard] == [2, 2]
+    assert entry.reply_markup.inline_keyboard[0][0].web_app.url == config().miniapp_url
+    await message("/help")
+    assert transport.sent_methods[-1].text == tr(
+        "miniapp_stars_help" if stars else "miniapp_help", lang
+    )
+
+
 @pytest.mark.parametrize("target", ["services", "orders", "balance", "help", "language"])
 @pytest.mark.parametrize("via_callback", [False, True])
 async def test_navigation_preserves_draft_and_does_not_become_customer_text(

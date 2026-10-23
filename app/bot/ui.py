@@ -7,12 +7,37 @@ from aiogram.types import (
     KeyboardButton,
     Message,
     ReplyKeyboardMarkup,
+    WebAppInfo,
 )
 
 from app.core.i18n import tr
 from app.core.settings import config
 
 HOME_ITEMS = ("services", "orders", "balance", "support", "language", "help")
+APP_HOME_ITEMS = ("services", "orders", "support", "help")
+
+
+def miniapp_services_enabled():
+    cfg = config()
+    return bool(cfg.miniapp_url and getattr(cfg, "miniapp_intake_enabled", False))
+
+
+def home_items():
+    return APP_HOME_ITEMS if miniapp_services_enabled() else HOME_ITEMS
+
+
+def miniapp_launch(lang="ar", items=()):
+    """Inline launches provide signed user data; reply-keyboard launches do not."""
+    markup = buttons(items)
+    markup.inline_keyboard.insert(
+        0,
+        [
+            InlineKeyboardButton(
+                text=tr("miniapp_open", lang), web_app=WebAppInfo(url=config().miniapp_url)
+            )
+        ],
+    )
+    return markup
 
 
 class MenuButton(Filter):
@@ -49,7 +74,7 @@ def buttons(items, columns=1, *, separate_last=False):
 
 
 def menu(lang="ar"):
-    return buttons([(menu_label(key, lang), f"menu:{key}") for key in HOME_ITEMS], columns=2)
+    return buttons([(menu_label(key, lang), f"menu:{key}") for key in home_items()], columns=2)
 
 
 def menu_label(key, lang):
@@ -57,9 +82,10 @@ def menu_label(key, lang):
 
 
 def home_keyboard(lang="ar", *, admin=False):
+    items = home_items()
     rows = [
-        [KeyboardButton(text=menu_label(key, lang)) for key in HOME_ITEMS[i : i + 2]]
-        for i in range(0, len(HOME_ITEMS), 2)
+        [KeyboardButton(text=menu_label(key, lang)) for key in items[i : i + 2]]
+        for i in range(0, len(items), 2)
     ]
     if admin:
         rows.append([KeyboardButton(text=tr("admin_panel", lang))])

@@ -99,7 +99,12 @@ async def intake(monkeypatch, tmp_path):
         headers={"Origin": "https://test", "Sec-Fetch-Site": "same-origin"},
     ) as client:
         yield SimpleNamespace(
-            client=client, rows=rows, users=users, states=states, accepted=accepted
+            client=client,
+            rows=rows,
+            users=users,
+            states=states,
+            accepted=accepted,
+            init_data={user: auth(user) for user in users},
         )
     await store.close()
 
@@ -110,7 +115,12 @@ def auth(user=11):
 
 async def call(intake, action="view", *, user=11, **values):
     return await intake.client.post(
-        "/miniapp/api/draft", json={"init_data": auth(user), "action": action, **values}
+        "/miniapp/api/draft",
+        json={
+            "init_data": intake.init_data.setdefault(user, auth(user)),
+            "action": action,
+            **values,
+        },
     )
 
 
@@ -131,7 +141,7 @@ async def uploaded(intake, view, content=None, *, user=11, metadata=None):
         content=image() if content is None else content,
         headers={
             "Content-Type": "image/png",
-            "X-Telegram-Init-Data": auth(user),
+            "X-Telegram-Init-Data": intake.init_data.setdefault(user, auth(user)),
             "X-Draft-Revision": metadata["revision"],
             "X-Draft-Operation": metadata["operation"],
         },

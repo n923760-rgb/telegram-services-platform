@@ -7,6 +7,46 @@ from app.bot.ui import home_keyboard
 from app.core.settings import Config, config
 
 
+@pytest.mark.parametrize("lang", ["ar", "en"])
+@pytest.mark.parametrize("intake", [False, True])
+@pytest.mark.parametrize("url", ["", "https://mini.example.com/miniapp"])
+def test_compact_home_requires_configured_intake_and_preserves_admin(
+    monkeypatch, lang, intake, url
+):
+    from app.bot.ui import APP_HOME_ITEMS, HOME_ITEMS, menu
+    from app.core.i18n import tr
+
+    monkeypatch.setattr(config(), "miniapp_url", url)
+    monkeypatch.setattr(config(), "miniapp_intake_enabled", intake)
+    monkeypatch.setattr(config(), "stars_enabled", False)
+    expected = APP_HOME_ITEMS if url and intake else HOME_ITEMS
+    keyboard = home_keyboard(lang, admin=True)
+    assert [b.text for row in keyboard.keyboard[:-1] for b in row] == [
+        tr(k, lang) for k in expected
+    ]
+    assert keyboard.keyboard[-1][0].text == tr("admin_panel", lang)
+    assert all(b.web_app is None for row in keyboard.keyboard for b in row)
+    assert [b.callback_data for row in menu(lang).inline_keyboard for b in row] == [
+        f"menu:{k}" for k in expected
+    ]
+
+
+@pytest.mark.parametrize("lang", ["ar", "en"])
+def test_launch_is_authenticated_inline_and_retains_draft_controls(monkeypatch, lang):
+    from app.bot.ui import miniapp_launch
+    from app.core.i18n import tr
+    from tests.test_bounded_fixes import button_by_prefix
+
+    monkeypatch.setattr(config(), "miniapp_url", "https://mini.example.com/miniapp")
+    keyboard = miniapp_launch(lang, [("Resume", "draft:resume")])
+    launch, resume = (row[0] for row in keyboard.inline_keyboard)
+    assert launch.web_app.url == config().miniapp_url
+    assert launch.callback_data is None and launch.url is None
+    assert launch.text == tr("miniapp_open", lang)
+    assert resume.callback_data == "draft:resume"
+    assert button_by_prefix(keyboard, "draft:resume") == "draft:resume"
+
+
 def test_default_has_no_webapp_button(monkeypatch):
     monkeypatch.setattr(config(), "miniapp_url", "")
     keyboard = home_keyboard("ar")
