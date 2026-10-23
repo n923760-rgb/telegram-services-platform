@@ -1,8 +1,12 @@
+import logging
+
 from pydantic import ValidationError
 
 from app.ops.costs import pause_provider, reserve_call, settle_call, uncertain_call
-from app.providers.ai.validation import REPAIR_INSTRUCTION, repair_input
+from app.providers.ai.validation import REPAIR_INSTRUCTION, repair_input, validation_categories
 from app.services.base import ServiceError
+
+logger = logging.getLogger(__name__)
 
 
 class AI:
@@ -54,9 +58,13 @@ class AI:
                 REVIEW,
                 images,
                 attempts=2 if not attempt else 1,
+                phase="review",
             )
             if verdict.accepted:
                 return candidate
+            logger.warning(
+                "ai_quality_rejected job=%s issues=%s", self.job_id, ",".join(verdict.issues)
+            )
             if not attempt:
                 source = review_input(input, candidate, task)
                 instruction = (
@@ -80,9 +88,13 @@ class AI:
                 REVIEW,
                 images,
                 attempts=2 if not attempt else 1,
+                phase="review",
             )
             if verdict.accepted:
                 return candidate
+            logger.warning(
+                "ai_quality_rejected job=%s issues=%s", self.job_id, ",".join(verdict.issues)
+            )
             if attempt:
                 break
             candidate = await self._extract(
@@ -107,6 +119,7 @@ class AI:
         *,
         attempts=2,
         failure_context=None,
+        phase="generation",
     ):
         images = images or []
         if self.job_id is None or self.user_id is None:
@@ -176,8 +189,21 @@ class AI:
                     raise ServiceError("provider_invalid")
                 continue
             try:
-                return schema.model_validate_json(response.content)
+                candidate = schema.model_validate_json(response.content)
+                # A validated declaration of missing source information is not a
+                # deliverable. Stop with the actionable input error, not a quality
+                # rejection/repair loop that manufactures absent source facts.
+                if getattr(candidate, "missing_information", False) is True:
+                    logger.warning("ai_source_incomplete job=%s", self.job_id)
+                    raise ServiceError("needs_information")
+                return candidate
             except (ValidationError, ValueError) as error:
+                logger.warning(
+                    "ai_schema_rejected job=%s phase=%s categories=%s",
+                    self.job_id,
+                    phase,
+                    ",".join(validation_categories(schema, error)),
+                )
                 if attempt < attempts - 1 or failure_context is not None:
                     request_input = repair_input(schema, input, response.content, error)
                     repairing = True

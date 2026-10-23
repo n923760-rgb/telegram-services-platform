@@ -19,12 +19,13 @@ def database():
     yield
 
 
-def test_mode_choice_discloses_ai_and_safe_skip_default():
+def test_automatic_improvement_hides_legacy_engine_choice():
     field = TextToWordPdf.input_schema.fields[1]
     assert field.name == "mode" and field.choices == ["direct", "smart"]
-    assert not field.required and field.skip_key == "word_pdf_direct"
-    assert not TextToWordPdf.needs_ai({"text": "Literal"})
-    TextToWordPdf.input_schema.validate_inputs(inputs())
+    assert not field.required and field.legacy_only
+    assert TextToWordPdf.needs_ai({"text": "Literal"})
+    assert "mode" not in [f.name for f in TextToWordPdf.input_schema.conversation()]
+    TextToWordPdf.input_schema.validate_inputs({"text": "Source", "output_format": "both"})
     assert TextToWordPdf.needs_ai(inputs())
 
 

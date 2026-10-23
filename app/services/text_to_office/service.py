@@ -14,7 +14,7 @@ from app.services.text_to_office.schema import Inputs, WordPlan
 
 
 class TextToOffice(BaseService):
-    version = "8"
+    version = "9"
     slug = "text_to_office"
     menu_order = 10
     category = "documents"
@@ -36,6 +36,8 @@ class TextToOffice(BaseService):
             ),
             InputField(
                 name="mode",
+                required=False,
+                legacy_only=True,
                 prompt_key="office_word_mode",
                 choices=["direct", "smart"],
                 choice_keys=["office_word_direct", "office_word_smart"],

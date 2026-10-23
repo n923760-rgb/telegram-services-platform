@@ -28,8 +28,8 @@ def test_word_requires_a_visible_mode_and_routes_it_without_changing_source(mode
     assert TextToOffice.needs_ai(inputs) is (mode == "smart")
 
 
-@pytest.mark.parametrize("mode", [None, "", "automatic", "DIRECT"])
-def test_new_word_orders_cannot_skip_or_forge_mode(mode):
+@pytest.mark.parametrize("mode", ["", "automatic", "DIRECT"])
+def test_legacy_modes_remain_strict(mode):
     inputs = {"target": "word", "text": "Source"}
     if mode is not None:
         inputs["mode"] = mode
@@ -49,11 +49,14 @@ def test_excel_skips_word_choices_but_still_needs_ai():
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
-def test_word_mode_is_required_localized_and_precedes_content(lang):
+def test_new_word_intake_hides_legacy_mode_and_routes_automatically(lang):
     fields = TextToOffice.input_schema.conversation()
-    assert [field.name for field in fields] == ["target", "mode", "text"]
-    assert fields[1].required and fields[1].when == {"target": ["word"]}
-    for key in (fields[1].prompt_key, *fields[1].choice_keys):
+    assert [field.name for field in fields] == ["target", "text"]
+    legacy = TextToOffice.input_schema.conversation(include_legacy=True)[1]
+    assert legacy.legacy_only and not legacy.required
+    TextToOffice.input_schema.validate_inputs({"target": "word", "text": "Short source"})
+    assert TextToOffice.needs_ai({"target": "word", "text": "Short source"})
+    for key in (legacy.prompt_key, *legacy.choice_keys):
         assert tr(key, lang) != key
     assert "Keep text unchanged" not in tr("office_text", lang)
     assert "بدون تعديل النص»" not in tr("office_text", lang)

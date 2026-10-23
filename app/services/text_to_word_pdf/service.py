@@ -11,7 +11,7 @@ from app.services.text_to_word_pdf.schema import Inputs, refined_document, revis
 
 
 class TextToWordPdf(BaseService):
-    version = "3"
+    version = "4"
     slug = "text_to_word_pdf"
     worker_requirements = ("office_export",)
     menu_order = 30
@@ -34,6 +34,7 @@ class TextToWordPdf(BaseService):
             ),
             InputField(
                 name="mode",
+                legacy_only=True,
                 prompt_key="word_pdf_mode",
                 required=False,
                 skip_key="word_pdf_direct",

@@ -65,7 +65,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "8" if slug == "text_to_office" else "5"
+    version = "9" if slug == "text_to_office" else "6"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -210,7 +210,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
         await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
-        assert row.version == "5" and row.enabled and row.price_halala == 700
+        assert row.version == "6" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
     )
@@ -251,7 +251,7 @@ async def test_pdf_v4_intake_upgrade_keeps_admin_settings_and_prepared_delivery(
         await registry.sync(db)
     async with sessions() as db:
         service = await db.get(Service, "text_to_pdf")
-        assert service.version == "5" and service.enabled
+        assert service.version == "6" and service.enabled
         assert service.price_halala == 777 and service.price_stars == 25
     monkeypatch.setattr(pdf, "build", no_provider)
     monkeypatch.setattr(delivery, "send", send)

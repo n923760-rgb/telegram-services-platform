@@ -89,7 +89,7 @@ def test_default_order_and_optional_title_are_explicit(lang):
     result = input_summary(
         TextToWordPdf.input_schema, {"output_format": "word", "text": "body"}, lang
     )
-    assert tr("word_pdf_direct", lang) in result
+    assert tr("word_pdf_direct", lang) not in result
     assert tr("word_pdf_title_review", lang) in result
     assert tr("review_not_specified", lang) in result
 

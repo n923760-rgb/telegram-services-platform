@@ -15,7 +15,14 @@ FILE = "1/" + "a" * 32 + "/source.pdf"
 
 
 @pytest.fixture(autouse=True)
-def database():
+def database(monkeypatch):
+    # These cases exercise saved pre-upgrade PDF choice contracts.
+    plugin = registry.types["text_to_pdf"]
+    schema = plugin.input_schema.model_copy(deep=True)
+    for field in schema.fields:
+        field.legacy_only = False
+    schema.fields[0].required = True
+    monkeypatch.setattr(plugin, "input_schema", schema)
     yield
 
 

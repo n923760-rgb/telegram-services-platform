@@ -50,7 +50,7 @@ async def test_actual_word_and_pdf_delivered_before_single_capture_no_ai_cost_an
     oid = await submit(
         1,
         "text_to_word_pdf",
-        {"output_format": output_format, "text": TEXT, "title": "تقرير الطلبات"},
+        {"output_format": output_format, "text": TEXT, "title": "تقرير الطلبات", "mode": "direct"},
         price,
         "word-pdf",
     )
@@ -114,7 +114,11 @@ async def test_word_pdf_failure_releases_credit_with_no_partial_delivery(
 
         monkeypatch.setattr(LibreOfficeDocuments, "word_pdf", fail)
     oid = await submit(
-        1, "text_to_word_pdf", {"output_format": "both", "text": TEXT}, price, "word-pdf-failure"
+        1,
+        "text_to_word_pdf",
+        {"output_format": "both", "text": TEXT, "mode": "direct"},
+        price,
+        "word-pdf-failure",
     )
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     await deliver_failures({"delivery": delivery})
@@ -137,7 +141,11 @@ async def test_word_pdf_delivery_retry_reuses_both_files_without_rerendering(
 
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     oid = await submit(
-        1, "text_to_word_pdf", {"output_format": "both", "text": TEXT}, price, "word-pdf-retry"
+        1,
+        "text_to_word_pdf",
+        {"output_format": "both", "text": TEXT, "mode": "direct"},
+        price,
+        "word-pdf-retry",
     )
     jid = await job_for(oid)
     original = delivery.send
@@ -173,7 +181,11 @@ async def test_word_pdf_busy_retry_keeps_credit_then_completes(tmp_path, monkeyp
 
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
     oid = await submit(
-        1, "text_to_word_pdf", {"output_format": "both", "text": TEXT}, price, "word-pdf-busy"
+        1,
+        "text_to_word_pdf",
+        {"output_format": "both", "text": TEXT, "mode": "direct"},
+        price,
+        "word-pdf-busy",
     )
     jid = await job_for(oid)
     original = LibreOfficeDocuments.word_pdf

@@ -322,12 +322,11 @@ async def test_committed_but_response_failed_can_retry_without_reapplying(intake
 
 
 async def test_mixed_ai_choice_is_only_hint_until_server_checks_it(intake, monkeypatch):
-    initial = await opened(intake, "text_to_word_pdf")
-    mode = (await call(intake, "answer", **operation(initial, value="both"))).json()["draft"]
+    mode = await opened(intake, "pdf_tables_excel")
     monkeypatch.setattr(config(), "ai_enabled", False)
     refreshed = (await call(intake)).json()["draft"]
-    assert any(c["value"] == "smart" and c["blocked"] for c in refreshed["field"]["choices"])
-    assert (await call(intake, "answer", **operation(mode, value="smart"))).status_code == 409
+    assert any(c["value"] == "labels" and c["blocked"] for c in refreshed["field"]["choices"])
+    assert (await call(intake, "answer", **operation(mode, value="labels"))).status_code == 409
     assert (await call(intake, "answer", **operation(refreshed, value="direct"))).status_code == 200
 
 

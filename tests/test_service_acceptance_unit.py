@@ -24,7 +24,12 @@ def test_exact_portfolio_and_modes_use_valid_synthetic_inputs():
         "en",
         "bilingual",
     }
-    assert {c.inputs["mode"] for c in values if c.slug == "text_to_pdf"} == {"direct", "smart"}
+    assert {c.inputs.get("mode", "smart") for c in values if c.slug == "text_to_pdf"} == {
+        "direct",
+        "smart",
+    }
+    automatic = {"word_smart", "text_pdf_smart", "word_pdf_smart"}
+    assert all("mode" not in c.inputs for c in values if c.name in automatic)
 
 
 def valid_cfg(tmp_path):

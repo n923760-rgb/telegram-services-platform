@@ -1,5 +1,16 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Automatic document intake — 2026-10-23
+
+New Word/Excel, PDF and paired Word/PDF requests no longer ask the customer to
+select a processing engine. Document improvement runs automatically, while
+output-format and optional document-title choices remain where supported.
+Native file operations stay provider-free. A complete first-line literal-export
+directive is honored; AI failure never silently selects a different result.
+Legacy saved draft schemas preserve their original fields/positions; internal
+legacy mode values remain strictly validated. See `SERVICE_REVIEW.md` for the
+full service routing matrix, observed provider failures and acceptance limits.
+
 ## Native test-credit result decisions — 2026-10-23
 
 With both existing intake/confirmation flags enabled and Stars disabled, an

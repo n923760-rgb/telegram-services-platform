@@ -182,6 +182,13 @@ async def test_mixed_choice_pause_recheck_preserves_draft_without_admission(
     await message("/start")
     await callback("service:" + slug)
     data = await state.get_data()
+    # Resume a real pre-upgrade choice schema rather than a new automatic intake.
+    if slug != "pdf_tables_excel":
+        schema = registry.types[slug].input_schema.model_copy(deep=True)
+        for field in schema.fields:
+            field.legacy_only = False
+        monkeypatch.setattr(registry.types[slug], "input_schema", schema)
+        data["schema"] = schema.model_dump()
     data.update(index=index, inputs=inputs, pending_prompt=False)
     await state.set_data(data)
     await callback("draft:resume")
@@ -231,6 +238,13 @@ async def test_mode_is_first_and_unavailable_choice_never_requests_source(
             db.add(Setting(key="PROVIDER_PAUSED", value={"value": True}))
     await message("/start")
     await callback("service:" + slug)
+    if slug == "text_to_pdf":
+        schema = registry.types[slug].input_schema.model_copy(deep=True)
+        for field in schema.fields:
+            field.legacy_only = False
+        monkeypatch.setattr(registry.types[slug], "input_schema", schema)
+        await state.update_data(schema=schema.model_dump())
+        await callback("draft:resume")
     saved = await state.get_data()
     fields = registry.types[slug].input_schema.conversation()
     assert saved["index"] == 0 and saved["inputs"] == {} and fields[0].name == "mode"

@@ -10,6 +10,7 @@ class InputField(BaseModel):
     kind: Literal["text", "image", "file", "audio", "form"] = "text"  # text/image/file/audio/form
     prompt_key: str
     required: bool = True
+    legacy_only: bool = False
     skip_key: str = "skip_field"
     single_line: bool = False
     preserve_image: bool = False
@@ -23,6 +24,8 @@ class InputField(BaseModel):
 
     @model_validator(mode="after")
     def valid(self):
+        if self.legacy_only and (self.required or self.kind == "form"):
+            raise ValueError("legacy-only fields must be optional leaf fields")
         if self.preserve_image and self.kind != "image":
             raise ValueError("image preservation requires an image field")
         if not re.fullmatch(r"[a-z][a-z0-9_]{0,40}", self.name):
@@ -41,11 +44,13 @@ class InputField(BaseModel):
 class InputSchema(BaseModel):
     fields: list[InputField]
 
-    def conversation(self):
+    def conversation(self, *, include_legacy=False):
         result = []
 
         def flatten(fields, prefix="", inherited_when=None, required=True):
             for field in fields:
+                if field.legacy_only and not include_legacy:
+                    continue
                 name = prefix + field.name
                 if field.kind == "form":
                     flatten(
@@ -70,13 +75,20 @@ class InputSchema(BaseModel):
 
     @model_validator(mode="after")
     def valid_schema(self):
-        fields = self.conversation()
+        fields = self.conversation(include_legacy=True)
         names = [field.name for field in fields]
         if not fields or len(names) != len(set(names)):
             raise ValueError("empty or duplicate fields")
         for index, field in enumerate(fields):
             if any(key not in names[:index] for key in field.when):
                 raise ValueError("conditions must reference preceding fields")
+        visible = set()
+        for field in self.conversation():
+            if set(field.when) - visible:
+                raise ValueError("visible fields cannot depend on legacy-only choices")
+            visible.add(field.name)
+        if not visible:
+            raise ValueError("input schema requires a visible field")
         return self
 
     def validate_inputs(self, inputs):
@@ -93,7 +105,7 @@ class InputSchema(BaseModel):
         if any(key.startswith("__") for key in inputs):
             raise ServiceError("invalid_request")
         known_fields(self.fields, inputs)
-        for field in self.conversation():
+        for field in self.conversation(include_legacy=True):
             value = get_input(inputs, field.name)
             if not active_field(field, inputs):
                 if value is not None:
@@ -269,7 +281,7 @@ def validate_ai_intake_choices(plugin):
     mapping = plugin.ai_intake_choices
     if type(mapping) is not dict or (mapping and not plugin.optional_ai):
         raise ValueError("invalid AI intake choices")
-    fields = {field.name: field for field in plugin.input_schema.conversation()}
+    fields = {field.name: field for field in plugin.input_schema.conversation(include_legacy=True)}
     for name, values in mapping.items():
         if (
             name not in fields

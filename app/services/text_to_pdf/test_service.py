@@ -86,9 +86,9 @@ async def test_direct_pdf_preserves_content_without_ai(tmp_path, text):
             assert len(doc.pages) > 1
 
 
-def test_pdf_schema_requires_explicit_mode_with_optional_direct_title():
-    with pytest.raises(ServiceError, match="input_invalid"):
-        TextToPdf.input_schema.validate_inputs({"text": "text"})
+def test_pdf_intake_is_content_only_and_accepts_legacy_modes():
+    TextToPdf.input_schema.validate_inputs({"text": "text"})
+    assert [f.name for f in TextToPdf.input_schema.conversation()] == ["text"]
     TextToPdf.input_schema.validate_inputs({"text": "text", "mode": "direct"})
     TextToPdf.input_schema.validate_inputs({"text": "text", "mode": "smart"})
 

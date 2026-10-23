@@ -21,6 +21,11 @@ def database():
 
 @pytest.fixture
 async def intake(monkeypatch):
+    # A saved pre-upgrade draft retains its original prompts and choice guards.
+    schema = TextToWordPdf.input_schema.model_copy(deep=True)
+    for field in schema.fields:
+        field.legacy_only = False
+    monkeypatch.setattr(TextToWordPdf, "input_schema", schema)
     monkeypatch.setattr("app.bot.handlers.mixed_ai_unavailable", AsyncMock(return_value=False))
     router = create_router()
     storage = MemoryStorage()

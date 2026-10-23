@@ -1,3 +1,27 @@
+## Automatic document intake and service execution review — 2026-10-23
+
+- OWNER: Review all services and make AI use depend on the task; remove customer
+  engine choices while retaining meaningful output, fidelity and consent choices.
+- FACT: Main 267803a and no open PRs verified. Operator deployed it successfully;
+  two real Word/PPTX requests failed provider validation with full credit release.
+  Their exact rejection categories/content were not persisted and remain UNKNOWN.
+- CHANGE: Word/Excel v9, PDF v6 and Word/PDF v4 intake hide engine-mode controls;
+  default automatic improvement and explicit literal-export directives share one
+  pure routing contract. Legacy payloads and saved schema positions stay valid.
+- FOUNDATION: Optional legacy-only leaf fields remain server-validated; unchanged
+  false defaults normalize without version-bumping unrelated services. No migration,
+  new dependency, provider budget, price, enablement or payment-policy change.
+- DIAGNOSTICS: Separate content-free schema/quality rejection events; validated
+  missing source information stops with needs_information after one settled call,
+  before quality/correction calls. No silent native fallback or relaxed fidelity.
+- REVIEW: docs/SERVICE_REVIEW.md maps all 16 services. Historical uploaded tests:
+  29/29 full portfolio PASS; later focused summary failure then PASS. These do not
+  certify the new source or 100% arbitrary/live provider/mobile/output success.
+- GATE: Local unit/intake/privacy/architecture checks, exact-head full hosted
+  PostgreSQL/Redis plus native worker checks before merge; isolated live acceptance
+  and artifact inspection after API/bot/worker rollout. Preserve active orders,
+  administrator settings and intended provider admission state.
+
 ## Mini App native test-credit result decisions — 2026-10-23
 
 - FACT: Live main 7c92dee verified; owner continues the organized Mini App journey.
