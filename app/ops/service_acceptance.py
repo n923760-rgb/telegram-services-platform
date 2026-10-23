@@ -234,6 +234,14 @@ def inspect_output(name, data, case):
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     elif suffix == ".docx":
         doc = Document(BytesIO(data))
+        if case.docx_tables:
+            tables = tuple(
+                tuple(tuple(cell.text for cell in row.cells) for row in table.rows)
+                for table in doc.tables
+            )
+            if tables != case.docx_tables:
+                raise ServiceError("acceptance_output_invalid")
+            details["editable_tables"] = len(tables)
         text = "\n".join(
             [p.text for p in doc.paragraphs]
             + [c.text for t in doc.tables for r in t.rows for c in r.cells]

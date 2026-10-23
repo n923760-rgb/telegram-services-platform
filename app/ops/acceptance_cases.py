@@ -31,6 +31,7 @@ class Case:
     pdf_image_hashes: tuple[str, ...] = ()
     changed_text_files: tuple[str, ...] = ()
     review_checks: tuple[str, ...] = ()
+    docx_tables: tuple[tuple[tuple[str, ...], ...], ...] = ()
 
 
 def representative_cases(result):
@@ -243,7 +244,19 @@ def cases(assets):
             )
             for mode in ("direct", "labels")
         ],
-        Case("pdf_word", "pdf_to_word", {"pdf": pdf}, ("00123",)),
+        Case(
+            "pdf_word",
+            "pdf_to_word",
+            {"pdf": pdf},
+            ("00123",),
+            docx_tables=(
+                (
+                    ("ID", "Amount", "Note"),
+                    ("00123", "125.50", "Example"),
+                    ("00017", "0", "Pending"),
+                ),
+            ),
+        ),
         Case(
             "pdf_extract",
             "pdf_tools",

@@ -4,7 +4,9 @@ from typing import ClassVar
 from pydantic import Field, model_validator
 from pydantic_core import PydanticCustomError
 
-from app.builders.schema import Document, StrictModel
+from app.builders.schema import StrictModel
+from app.builders.word_schema import WordDocument
+from app.services.document_fidelity import visible_text
 from app.services.documents import DocumentInputs
 from app.services.text_editing.schema import CONTACT_TOKEN
 from app.services.translation import NUMERIC_TOKEN
@@ -23,7 +25,7 @@ class WordPlan(StrictModel):
         default=False,
         description="Keep false: the supplied extracted text is the complete conversion input, including sparse tables or fragments. No additional customer facts are required.",
     )
-    document: Document | None = Field(
+    document: WordDocument | None = Field(
         default=None,
         description="Required editable document containing all supplied extracted content. Preserve incomplete notes as incomplete notes; do not request missing context or invent facts.",
     )
@@ -35,7 +37,7 @@ def source_plan_schema(source: str):
     expected = tuple(Counter(pattern.findall(source)) for pattern in patterns)
 
     class SourceWordPlan(WordPlan):
-        document: Document = Field(
+        document: WordDocument = Field(
             description="Required complete editable conversion of the supplied extracted text, including sparse notes or cell values without adding context.",
         )
 
@@ -58,9 +60,7 @@ def source_plan_schema(source: str):
                     "pdf_word_missing_body",
                     "convert the supplied extracted text without requesting additional facts",
                 )
-            parts = [self.document.title]
-            for section in self.document.sections:
-                parts.extend([section.heading, *section.paragraphs, *section.bullets])
+            parts = visible_text(self.document).split("\n")
             for part in parts:
                 if part:
                     DocumentInputs.printable_text(part)

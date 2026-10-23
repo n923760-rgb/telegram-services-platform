@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
@@ -15,10 +16,50 @@ from app.wallet.ledger import balance
 from app.workers.runner import deliver_failures, execute_job
 from tests.pdf_form_fixtures import form_pdf
 from tests.pdf_image_fixtures import mixed_pdf
+from tests.pdf_tables_fixtures import table_pdf
 from tests.test_foundation import job_for
 from tests.test_real_services import setup
 
 PLAN = '{"document":{"title":"Invoice","sections":[{"paragraphs":["' + SOURCE + '"]}]}}'
+
+
+@pytest.mark.parametrize("mode", ["valid", "repaired", "failed"])
+async def test_editable_table_delivery_or_invalid_cell_release_once(tmp_path, monkeypatch, mode):
+    data, rows = table_pdf()
+    plan = json.dumps(
+        {
+            "document": {
+                "title": "Document",
+                "sections": [{"tables": [{"columns": rows[0], "rows": rows[1:]}]}],
+            }
+        }
+    )
+    bad = plan.replace("00123", "123")
+    responses = [plan] if mode == "valid" else [bad, plan if mode == "repaired" else bad]
+    store, provider, delivery, ctx, price = await setup(
+        "pdf_to_word", responses, tmp_path, monkeypatch
+    )
+    source = store.save(1, "source.pdf", data, "application/pdf")
+    oid = await submit(1, "pdf_to_word", {"pdf": source.key}, price, "pdf-editable-table")
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    await deliver_failures(ctx)
+    await deliver_failures(ctx)
+    success = mode != "failed"
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == ("completed" if success else "failed")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if success else 1000, 0)
+        kinds = list(await db.scalars(select(Ledger.kind).where(Ledger.order_id == oid)))
+        assert sorted(kinds) == sorted(["reserve", "capture" if success else "release"])
+        assert list(await db.scalars(select(CostHold.status))) == ["settled"] * len(responses)
+    assert provider.calls == len(responses)
+    assert len(delivery.files) == int(success) and len(delivery.errors) == int(not success)
+    if success:
+        document = Document(BytesIO(delivery.files[0][1]))
+        assert [[cell.text for cell in row.cells] for row in document.tables[0].rows] == rows
 
 
 @pytest.mark.parametrize("recover", [True, False])
@@ -48,7 +89,7 @@ async def test_missing_context_refusal_repairs_or_releases_once_with_settled_cos
     calls = 3 if recover else 2
     async with sessions() as db:
         order = await db.get(Order, oid)
-        assert order.service_version == "6"
+        assert order.service_version == "7"
         assert order.status == ("completed" if recover else "failed")
         assert order.error_key == (None if recover else "provider_invalid")
         funds = await balance(db, 1)
@@ -157,7 +198,7 @@ async def test_pdf_form_rejection_has_no_provider_cost_releases_and_cleans_files
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-@pytest.mark.parametrize("old_version", ["2", "3", "4", "5"])
+@pytest.mark.parametrize("old_version", ["2", "3", "4", "5", "6"])
 async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_work(
     tmp_path, monkeypatch, old_version
 ):
@@ -173,7 +214,7 @@ async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_wo
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "pdf_to_word")
-        assert row.version == "6" and row.price_halala == 777 and row.enabled
+        assert row.version == "7" and row.price_halala == 777 and row.enabled
         assert row.price_stars == 143
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))
