@@ -15,6 +15,9 @@
 - GATE: 67 local title/template/CV/PDF-title checks pass with the configured local
   LibreOffice binary. Arabic/English report fixtures rendered and visually reviewed.
   Full hosted/native CI required before merge; worker-only rollout after bot home.
+- CI: Run 40028631796 exhausted the 20-minute job budget after slow Office package
+  setup and stopped at 49 percent of pytest without an observed test failure.
+  Allow 30 minutes for setup plus the unchanged full/native gates; no test is skipped.
 
 ## Compact bot home with Mini App intake — 2026-10-24
 
