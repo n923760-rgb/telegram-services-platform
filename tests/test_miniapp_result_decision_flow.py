@@ -9,6 +9,7 @@ from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.redis import RedisStorage
 from pydantic import SecretStr
 from sqlalchemy import func, select
+from sqlalchemy.exc import DBAPIError
 
 from app.api.main import app
 from app.core.db import sessions
@@ -136,7 +137,7 @@ async def test_prepared_approval_delivers_cached_file_without_service_execution(
     assert await ledger_state(oid) == ("completed", 900, 0, ["capture", "reserve"])
 
 
-@pytest.mark.parametrize("changed", ["result", "round", "phase", "payment"])
+@pytest.mark.parametrize("changed", ["result", "round", "phase"])
 async def test_stale_review_never_applies_to_new_snapshot(decision, changed):
     oid, read, post, *_ = decision
     token = await read()
@@ -146,12 +147,22 @@ async def test_stale_review_never_applies_to_new_snapshot(decision, changed):
             order.result = {**order.result, "review_details": "Changed review"}
         elif changed == "round":
             (await db.scalar(select(Job).where(Job.order_id == oid))).attempts += 1
-        elif changed == "phase":
-            order.status = "queued"
         else:
-            order.payment_mode = "stars"
+            order.status = "queued"
     assert (await post(token)).status_code == 409
     assert (await ledger_state(oid))[1:] == (900, 100, ["reserve"])
+
+
+async def test_database_preserves_payment_contract_after_review(decision):
+    oid, read, post, *_ = decision
+    token = await read()
+    with pytest.raises(DBAPIError, match="order payment contract is immutable"):
+        async with sessions.begin() as db:
+            (await db.get(Order, oid)).payment_mode = "stars"
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).payment_mode == "test_credit"
+    assert (await post(token, False)).status_code == 200
+    assert await ledger_state(oid) == ("cancelled", 1000, 0, ["release", "reserve"])
 
 
 async def test_competing_http_approve_cancel_has_one_winner(decision):
