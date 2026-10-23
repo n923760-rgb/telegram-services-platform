@@ -58,6 +58,13 @@ async def miniapp_styles():
     return FileResponse(ASSETS / "styles.css", media_type="text/css", headers=STATIC_HEADERS)
 
 
+@router.get("/miniapp/intake.js")
+async def miniapp_intake_script():
+    return FileResponse(
+        ASSETS / "intake.js", media_type="application/javascript", headers=STATIC_HEADERS
+    )
+
+
 def visible_services(rows, *, user_id: int, stars: bool, ai_available: bool):
     """Reuse registry/admission presentation policy; never claim checkout is available."""
     result = []
@@ -122,6 +129,7 @@ async def overview(payload: OverviewRequest, response: Response):
 
     output = {
         "language": language,
+        "intake_enabled": config().miniapp_intake_enabled,
         "payment_mode": "stars" if stars else "test_credit",
         "categories": [
             {"key": key, "ar": tr(label, "ar"), "en": tr(label, "en")}

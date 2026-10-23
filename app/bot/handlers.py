@@ -16,6 +16,7 @@ from app.core.i18n import tr
 from app.core.models import Order, Service
 from app.core.settings import config
 from app.core.users import set_language
+from app.orders.drafts import new_draft
 from app.orders.engine import register, submit
 from app.services.base import InputSchema, ServiceError, active_field, get_input, set_input
 from app.services.registry import registry
@@ -126,30 +127,11 @@ def create_router():
         return False
 
     async def start_draft(message, state, service, lang, *, inputs=None, index=0):
-        from app.payments.stars import terms_hash
-
         if await mandatory_ai_unavailable(service.slug):
             await message.answer(tr("service_ai_unavailable", lang), reply_markup=menu(lang))
             return
         await state.set_state("collect")
-        await state.set_data(
-            {
-                "slug": service.slug,
-                "name_ar": service.name_ar,
-                "name_en": service.name_en,
-                "schema": service.input_schema,
-                "price": service.price_halala,
-                "version": service.version,
-                "inputs": inputs or {},
-                "index": index,
-                "key": uuid4().hex,
-                "payment_mode": "stars" if config().stars_enabled else "test_credit",
-                "stars_price": service.price_stars if config().stars_enabled else None,
-                "terms_version": config().stars_terms_version if config().stars_enabled else None,
-                "terms_hash": terms_hash() if config().stars_enabled else None,
-                "terms": {"ar": config().stars_terms_ar, "en": config().stars_terms_en},
-            }
-        )
+        await state.set_data(new_draft(service, inputs=inputs, index=index))
         await ask(message, state, lang)
 
     @router.callback_query(F.data.startswith("service:"))

@@ -1,3 +1,27 @@
+## Shared Mini App request drafts and uploads — 2026-10-23
+
+- FACT: Main 31c592e and no open PRs verified at start; owner asks to continue
+  after the category/navigation slice. Production UI deployment is not confirmed.
+- CHANGE: Optional schema-driven Mini App intake into the same Redis FSM/lock as
+  chat: text/choices/conditional fields, validated owner-bound uploads, review,
+  edit/abort and bot confirmation handoff. Shared draft snapshot/upload helpers;
+  no HTTP order submission, invoice, wallet write, provider call or new migration.
+- SAFETY: Signed fresh identity and same-origin requests, existing rate/ban and
+  service/payment/AI gates, bounded bodies/time/quotas, atomic Redis state/expiry,
+  revision/operation replay checks, and invalidation of old bot confirmation keys.
+  Default MINIAPP_INTAKE_ENABLED=false; enable only for the reviewed rollout.
+- PASS LOCALLY: 142 focused mocked HTTP/FSM/file/review/recovery checks; existing
+  catalog and new intake browser journeys cover replay/failure, owner isolation,
+  uploads, edits, private-data removal, AR/EN and responsive light/dark layouts.
+  Five synthetic intake screens pass automated accessibility rules; review images
+  inspected. Three architecture gates, Ruff, JS syntax/format and diff checks pass.
+  These are not live Telegram/payment acceptance.
+- GATE: Full exact-head hosted workflow, including new PostgreSQL/Redis/dispatcher
+  scenarios, before merge. Rebuild API/bot only; preserve worker/provider/budgets,
+  financial history and proxy networks. See docs/MINI_APP.md for rollout/rollback.
+- NEXT: Dedicated real mobile acceptance; later in-app confirmation/payment and
+  delivery using existing contracts. Professional output-quality P0 remains open.
+
 ## Mini App service presentation — 2026-10-23
 
 - FACT: Live main def9e18 and no open PRs verified at start. Owner requests a
