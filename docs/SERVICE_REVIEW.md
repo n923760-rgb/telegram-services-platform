@@ -6,6 +6,19 @@ Live source baseline: `267803ac3e188f62580536fe142de7b74e5e32fa`.
 
 ## Routing and customer choices
 
+PDF-to-Word v7 additionally permits native editable Word tables using the existing
+bounded Word builder (6 columns, 100 rows/table, 10 tables/document). AI reconstructs
+only clear supplied headings/rows and keeps ambiguous or larger extracted content
+as complete prose. Numeric/contact occurrence checks cover all visible cells and
+captions as well as prose; they do not prove semantic associations or original PDF
+layout. Image/form rejection remains unchanged. The isolated `pdf_word` acceptance
+case now checks the exact native cell matrix, including row/column associations,
+leading zeros and decimal spelling, rather than accepting the same values in
+bullets. Run that case on the matching worker before accepting live provider quality.
+No extra provider calls or live acceptance cases are introduced. Drain active work
+and update API/bot/worker together for this version change, preserving all existing
+administrator settings and the intended provider admission state.
+
 | Customer outcome | Execution / AI role | Choices retained |
 | --- | --- | --- |
 | CSV review | Native parsing, cleanup and audit; no provider call | Requested cleanup/result options |

@@ -1,6 +1,7 @@
 from io import BytesIO
 
 import pytest
+from docx import Document
 from openpyxl import Workbook
 from pptx import Presentation
 from pypdf import PdfReader, PdfWriter
@@ -123,4 +124,33 @@ def test_plan_covers_new_contracts_without_extra_ai_cases():
     assert plan["pdf_rotate"].pdf_rotations == (90,)
     assert plan["pdf_merge"].exact_pdf_pages == 2
     assert "Columns" in plan["csv"].required_sheets
+    assert plan["pdf_word"].docx_tables[0][1] == ("00123", "125.50", "Example")
     assert all("title" not in plan["minutes_" + lang].inputs for lang in ("ar", "en"))
+
+
+@pytest.mark.parametrize("mutation", [None, "bullets", "swapped", "normalized", "duplicate"])
+def test_pdf_word_acceptance_requires_exact_editable_cells(mutation):
+    case = next(case for case in cases(ASSETS) if case.name == "pdf_word")
+    document = Document()
+    matrix = case.docx_tables[0]
+    if mutation == "bullets":
+        for row in matrix:
+            document.add_paragraph(" ".join(row), style="List Bullet")
+    else:
+        table = document.add_table(rows=len(matrix), cols=len(matrix[0]))
+        for cells, values in zip(table.rows, matrix, strict=True):
+            for cell, value in zip(cells.cells, values, strict=True):
+                cell.text = value
+        if mutation == "swapped":
+            table.cell(1, 0).text, table.cell(2, 0).text = "00017", "00123"
+        if mutation == "normalized":
+            table.cell(1, 0).text = "123"
+        if mutation == "duplicate":
+            document.add_table(rows=1, cols=1).cell(0, 0).text = "00123"
+    output = BytesIO()
+    document.save(output)
+    if mutation is None:
+        assert inspect_output("result.docx", output.getvalue(), case)["editable_tables"] == 1
+    else:
+        with pytest.raises(ServiceError, match="acceptance_output_invalid"):
+            inspect_output("result.docx", output.getvalue(), case)

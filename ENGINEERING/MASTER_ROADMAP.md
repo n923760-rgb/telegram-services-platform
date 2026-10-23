@@ -1,3 +1,23 @@
+## PDF to editable Word tables — 2026-10-23
+
+- OWNER: Continue output-quality improvements after the Mini App chat fix.
+- FACT: Main b5fe4ce verified. Reviewed live portfolio output flattened the
+  synthetic PDF table to bullets; the PDF Word plan did not permit tables even
+  though the shared Word builder already supports editable native tables.
+- CHANGE: PDF-to-Word v7 uses the bounded existing Word document contract and
+  includes every visible table/header/cell/block in numeric/contact fidelity.
+  Clear extracted tables may become native tables; ambiguous/oversized structure
+  remains complete text. No original-page-layout or scanned-table claim.
+- ACCEPTANCE: The existing pdf_word case now requires its exact editable cell
+  matrix, including leading zeros, decimals, row and column associations. No
+  additional live calls/cases or budget changes. Paragraph-only output no longer
+  passes that fixture. Real provider acceptance remains a deployment gate.
+- GATE: Focused real-PDF/DOCX, fidelity/bounds and output-contract tests; hosted
+  job settlement/retry and version-upgrade tests plus full native worker checks.
+  Preserve prices, enabled state, credit/history and provider admission state.
+- ROLLOUT: Drain active work before updating API/bot/worker together. No migration,
+  dependency, schema input, price, payment policy or provider configuration change.
+
 ## Mini App return to result chat — 2026-10-23
 
 - OWNER: Completed-order chat button appears unresponsive on Telegram mobile.

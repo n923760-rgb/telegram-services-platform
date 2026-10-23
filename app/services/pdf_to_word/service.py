@@ -15,7 +15,7 @@ from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
 
 class PdfToWord(BaseService):
-    version = "6"
+    version = "7"
     slug = "pdf_to_word"
     menu_order = 20
     category = "pdf"
