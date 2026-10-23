@@ -36,6 +36,7 @@ async def review(monkeypatch, tmp_path):
         id=uuid4(),
         user_id=11,
         service_slug="echo",
+        payment_mode="test_credit",
         status="waiting_confirmation",
         result=Result(
             needs_confirmation=True,
@@ -61,6 +62,9 @@ async def review(monkeypatch, tmp_path):
             if model is Order:
                 return row if key == row.id else None
             return service
+
+        async def scalar(self, statement):
+            return 1
 
     @asynccontextmanager
     async def runtime(user_id):

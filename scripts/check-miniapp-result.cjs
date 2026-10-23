@@ -6,6 +6,7 @@ const { execFileSync } = require("node:child_process");
 const { chromium } = require("playwright");
 const root = path.resolve(__dirname, "..");
 const id = "12345678-0000-4000-8000-000000000001";
+const native = process.env.MINIAPP_TEST_DECISION === "1";
 const image =
   "data:image/png;base64," +
   execFileSync(
@@ -118,6 +119,31 @@ async function main() {
             ],
           });
         }
+        if (native && url.pathname === "/miniapp/api/result-decision") {
+          assert.deepEqual(Object.keys(payload).sort(), [
+            "accepted",
+            "approved",
+            "init_data",
+            "token",
+          ]);
+          assert.equal(payload.token, "synthetic-result-proof");
+          assert.equal(payload.accepted, true);
+          assert.equal(payload.init_data, "synthetic");
+          if (["401", "403", "409", "500", "429"].includes(mode))
+            return json({}, Number(mode));
+          if (mode === "decision-slow")
+            await new Promise((resolve) => {
+              release = resolve;
+            });
+          return json({
+            receipt: {
+              reference: "12345678",
+              approved: payload.approved,
+              status_ar: payload.approved ? "قيد التنفيذ" : "ملغي",
+              status_en: payload.approved ? "Queued" : "Cancelled",
+            },
+          });
+        }
         assert.equal(
           url.pathname,
           "/miniapp/api/result-review",
@@ -136,12 +162,25 @@ async function main() {
             "Full review summary\nReference 00123 and amount 125.50\n<img src=x onerror=window.unsafeResult=true>",
           image,
           image_unavailable: false,
+          ...(native
+            ? {
+                decision: {
+                  token: "synthetic-result-proof",
+                  prepared: mode !== "structural",
+                },
+              }
+            : {}),
         };
         if (mode === "missing") {
           review.image = null;
           review.image_unavailable = true;
         }
         if (mode === "structural") review.image = null;
+        if (mode === "broken") review.image = "data:image/png;base64,AA==";
+        if (mode === "empty") {
+          review.text_ar = "";
+          review.text_en = "";
+        }
         if (mode === "unsafe")
           review.image = "https://evil.example/private.png";
         if (mode === "full")
@@ -201,6 +240,125 @@ async function main() {
     }
     async function back() {
       await page.evaluate(() => window.testResult.back());
+    }
+    if (native) {
+      const decisions = () =>
+        requests.filter((r) => r.path.endsWith("/result-decision"));
+      await load();
+      await open();
+      await ready();
+      assert.equal(decisions().length, 0);
+      assert.equal(await page.locator("#approve-review").isDisabled(), true);
+      await page.locator("#review-consent").check();
+      await page.locator("#lang").click();
+      assert.equal(await page.locator("#review-consent").isChecked(), true);
+      for (const width of [320, 390, 768]) {
+        await page.setViewportSize({ width, height: 844 });
+        assert.equal(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+          true,
+        );
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      if (process.env.MINIAPP_SCREENSHOT_DIR) {
+        fs.mkdirSync(process.env.MINIAPP_SCREENSHOT_DIR, { recursive: true });
+        await page.screenshot({
+          path: path.join(
+            process.env.MINIAPP_SCREENSHOT_DIR,
+            "native-review-en.png",
+          ),
+          fullPage: true,
+        });
+      }
+      if (process.env.MINIAPP_AXE === "1") {
+        const AxeBuilder = require("@axe-core/playwright").default;
+        assert.deepEqual(
+          (
+            await new AxeBuilder({ page })
+              .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+              .analyze()
+          ).violations,
+          [],
+        );
+      }
+      await page.locator("#approve-review").click();
+      await page
+        .getByText("Your approval was recorded", { exact: true })
+        .waitFor();
+      assert.equal(decisions().length, 1);
+      await page
+        .getByRole("button", { name: "Follow my orders", exact: true })
+        .click();
+      await open();
+      await ready();
+      await page.locator("#reject-review").click();
+      assert.equal(decisions().length, 1);
+      await page.locator("#confirm-review-cancel").click();
+      await page.getByText("Request cancelled", { exact: true }).waitFor();
+      assert.equal(decisions().at(-1).payload.approved, false);
+      for (const state of ["broken", "empty"]) {
+        mode = state;
+        await load();
+        await open();
+        await ready();
+        await page.waitForTimeout(100);
+        assert.equal(await page.locator("#approve-review").isDisabled(), true);
+      }
+      mode = "structural";
+      await load();
+      await open();
+      await ready();
+      await page.locator("#review-consent").check();
+      mode = "500";
+      await page.locator("#approve-review").click();
+      await page
+        .getByRole("button", { name: "إعادة المحاولة", exact: true })
+        .waitFor();
+      const frozen = decisions().at(-1).payload;
+      assert.equal(await page.locator("#reject-review").isDisabled(), true);
+      mode = "409";
+      await page
+        .getByRole("button", { name: "إعادة المحاولة", exact: true })
+        .click();
+      await page
+        .getByText("تغيّرت حالة الطلب أو مراجعته. ارجع لطلباتي وحدّث الحالة.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.deepEqual(decisions().at(-1).payload, frozen);
+      assert.equal(await page.locator("#approve-review").count(), 0);
+      mode = "structural";
+      await load();
+      await open();
+      await ready();
+      await page.locator("#review-consent").check();
+      mode = "decision-slow";
+      await page.locator("#approve-review").click();
+      while (!release) await new Promise((resolve) => setTimeout(resolve, 10));
+      await back();
+      release();
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator(".receipt-reference").count(), 0);
+      mode = "structural";
+      await open();
+      await ready();
+      await page.locator("#review-consent").check();
+      mode = "403";
+      await page.locator("#approve-review").click();
+      await page
+        .getByRole("button", { name: "إعادة المحاولة", exact: true })
+        .waitFor();
+      assert.equal(
+        await page.locator(".result-review-card, .order-card").count(),
+        0,
+      );
+      assert.deepEqual(errors, []);
+      console.log(
+        "PASS: native consent, prepared approval, two-step cancellation, AR/EN, accessibility, broken/empty preview, frozen ambiguous retry, stale proof, late response and auth privacy.",
+      );
+      return;
     }
     await load();
     await open();

@@ -18,6 +18,15 @@ def test_review_is_bound_to_owner_draft_and_exact_revision(token):
         verify(22, token, now=1700000001)
 
 
+def test_result_and_purchase_tokens_are_not_interchangeable(token):
+    result = issue(11, "a" * 32, "b" * 64, now=1700000000, purpose="result")
+    assert verify(11, result, now=1700000001, purpose="result") == ("a" * 32, "b" * 64)
+    with pytest.raises(InvalidReviewToken):
+        verify(11, token, now=1700000001, purpose="result")
+    with pytest.raises(InvalidReviewToken):
+        verify(11, result, now=1700000001)
+
+
 @pytest.mark.parametrize("change", ["key", "revision", "signature", "future", "expired", "empty"])
 def test_changed_or_expired_review_cannot_authorize_confirmation(token, change):
     current = 1700000001
