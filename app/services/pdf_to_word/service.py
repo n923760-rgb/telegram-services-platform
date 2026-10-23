@@ -10,6 +10,7 @@ from app.files.pdf_content import has_image_content
 from app.files.pdf_forms import has_form_declaration, has_widget
 from app.files.pdf_text import extract_page_text
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
+from app.services.pdf_to_word.layout import opening_title
 from app.services.pdf_to_word.prompt import PDF_TO_WORD
 from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
@@ -69,14 +70,15 @@ class PdfToWord(BaseService):
         if not pages:
             raise ServiceError("pdf_text_unreadable")
         # Synthetic page markers guide the model but are not customer facts.
-        schema = source_plan_schema("\n\n".join(sources))
+        source_text = "\n\n".join(sources)
+        schema = source_plan_schema(source_text)
         plan = await self.runtime.ai.extract(schema, text, PDF_TO_WORD)
         try:
             # Recheck injected providers too, before any builder/storage writes.
             plan = schema.model_validate(plan.model_dump(mode="json"))
         except (ValidationError, ValueError):
             raise ServiceError("provider_invalid") from None
-        content = word.build(plan.document)
+        content = word.build(opening_title(plan.document, source_text))
         artifact = self.runtime.storage.save(
             "result.docx",
             content,

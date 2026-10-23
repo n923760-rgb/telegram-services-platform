@@ -1,3 +1,21 @@
+## PDF Word opening-title presentation — 2026-10-23
+
+- FACT: Main 0d54649 verified. Owner deployed v7 and resumed provider admission.
+  The live Arabic PDF conversion preserves the complete editable cell matrix and
+  notes but repeats the document title as its first section heading.
+- CHANGE: After existing plan validation/review, omit that opening heading only
+  when the source has one exact whitespace-equivalent title line and the candidate
+  has exactly two occurrences. Keep the main title, tables and reviewed plan.
+  Numeric/contact titles, real repetitions, later headings, page breaks, resume
+  layout and heading-only documents retain their existing presentation.
+- BOUNDARY: This is a native rendering correction with no prompt, schema, service
+  version, pricing, enabled state, dependency, budget or financial-policy change.
+  PDF Word remains v7; existing v7 jobs keep the same validated input/output contract.
+- GATE: Real PDF-to-DOCX regression plus Arabic/English rendered fixtures, protected
+  tokens, repeated source headings and existing fidelity/table/lifecycle checks.
+  Hosted full/native checks before merge. Worker-only rollout; preserve the active
+  provider admission state. No additional provider call is required for cleanup.
+
 ## PDF to editable Word tables — 2026-10-23
 
 - OWNER: Continue output-quality improvements after the Mini App chat fix.
