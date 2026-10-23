@@ -151,9 +151,12 @@ async function main() {
         });
       }
       if (
-        ["/miniapp", "/miniapp/app.js", "/miniapp/styles.css"].includes(
-          pathname,
-        )
+        [
+          "/miniapp",
+          "/miniapp/app.js",
+          "/miniapp/intake.js",
+          "/miniapp/styles.css",
+        ].includes(pathname)
       ) {
         assert.equal(route.request().method(), "GET");
         const file =

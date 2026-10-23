@@ -1,5 +1,80 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Shared request intake — 2026-10-23
+
+With `MINIAPP_INTAKE_ENABLED=true`, service detail offers Start request inside
+the Mini App. This bounded Stage 2 slice collects schema-driven text, choices,
+optional fields and single/multiple image/PDF/audio uploads. It shows a bounded
+review, supports editing and discarding an edit, then hands off to the existing
+bot confirmation and checkout. It does not create an order, reserve credit,
+send an invoice, invoke a provider, or deliver a file over HTTP.
+
+The default is false, preserving the catalog-to-bot experience until the operator
+enables this rollout. The account must first have started the same private bot.
+Rebuild/recreate API and bot after setting the flag; keep worker, provider pause,
+Stars mode, prices, budgets, proxy and persistent edge networks unchanged.
+
+### One draft across both interfaces
+
+- Both adapters use the same bot FSM, Redis key builder and per-customer event
+  lock. Starting another service resumes the existing draft rather than replacing
+  it. Support mode is preserved. No second draft database or browser storage.
+- Schema and payment snapshots come from the shared `new_draft` factory. Every
+  edit rechecks ban/registration, visibility, activation, version/schema, price,
+  payment mode/Stars terms and applicable AI availability. Final admission stays
+  in the existing bot/order engine. Browser hints never authorize processing.
+- Each edit includes the current opaque revision and a random operation ID.
+  Replaying the most recent committed operation returns its current view without
+  appending another file. Changed/stale requests fail closed. Bot changes invalidate
+  the browser revision. Every successful edit changes the confirmation key and
+  marks the bot prompt pending; an old chat button first re-renders the current
+  draft instead of buying it. Never submit automatically on opening or handoff.
+- Redis commits state/data/expiry and replay metadata together. Drafts expire one
+  hour after the last change; signed launch data also expires after one hour and
+  must be renewed by reopening the Mini App. Back/navigation preserves the saved
+  draft; cancellation remains the bot's existing `/cancel` operation.
+
+### HTTP and file boundaries
+
+POST `/miniapp/api/draft` accepts bounded JSON with signed raw initData and one
+of view/open/answer/skip/done/edit/abort. POST `/miniapp/api/draft/upload` accepts
+raw file bytes, signed `X-Telegram-Init-Data`, `X-Draft-Revision` and
+`X-Draft-Operation` headers. No customer ID, storage key, price or schema is
+accepted from the browser. Responses are `no-store` and never return upload keys
+or bulk saved inputs. Same-origin Origin/Fetch Metadata checks accompany signed
+authentication; keep Caddy's original Host header when proxying. No CORS grant or
+cookie-only authorization. Forged/expired launches and banned accounts fail closed.
+
+The existing shared bot rate bucket limits authenticated requests to 30/minute.
+Redis failure fails closed; lock wait is bounded, upload reads have a 20-second
+deadline, and work under the 60-second FSM lease has a 45-second deadline. JSON
+is capped at 64 KiB; upload streaming stops at MAX_FILE_BYTES. Existing decoded
+image/PDF/audio validation, metadata normalization or declared original-image
+preservation, owner namespaces and authoritative storage quotas apply through
+the shared upload helper. Filenames and MIME advertisements do not bypass content
+validation. Files abandoned by cancellation, expiry or an ambiguous storage/FSM
+failure are recovered by the existing age-based retention policy; they are not
+promised immediate deletion. Keep the normal retention worker running.
+
+### Qualification and rollout
+
+Run `node scripts/check-miniapp-intake.cjs` with development Playwright/Chromium
+alongside the existing catalog browser check. Optional `MINIAPP_AXE=1` uses
+development-only `@axe-core/playwright`; `MINIAPP_SCREENSHOT_DIR` captures internal
+review images. Telegram/API data is synthetic. Hosted PostgreSQL/Redis tests
+exercise the shared dispatcher lock, expiring FSM, replay, old-button invalidation
+and exactly one explicit bot purchase. Mobile Telegram, upload picker behavior,
+real checkout and provider/delivery quality require dedicated account acceptance.
+
+Before enabling: back up the current source, private environment and API/bot
+image IDs; deploy the reviewed SHA and recreate API/bot. Verify public assets,
+health and unsigned draft requests returning 401 with the same-origin Origin
+header. Then use a dedicated Telegram test account: text, conditional choices,
+files, edit/abort, interrupted retry, existing draft, both languages and final
+explicit bot confirmation. Disabling the flag and recreating API restores chat
+entry; existing drafts remain resumable in the bot. No migration or destructive
+cleanup is required for rollback.
+
 ## Customer navigation and channel roles — 2026-10-23
 
 The Mini App is the browsing and tracking surface. Bot chat continues to collect

@@ -14,6 +14,17 @@
   let noticeKey = "loading";
   let loading = false;
   let catalogScroll = 0;
+  let intakeActive = false;
+  const intakeUI = window.MiniAppIntake
+    ? window.MiniAppIntake({
+        tg,
+        exit: function () {
+          intakeActive = false;
+          render();
+          focus("service-start");
+        },
+      })
+    : null;
 
   // Group registered categories for browsing; no hard-coded service membership.
   const groups = [
@@ -102,6 +113,9 @@
       step3: "استلم النتيجة",
       step3Hint: "نرسل النتيجة والملفات في محادثة البوت.",
       startRequest: "متابعة الطلب في البوت",
+      startInside: "ابدأ الطلب",
+      insideHint: "أدخل بياناتك وارفع ملفاتك هنا، ثم أكّد الطلب في البوت.",
+      step1AppHint: "استكمل البيانات أو ارفع الملف داخل التطبيق.",
       handoff: "ستنتقل إلى محادثة البوت لاستكمال هذا الطلب.",
       fallback: "افتح الخدمات في محادثة البوت واختر هذه الخدمة للمتابعة.",
       close: "العودة إلى البوت",
@@ -183,6 +197,10 @@
       step3: "Receive your result",
       step3Hint: "Your result and files arrive in bot chat.",
       startRequest: "Continue order in bot",
+      startInside: "Start request",
+      insideHint:
+        "Enter your details and upload files here, then confirm in bot chat.",
+      step1AppHint: "Enter the details or upload your file in the app.",
       handoff: "Continue this request in the bot conversation.",
       fallback:
         "Open Services in bot chat and select this service to continue.",
@@ -334,6 +352,7 @@
     syncBack();
   }
   function chooseTab(value) {
+    intakeActive = false;
     tab = value;
     selectedService = null;
     render();
@@ -357,6 +376,12 @@
     else focus("service-search");
   }
   function back() {
+    if (intakeActive) {
+      intakeActive = false;
+      render();
+      focus("service-start");
+      return;
+    }
     if (!selectedService) {
       groupHome();
       return;
@@ -573,7 +598,15 @@
       const copy = element("div", "");
       copy.append(
         element("h3", "", t("step" + index)),
-        element("p", "sub", t("step" + index + "Hint")),
+        element(
+          "p",
+          "sub",
+          t(
+            index === 1 && data.intake_enabled
+              ? "step1AppHint"
+              : "step" + index + "Hint",
+          ),
+        ),
       );
       item.append(element("span", "step-number", index), copy);
       list.appendChild(item);
@@ -590,6 +623,15 @@
       const unavailable = button(t("paused"), "primary", function () {});
       unavailable.disabled = true;
       action.appendChild(unavailable);
+    } else if (data.intake_enabled && intakeUI) {
+      const start = button(t("startInside"), "primary", function () {
+        intakeActive = true;
+        render();
+        intakeUI.open(selectedService.slug);
+      });
+      start.id = "service-start";
+      start.prepend(icon("chat"));
+      action.append(start, element("p", "action-hint", t("insideHint")));
     } else if (valid && tg && typeof tg.openTelegramLink === "function") {
       const request = button(t("startRequest"), "primary", function () {
         tg.openTelegramLink(url);
@@ -706,6 +748,7 @@
     screen.append(credit, help);
   }
   function render() {
+    if (!intakeActive && intakeUI) intakeUI.hide();
     updateChrome();
     screen.replaceChildren();
     if (!data) {
@@ -721,7 +764,9 @@
       return;
     }
     if (tab === "services") {
-      if (selectedService) renderServiceDetail();
+      if (selectedService && intakeActive && intakeUI)
+        intakeUI.render(screen, lang);
+      else if (selectedService) renderServiceDetail();
       else renderServices();
     }
     if (tab === "orders") renderOrders();
@@ -767,6 +812,8 @@
         if (response.status === 401 || response.status === 403) {
           data = null;
           selectedService = null;
+          intakeActive = false;
+          if (intakeUI) intakeUI.clear();
         }
         throw new Error("overview unavailable");
       }

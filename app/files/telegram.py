@@ -1,5 +1,5 @@
 from app.core.settings import config
-from app.files.validation import validate_file
+from app.files.uploads import save_upload
 from app.providers.runtime import storage
 from app.providers.telegram_files import TelegramFiles
 from app.services.base import ServiceError
@@ -35,29 +35,7 @@ async def receive(message, kind, user_id, *, preserve_image=False):
         store = storage()
         store.ensure_quota(user_id, media.file_size)
         content = await TelegramFiles(message.bot, cfg.max_file_bytes).download(media.file_id)
-        normalized = validate_file(content, mime, cfg.max_file_bytes)
-        if mime.startswith("image/") and preserve_image:
-            from io import BytesIO
-
-            from PIL import Image
-
-            # Validation above retains all existing decoded-image/byte limits.
-            # The trusted input field opts into owner-bound received bytes, not
-            # bypassing validation or accepting arbitrary documents as images.
-            with Image.open(BytesIO(content)) as picture:
-                mime = Image.MIME[picture.format]
-                extension = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}[picture.format]
-            return store.save(user_id, "input." + extension, content, mime).key
-        content = normalized
-        if mime.startswith("image/"):
-            mime = "image/jpeg"
-        extension = {
-            "application/pdf": "pdf",
-            "audio/ogg": "ogg",
-            "audio/mpeg": "mp3",
-            "audio/wav": "wav",
-        }.get(mime, "jpg")
-        return store.save(user_id, "input." + extension, content, mime).key
+        return save_upload(user_id, content, mime, kind, preserve_image=preserve_image, store=store)
     except ServiceError:
         raise
     except Exception:

@@ -2,7 +2,7 @@
   --bg: var(--tg-theme-bg-color, #f5f7f8);
   --card: var(--tg-theme-secondary-bg-color, #fff);
   --text: var(--tg-theme-text-color, #192d38);
-  --muted: var(--tg-theme-hint-color, #64767e);
+  --muted: var(--tg-theme-hint-color, #5c6d76);
   --accent: var(--tg-theme-button-color, #17776a);
   --accent-text: var(--tg-theme-button-text-color, #fff);
   --line: rgba(125, 145, 153, 0.18);
@@ -24,7 +24,8 @@ body {
   line-height: 1.5;
 }
 button,
-input {
+input,
+textarea {
   font: inherit;
   color: inherit;
 }
@@ -655,6 +656,66 @@ h3 {
   background: var(--soft);
   color: var(--accent);
   font-weight: 700;
+}
+.intake-card h2 {
+  margin-bottom: 8px;
+}
+.intake-prompt {
+  display: block;
+  margin: 24px 0 14px;
+  white-space: pre-line;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.intake-value {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 13px;
+  font-size: 16px;
+  line-height: 1.8;
+}
+.intake-count {
+  margin: 6px 0 18px;
+  text-align: end;
+}
+.intake-file {
+  width: 100%;
+  min-height: 48px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.intake-choices {
+  display: grid;
+  gap: 10px;
+}
+.intake-choices .secondary {
+  justify-content: flex-start;
+  text-align: start;
+}
+.intake-review {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  line-height: 2;
+  font-size: 14px;
+  padding: 15px 0;
+}
+.intake-edit {
+  margin-top: 20px;
+}
+.intake-edit summary {
+  cursor: pointer;
+  padding: 12px 0;
+  color: var(--accent);
+}
+.intake-edit .secondary {
+  margin-bottom: 10px;
+}
+.intake-card .fine-print {
+  margin-top: 20px;
 }
 .skeleton .category-card {
   height: 190px;
