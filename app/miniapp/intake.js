@@ -1,6 +1,6 @@
 "use strict";
 
-window.MiniAppIntake = function ({ tg, exit }) {
+window.MiniAppIntake = function ({ tg, exit, orders }) {
   let container,
     lang = "ar",
     draft = null,
@@ -8,6 +8,9 @@ window.MiniAppIntake = function ({ tg, exit }) {
     error = "";
   let entered = "",
     retry = null;
+  let receipt = null,
+    agreed = false,
+    confirmAttempted = false;
   const labels = {
     ar: {
       back: "العودة للخدمة",
@@ -40,6 +43,20 @@ window.MiniAppIntake = function ({ tg, exit }) {
       unavailable: "غير متاح مؤقتًا",
       reviewHint:
         "راجع بياناتك هنا، ثم انتقل للبوت لمراجعة السعر والتأكيد النهائي.",
+      confirmHint:
+        "راجع البيانات والسعر. عند التأكيد يُحجز المبلغ من رصيدك التجريبي ويبدأ الطلب.",
+      agree: "راجعت البيانات والسعر وأوافق على حجز الرصيد التجريبي",
+      confirm: "تأكيد الطلب وحجز الرصيد التجريبي",
+      amount: "المبلغ من الرصيد التجريبي",
+      submitted: "تم تسجيل طلبك",
+      reference: "رقم الطلب",
+      delivery: "تُرسل النتائج والملفات عبر محادثة البوت.",
+      orders: "متابعة طلباتي",
+      funds: "رصيدك التجريبي غير كافٍ لهذا الطلب.",
+      paused: "الخدمة غير متاحة مؤقتًا. لم يبدأ طلب جديد.",
+      concurrent: "لديك طلبات قيد التنفيذ. انتظر اكتمالها قبل طلب جديد.",
+      checking:
+        "تحقق من نتيجة التأكيد في طلباتي، أو أعد المحاولة لاستعادة الطلب نفسه.",
     },
     en: {
       back: "Back to service",
@@ -73,6 +90,22 @@ window.MiniAppIntake = function ({ tg, exit }) {
       unavailable: "Temporarily unavailable",
       reviewHint:
         "Review your details here, then check the price and confirm in bot chat.",
+      confirmHint:
+        "Review the details and price. Confirmation reserves this amount from your test credit and starts the request.",
+      agree:
+        "I reviewed the details and price and agree to reserve test credit",
+      confirm: "Confirm and reserve test credit",
+      amount: "Amount from test credit",
+      submitted: "Your request is registered",
+      reference: "Order reference",
+      delivery: "Results and files are delivered through bot chat.",
+      orders: "Follow my orders",
+      funds: "Your test credit is insufficient for this request.",
+      paused:
+        "This service is temporarily unavailable. No new request has started.",
+      concurrent:
+        "You have requests in progress. Wait for them to finish before starting another.",
+      checking: "Check My orders, or retry to recover the same request.",
     },
   };
   const t = (key) => labels[lang][key];
@@ -98,7 +131,7 @@ window.MiniAppIntake = function ({ tg, exit }) {
     const title = el(
       "h2",
       "section-title",
-      t(draft && draft.ready ? "ready" : "title"),
+      t(receipt ? "submitted" : draft && draft.ready ? "ready" : "title"),
     );
     title.id = "intake-title";
     title.tabIndex = -1;
@@ -112,6 +145,15 @@ window.MiniAppIntake = function ({ tg, exit }) {
     status.hidden = !busy && !error;
     status.setAttribute("role", "status");
     card.appendChild(status);
+    if (receipt) {
+      card.append(
+        el("p", "mini-label", t("reference")),
+        el("bdi", "receipt-reference", receipt.reference),
+        el("p", "pill", receipt["status_" + lang]),
+        el("p", "sub", t("delivery")),
+      );
+      if (orders) card.appendChild(button(t("orders"), "primary", orders));
+    }
     if (draft && !draft.ready && draft.field) {
       const field = draft.field;
       const prompt = el(
@@ -223,11 +265,48 @@ window.MiniAppIntake = function ({ tg, exit }) {
     }
     if (draft && draft.ready) {
       card.append(
-        el("p", "sub", t("reviewHint")),
+        el("p", "sub", t(draft.confirmation ? "confirmHint" : "reviewHint")),
         el("p", "intake-review", draft.review[lang]),
       );
       const url = draft.request_url;
-      if (
+      if (draft.confirmation) {
+        card.appendChild(
+          el(
+            "p",
+            "confirmation-amount",
+            t("amount") +
+              ": " +
+              draft.confirmation.amount_sar +
+              (lang === "ar" ? " ر.س" : " SAR"),
+          ),
+        );
+        const label = el("label", "confirmation-consent");
+        const check = el("input", "");
+        check.type = "checkbox";
+        check.id = "confirm-consent";
+        check.checked = agreed;
+        check.disabled = busy || confirmAttempted;
+        const confirm = button(t("confirm"), "primary", () => {
+          if (!agreed || busy || confirmAttempted) return;
+          confirmAttempted = true;
+          retry = {
+            payload: {
+              action: "confirm",
+              token: draft.confirmation.token,
+              accepted: true,
+            },
+          };
+          send(retry);
+        });
+        confirm.id = "confirm-request";
+        confirm.disabled = busy || !agreed || confirmAttempted;
+        check.addEventListener("change", () => {
+          agreed = check.checked;
+          confirm.disabled = busy || !agreed || confirmAttempted;
+        });
+        label.append(check, el("span", "", t("agree")));
+        card.append(label, confirm);
+      } else if (
         typeof url === "string" &&
         /^https:\/\/t\.me\/[A-Za-z][A-Za-z0-9_]{1,28}bot\?start=request_[a-z][a-z0-9_]{0,39}$/i.test(
           url,
@@ -251,22 +330,26 @@ window.MiniAppIntake = function ({ tg, exit }) {
             mutate("edit", { index: field.index }),
           ),
         );
-      card.appendChild(edit);
+      if (!confirmAttempted) card.appendChild(edit);
     }
     if (error) {
       if (retry)
         card.appendChild(button(t("retry"), "secondary", () => send(retry)));
-      card.appendChild(
-        button(t("refresh"), "text-button", () =>
-          send({ payload: { action: "view" } }),
-        ),
-      );
+      if (retry?.payload.action !== "confirm")
+        card.appendChild(
+          button(t("refresh"), "text-button", () =>
+            send({ payload: { action: "view" } }),
+          ),
+        );
       card.append(
         button(t("bot"), "text-button", () => tg && tg.close()),
         el("p", "sub", t("fallback")),
       );
     }
-    card.appendChild(el("p", "fine-print", t("saved")));
+    if (draft && !receipt)
+      card.appendChild(
+        el("p", "fine-print", t(confirmAttempted ? "checking" : "saved")),
+      );
     container.appendChild(card);
   }
   async function send(operation) {
@@ -277,8 +360,14 @@ window.MiniAppIntake = function ({ tg, exit }) {
     try {
       const payload = { init_data: tg.initData, ...operation.payload };
       const file = operation.file;
+      const confirming = payload.action === "confirm";
+      if (confirming) delete payload.action;
       const response = await fetch(
-        file ? "/miniapp/api/draft/upload" : "/miniapp/api/draft",
+        confirming
+          ? "/miniapp/api/confirm"
+          : file
+            ? "/miniapp/api/draft/upload"
+            : "/miniapp/api/draft",
         {
           method: "POST",
           credentials: "same-origin",
@@ -309,6 +398,8 @@ window.MiniAppIntake = function ({ tg, exit }) {
       if (!response.ok) {
         if ([401, 403].includes(response.status)) {
           draft = null;
+          receipt = null;
+          agreed = false;
           entered = "";
           retry = null;
         }
@@ -325,12 +416,35 @@ window.MiniAppIntake = function ({ tg, exit }) {
                     ? "invalid"
                     : "failure";
         if (response.status < 500) retry = null;
+        if (confirming && response.status === 409) {
+          const detail = (await response.json()).detail;
+          error =
+            {
+              insufficient: "funds",
+              concurrent_limit: "concurrent",
+              provider_config: "paused",
+              service_ai_unavailable: "paused",
+              cost_cap: "paused",
+              user_cost_cap: "paused",
+            }[detail] || "conflict";
+        }
         return;
       }
       const result = await response.json();
+      if (result.receipt) {
+        receipt = result.receipt;
+        draft = null;
+        entered = "";
+        agreed = false;
+        retry = null;
+        return;
+      }
+      if (result.draft?.confirmation?.token !== draft?.confirmation?.token)
+        agreed = false;
       if (!result.draft || !draft || result.draft.revision !== draft.revision)
         entered = "";
       draft = result.draft;
+      confirmAttempted = false;
       retry = null;
     } catch (_) {
       error = "failure";
@@ -369,7 +483,10 @@ window.MiniAppIntake = function ({ tg, exit }) {
       container = null;
     },
     clear() {
+      confirmAttempted = false;
       draft = null;
+      receipt = null;
+      agreed = false;
       entered = "";
       retry = null;
       if (container) container.removeAttribute("aria-busy");
@@ -377,7 +494,10 @@ window.MiniAppIntake = function ({ tg, exit }) {
     },
     open(slug) {
       if (busy) return;
+      confirmAttempted = false;
       draft = null;
+      receipt = null;
+      agreed = false;
       entered = "";
       retry = null;
       return send({ payload: { action: "open", slug } });

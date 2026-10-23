@@ -130,6 +130,7 @@ async def overview(payload: OverviewRequest, response: Response):
     output = {
         "language": language,
         "intake_enabled": config().miniapp_intake_enabled,
+        "confirmation_enabled": config().miniapp_confirm_enabled and not config().stars_enabled,
         "payment_mode": "stars" if stars else "test_credit",
         "categories": [
             {"key": key, "ar": tr(label, "ar"), "en": tr(label, "en")}

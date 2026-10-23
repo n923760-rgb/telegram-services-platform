@@ -179,7 +179,7 @@ async def service_for(db, user_id, slug, data=None):
     return service, ai_available
 
 
-def view(data, ai_available):
+def view(data, ai_available, user_id):
     schema = InputSchema.model_validate(data["schema"])
     fields = schema.conversation()
     data = deepcopy(data)
@@ -194,6 +194,7 @@ def view(data, ai_available):
         "editing": "_edit_original" in data,
         "field": None,
         "review": None,
+        "confirmation": None,
         "request_url": f"https://t.me/{config().miniapp_bot_username}?start=request_{data['slug']}"
         if config().miniapp_bot_username
         else None,
@@ -201,6 +202,14 @@ def view(data, ai_available):
     if ready:
         schema.validate_inputs(data["inputs"])
         output["review"] = {lang: confirmation_text(data, lang) for lang in ("ar", "en")}
+        if config().miniapp_confirm_enabled and data.get("payment_mode") == "test_credit":
+            from app.miniapp.review_tokens import issue
+            from app.wallet.ledger import sar
+
+            output["confirmation"] = {
+                "token": issue(user_id, data["key"], revision(data)),
+                "amount_sar": sar(data["price"]),
+            }
         output["editable"] = [
             {"index": n, "ar": field_label(f, n + 1, "ar"), "en": field_label(f, n + 1, "en")}
             for n, f in enumerate(fields)
@@ -265,11 +274,11 @@ async def apply_request(state, user_id, payload, *, upload=None):
             service, available = await service_for(db, user_id, payload.slug)
         data = new_draft(service)
         await persist(state, data)
-        return {"draft": view(data, available)}
+        return {"draft": view(data, available, user_id)}
     async with sessions() as db:
         _, available = await service_for(db, user_id, data["slug"], data)
     if payload.action in {"view", "open"}:
-        return {"draft": view(data, available)}
+        return {"draft": view(data, available, user_id)}
     digest = hashlib.sha256(
         (
             payload.model_dump_json()
@@ -277,7 +286,7 @@ async def apply_request(state, user_id, payload, *, upload=None):
         ).encode()
     ).hexdigest()
     if check_operation(data, payload, digest):
-        return {"draft": view(data, available)}
+        return {"draft": view(data, available, user_id)}
     fields = InputSchema.model_validate(data["schema"]).conversation()
     index = next_index(data, fields)
     if payload.action == "edit":
@@ -366,7 +375,7 @@ async def apply_request(state, user_id, payload, *, upload=None):
         "after": revision(data),
     }
     await persist(state, data)
-    return {"draft": view(data, available)}
+    return {"draft": view(data, available, user_id)}
 
 
 @router.post("/miniapp/api/draft")

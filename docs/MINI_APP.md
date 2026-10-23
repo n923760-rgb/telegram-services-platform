@@ -1,5 +1,48 @@
 # Telegram Mini App — phased rollout (owner-approved 2026-10-22)
 
+## Explicit test-credit confirmation — 2026-10-23
+
+With both `MINIAPP_INTAKE_ENABLED=true` and `MINIAPP_CONFIRM_ENABLED=true`,
+customers can review a complete draft, its current price, and explicitly consent
+to reserving test credit inside the Mini App. Opening the review never purchases
+anything. The default confirmation flag is false. Stars continues through the
+existing bot confirmation, invoice and receipt flow; no Stars wallet or new
+payment integration is introduced.
+
+POST `/miniapp/api/confirm` accepts only signed `init_data`, an owner-bound
+one-hour review token, and strict boolean `accepted`. It uses the same Redis FSM
+lock and admission engine as bot confirmation. Current draft revision, completion,
+service version/activation, price, payment mode, account and provider admission
+are checked server-side. Identity, price, inputs and order keys cannot be supplied
+separately by the browser. A successful request creates one normal order/job and
+reserves test credit through `orders.engine.submit`; HTTP never calls the provider
+or Telegram, creates an invoice, or delivers a result.
+
+The durable owner/order key recovers a receipt after an ambiguous commit or FSM
+cleanup failure. Repeated confirmation returns the same order, including its
+current terminal status, and does not clear a newer draft or support session.
+Bot/API races share the same idempotency key. After an ambiguous response the UI
+offers retry without claiming no credit was reserved. Receipts link to My orders;
+results and files still arrive through bot chat. Editing invalidates the old
+review; a fresh review and consent are required before a changed draft is bought.
+
+Qualification: run the existing catalog and intake browser checks, plus
+`MINIAPP_TEST_CONFIRM=1 MINIAPP_AXE=1 node scripts/check-miniapp-intake.cjs`.
+Synthetic checks cover consent, exact payload, ambiguous success/retry, receipt,
+Orders, AR/EN and responsive light/dark layouts. Hosted PostgreSQL/Redis tests
+cover financial admission, bot/API concurrency, exactly one reservation, stale
+reviews, owner isolation and receipt recovery. Real Telegram/mobile and provider
+output acceptance remain separate operator checks.
+
+Rollout: back up source, private environment and API/bot images; deploy the reviewed
+SHA, set both flags, and rebuild/recreate API and bot. Preserve Stars/provider
+settings, worker, budgets, balances, proxy and networks. Check health, public
+assets, and unsigned confirmation returning 401 with a same-origin Origin header.
+Use a dedicated funded test account to review without purchasing, confirm once,
+follow its order, and receive the result in chat. To restore bot-only confirmation,
+set `MINIAPP_CONFIRM_ENABLED=false` and recreate API/bot; existing orders keep
+their normal processing and settlement. No migration is needed.
+
 ## Shared request intake — 2026-10-23
 
 With `MINIAPP_INTAKE_ENABLED=true`, service detail offers Start request inside
