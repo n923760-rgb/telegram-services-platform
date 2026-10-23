@@ -14,8 +14,23 @@
   let selectedService = null;
   let noticeKey = "loading";
   let loading = false;
+  let overviewGeneration = 0;
   let catalogScroll = 0;
   let intakeActive = false;
+  let reviewActive = false;
+  let reviewSource = null;
+  const reviewUI = window.MiniAppResultReview
+    ? window.MiniAppResultReview({
+        tg,
+        back,
+        chat: openBotChat,
+        denied: function () {
+          clearPrivate();
+          noticeKey = "failure";
+          render();
+        },
+      })
+    : null;
   const intakeUI = window.MiniAppIntake
     ? window.MiniAppIntake({
         tg,
@@ -104,6 +119,7 @@
       orderAmount: "مبلغ الطلب",
       openChat: "فتح محادثة البوت",
       reviewInBot: "راجع النتيجة في البوت",
+      showReview: "عرض المراجعة",
       payInBot: "استكمل الدفع في البوت",
       resultInBot: "افتح المحادثة للنتيجة",
       orderQueued: "طلبك في الانتظار. لا تحتاج إلى إرساله مجددًا.",
@@ -211,6 +227,7 @@
       orderAmount: "Order amount",
       openChat: "Open bot chat",
       reviewInBot: "Review result in bot",
+      showReview: "View result review",
       payInBot: "Continue payment in bot",
       resultInBot: "Open chat for result",
       orderQueued:
@@ -376,7 +393,10 @@
   }
   function syncBack() {
     if (!tg || !tg.BackButton) return;
-    if (tab === "services" && (selectedService || category || query))
+    if (
+      reviewActive ||
+      (tab === "services" && (selectedService || category || query))
+    )
       tg.BackButton.show();
     else tg.BackButton.hide();
   }
@@ -414,6 +434,8 @@
     syncBack();
   }
   function chooseTab(value) {
+    reviewActive = false;
+    if (reviewUI) reviewUI.clear();
     intakeActive = false;
     tab = value;
     selectedService = null;
@@ -438,6 +460,13 @@
     else focus("service-search");
   }
   function back() {
+    if (reviewActive) {
+      reviewActive = false;
+      if (reviewUI) reviewUI.clear();
+      render();
+      focus(reviewSource);
+      return;
+    }
     if (intakeActive) {
       intakeActive = false;
       render();
@@ -796,7 +825,23 @@
       );
       card.appendChild(amount);
     }
-    if (state[2])
+    if (
+      reviewUI &&
+      order.status === "waiting_confirmation" &&
+      typeof order.review_id === "string" &&
+      /^[a-f0-9-]{36}$/i.test(order.review_id)
+    ) {
+      const show = button(t("showReview"), "primary order-chat", function () {
+        reviewSource = show.id;
+        reviewActive = true;
+        reviewUI.open(order.review_id);
+        render();
+        focus("result-review-title");
+        window.scrollTo(0, 0);
+      });
+      show.id = "review-order-" + order.review_id;
+      card.appendChild(show);
+    } else if (state[2])
       card.appendChild(
         button(t(state[2]), "secondary order-chat", openBotChat),
       );
@@ -937,7 +982,10 @@
       else if (selectedService) renderServiceDetail();
       else renderServices();
     }
-    if (tab === "orders") renderOrders();
+    if (tab === "orders") {
+      if (reviewActive && reviewUI) reviewUI.render(screen, lang);
+      else renderOrders();
+    }
     if (tab === "account") renderAccount();
   }
   for (const item of tabs.querySelectorAll("button"))
@@ -958,6 +1006,16 @@
   }
   if (tg && typeof tg.onEvent === "function") tg.onEvent("themeChanged", theme);
   theme();
+  function clearPrivate() {
+    overviewGeneration++;
+    loading = false;
+    data = null;
+    selectedService = null;
+    intakeActive = false;
+    reviewActive = false;
+    if (intakeUI) intakeUI.clear();
+    if (reviewUI) reviewUI.clear();
+  }
   async function boot() {
     if (loading) return;
     if (!tg || !tg.initData) {
@@ -966,6 +1024,7 @@
       return;
     }
     loading = true;
+    const generation = ++overviewGeneration;
     noticeKey = data ? "refreshing" : "loading";
     render();
     try {
@@ -976,16 +1035,18 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ init_data: tg.initData }),
       });
+      if (generation !== overviewGeneration) return;
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          data = null;
-          selectedService = null;
-          intakeActive = false;
-          if (intakeUI) intakeUI.clear();
+          clearPrivate();
+          noticeKey = "failure";
+          render();
+          return;
         }
         throw new Error("overview unavailable");
       }
       const updated = await response.json();
+      if (generation !== overviewGeneration) return;
       if (!data) lang = updated.language === "en" ? "en" : "ar";
       data = updated;
       if (selectedService)
@@ -995,10 +1056,13 @@
           }) || null;
       noticeKey = null;
     } catch (_) {
-      noticeKey = "failure";
+      if (generation === overviewGeneration) noticeKey = "failure";
+    } finally {
+      if (generation === overviewGeneration) {
+        loading = false;
+        render();
+      }
     }
-    loading = false;
-    render();
   }
   if (tg) {
     tg.ready();

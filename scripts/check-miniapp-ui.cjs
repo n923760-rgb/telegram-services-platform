@@ -187,6 +187,7 @@ async function main() {
           "/miniapp",
           "/miniapp/app.js",
           "/miniapp/intake.js",
+          "/miniapp/result-review.js",
           "/miniapp/styles.css",
         ].includes(pathname)
       ) {

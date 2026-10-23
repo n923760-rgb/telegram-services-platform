@@ -1,3 +1,25 @@
+## Mini App read-only result review — 2026-10-23
+
+- FACT: Live main 3f8e843 and no open PRs verified; owner asks to continue the
+  organized Mini App journey. Prior tracking deployment remains unverified here.
+- CHANGE: Owner-bound waiting-result review with complete existing AR/EN summary
+  and validated stored PNG first-page image; explicit scope and missing-image hints.
+  Approve/cancel and result delivery remain in existing bot contracts.
+- BOUNDARY: Existing intake flag, signed fresh identity, origin/rate/lock/deadlines,
+  registered unbanned owner, current phase/result and post-storage snapshot checks.
+  No raw storage keys, original files, continuation or cost payloads; no provider,
+  Telegram, preview generation, financial or FSM-data write from this endpoint.
+- LOCAL PASS: 110 focused tests, global lint/format/diff and three architecture gates.
+  Synthetic catalog/tracking/confirmation/review browser journeys pass; full text,
+  safe PNG, first-page scope, AR/EN accessible responsive themes, focus/back/filter,
+  aborted/late response isolation and auth privacy. Review images inspected.
+- GATE: Hosted PostgreSQL/Redis structural/visual repeated-read qualification must
+  preserve reservation, job/result/notification, files and independent bot support
+  state before merge. No new environment flag, migration or dependency.
+- ROLLOUT: API only; preserve bot/worker/provider/payment settings and edge/proxy.
+  Real Telegram/mobile, full output-quality P0 and commercial payment acceptance
+  remain separate; native review decisions are not implemented in this slice.
+
 ## Mini App order tracking and next actions — 2026-10-23
 
 - FACT: Live main d7eb612 and no open PRs verified. Operator reports applying the

@@ -593,6 +593,26 @@ h3 {
 .orders-chat {
   margin-top: 18px;
 }
+.result-review-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.95;
+}
+.result-review-image {
+  margin: 20px 0;
+}
+.result-review-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.result-review-card > button {
+  margin-top: 16px;
+}
 .account-credit h2 {
   font-size: 17px;
 }

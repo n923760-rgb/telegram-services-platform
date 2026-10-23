@@ -56,7 +56,9 @@ def test_missing_server_token_is_not_auth():
         verify_init_data(signed(), "", now=1700000001)
 
 
-@pytest.mark.parametrize("path", ["/miniapp", "/miniapp/app.js", "/miniapp/styles.css"])
+@pytest.mark.parametrize(
+    "path", ["/miniapp", "/miniapp/app.js", "/miniapp/styles.css", "/miniapp/result-review.js"]
+)
 async def test_ui_assets_are_available_without_silent_checkout(path):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

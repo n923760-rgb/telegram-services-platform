@@ -69,6 +69,13 @@ async def miniapp_intake_script():
     )
 
 
+@router.get("/miniapp/result-review.js")
+async def miniapp_result_review_script():
+    return FileResponse(
+        ASSETS / "result-review.js", media_type="application/javascript", headers=STATIC_HEADERS
+    )
+
+
 def visible_services(rows, *, user_id: int, stars: bool, ai_available: bool):
     """Reuse registry/admission presentation policy; never claim checkout is available."""
     result = []
@@ -106,6 +113,12 @@ def order_summary(order, service):
         "name_ar": service.name_ar,
         "name_en": service.name_en,
         "status": status,
+        "review_id": str(order.id)
+        if config().miniapp_intake_enabled
+        and status == "waiting_confirmation"
+        and isinstance(order.result, dict)
+        and order.result.get("needs_confirmation") is True
+        else None,
         "status_ar": tr(f"status_{status}", "ar"),
         "status_en": tr(f"status_{status}", "en"),
         "created_at": order.created_at.isoformat() if order.created_at else None,
