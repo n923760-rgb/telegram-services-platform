@@ -21,6 +21,21 @@ If a required capability is missing, clarify the scope before purchase/service e
 
 ## Required evidence before claiming qualification
 
+Numeric-leading email addresses inside Arabic prose need specific mixed-direction
+acceptance. Word now treats the complete ASCII email as one LTR run before
+matching dates, including headings, captions and table cells. Professional date-
+formatted exports apply boundaries around that complete token; literal exports
+preserve the original characters without adding controls. LibreOffice still
+reorders the numeric address in the literal Word fixture, so its run-direction
+assertions alone do not qualify that viewer case. Excel uses the same
+complete-token detection for Arabic cell alignment while preserving literal cell
+values. A synthetic LibreOffice Calc printout still reverses portions of such an
+email inside an Arabic cell, both before and after the detection correction.
+This remains a failed viewer case, not qualified mixed-cell presentation. Do not
+insert display controls into literal XLSX data or infer Microsoft Excel behavior
+from that printout. Test the actual target Office app separately. PowerPoint reuses
+the same matcher while retaining its existing whole-token direction boundaries.
+
 Use a dedicated staging customer and synthetic Arabic, English and mixed-language content.
 For each service test a typical request and relevant boundaries: short/long content, missing
 data, duplicate records, zero, leading-zero IDs and ambiguous dates. For Office outputs:

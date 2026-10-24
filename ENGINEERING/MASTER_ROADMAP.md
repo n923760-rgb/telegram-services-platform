@@ -1,3 +1,43 @@
+## Shared dated-contact direction — 2026-10-24
+
+- BASELINE: Main `1b21ee8`, no open PRs, and successful main workflow
+  `40068081359` verified before this bounded follow-up to #153.
+- FACT: Shared Word/Excel token detection matches a leading date before the full
+  email at the same position. Word can split/mark the address internally and
+  mistake its remaining domain for English prose; Excel can choose left alignment.
+  The initial focused baseline reproduces 11 failures in 15 cases.
+- CHANGE: Consume complete HTTP/www/ASCII email tokens before dates. Word keeps
+  one LTR contact run in Arabic paragraphs, headings, captions and tables; native
+  worksheet cells retain exact text with prose-aware alignment. PowerPoint reuses
+  the shared matcher, removing its duplicate expression while preserving #153's
+  complete-token boundaries. No additional display controls enter XLSX data.
+- LOCAL PASS: 228 focused native/unit cases, 24 existing builder/architecture
+  checks and five actual Word/PDF renderer checks with the configured local binary.
+  The new PDF gate verifies displayed glyph order for all three dated email
+  addresses in both paragraphs and native table cells, not logical extraction alone. New tests cover template/non-template, literal/professional date modes,
+  source immutability, save/reopen, year/day-first addresses and English/standalone
+  controls. Full exact-head PostgreSQL/Redis/native-worker CI required before merge.
+- VISUAL: Before/after synthetic Word and Calc files rendered with bundled
+  LibreOffice. Professional Word paragraphs/tables display complete dated email
+  addresses correctly. Literal Word retains exact text with no new controls but
+  LibreOffice still reorders these weak-leading contacts. Calc also reorders portions
+  of numeric-leading addresses
+  inside Arabic cells; this was present in the baseline and remains a known failed
+  viewer case. Logical alignment/text assertions do not certify visual XLSX quality.
+- CI QUALIFICATION: Run `40112787087` passed 3257 cases but failed one real draft
+  replay test. Its helper re-signed initData for every request, allowing identical
+  operations to acquire different auth timestamps across a second boundary. Cache
+  one signed launch string per test session, matching intake.js and the existing
+  memory-FSM fixture. Preserve the two-200/equal-response and single-purchase
+  assertions; add a deterministic test that a changed signed payload remains a
+  stale replay and cannot mutate the saved draft. Production replay policy stays
+  unchanged. 27 injected-memory HTTP cases pass in a DB-free isolated harness;
+  fresh full hosted DB/Redis qualification is still required.
+- BOUNDARY: Native text direction only; no schema, service version, prompt, provider
+  call, payment, budget, price, migration or dependency changes. Worker-only rollout
+  through existing operations checks. Production deployment, live-provider and
+  Microsoft Word/Excel/PowerPoint mobile acceptance NOT RUN here.
+
 ## PowerPoint dated-contact fidelity — 2026-10-24
 
 - BASELINE: Main `2b8b375` verified with no open PRs; hosted baseline run

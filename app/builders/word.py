@@ -21,7 +21,9 @@ DARK = RGBColor(0, 0, 0)
 DATE_PATTERN = r"(?<!\d)(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{4})(?!\d)"
 DATE_TOKEN = re.compile("(" + DATE_PATTERN + ")")
 INLINE_LTR = re.compile(
-    "(" + DATE_PATTERN + r"|https?://[^\s<>]+|www\.[^\s<>]+|[a-z0-9.+_-]+@[a-z0-9.-]+\.[a-z0-9-]+)",
+    # Consume complete contacts before a date at the same starting position.
+    # A date-leading email must not leave its domain voting as English prose.
+    r"(https?://[^\s<>]+|www\.[^\s<>]+|[a-z0-9.+_-]+@[a-z0-9.-]+\.[a-z0-9-]+|" + DATE_PATTERN + ")",
     re.IGNORECASE,
 )
 
