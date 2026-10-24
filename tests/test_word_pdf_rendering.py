@@ -5,6 +5,36 @@ import pdfplumber
 from tests.word_pdf_fixtures import document, renderer
 
 
+async def test_native_professional_export_keeps_complete_dated_email_visual_order():
+    from app.builders.word_schema import WordDocument
+
+    contacts = ["2026-10-24@e.invalid", "24-10-2026@e.invalid", "2026-10-24.news@e.invalid"]
+    texts = ["راجع " + contact for contact in contacts]
+    result = await renderer().word_pdf(
+        WordDocument(
+            title="مراجع المتابعة",
+            sections=[
+                {"paragraphs": texts},
+                {"tables": [{"columns": ["المرجع"], "rows": [[text] for text in texts]}]},
+            ],
+        )
+    )
+    visual_lines = []
+    with pdfplumber.open(BytesIO(result.pdf)) as pdf:
+        for page in pdf.pages:
+            lines = {}
+            for char in page.chars:
+                lines.setdefault(round(char["top"]), []).append(char)
+            visual_lines.extend(
+                "".join(char["text"] for char in sorted(chars, key=lambda char: char["x0"]))
+                for chars in lines.values()
+            )
+    # Logical PDF text can conceal reordering of the local part, hyphens and domain.
+    # Check displayed glyph order independently for paragraph and native table output.
+    for contact in contacts:
+        assert sum(contact in line for line in visual_lines) == 2
+
+
 async def test_native_arabic_date_has_correct_visual_glyph_order():
     result = await renderer().word_pdf(document())
     with pdfplumber.open(BytesIO(result.pdf)) as pdf:

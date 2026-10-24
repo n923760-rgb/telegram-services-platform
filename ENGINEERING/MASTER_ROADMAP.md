@@ -11,8 +11,10 @@
   worksheet cells retain exact text with prose-aware alignment. PowerPoint reuses
   the shared matcher, removing its duplicate expression while preserving #153's
   complete-token boundaries. No additional display controls enter XLSX data.
-- LOCAL PASS: 228 focused native/unit cases plus 24 existing builder/architecture
-  checks. New tests cover template/non-template, literal/professional date modes,
+- LOCAL PASS: 228 focused native/unit cases, 24 existing builder/architecture
+  checks and five actual Word/PDF renderer checks with the configured local binary.
+  The new PDF gate verifies displayed glyph order for all three dated email
+  addresses in both paragraphs and native table cells, not logical extraction alone. New tests cover template/non-template, literal/professional date modes,
   source immutability, save/reopen, year/day-first addresses and English/standalone
   controls. Full exact-head PostgreSQL/Redis/native-worker CI required before merge.
 - VISUAL: Before/after synthetic Word and Calc files rendered with bundled
