@@ -1,5 +1,6 @@
 import re
 from copy import deepcopy
+from functools import lru_cache
 from io import BytesIO
 
 from docx import Document as Word
@@ -9,6 +10,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 from docx.text.run import Run
+from PIL import ImageFont
 
 from app.builders.direction import is_rtl
 from app.builders.quality import validate
@@ -98,6 +100,43 @@ def _body(doc, text, style=None):
     return paragraph
 
 
+@lru_cache(maxsize=2)
+def _table_font(bold):
+    try:
+        return ImageFont.truetype("DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf", size=40)
+    except OSError:
+        # DOCX generation still works on installations without local render fonts.
+        return None
+
+
+def _table_widths(data, available):
+    weights, minimums = [], []
+    for column in range(len(data.columns)):
+        values = [data.columns[column], *(row[column] for row in data.rows)]
+        weights.append(max(12, min(48, max(map(len, values)))))
+        demand = 0
+        for index, text in enumerate(values):
+            font = _table_font(index == 0)
+            for token in text.split():
+                width = font.getlength(token) / 4 if font is not None else len(token) * 6.5
+                demand = max(demand, width)
+        # Prefer whole words at the existing 10pt font, including bold headers.
+        # Bound long identifiers so one URL cannot consume the entire page.
+        minimum = max(Cm(1), min(Cm(4.2), Pt(demand + 12)))
+        if any(DATE_TOKEN.search(text) for text in values[1:]):
+            minimum = max(minimum, Cm(2.7))
+        minimums.append(minimum)
+    total = sum(minimums)
+    if total > available:
+        # Impossible minima share the available width; never exceed the margins.
+        return [int(available * minimum / total) for minimum in minimums]
+    remaining = available - total
+    return [
+        int(minimum + remaining * weight / sum(weights))
+        for minimum, weight in zip(minimums, weights, strict=True)
+    ]
+
+
 def _table(doc, data: WordTable):
     # Separate adjacent uncaptained tables without adding a terminal blank paragraph
     # that could spill onto an otherwise empty page.
@@ -131,24 +170,9 @@ def _table(doc, data: WordTable):
         edge.set(qn("w:type"), "dxa")
         margins.append(edge)
     properties.append(margins)
-    # Give descriptive columns space without allowing a short identifier to dominate.
-    weights = [
-        max(12, min(48, max(len(data.columns[i]), *(len(row[i]) for row in data.rows))))
-        for i in range(len(data.columns))
-    ]
     section = doc.sections[0]
     available = section.page_width - section.left_margin - section.right_margin
-    widths = [int(available * weight / sum(weights)) for weight in weights]
-    if any(DATE_TOKEN.search(cell) for row in data.rows for cell in row):
-        minimums = [
-            Cm(2.7) if any(DATE_TOKEN.search(row[i]) for row in data.rows) else Cm(1)
-            for i in range(len(data.columns))
-        ]
-        remaining = available - sum(minimums)
-        widths = [
-            int(minimum + remaining * weight / sum(weights))
-            for minimum, weight in zip(minimums, weights, strict=True)
-        ]
+    widths = _table_widths(data, available)
     for column, width in zip(table.columns, widths, strict=True):
         column.width = width
     header = OxmlElement("w:tblHeader")
@@ -225,6 +249,10 @@ def build(
     section.bottom_margin = Cm(2.2)
     section.left_margin = Cm(2.5)
     section.right_margin = Cm(2.5)
+    if data.design is not None:
+        # Resolve final margins before sizing any native table.
+        section.top_margin = section.bottom_margin = Cm(1.9)
+        section.left_margin = section.right_margin = Cm(2.1)
 
     if professional_template:
         alignment = "auto"
@@ -429,9 +457,6 @@ def _design(doc, design, *, layout="standard"):
         style.paragraph_format.space_after = Pt(5 if name == "Title" else 4)
     doc.styles["List Bullet"].paragraph_format.space_after = Pt(3 if compact else 5)
     doc.styles["List Bullet"].paragraph_format.line_spacing = 1.08 if compact else 1.15
-    for section in doc.sections:
-        section.top_margin = section.bottom_margin = Cm(1.9)
-        section.left_margin = section.right_margin = Cm(2.1)
     bullet_ids = {rtl: _bullet_numbering(doc, rtl) for rtl in (False, True)}
     in_header = True
     for paragraph in doc.paragraphs:
