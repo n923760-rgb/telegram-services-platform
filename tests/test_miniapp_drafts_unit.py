@@ -313,6 +313,26 @@ async def test_concurrent_duplicate_answers_are_serialized(intake):
     assert a.status_code == b.status_code == 200 and a.json() == b.json()
 
 
+async def test_changed_signed_session_is_not_an_identical_operation_replay(intake):
+    from urllib.parse import parse_qs
+
+    initial = await opened(intake)
+    args = operation(initial, value="one answer")
+    first = await call(intake, "answer", **args)
+    assert first.status_code == 200
+    state = await intake.states[11].get_data()
+    original = intake.init_data[11]
+    issued = int(parse_qs(original)["auth_date"][0])
+    intake.init_data[11] = signed(user_id=11, issued=issued - 1)
+    changed = await call(intake, "answer", **args)
+    assert changed.status_code == 409 and changed.json()["detail"] == "stale_button"
+    assert await intake.states[11].get_data() == state
+    intake.init_data[11] = original
+    replay = await call(intake, "answer", **args)
+    assert replay.status_code == 200 and replay.json() == first.json()
+    assert await intake.states[11].get_data() == state
+
+
 async def test_committed_but_response_failed_can_retry_without_reapplying(intake, monkeypatch):
     initial = await opened(intake)
     actual = drafts.persist

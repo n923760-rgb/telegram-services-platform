@@ -54,9 +54,12 @@ async def shared(monkeypatch):
         base_url="https://test",
         headers={"Origin": "https://test", "Sec-Fetch-Site": "same-origin"},
     ) as client:
+        # One Telegram launch supplies one initData string, as intake.js does.
+        # Re-signing per request can cross a second boundary and changes the
+        # replay-bound payload even when revision/operation/value are identical.
+        raw = signed(user_id=OWNER, issued=int(datetime.now(UTC).timestamp()))
 
         async def call(action="view", **kwargs):
-            raw = signed(user_id=OWNER, issued=int(datetime.now(UTC).timestamp()))
             return await client.post(
                 "/miniapp/api/draft", json={"init_data": raw, "action": action, **kwargs}
             )

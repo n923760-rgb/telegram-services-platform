@@ -24,6 +24,15 @@
   of numeric-leading addresses
   inside Arabic cells; this was present in the baseline and remains a known failed
   viewer case. Logical alignment/text assertions do not certify visual XLSX quality.
+- CI QUALIFICATION: Run `40112787087` passed 3257 cases but failed one real draft
+  replay test. Its helper re-signed initData for every request, allowing identical
+  operations to acquire different auth timestamps across a second boundary. Cache
+  one signed launch string per test session, matching intake.js and the existing
+  memory-FSM fixture. Preserve the two-200/equal-response and single-purchase
+  assertions; add a deterministic test that a changed signed payload remains a
+  stale replay and cannot mutate the saved draft. Production replay policy stays
+  unchanged. 27 injected-memory HTTP cases pass in a DB-free isolated harness;
+  fresh full hosted DB/Redis qualification is still required.
 - BOUNDARY: Native text direction only; no schema, service version, prompt, provider
   call, payment, budget, price, migration or dependency changes. Worker-only rollout
   through existing operations checks. Production deployment, live-provider and
