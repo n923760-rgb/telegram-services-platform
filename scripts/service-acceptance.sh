@@ -104,6 +104,8 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 root = Path(sys.argv[1])
 with ZipFile(root / 'service-acceptance-results.zip', 'w', ZIP_DEFLATED) as archive:
+    # Checkout provenance, not proof of which source built the worker image.
+    archive.write(root / 'source-commit.txt', 'source-commit.txt')
     for path in sorted((root / 'results').rglob('*')):
         if path.is_file():
             archive.write(path, path.relative_to(root))

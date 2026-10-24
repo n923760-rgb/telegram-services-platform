@@ -43,6 +43,7 @@ from app.providers.ai.validation import validation_categories
 from app.providers.runtime import runtime_for, storage
 from app.providers.storage import OwnedStorage
 from app.services.base import ServiceError
+from app.services.catalog import CATEGORY_KEYS
 from app.services.registry import registry
 from app.wallet.ledger import apply, balance
 from app.workers.runner import execute_job
@@ -350,9 +351,74 @@ def materialize(case, owned, data):
 
 
 def save_report(path, report):
+    # Recompute from the complete portfolio, even for a selected or interrupted run.
+    report["service_readiness"] = service_readiness(cases(ASSETS), report["cases"])
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(path)
+
+
+def service_readiness(templates, results):
+    """Describe this run's coverage; never infer visual or launch approval from PASS."""
+    expected = {case.name: case for case in templates}
+    observed = {}
+    for row in results:
+        name = row.get("case")
+        if (
+            name not in expected
+            or name in observed
+            or row.get("service") != expected[name].slug
+            or row.get("status") not in {"PASS", "FAIL"}
+        ):
+            raise ServiceError("acceptance_report_invalid")
+        observed[name] = row
+    services = []
+    for category in CATEGORY_KEYS:
+        for slug in sorted({case.slug for case in templates}):
+            plugin = registry.types[slug]
+            if plugin.category != category:
+                continue
+            values = [case for case in templates if case.slug == slug]
+            passed = [c.name for c in values if observed.get(c.name, {}).get("status") == "PASS"]
+            failed = [c.name for c in values if observed.get(c.name, {}).get("status") == "FAIL"]
+            missing = [c.name for c in values if c.name not in observed]
+            status = (
+                "FAIL"
+                if failed
+                else "NOT_RUN"
+                if len(missing) == len(values)
+                else "INCOMPLETE"
+                if missing
+                else "PASS"
+            )
+            services.append(
+                {
+                    "service": slug,
+                    "name_ar": plugin.name_ar,
+                    "category": category,
+                    "version": plugin.version,
+                    "automated_status": status,
+                    "passed_cases": passed,
+                    "failed_cases": failed,
+                    "not_run_cases": missing,
+                    "manual_review_status": "NOT_RECORDED",
+                    "manual_review_checks": sorted(
+                        {c for case in values for c in case.review_checks}
+                    ),
+                    "next_action": (
+                        "fix_failed_cases"
+                        if failed
+                        else "run_missing_cases"
+                        if missing
+                        else "review_source_fidelity_and_target_viewer"
+                    ),
+                }
+            )
+    return {
+        "scope": "current_run_only; configuration_and_previous_runs_not_combined",
+        "launch_status": "NOT_ASSESSED",
+        "services": services,
+    }
 
 
 async def finish(order_id):
@@ -610,6 +676,7 @@ async def execute(case_names=None):
                     "calculated_usage_sar",
                     "active_orders",
                     "wallet_reserved_halala",
+                    "service_readiness",
                 )
             }
         )
@@ -637,6 +704,7 @@ def main():
                     "max_call_bounds_sar": str(LIMIT),
                     "max_calls": CALLS,
                     "live_execution": "not_performed",
+                    "service_readiness": service_readiness(cases(ASSETS), []),
                 }
             )
         )
