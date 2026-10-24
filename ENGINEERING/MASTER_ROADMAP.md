@@ -1,3 +1,35 @@
+## Word table word widths and final margins — 2026-10-25
+
+- BASELINE: Live main `d3475a4` verified, with no open PRs before this round.
+- FACT: A rendered 35-record six-column table splits Reference, Amount and
+  Responsible inside their words. Named designs size tables against the initial
+  margins and then widen the body, leaving table widths 287655 EMU short of the
+  final printable width in the baseline professional fixture.
+- CHANGE: Resolve existing design margins before table construction. Give words
+  measured in regular/bold DejaVu Sans at the existing 10pt size bounded column
+  minima, retain date space and distribute remaining space by bounded content
+  length. Compress impossible minima within the page; long identifiers wrap.
+  Missing local fonts retain a conservative fallback, without blocking DOCX.
+- GATES: Native cell/source equality, all three designs and both authoring paths,
+  Arabic/English, exact final table width, fixed font size, repeated headers,
+  long contacts/date saturation and missing fonts. Real PDF regression checks
+  complete English header words, all 35 IDs/dates/amounts, page bounds and editable
+  source cells. Full hosted DB/Redis/native-worker CI required before merge.
+- LOCAL PASS: 106 focused builder/template/CV/contact/title/native-render cases
+  plus three actual-source architecture gates; global lint/format/diff checks.
+  Copied pure tests ran outside the database autouse fixture. One copied governance
+  test initially failed because its source-root path pointed outside the repo; all
+  three original architecture functions then passed against the actual source.
+  Full DB/Redis CI is still required.
+- VISUAL: Baseline problem reproduced; all five English and four Arabic pages
+  rendered/inspected locally with bundled LibreOffice. Header words remain intact
+  and records complete in these fixtures. English sample uses five pages rather
+  than four, retaining 10pt text and all records. Rendering is not Microsoft Office
+  or mobile acceptance; impossible widths and substituted fonts still need review.
+- BOUNDARY: Native Word layout only. No provider calls, prompt/schema/service
+  version, enabled status, prices, financial policy, migrations or dependencies
+  changed. No production rollout or fresh live-provider execution performed here.
+
 ## Service readiness organization — 2026-10-25
 
 - BASELINE: Live main `4293251` verified before this bounded reporting change.

@@ -58,6 +58,18 @@ PASS/FAIL/NOT RUN. No real customer content or secrets in Git/evidence. A test u
 plan is not a live-provider acceptance result. Deployment, payments and paid launch require
 their own approvals; SAR credits remain test credits under current governance.
 
+## Word table layout
+
+Native Word tables use the final document margins before allocating column widths.
+Measured words, including bold headers, receive space at the existing 10pt cell
+font; long identifiers have bounded demand so one contact cannot monopolize the
+page. If all requested minima cannot fit, widths share the available space and
+text wraps. Local font absence uses an approximate fallback and does not prevent
+editable DOCX generation. This is a layout estimate, not target-Office proof.
+Wider short-field columns can increase wrapping in narrative columns and page
+count; never delete records or shrink cell fonts to hide that tradeoff. Repeated
+headers and native editable rows remain required on multipage tables.
+
 ## Excel delivery conventions
 
 `Data!A1` is the title, row 2 separates it from the dataset, row 3 contains the native `Records`

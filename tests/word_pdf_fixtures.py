@@ -24,3 +24,43 @@ def table_document():
         title="تقرير الطلبات",
         sections=[{"tables": [{"columns": ["الرقم", "التاريخ", "المبلغ"], "rows": rows}]}],
     )
+
+
+def wide_table_document(*, arabic=False, design="modern"):
+    columns = (
+        [
+            "المرجع",
+            "وصف حالة التسليم الحالية",
+            "الإدارة المسؤولة",
+            "تاريخ التسليم",
+            "المبلغ",
+            "معلومات التسليم الإضافية",
+        ]
+        if arabic
+        else [
+            "Reference",
+            "Description of the current delivery status",
+            "Responsible department",
+            "Delivery date",
+            "Amount",
+            "Additional delivery information",
+        ]
+    )
+    rows = [
+        [
+            f"{100 + index:05d}",
+            "متابعة تشغيلية مفصلة للتسليم المطلوب"
+            if arabic
+            else "Detailed operational follow up for the requested delivery",
+            "إدارة العمليات" if arabic else "Operations department",
+            "2026-10-25",
+            "125.50 SAR",
+            "لم تعتمد الدفعة" if arabic else "No payment approved",
+        ]
+        for index in range(35)
+    ]
+    return WordDocument(
+        title="سجل المتابعة" if arabic else "Delivery follow up",
+        design={"theme": design},
+        sections=[{"tables": [{"columns": columns, "rows": rows}]}],
+    )
