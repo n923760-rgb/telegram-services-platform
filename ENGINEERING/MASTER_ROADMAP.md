@@ -1,3 +1,26 @@
+## PowerPoint dated-contact fidelity — 2026-10-24
+
+- BASELINE: Main `2b8b375` verified with no open PRs; hosted baseline run
+  `40032836984` passed. This is source evidence, not a production rollout claim.
+- FACT: Arabic PowerPoint paragraphs insert invisible date direction marks inside
+  supplied URLs/email addresses containing ISO dates. Native reopen reproduces
+  changed contact strings in titles, cover/content bullets and table cells.
+- CHANGE: Match complete HTTP/www/email contacts before numeric dates. Leave
+  contact characters exact; isolate free numeric date tokens using the existing
+  Word date pattern (hyphens/slashes, year-first/day-first and digit script).
+  English prose and standalone LTR identifiers retain their text. No parsing or
+  calendar inference; the validated source plan remains unchanged.
+- LOCAL PASS: 138 focused PowerPoint unit cases, four existing native quality
+  checks and three architecture gates. New cases reopen/save/reopen native PPTX;
+  regression reproduced on the baseline, with supported fixtures passing after
+  the correction. Existing density gates remain enforced.
+- BOUNDARY: Native rendering only; no prompt, input/output schema, service version,
+  AI call, provider, payment, pricing, migration or dependency change. Full hosted
+  PostgreSQL/Redis/native-worker checks required before merge. Microsoft
+  PowerPoint/mobile visual behavior and real-provider acceptance NOT RUN here.
+- ROLLOUT: Worker-only after source verification, following existing operations
+  checks and preserving admission/settings. No server deployment performed here.
+
 ## Standard Word report title scale — 2026-10-24
 
 - BASELINE: PR #151 merged as ade24addf42c56507bb7d1d8a0c1ad5f93436356;
