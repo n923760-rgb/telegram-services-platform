@@ -6,7 +6,9 @@
   supplied URLs/email addresses containing ISO dates. Native reopen reproduces
   changed contact strings in titles, cover/content bullets and table cells.
 - CHANGE: Match complete HTTP/www/email contacts before numeric dates. Leave
-  contact characters exact; isolate free numeric date tokens using the existing
+  contact characters exact and detect prose direction after removing whole
+  identifiers, including date-leading email addresses; isolate free numeric
+  date tokens using the existing
   Word date pattern (hyphens/slashes, year-first/day-first and digit script).
   English prose and standalone LTR identifiers retain their text. No parsing or
   calendar inference; the validated source plan remains unchanged.

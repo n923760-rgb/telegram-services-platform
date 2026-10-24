@@ -39,8 +39,10 @@ def test_arabic_titles_bullets_and_cells_preserve_dated_contacts(cover, contact)
     for name in ("Slide title", "Slide content"):
         shape = next(shape for shape in deck.slides[0].shapes if shape.name == name)
         assert shape.text_frame.paragraphs[0].text == text
+        assert shape.text_frame.paragraphs[0]._p.pPr.get("rtl") == "1"
     table = next(shape.table for shape in deck.slides[-1].shapes if shape.has_table)
     assert table.cell(1, 0).text == text
+    assert table.cell(1, 0).text_frame.paragraphs[0]._p.pPr.get("rtl") == "1"
     saved = BytesIO()
     deck.save(saved)
     reopened = Presentation(BytesIO(saved.getvalue()))

@@ -11,7 +11,7 @@ from app.builders.direction import has_arabic, is_rtl
 from app.builders.pptx_layout import FONT, plan_slide
 from app.builders.quality import validate
 from app.builders.schema import Deck
-from app.builders.word import DATE_PATTERN, DATE_TOKEN, INLINE_LTR, safe_text
+from app.builders.word import DATE_PATTERN, DATE_TOKEN, safe_text
 
 ACCENT = RGBColor(0x17, 0x6B, 0x55)
 DARK = RGBColor(0x22, 0x36, 0x3D)
@@ -29,9 +29,9 @@ DISPLAY_LTR = re.compile(
 
 
 def _reading_rtl(text):
-    # Contacts/dates are identifiers, not English prose. Reuse the Word matcher
-    # only for detection; never remove or rewrite them in the rendered content.
-    return is_rtl(INLINE_LTR.sub("", text))
+    # Contacts/dates are identifiers, not English prose. Use the same contact-first
+    # matcher as display formatting, including addresses starting with a date.
+    return is_rtl(DISPLAY_LTR.sub("", text))
 
 
 def _style_run(run, size, bold, color):
