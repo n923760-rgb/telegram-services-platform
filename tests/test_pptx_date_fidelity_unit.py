@@ -38,17 +38,19 @@ def test_arabic_titles_bullets_and_cells_preserve_dated_contacts(cover, contact)
     deck = Presentation(BytesIO(build(source)))
     for name in ("Slide title", "Slide content"):
         shape = next(shape for shape in deck.slides[0].shapes if shape.name == name)
-        assert shape.text_frame.paragraphs[0].text == text
+        visible = shape.text_frame.paragraphs[0].text
+        assert visible.replace("\u200e", "") == text and contact in visible
         assert shape.text_frame.paragraphs[0]._p.pPr.get("rtl") == "1"
     table = next(shape.table for shape in deck.slides[-1].shapes if shape.has_table)
-    assert table.cell(1, 0).text == text
+    assert table.cell(1, 0).text.replace("\u200e", "") == text
+    assert contact in table.cell(1, 0).text
     assert table.cell(1, 0).text_frame.paragraphs[0]._p.pPr.get("rtl") == "1"
     saved = BytesIO()
     deck.save(saved)
     reopened = Presentation(BytesIO(saved.getvalue()))
     assert (
         next(shape.table for shape in reopened.slides[-1].shapes if shape.has_table).cell(1, 0).text
-        == text
+        == table.cell(1, 0).text
     )
     assert source.model_dump_json() == original
 
@@ -83,3 +85,11 @@ def test_same_arabic_paragraph_keeps_contacts_exact_and_isolates_only_free_dates
     body = next(shape for shape in deck.slides[0].shapes if shape.name == "Slide content")
     assert body.text == f"راجع {contact} قبل \u200e24/10/2026\u200e"
     assert source.slides[0].bullets == [text]
+
+
+def test_date_leading_email_uses_boundaries_around_the_complete_identifier():
+    text = "راجع 2026-10-24@e.invalid"
+    source = Deck.model_validate({"slides": [{"title": "البريد", "bullets": [text]}]})
+    deck = Presentation(BytesIO(build(source)))
+    body = next(shape for shape in deck.slides[0].shapes if shape.name == "Slide content")
+    assert body.text == "راجع \u200e2026-10-24@e.invalid\u200e"

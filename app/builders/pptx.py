@@ -49,13 +49,13 @@ def _style_run(run, size, bold, color):
 
 def _paragraph(paragraph, text, rtl, align, size, bold, color, *, bullet=False):
     visible = safe_text(text)
-    # Match complete contacts before dates: a date inside a URL/email is part of
-    # that identifier and must not acquire invisible characters when copied.
-    # Standalone dates retain their source notation and digit script.
+    # Match complete contacts before dates. Boundary marks surround a free date
+    # or a date-leading email as one LTR token; never insert them inside a contact.
+    # Otherwise an RTL viewer can reorder a numeric email local part and domain.
     if rtl:
         visible = DISPLAY_LTR.sub(
             lambda match: (
-                "\u200e" + match[0] + "\u200e" if DATE_TOKEN.fullmatch(match[0]) else match[0]
+                "\u200e" + match[0] + "\u200e" if DATE_TOKEN.match(match[0]) else match[0]
             ),
             visible,
         )

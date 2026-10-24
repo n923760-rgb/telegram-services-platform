@@ -7,15 +7,18 @@
   changed contact strings in titles, cover/content bullets and table cells.
 - CHANGE: Match complete HTTP/www/email contacts before numeric dates. Leave
   contact characters exact and detect prose direction after removing whole
-  identifiers, including date-leading email addresses; isolate free numeric
-  date tokens using the existing
-  Word date pattern (hyphens/slashes, year-first/day-first and digit script).
+  identifiers, including date-leading email addresses. Direction boundaries wrap
+  free dates or a date-leading email as one complete token, never its interior.
+  Reuse the Word date pattern (hyphens/slashes, year-first/day-first and digit script).
   English prose and standalone LTR identifiers retain their text. No parsing or
   calendar inference; the validated source plan remains unchanged.
-- LOCAL PASS: 138 focused PowerPoint unit cases, four existing native quality
+- LOCAL PASS: 139 focused PowerPoint unit cases, four existing native quality
   checks and three architecture gates. New cases reopen/save/reopen native PPTX;
   regression reproduced on the baseline, with supported fixtures passing after
-  the correction. Existing density gates remain enforced.
+  the correction. Existing density gates remain enforced. Three synthetic
+  cover/content/table slides rendered with bundled LibreOffice were visually
+  inspected: date notation, whole date-leading email and complete URL display
+  correctly with no observed clipping. This is not Microsoft Office qualification.
 - BOUNDARY: Native rendering only; no prompt, input/output schema, service version,
   AI call, provider, payment, pricing, migration or dependency change. Full hosted
   PostgreSQL/Redis/native-worker checks required before merge. Microsoft
