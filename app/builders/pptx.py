@@ -11,7 +11,7 @@ from app.builders.direction import has_arabic, is_rtl
 from app.builders.pptx_layout import FONT, plan_slide
 from app.builders.quality import validate
 from app.builders.schema import Deck
-from app.builders.word import INLINE_LTR, safe_text
+from app.builders.word import DATE_PATTERN, DATE_TOKEN, safe_text
 
 ACCENT = RGBColor(0x17, 0x6B, 0x55)
 DARK = RGBColor(0x22, 0x36, 0x3D)
@@ -22,12 +22,16 @@ COVER_TEXT = RGBColor(0xFF, 0xFF, 0xFF)
 COVER_MUTED = RGBColor(0xD6, 0xE5, 0xE0)
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
+DISPLAY_LTR = re.compile(
+    r"https?://[^\s<>]+|www\.[^\s<>]+|[a-z0-9.+_-]+@[a-z0-9.-]+\.[a-z0-9-]+|" + DATE_PATTERN,
+    re.IGNORECASE,
+)
 
 
 def _reading_rtl(text):
-    # Contacts/dates are identifiers, not English prose. Reuse the Word matcher
-    # only for detection; never remove or rewrite them in the rendered content.
-    return is_rtl(INLINE_LTR.sub("", text))
+    # Contacts/dates are identifiers, not English prose. Use the same contact-first
+    # matcher as display formatting, including addresses starting with a date.
+    return is_rtl(DISPLAY_LTR.sub("", text))
 
 
 def _style_run(run, size, bold, color):
@@ -45,10 +49,15 @@ def _style_run(run, size, bold, color):
 
 def _paragraph(paragraph, text, rtl, align, size, bold, color, *, bullet=False):
     visible = safe_text(text)
-    # Direction marks affect display only; keep every ISO date's original characters.
+    # Match complete contacts before dates. Boundary marks surround a free date
+    # or a date-leading email as one LTR token; never insert them inside a contact.
+    # Otherwise an RTL viewer can reorder a numeric email local part and domain.
     if rtl:
-        visible = re.sub(
-            r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)", lambda match: "\u200e" + match[0] + "\u200e", visible
+        visible = DISPLAY_LTR.sub(
+            lambda match: (
+                "\u200e" + match[0] + "\u200e" if DATE_TOKEN.match(match[0]) else match[0]
+            ),
+            visible,
         )
     paragraph.text = visible
     paragraph.alignment = align
