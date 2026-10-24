@@ -4,6 +4,9 @@ The owner requires professional, editable Office output across the approved serv
 This is a release criterion, not a promise that every possible request is supported.
 HTTP health and a successful file export do not establish output quality or paid-launch readiness.
 
+Use the [service readiness report and improvement order](SERVICE_READINESS.md) to
+track all services and modes, including cases omitted from a selected test run.
+
 ## Service-specific acceptance
 
 | Service/output | Native editability and quality gate | Current limitation / remaining proof |

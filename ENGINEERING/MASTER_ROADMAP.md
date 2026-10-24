@@ -1,3 +1,27 @@
+## Service readiness organization — 2026-10-25
+
+- BASELINE: Live main `4293251` verified before this bounded reporting change.
+  Owner requests reorganizing work around service readiness and output quality.
+- FACT: Selected acceptance runs can pass without covering the complete service
+  or portfolio. Existing report rows retain individual outcomes but do not expose
+  an explicit all-service progress matrix. Uploaded historical ZIPs also omit the
+  checkout source file retained separately by the wrapper.
+- CHANGE: Recompute service-level automated status from all current fixtures after
+  every saved case and show the complete untested portfolio in plan mode. Include
+  missing cases, failed cases, specific manual review checks and the next action.
+  No automatic visual/semantic/mobile or launch approval. Preserve the original
+  selected-run and financial checks. Package checkout provenance in the ZIP without
+  claiming worker-image provenance. SERVICE_READINESS.md records the improvement
+  order across all 16 services and links the existing quality/Telegram criteria.
+- LOCAL PASS: 97 reporting/wrapper/representative/delivery/output-contract cases,
+  global lint/format, shell syntax and diff checks. Full PostgreSQL/Redis/native-worker
+  CI required before merge; local PostgreSQL is unavailable. Three governance
+  tests could not run locally because their autouse fixture requires PostgreSQL. No fresh provider, Telegram, mobile or
+  production execution. Existing viewer failures remain unresolved.
+- BOUNDARY: Operational reporting/documentation only. No customer input/output
+  contract, service version, activation, prices, payment, provider, budget, schema,
+  migration, dependencies or customer-facing menu changes.
+
 ## Shared dated-contact direction — 2026-10-24
 
 - BASELINE: Main `1b21ee8`, no open PRs, and successful main workflow
