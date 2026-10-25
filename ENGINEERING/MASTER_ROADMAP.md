@@ -1,3 +1,33 @@
+## PDF extraction optional-layer boundary — 2026-10-25
+
+- BASELINE: Live main `2dfa248` after #158; tree matches the tested PDF page-tools
+  round. Owner requests continuing bounded service-quality improvements.
+- FACT: A valid synthetic text PDF renders its hidden region blank in PDFium but
+  pypdf returns Hidden 00999. Both real Camelot lattice/stream backends extract
+  optional-layer hidden values into table cells. Word's former path sends hidden
+  text to AI even when a later fidelity check rejects the eventual response.
+- CHANGE: Share catalog optional-content detection across page tools, PDF-to-Word
+  and native table preflight. Word rejects before text extraction/AI; the table
+  child rejects before native extraction, with its exact nontransient safe error
+  propagated without stream fallback. Include on/off/empty/indirect declarations
+  and later pages. Arabic/English intake and errors explain a reviewed flat export.
+- VERSION: PDF-to-Word 7 -> 8 and PDF tables 5 -> 6 reflect stricter input contracts.
+  Generic registry sync releases unprepared prior-version reservations; prepared
+  historical results retain existing cached delivery. Preserve administrator
+  enablement, halala and Stars prices. Coordinate API/bot/worker rollout; no
+  production deployment or migration is part of this source round.
+- QUALIFICATION: Pixel witness plus underlying native backend reproductions,
+  pre-AI/pre-output rejection, both native extraction methods and plain positive
+  service cases. Extend upgrade/cache cases to the immediately prior versions.
+  Hosted PostgreSQL lifecycle checks must prove one release, no capture/provider
+  cost/output and unchanged circuit availability; native network-disabled worker
+  checks must prove both preflight paths before merge. Microsoft/mobile/live
+  provider and Telegram qualification remain separate and NOT RUN here.
+- BOUNDARY: Existing forms/image checks remain. No layer flattening/redaction,
+  general hidden-content sanitizing or blanket PDF fidelity claim. Input errors
+  do not count toward circuit failures. No price, activation, provider, budget,
+  dependency, migration or production image change.
+
 ## PDF optional-layer visibility boundary — 2026-10-25
 
 - BASELINE: Live main `1fcca61` after #157; source tree verified identical to the

@@ -6,6 +6,7 @@ from pypdf import PdfReader, PdfWriter
 
 from app.builders.quality import validate
 from app.files.pdf_forms import has_interactive_content
+from app.files.pdf_layers import has_layer_declaration
 from app.files.pdf_selection import page_selection
 
 
@@ -52,7 +53,7 @@ def build(
                 raise PdfToolError("pdf_tools_form")
             # add_page does not preserve the catalog's optional-content defaults.
             # Copying a page can expose a layer that the source displays as hidden.
-            if reader.trailer["/Root"].get("/OCProperties") is not None:
+            if has_layer_declaration(reader):
                 raise PdfToolError("pdf_tools_layers")
             readers.append(reader)
         writer = PdfWriter()

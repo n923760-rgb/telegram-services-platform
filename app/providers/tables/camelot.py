@@ -15,6 +15,7 @@ MAX_OUTPUT = 512 * 1024
 ERRORS = {
     "file_invalid",
     "pdf_image_content",
+    "pdf_tables_layers",
     "pdf_tables_limit",
     "pdf_tables_missing",
     "pdf_tables_quality",

@@ -8,6 +8,7 @@ from app.builders import word
 from app.core.i18n import tr, translations
 from app.files.pdf_content import has_image_content
 from app.files.pdf_forms import has_form_declaration, has_widget
+from app.files.pdf_layers import has_layer_declaration
 from app.files.pdf_text import extract_page_text
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.pdf_to_word.layout import opening_title
@@ -16,7 +17,7 @@ from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
 
 class PdfToWord(BaseService):
-    version = "7"
+    version = "8"
     slug = "pdf_to_word"
     menu_order = 20
     category = "pdf"
@@ -41,6 +42,8 @@ class PdfToWord(BaseService):
             # Even an empty declaration is unsupported, not proof of plain text.
             if has_form_declaration(reader):
                 raise ServiceError("pdf_word_form")
+            if has_layer_declaration(reader):
+                raise ServiceError("pdf_word_layers")
             pages = []
             sources = []
             text_length = 0

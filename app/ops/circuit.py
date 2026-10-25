@@ -42,6 +42,8 @@ async def evaluate(slug, notifier=None):
                                     "input_invalid",
                                     "needs_information",
                                     "pdf_word_form",
+                                    "pdf_word_layers",
+                                    "pdf_tables_layers",
                                     "pdf_image_content",
                                     "pdf_text_unreadable",
                                     "pdf_text_too_long",
