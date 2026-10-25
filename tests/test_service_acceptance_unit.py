@@ -387,7 +387,34 @@ async def test_native_provider_never_reaches_parent_network_call(monkeypatch):
 async def test_native_ai_selection_rejects_before_database_or_output_creation(
     tmp_path, monkeypatch
 ):
-    monkeypatch.setattr(acceptance, "isolated", lambda: tmp_path)
+    monkeypatch.setattr(acceptance, "isolated", lambda **kwargs: tmp_path)
     with pytest.raises(ServiceError, match="acceptance_native_requires_no_ai"):
         await acceptance.execute(["summary"], native_only=True)
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("native_only", [False, True])
+@pytest.mark.parametrize("ai_enabled", [False, True])
+def test_isolation_requires_ai_state_matching_execution_mode(
+    tmp_path, monkeypatch, native_only, ai_enabled
+):
+    cfg = valid_cfg(tmp_path)
+    cfg.ai_enabled = ai_enabled
+    monkeypatch.setattr(acceptance, "config", lambda: cfg)
+    if ai_enabled == native_only:
+        with pytest.raises(ServiceError, match="acceptance_isolation_required"):
+            acceptance.isolated(native_only=native_only)
+    else:
+        assert acceptance.isolated(native_only=native_only) == cfg.storage_root
+
+
+@pytest.mark.parametrize(
+    "field,value", [("app_env", "production"), ("admin_ids", [1]), ("stars_enabled", True)]
+)
+def test_native_mode_retains_isolation_guards(tmp_path, monkeypatch, field, value):
+    cfg = valid_cfg(tmp_path)
+    cfg.ai_enabled = False
+    setattr(cfg, field, value)
+    monkeypatch.setattr(acceptance, "config", lambda: cfg)
+    with pytest.raises(ServiceError, match="acceptance_isolation_required"):
+        acceptance.isolated(native_only=True)

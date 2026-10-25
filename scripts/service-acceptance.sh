@@ -103,9 +103,9 @@ if os.environ['ACCEPTANCE_NATIVE_ONLY'] == 'true':
     os.environ['AI_ENABLED'] = 'false'
     config.cache_clear()
 from app.ops.service_acceptance import ASSETS, cases, isolated, main, selected_cases, native_cases
-isolated()  # Refuse wrong targets before migrations or seeding.
-selection = json.loads(os.environ['ACCEPTANCE_CASES'])
 native_only = os.environ['ACCEPTANCE_NATIVE_ONLY'] == 'true'
+isolated(native_only=native_only)  # Refuse wrong targets before migrations or seeding.
+selection = json.loads(os.environ['ACCEPTANCE_CASES'])
 (native_cases if native_only else selected_cases)(cases(ASSETS), selection or None)
 from alembic import command
 from alembic.config import Config

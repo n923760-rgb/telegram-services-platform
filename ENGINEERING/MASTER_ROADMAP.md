@@ -1,3 +1,17 @@
+## Native acceptance isolation mode — 2026-10-26
+
+- FACT: Operator updated to 0e919ef; selection preflight passed, then isolated()
+  rejected AI_ENABLED=false before migrations or case execution. No case results
+  exist; the subsequent copy error is a consequence of that early rejection.
+- FIX: Pass native_only explicitly into the isolation guard in both wrapper and
+  executor. Native mode requires AI disabled; ordinary mode still requires AI
+  enabled. Preserve all DB, storage, administrator, Stars and budget guards.
+- FIX: Skip provider-rate configuration preflight only for native mode, whose
+  adapter refuses calls; keep ordinary provider validation unchanged.
+- VALIDATION: Cover all four AI/mode combinations and retained native guards;
+  real DB native flow uses disabled AI with no provider key or rates.
+  Require full hosted CI before merging. No production setting/container change.
+
 ## Native-only acceptance without production pause — 2026-10-25
 
 - BASELINE: main b9fb494. Operator-reported rollout completed: API/bot/worker
