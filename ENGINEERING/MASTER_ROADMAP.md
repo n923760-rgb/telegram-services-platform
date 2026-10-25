@@ -1,3 +1,17 @@
+## Sequential baseline review of 16 services — 2026-10-25
+
+- BASELINE: main `04357a5`; owner requests continued service-by-service development,
+  explicitly deferring merge. Independent draft changes are not folded into main.
+- LOCAL PASS: 426 baseline plugin tests across all 16 public services, with no
+  skips; CV/minutes native cases pass after setting the existing local Office
+  test binary override. Supplementary image/PDF checks pass 154 overlapping cases.
+- EVIDENCE: ENGINEERING/REPORTS/2026-10-25-service-by-service-review.md records each
+  service count, local runtime adjustment, separate draft work and remaining
+  provider/mobile qualification. These checks are not paid-launch authorization.
+- FOLLOW-UP: Existing CSV/PDF-table drafts remain unmerged. A demonstrated OCR
+  partial-output cleanup issue is handled in a separate bounded branch.
+- BOUNDARY: No production, activation, price, provider calls or financial changes.
+
 ## Text PDF numeric contact fidelity — 2026-10-25
 
 - BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests
