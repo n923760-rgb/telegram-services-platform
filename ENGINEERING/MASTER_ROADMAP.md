@@ -1,3 +1,30 @@
+## Readable Excel horizontal print layout — 2026-10-25
+
+- BASELINE: Live main `cf14538` verified with no open PRs before this bounded round.
+- FACT: A seven-column source-backed workbook prints its Data sheet on one page
+  with actual median glyph size 4.2pt despite stored 11pt cell fonts. The former
+  page-width decision uses column count rather than final physical column widths.
+- CHANGE: Choose A4 orientation using final widths and margins; retain one-page
+  width for compact sheets. Wide sheets print at 100% with horizontal pagination
+  and native row/column headings for record-position matching across panes. Reapply
+  after source padding/reference widths and preserve print options in CSV/PDF-table
+  sheet assembly. Keep source cells, types, order, filters, edits and source links.
+- LOCAL PASS: 88 focused print/source/wrapping/contact/CSV cases (including actual
+  English/Arabic Calc exports), 35 existing Excel/native builder checks and three
+  actual-source architecture gates. Global lint/format/diff pass.
+  Native PDF checks cover all ten unique field markers at >=10.5pt, IDs, table glyph
+  bounds, first-pane title and record row labels. The baseline is visibly unreadable;
+  all three English and three Arabic fixture pages were visually inspected at 11pt.
+- TRADEOFF: More printed pages; English and Arabic native regression fixtures each
+  use three horizontal pages. Calc emits clipped merged-title glyph copies outside
+  later horizontal panes, so first-pane title/table geometry are
+  checked separately. Long titles and target Office/mobile printing remain unqualified.
+- CI: Add Calc to hosted test dependencies for real print regression. Production
+  Docker images, worker capabilities and dependency locks are unchanged. Full exact-
+  head PostgreSQL/Redis/native-worker CI required before merge; no local DB available.
+- BOUNDARY: Output print metadata only. No public schemas/versions, prompts, calls,
+  activation, price, payments, budgets, migrations or production rollout changes.
+
 ## Word table word widths and final margins — 2026-10-25
 
 - BASELINE: Live main `d3475a4` verified, with no open PRs before this round.

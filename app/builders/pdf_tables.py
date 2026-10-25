@@ -37,6 +37,7 @@ def append_sheet(book, title, columns, rows, name, note):
         "sheet_format",
         "page_setup",
         "page_margins",
+        "print_options",
         "oddFooter",
     ):
         setattr(sheet, attribute, copy(getattr(original, attribute)))

@@ -27,6 +27,7 @@ def _sheet(title, columns, rows, *, literal=False):
             sheet.tables["Records"].tableColumns[index].name = column
     for dimension in sheet.column_dimensions.values():
         dimension.width = max(14, dimension.width)
+    excel.configure_print(sheet)
     return book
 
 
@@ -163,6 +164,7 @@ def build(headers, rows, *, trim, language, similarity=False):
             "sheet_format",
             "page_setup",
             "page_margins",
+            "print_options",
             "oddFooter",
         ):
             setattr(sheet, attribute, copy(getattr(original, attribute)))

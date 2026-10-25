@@ -72,6 +72,19 @@ headers and native editable rows remain required on multipage tables.
 
 ## Excel delivery conventions
 
+Print layout uses the final column widths and A4 margins. A sheet that fits uses
+one page in width and unlimited pages in height; wider datasets use landscape at
+100% scale across horizontal pages rather than shrinking all columns into tiny
+text. Wide printouts include Excel row/column headings so corresponding record
+positions can be compared across pages. Source exports re-evaluate the layout
+after padding/reference widths, and CSV/PDF-table sheet copies retain print options.
+Cell values, types, column order, table filters and editing behavior are unchanged.
+This can increase printed page counts. Width estimation is approximate; font
+substitution, long merged titles and actual Microsoft Excel/mobile printing still
+require target-viewer acceptance. Calc can emit clipped merged-title copies beyond
+later horizontal panes; native PDF regression checks first-pane title and table
+glyphs separately. This is not a general Excel-to-PDF conversion service.
+
 `Data!A1` is the title, row 2 separates it from the dataset, row 3 contains the native `Records`
 table headers and data starts at row 4. Users can sort/filter with the header controls and edit
 cells normally. Adding records is an intended native Excel Table workflow; verify actual table

@@ -103,6 +103,28 @@ def _wrapped_lines(text, width, *, size=11, bold=False):
     return total
 
 
+def configure_print(sheet):
+    """Use final column widths; wide datasets print at native size across pages."""
+    # Same 7px column-unit estimate used by cell layout, plus cell padding.
+    width = sum(
+        (sheet.column_dimensions[get_column_letter(i)].width * 7 + 5) * 0.75
+        for i in range(1, sheet.max_column + 1)
+    )
+    margins = (sheet.page_margins.left + sheet.page_margins.right) * 72
+    portrait, landscape = 595.28 - margins, 841.89 - margins
+    horizontal = sheet.max_column > 5 or width > portrait
+    wide = width > (landscape if horizontal else portrait)
+    sheet.page_setup.orientation = "landscape" if horizontal else "portrait"
+    sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
+    sheet.page_setup.scale = 100
+    sheet.page_setup.fitToWidth = 0 if wide else 1
+    sheet.page_setup.fitToHeight = 0
+    sheet.sheet_properties.pageSetUpPr.fitToPage = not wide
+    # Repeating column A also repeats/crops the merged title. Native row labels
+    # identify corresponding rows across horizontal pages without changing cells.
+    sheet.print_options.headings = wide
+
+
 def build(data: Table) -> bytes:
     data = Table.model_validate(data)
     workbook = Workbook()
@@ -118,7 +140,6 @@ def build(data: Table) -> bytes:
     rtl = _reading_rtl(probe)
     sheet.sheet_view.rightToLeft = rtl
     sheet.sheet_view.showGridLines = False
-    sheet.sheet_properties.pageSetUpPr.fitToPage = True
     sheet.sheet_properties.outlinePr.summaryRight = not rtl
 
     # The title is separate from the native sortable data table.
@@ -232,10 +253,7 @@ def build(data: Table) -> bytes:
     # The native table owns its filter; a worksheet filter must not overlap it.
     sheet.print_title_rows = "1:3"
     sheet.print_area = f"A1:{last_column}{sheet.max_row}"
-    sheet.page_setup.orientation = "landscape" if len(columns) > 5 else "portrait"
-    sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
-    sheet.page_setup.fitToWidth = 1 if len(columns) <= 8 else 0
-    sheet.page_setup.fitToHeight = 0
+    configure_print(sheet)
     sheet.oddFooter.center.text = "&P / &N"
     buffer = BytesIO()
     workbook.save(buffer)
