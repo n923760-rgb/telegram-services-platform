@@ -18,7 +18,7 @@ from app.services.pdf_tables_excel.schema import (
 
 
 class PdfTablesExcel(BaseService):
-    version = "6"
+    version = "7"
     slug = "pdf_tables_excel"
     worker_requirements = ("pdf_tables",)
     menu_order = 20

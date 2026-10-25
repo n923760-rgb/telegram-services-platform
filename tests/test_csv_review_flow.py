@@ -206,7 +206,7 @@ async def test_csv_version_upgrade_preserves_admin_settings_and_releases_stale_j
         await registry.sync(db)
     async with sessions() as db:
         service = await db.get(Service, "csv_review")
-        assert service.version == "3" and service.enabled and service.price_halala == 777
+        assert service.version == "4" and service.enabled and service.price_halala == 777
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"
@@ -216,8 +216,9 @@ async def test_csv_version_upgrade_preserves_admin_settings_and_releases_stale_j
 
 
 @pytest.mark.parametrize("cached", [False, True])
-async def test_v2_upgrade_replays_legacy_workbook_without_column_summary_or_rebuild(
-    tmp_path, monkeypatch, cached
+@pytest.mark.parametrize("old_version", ["2", "3"])
+async def test_upgrade_replays_legacy_workbook_without_rebuild(
+    tmp_path, monkeypatch, cached, old_version
 ):
     from app.services.csv_review.service import CsvReview
     from app.services.registry import registry
@@ -235,14 +236,15 @@ async def test_v2_upgrade_replays_legacy_workbook_without_column_summary_or_rebu
         await execute_job({"delivery": delivery}, str(jid))
     async with sessions.begin() as db:
         service = await db.get(Service, "csv_review")
-        service.version, service.price_halala, service.price_stars = "2", 777, 25
+        service.version, service.price_halala, service.price_stars = old_version, 777, 25
         order = await db.get(Order, oid)
-        order.service_version = "2"
+        order.service_version = old_version
         if cached:
             legacy = deepcopy(order.result)
             artifact = legacy["artifacts"][0]
             book = load_workbook(BytesIO(store.read(artifact["key"], 1)))
-            del book["Columns"]
+            if old_version == "2":
+                del book["Columns"]
             content = BytesIO()
             book.save(content)
             book.close()
@@ -256,7 +258,7 @@ async def test_v2_upgrade_replays_legacy_workbook_without_column_summary_or_rebu
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "csv_review")
-        assert service.version == "3" and service.enabled
+        assert service.version == "4" and service.enabled
         assert (service.price_halala, service.price_stars) == (777, 25)
 
     async def forbidden(*args):
@@ -275,4 +277,4 @@ async def test_v2_upgrade_replays_legacy_workbook_without_column_summary_or_rebu
             "Data",
             "Source",
             "Review",
-        ]
+        ] + (["Columns"] if old_version == "3" else [])

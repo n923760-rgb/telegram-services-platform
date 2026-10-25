@@ -21,7 +21,8 @@ class Inputs(StrictModel):
 
     @model_validator(mode="after")
     def valid_csv(self):
-        self.text = DocumentInputs.printable_text(self.text)
+        # Validate controls without normalizing newlines inside quoted source cells.
+        DocumentInputs.printable_text(self.text)
         self.records()
         return self
 
@@ -30,7 +31,9 @@ class Inputs(StrictModel):
         try:
             records = list(
                 csv.reader(
-                    StringIO(self.text.removeprefix("\ufeff")), delimiter=delimiter, strict=True
+                    StringIO(self.text.removeprefix("\ufeff"), newline=""),
+                    delimiter=delimiter,
+                    strict=True,
                 )
             )
         except csv.Error:
@@ -42,7 +45,7 @@ class Inputs(StrictModel):
         headers = records[0]
         normalized = [value.strip() for value in headers]
         if not 1 <= len(headers) <= 20 or any(
-            not value or len(original) > 80 or any(c in value for c in "\n\u2028\u2029")
+            not value or len(original) > 80 or any(c in original for c in "\r\n\u2028\u2029")
             for original, value in zip(headers, normalized, strict=True)
         ):
             raise ValueError("invalid header")
@@ -52,7 +55,11 @@ class Inputs(StrictModel):
         if any(len(row) != len(headers) or any(len(value) > 500 for value in row) for row in rows):
             raise ValueError("ragged or oversized CSV")
         # Bound multiline wrapping so every supported cell remains readable.
-        if any(value.count("\n") > 10 for row in rows for value in row):
+        if any(
+            value.replace("\r\n", "\n").replace("\r", "\n").count("\n") > 10
+            for row in rows
+            for value in row
+        ):
             raise ValueError("too many cell lines")
         return headers, rows
 

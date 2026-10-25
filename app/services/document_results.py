@@ -50,7 +50,12 @@ async def word_pdf_result(
             images.append(runtime.storage.save("preview.png", visual.png, "image/png"))
     except BaseException:
         for artifact in artifacts + images:
-            runtime.storage.delete(artifact.key)
+            try:
+                runtime.storage.delete(artifact.key)
+            except Exception:
+                # Keep attempting the remaining files and preserve the save/cancel
+                # error. Existing retention handles a file that could not be deleted.
+                pass
         raise
     reviews = (
         translations("document_visual_review", pages=visual.pages)

@@ -13,6 +13,7 @@ def extract(source, method):
     from pypdf import PdfReader
 
     from app.files.pdf_content import has_image_content
+    from app.files.pdf_forms import has_interactive_content
     from app.files.pdf_layers import has_layer_declaration
     from app.files.pdf_text import extract_page_text
     from app.providers.tables.base import Extraction
@@ -30,6 +31,8 @@ def extract(source, method):
             raise ServiceError("pdf_tables_limit")
         if has_layer_declaration(reader):
             raise ServiceError("pdf_tables_layers")
+        if has_interactive_content(reader):
+            raise ServiceError("pdf_tables_form")
         text_size = 0
         for page in reader.pages:
             if has_image_content(page, reader):

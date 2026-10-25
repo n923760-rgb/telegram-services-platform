@@ -103,7 +103,7 @@ def test_preserve_mode_retains_spaces_duplicates_and_all_empty_records():
 def test_explicit_delimiters_quoted_cells_bom_and_multiline(delimiter, text):
     book, _, _ = exported({**inputs(), "text": text, "delimiter": delimiter})
     assert book["Source"]["A4"].value == "00123"
-    assert book["Source"]["B4"].value in {"x;y", "0", "first\nsecond"}
+    assert book["Source"]["B4"].value in {"x;y", "0", "first\r\nsecond"}
 
 
 @pytest.mark.parametrize(

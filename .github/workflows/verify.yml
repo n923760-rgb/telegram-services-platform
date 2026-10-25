@@ -264,6 +264,15 @@ jobs:
                           else:
                               raise AssertionError('layered PDF accepted by table extraction')
                   print('Non-root worker: PDF layer declarations reject before Word AI and both table extraction methods PASS with network disabled')
+                  for kind in ('acroform', 'widget', 'widget_indirect', 'permissions', 'empty_form', 'empty_permissions'):
+                      for method in ('lattice', 'stream'):
+                          try:
+                              await CamelotTables().extract(form_pdf(kind, later=True), method)
+                          except DocumentError as error:
+                              assert error.key == 'pdf_tables_form'
+                          else:
+                              raise AssertionError('interactive PDF accepted by table extraction')
+                  print('Non-root worker: PDF tables reject fields, orphan widgets and signature declarations before both extraction methods PASS with network disabled')
                   source_images = [picture(), picture(240, 120, color='blue'), picture(color='green')]
                   keys = [storage.save(f'{index}.png', data, 'image/png').key for index, data in enumerate(source_images)]
                   ordered_service = ImagesToPdf()

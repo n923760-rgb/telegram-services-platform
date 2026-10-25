@@ -6,7 +6,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 
-def table_pdf(language="en", *, pages=1, ruled=True, visual_arabic=False):
+def table_pdf(language="en", *, pages=1, ruled=True, visual_arabic=False, form=False):
     path = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
     if "TableFixture" not in pdfmetrics.getRegisteredFontNames():
         pdfmetrics.registerFont(TTFont("TableFixture", str(path)))
@@ -31,6 +31,10 @@ def table_pdf(language="en", *, pages=1, ruled=True, visual_arabic=False):
                 pdf.line(x, 620, x, 740)
             for y in [620, 660, 700, 740]:
                 pdf.line(50, y, 530, y)
+        if form:
+            pdf.acroForm.textfield(
+                name="account", value="00999", x=375, y=663, width=150, height=33
+            )
         pdf.showPage()
     pdf.save()
     return output.getvalue(), rows
