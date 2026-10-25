@@ -74,3 +74,22 @@ def test_control_and_invalid_unicode_rejection_remains_before_processing(bad):
                 language="en",
             )
         )
+
+
+@pytest.mark.parametrize("separator", ["\n", "\r\n", "\r"])
+@pytest.mark.parametrize("position", ["start", "middle", "end"])
+def test_quoted_header_line_breaks_cannot_hide_in_outer_whitespace(separator, position):
+    header = {
+        "start": separator + "Note",
+        "middle": "No" + separator + "te",
+        "end": "Note" + separator,
+    }[position]
+    with pytest.raises(ServiceError, match="input_invalid"):
+        Inputs.parse(
+            dict(
+                text='ID,"' + header + '"\n00123,value',
+                delimiter="comma",
+                whitespace="preserve",
+                language="en",
+            )
+        )

@@ -45,7 +45,7 @@ class Inputs(StrictModel):
         headers = records[0]
         normalized = [value.strip() for value in headers]
         if not 1 <= len(headers) <= 20 or any(
-            not value or len(original) > 80 or any(c in value for c in "\r\n\u2028\u2029")
+            not value or len(original) > 80 or any(c in original for c in "\r\n\u2028\u2029")
             for original, value in zip(headers, normalized, strict=True)
         ):
             raise ValueError("invalid header")
