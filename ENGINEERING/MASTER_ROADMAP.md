@@ -1,3 +1,22 @@
+## OCR paired artifact cleanup — 2026-10-25
+
+- BASELINE: main `04357a5`; owner requests sequential service review/development
+  without merge. Keep this bounded fix as a draft separate from CSV/PDF tables.
+- FACT: Long OCR output saves TXT before Word rendering. A render exception or
+  second artifact save failure leaves the TXT unreferenced by any Result. Two
+  reproducer cases fail on baseline with input plus orphan output present.
+- CHANGE: Finish Word rendering before saving either artifact; on second-save
+  failure/cancellation, remove the first artifact and preserve the original
+  exception. Existing TTL remains the fallback if deletion itself fails.
+- CONTRACT: Input/output schemas, successful filenames/order/text and provider
+  calls do not change, so service version stays 6. Historical prepared delivery,
+  prices/gates, wallets and provider budgets are untouched. No migration/dependency,
+  new service or production action. This is failure-path resource cleanup.
+- LOCAL: Regress build failure, first/second save failure and cancellation with
+  input retained, no orphan output and one mocked AI call; success retains exact
+  TXT and editable Word text. Existing long-text cases stay in the focused run.
+  Hosted full lifecycle/native-worker results and live OCR quality are separate.
+
 ## Text PDF numeric contact fidelity — 2026-10-25
 
 - BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests
