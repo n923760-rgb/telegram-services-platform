@@ -2,8 +2,6 @@
 
 from io import BytesIO
 
-import pdfplumber
-
 from app.builders.schema import Document, Section
 
 CONTACTS = [
@@ -30,6 +28,8 @@ def contact_document(contact, position="middle"):
 
 
 def check_contacts(content, contact):
+    import pdfplumber
+
     with pdfplumber.open(BytesIO(content)) as document:
         assert len(document.pages) == 1
         page = document.pages[0]
