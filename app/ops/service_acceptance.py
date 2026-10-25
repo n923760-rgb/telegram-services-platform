@@ -57,7 +57,7 @@ ASSETS = {
 }
 
 
-def isolated():
+def isolated(*, native_only=False):
     cfg = config()
     database = make_url(cfg.database_url.get_secret_value()).database or ""
     root = cfg.storage_root
@@ -68,7 +68,7 @@ def isolated():
         or root.is_symlink()
         or cfg.admin_ids != [OWNER]
         or cfg.stars_enabled
-        or not cfg.ai_enabled
+        or cfg.ai_enabled == native_only
     ):
         raise ServiceError("acceptance_isolation_required")
     for value in (cfg.max_daily_cost_sar, cfg.max_cost_per_user_per_day):
@@ -592,7 +592,7 @@ async def run_case(case, adapter, backend, output):
 
 
 async def execute(case_names=None, *, native_only=False):
-    root = isolated()
+    root = isolated(native_only=native_only)
     output = root / "results"
     if output.exists():
         raise ServiceError("acceptance_fresh_run_required")

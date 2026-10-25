@@ -44,6 +44,7 @@ async def test_direct_acceptance_native_outputs_and_single_capture_without_provi
     tmp_path, monkeypatch, native_only
 ):
     path = configure(tmp_path, monkeypatch)
+    monkeypatch.setattr(config(), "ai_enabled", not native_only)
     call = AsyncMock(side_effect=AssertionError("no network"))
     monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
     monkeypatch.setattr(
