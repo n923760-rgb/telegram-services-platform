@@ -121,3 +121,13 @@ cells, dates and duplicate rows without interpreting them as formulas. Pending v
 orders are cancelled and their reservation released after registry synchronization to version 2;
 administrator-owned enablement and price remain intact. Already prepared deliveries retain
 the existing cached-delivery path.
+
+## PDF table fields and signatures
+
+Table extraction rejects declared forms/signatures and page widgets, including
+empty declarations, orphan/indirect widgets and later pages, before invoking the
+native extractor or AI labels. Both extraction methods can otherwise accept a
+table while omitting a visible field value. Export a static text-based copy from
+the original application and verify visible values before upload. This service
+does not flatten PDFs or validate/preserve signature authenticity. Plain-table
+extraction and historical prepared-file delivery keep their existing paths.

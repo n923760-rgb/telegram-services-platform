@@ -1,3 +1,28 @@
+## PDF table form-value fidelity boundary — 2026-10-25
+
+- BASELINE: Verified main `04357a5`; CSV draft #161 is independent and its exact
+  head passed 3458 hosted tests/37 native checks. Owner requests service-by-service
+  development with merge deferred. Keep this round separate and draft; no merge.
+- FACT: A valid ruled table with a text field whose /V is 00999 is accepted by
+  both actual Camelot methods. Both omit the field and return the underlying
+  =1+1 cell text. The field has a nonempty appearance; accepting selectable page
+  text alone is not evidence of a complete visible table.
+- CHANGE: Use the existing shared form/widget/signature declaration boundary in
+  the native table preflight before extraction. Propagate its nontransient safe
+  error without stream fallback, AI, continuation or workbook output. Cover empty
+  declarations, indirect/orphan widgets and later pages. Localized intake/errors
+  require a reviewed static text copy, without claiming signature preservation.
+- VERSION: pdf_tables_excel 6 -> 7; extend v6 cached/unprepared upgrade tests.
+  Preserve admin enablement/prices and prepared historical delivery. New input
+  rejection does not count toward the circuit. No migration/dependency/provider,
+  financial policy, production image or production deployment change.
+- LOCAL PASS: 85 native/schema/service/layer regression cases, three architecture
+  gates, global lint/format/diff and native-worker script compilation. Added real
+  DB lifecycle cases require hosted validation for once-only release, no cost or
+  delivery, cleanup and no circuit trip. Native worker adds both-method boundary
+  checks. Full hosted results remain pending; target viewer/Telegram/live-provider
+  qualification remains separate. This is not flattening or a PDF sanitizer.
+
 ## Text PDF numeric contact fidelity — 2026-10-25
 
 - BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests

@@ -44,6 +44,7 @@ async def evaluate(slug, notifier=None):
                                     "pdf_word_form",
                                     "pdf_word_layers",
                                     "pdf_tables_layers",
+                                    "pdf_tables_form",
                                     "pdf_image_content",
                                     "pdf_text_unreadable",
                                     "pdf_text_too_long",
