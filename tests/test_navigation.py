@@ -193,7 +193,7 @@ async def test_document_intake_hides_engine_choices_and_honors_literal_request(f
         order = await db.scalar(select(Order))
         assert order.inputs["text"] == text
         assert "mode" not in order.inputs and "title" not in order.inputs
-        assert order.service_version == ("9" if slug == "text_to_office" else "6")
+        assert order.service_version == ("9" if slug == "text_to_office" else "7")
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])
