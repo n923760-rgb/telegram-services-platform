@@ -141,6 +141,7 @@ async def test_user_cancellations_do_not_open_circuit():
         "pdf_text_unreadable",
         "pdf_text_too_long",
         "pdf_tools_form",
+        "pdf_tools_layers",
         "pdf_tools_limit",
         "pdf_page_selection",
     ],

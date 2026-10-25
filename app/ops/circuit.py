@@ -46,6 +46,7 @@ async def evaluate(slug, notifier=None):
                                     "pdf_text_unreadable",
                                     "pdf_text_too_long",
                                     "pdf_tools_form",
+                                    "pdf_tools_layers",
                                     "pdf_tools_limit",
                                     "pdf_page_selection",
                                     "enhancement_not_improved",
