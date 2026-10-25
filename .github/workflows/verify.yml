@@ -147,6 +147,14 @@ jobs:
                       assert '00123' in pages[1] and '125.50' in pages[1]
                       assert all(f'Record {i:02d} retained.' in '\n'.join(pages) for i in range(20))
               print('Non-root worker: Arabic/English PDF section headings stay with content across page breaks PASS with network disabled')
+              from tests.pdf_contact_fixtures import CONTACTS, contact_document, check_contacts
+              for contact in CONTACTS:
+                  for position in ('start', 'middle', 'end'):
+                      source = contact_document(contact, position)
+                      snapshot = source.model_dump_json()
+                      check_contacts(text_pdf.build(source), contact)
+                      assert source.model_dump_json() == snapshot
+              print('Non-root worker: Arabic PDF numeric emails and dated contacts retain complete LTR glyph order in all text roles PASS with network disabled')
               for language in ('ar','en'):
                   values = SourceOfficeInputs.parse(source_excel_inputs(language))
                   plan = source_excel_schema(values).model_validate(source_excel_plan(language))

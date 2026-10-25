@@ -1,3 +1,34 @@
+## Text PDF numeric contact fidelity — 2026-10-25
+
+- BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests
+  continuing service quality/readiness improvements; source is authoritative.
+- FACT: Text PDF renders Arabic-adjacent `00123@e.invalid` as `e.invalid@00123`.
+  Date-only shaping protection does not cover a numeric email local part. Long
+  contacts also outvote short Arabic prose for alignment, and a wrapped final
+  contact-only line loses the direction of its source paragraph.
+- CHANGE: Reuse the shared complete-contact-before-date matcher for temporary LTR
+  shaping overrides, consumed before PDF writing. Determine base direction from
+  prose excluding matched identifiers, consistent with Office contact handling.
+  Keep each logical source paragraph's direction across wrapped lines in titles,
+  headings, body and bullets. Preserve exact source documents, date order, escaped
+  markup and the existing font sizes/page geometry. No added output bidi controls.
+- VERSION: text_to_pdf 6 -> 7; preserve administrator gates, halala/Stars prices,
+  provider pause and prepared historical output replay. Extend unprepared/cached
+  upgrade coverage to versions 5/6 alongside version 4. Coordinate API/bot/worker
+  rollout; no production deployment, migration or dependency change in this PR.
+- QUALIFICATION: Actual glyph order/count/bounds for numeric/dated/ordinary emails
+  and dated URLs at start/middle/end of all four text roles, English/standalone
+  identifiers, long-contact alignment and contact-only wrapped lines. Direct,
+  mocked smart and continuation paths retain their expected provider call counts.
+  Render and inspect before/after fixtures, and retain existing date/pagination/
+  extraction checks. Full exact-head hosted PostgreSQL/Redis and non-root native
+  worker gates required before merge; local SQL execution is unavailable.
+- BOUNDARY: No AI prompt, price, activation, wallet/order policy or image change.
+  No claim of internationalized email handling, arbitrary oversized unbroken
+  token layout, PDF hyperlink creation, or repair of literal Word/Calc viewer
+  failures. Representative Telegram/mobile/live-provider acceptance remains
+  separate; these synthetic PDF checks do not qualify paid launch.
+
 ## PDF extraction optional-layer boundary — 2026-10-25
 
 - BASELINE: Live main `2dfa248` after #158; tree matches the tested PDF page-tools

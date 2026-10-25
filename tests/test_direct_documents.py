@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
 
+import pdfplumber
 import pytest
 from docx import Document
 from sqlalchemy import func, select
@@ -48,7 +49,7 @@ def direct_inputs(slug):
             "mode": "direct",
         }
     return {
-        "text": "  محتوى 00123\n\nEnglish <tag> & data 456  ",
+        "text": "  محتوى 00123\n\nEnglish <tag> & data 456\nراجع 00123@e.invalid  ",
         "mode": "direct",
         "title": "عنوان العميل",
         **({"target": "word"} if slug == "text_to_office" else {}),
@@ -65,7 +66,7 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     inputs = direct_inputs(slug)
     if not with_title and slug == "text_to_pdf":
         inputs.pop("title")
-    version = "9" if slug == "text_to_office" else "6"
+    version = "9" if slug == "text_to_office" else "7"
     oid = await submit(1, slug, inputs, price, "direct", expected_version=version)
     assert await submit(1, slug, inputs, price, "direct", expected_version=version) == oid
     async with sessions() as db:
@@ -87,6 +88,10 @@ async def test_direct_order_no_provider_no_cost_exactly_once_capture(
     if slug == "text_to_office":
         doc = Document(BytesIO(delivery.files[0][1]))
         assert "\n".join(p.text for p in doc.paragraphs) == inputs["text"]
+    else:
+        with pdfplumber.open(BytesIO(delivery.files[0][1])) as document:
+            chars = "".join(c["text"] for page in document.pages for c in page.chars)
+            assert chars.count("00123@e.invalid") == 1
 
 
 @pytest.mark.parametrize("slug", ["text_to_office", "text_to_pdf"])
@@ -212,7 +217,7 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
         (await db.get(Order, oid)).service_version = "1"
         await registry.sync(db)
         await db.refresh(row)  # Core upserts do not refresh the ORM identity map.
-        assert row.version == "6" and row.enabled and row.price_halala == 700
+        assert row.version == "7" and row.enabled and row.price_halala == 700
     await execute_job(
         {"delivery": Delivery(LocalStorage(config().storage_root))}, str(await job_for(oid))
     )
@@ -223,8 +228,9 @@ async def test_registry_version_upgrade_preserves_admin_settings_and_releases_ol
 
 
 @pytest.mark.parametrize("cached", [False, True])
-async def test_pdf_v4_intake_upgrade_keeps_admin_settings_and_prepared_delivery(
-    tmp_path, monkeypatch, cached
+@pytest.mark.parametrize("old_version", ["4", "5", "6"])
+async def test_pdf_intake_upgrade_keeps_admin_settings_and_prepared_delivery(
+    tmp_path, monkeypatch, cached, old_version
 ):
     from app.builders import pdf
 
@@ -243,17 +249,18 @@ async def test_pdf_v4_intake_upgrade_keeps_admin_settings_and_prepared_delivery(
     async with sessions.begin() as db:
         service = await db.get(Service, "text_to_pdf")
         old = deepcopy(service.input_schema)
-        old["fields"][:2] = reversed(old["fields"][:2])
-        service.version, service.input_schema = "4", old
+        if old_version == "4":
+            old["fields"][:2] = reversed(old["fields"][:2])
+        service.version, service.input_schema = old_version, old
         service.price_halala, service.price_stars = 777, 25
         order = await db.get(Order, oid)
-        order.service_version, order.input_schema_snapshot = "4", old
+        order.service_version, order.input_schema_snapshot = old_version, old
         (await db.get(Job, jid)).next_run_at = datetime.now(UTC) - timedelta(seconds=1)
     async with sessions.begin() as db:
         await registry.sync(db)
     async with sessions() as db:
         service = await db.get(Service, "text_to_pdf")
-        assert service.version == "6" and service.enabled
+        assert service.version == "7" and service.enabled
         assert service.price_halala == 777 and service.price_stars == 25
     monkeypatch.setattr(pdf, "build", no_provider)
     monkeypatch.setattr(delivery, "send", send)

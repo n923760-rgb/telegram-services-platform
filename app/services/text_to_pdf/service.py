@@ -11,7 +11,7 @@ from app.services.text_to_pdf.schema import Inputs, PdfPlan
 
 
 class TextToPdf(BaseService):
-    version = "6"
+    version = "7"
     slug = "text_to_pdf"
     worker_requirements = ("pdf_font",)
     menu_order = 20

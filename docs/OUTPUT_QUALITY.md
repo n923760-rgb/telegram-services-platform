@@ -41,6 +41,16 @@ insert display controls into literal XLSX data or infer Microsoft Excel behavior
 from that printout. Test the actual target Office app separately. PowerPoint reuses
 the same matcher while retaining its existing whole-token direction boundaries.
 
+The text-to-PDF builder also protects complete ASCII emails/URLs before date
+tokens. Without this boundary, `00123@e.invalid` renders as `e.invalid@00123` in
+Arabic prose. Contacts do not vote as English prose when deciding paragraph
+direction. Wrapped lines, including a final contact-only line, retain the source
+paragraph direction. Temporary shaping overrides are consumed before writing;
+the source document and exported glyph stream receive no added direction controls.
+Native PDF glyph order/bounds and rendered fixture review are separate from the
+still-unqualified literal Word/Calc viewer cases above. This does not interpret
+date meaning, qualify arbitrary internationalized addresses or add PDF hyperlinks.
+
 Use a dedicated staging customer and synthetic Arabic, English and mixed-language content.
 For each service test a typical request and relevant boundaries: short/long content, missing
 data, duplicate records, zero, leading-zero IDs and ambiguous dates. For Office outputs:
