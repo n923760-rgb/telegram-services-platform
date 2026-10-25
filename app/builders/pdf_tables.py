@@ -145,6 +145,7 @@ def build(extraction, labels, *, language, enhanced, visual_arabic=False, source
         "Review",
         tr("pdf_tables_audit_note", language),
     )
+    excel.configure_review_print(book["Review"])
     content = BytesIO()
     book.save(content)
     book.close()

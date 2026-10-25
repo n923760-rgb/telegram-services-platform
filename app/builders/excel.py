@@ -125,6 +125,31 @@ def configure_print(sheet):
     sheet.print_options.headings = wide
 
 
+def configure_review_print(sheet):
+    """Wrap bounded audit columns on one horizontal page without shrinking text."""
+    for index in range(1, sheet.max_column + 1):
+        dimension = sheet.column_dimensions[get_column_letter(index)]
+        dimension.width = min(18, dimension.width)
+    total = sum(
+        sheet.column_dimensions[get_column_letter(i)].width for i in range(1, sheet.max_column + 1)
+    )
+    for row in sheet.iter_rows():
+        height = 0
+        for cell in row:
+            if cell.value is None:
+                continue
+            width = (
+                total
+                if cell.row in (1, 2)
+                else sheet.column_dimensions[get_column_letter(cell.column)].width
+            )
+            size = cell.font.sz or 11
+            lines = _wrapped_lines(cell.value, width, size=size, bold=bool(cell.font.bold))
+            height = max(height, size * 1.6 * lines + 12)
+        sheet.row_dimensions[row[0].row].height = min(409, max(36, height))
+    configure_print(sheet)
+
+
 def build(data: Table) -> bytes:
     data = Table.model_validate(data)
     workbook = Workbook()
