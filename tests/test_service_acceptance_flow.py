@@ -45,6 +45,10 @@ async def test_direct_acceptance_native_outputs_and_single_capture_without_provi
 ):
     path = configure(tmp_path, monkeypatch)
     monkeypatch.setattr(config(), "ai_enabled", not native_only)
+    if native_only:
+        monkeypatch.setattr(config(), "ai_api_key", SecretStr(""))
+        monkeypatch.setattr(config(), "ai_input_usd_per_million", Decimal("0"))
+        monkeypatch.setattr(config(), "ai_output_usd_per_million", Decimal("0"))
     call = AsyncMock(side_effect=AssertionError("no network"))
     monkeypatch.setattr(acceptance.AcceptanceProvider, "call", call)
     monkeypatch.setattr(

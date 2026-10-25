@@ -6,8 +6,10 @@
 - FIX: Pass native_only explicitly into the isolation guard in both wrapper and
   executor. Native mode requires AI disabled; ordinary mode still requires AI
   enabled. Preserve all DB, storage, administrator, Stars and budget guards.
+- FIX: Skip provider-rate configuration preflight only for native mode, whose
+  adapter refuses calls; keep ordinary provider validation unchanged.
 - VALIDATION: Cover all four AI/mode combinations and retained native guards;
-  real DB native flow now uses the same disabled-AI setting as the wrapper.
+  real DB native flow uses disabled AI with no provider key or rates.
   Require full hosted CI before merging. No production setting/container change.
 
 ## Native-only acceptance without production pause — 2026-10-25
