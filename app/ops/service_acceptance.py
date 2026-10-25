@@ -593,15 +593,17 @@ async def run_case(case, adapter, backend, output):
 
 async def execute(case_names=None, *, native_only=False):
     root = isolated()
-    templates = (native_cases if native_only else selected_cases)(cases(ASSETS), case_names)
     output = root / "results"
     if output.exists():
         raise ServiceError("acceptance_fresh_run_required")
+    templates = native_cases(cases(ASSETS), case_names) if native_only else None
     adapter = NativeAcceptanceProvider() if native_only else AcceptanceProvider()
     adapter.rates()
     async with sessions() as db:
         if any([await db.scalar(select(func.count(cls.id))) for cls in (User, Order, CostHold)]):
             raise ServiceError("acceptance_fresh_database_required")
+    if templates is None:
+        templates = selected_cases(cases(ASSETS), case_names)
     output.mkdir(parents=True)
     async with sessions.begin() as db:
         await registry.sync(db)
