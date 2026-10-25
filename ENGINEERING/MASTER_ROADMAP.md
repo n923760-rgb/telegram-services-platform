@@ -1,3 +1,33 @@
+## PDF optional-layer visibility boundary — 2026-10-25
+
+- BASELINE: Live main `1fcca61` after #157; source tree verified identical to the
+  tested Excel round. Owner requests continuing service-quality improvements.
+- FACT: Page copying drops the catalog /OCProperties defaults. A synthetic PDF 1.5
+  with a hidden red rectangle renders zero red pixels before extraction and
+  134400 after the former page-copy path, exposing previously hidden content.
+  Source/baseline output were rendered and visually inspected with PDFium.
+- CHANGE: Reject any declared optional-content configuration before constructing
+  output for merge, extract and rotate, including empty/indirect declarations,
+  later merge inputs and layers on unselected pages. Arabic/English intake and
+  safe rejection explain the unsupported scope and exporting a reviewed flat copy.
+  This is not a layer editor, flattening implementation or general PDF sanitizer.
+- VERSION: PDF tools 4 -> 5 reflects the stricter processing contract. Generic
+  registry sync cancels unprepared prior-version work and releases its reservation;
+  already prepared historical results keep the existing cached delivery path.
+  Preserve administrator enablement and both price fields. Coordinated API/bot/
+  worker rollout is required so intake/catalog and execution use the same version;
+  this round has not deployed to production. No schema migration is needed.
+- QUALIFICATION: 132 local native/builder/service/form/rotation cases, three actual-
+  source architecture gates, lint/format/diff and native-worker script compilation
+  pass. New DB cases cover one release/no capture/no provider cost/no output and
+  unchanged circuit availability. Extend cached/unprepared version-upgrade checks
+  to version 4. Full exact-head hosted PostgreSQL/Redis/native-worker CI required
+  before merge; these DB checks cannot run locally without PostgreSQL.
+- BOUNDARY: No provider, price, activation, budget, dependency or migration change.
+  The new input-rejection error is excluded from circuit failure samples. Plain
+  PDF content/order/geometry behavior and existing forms/signature rejection stay
+  in place. Microsoft/mobile and live Telegram acceptance remain NOT RUN here.
+
 ## Readable Excel horizontal print layout — 2026-10-25
 
 - BASELINE: Live main `cf14538` verified with no open PRs before this bounded round.

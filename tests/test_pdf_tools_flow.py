@@ -19,6 +19,7 @@ from app.services.pdf_tools.test_service import records, source
 from app.wallet.ledger import balance
 from app.workers.runner import deliver_failures, execute_job
 from tests.pdf_form_fixtures import form_pdf
+from tests.pdf_layer_fixtures import layered_pdf
 from tests.test_foundation import fund, job_for
 from tests.test_real_services import Delivery
 
@@ -216,7 +217,7 @@ async def test_invalid_merge_order_does_not_reserve_credit(tmp_path, monkeypatch
 
 
 @pytest.mark.parametrize("cached", [False, True])
-@pytest.mark.parametrize("old_version", ["1", "2", "3"])
+@pytest.mark.parametrize("old_version", ["1", "2", "3", "4"])
 async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
     tmp_path, monkeypatch, cached, old_version
 ):
@@ -249,7 +250,7 @@ async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "pdf_tools")
-        assert service.version == "4" and service.enabled
+        assert service.version == "5" and service.enabled
         assert (service.price_halala, service.price_stars) == (777, 25)
 
     async def forbidden(*args):
@@ -268,12 +269,21 @@ async def test_pdf_tools_upgrade_keeps_prepared_output_and_admin_overrides(
 
 
 @pytest.mark.parametrize("operation", ["merge", "extract", "rotate"])
-@pytest.mark.parametrize("kind", ["empty_form", "widget", "widget_indirect", "empty_permissions"])
-async def test_unsupported_forms_release_once_without_cost_output_or_circuit_trip(
+@pytest.mark.parametrize(
+    "kind",
+    ["empty_form", "widget", "widget_indirect", "empty_permissions", "layer_off", "layer_empty"],
+)
+async def test_unsupported_pdf_features_release_once_without_cost_output_or_circuit_trip(
     tmp_path, monkeypatch, operation, kind
 ):
     storage, delivery, price = await prepare(tmp_path, monkeypatch)
-    form = storage.save(1, "form.pdf", form_pdf(kind, later=True), "application/pdf")
+    data = (
+        layered_pdf(kind.removeprefix("layer_"), later=True)
+        if kind.startswith("layer_")
+        else form_pdf(kind, later=True)
+    )
+    key = "pdf_tools_layers" if kind.startswith("layer_") else "pdf_tools_form"
+    form = storage.save(1, "unsupported.pdf", data, "application/pdf")
     files = [form.key]
     if operation == "merge":
         files.insert(0, storage.save(1, "plain.pdf", source(), "application/pdf").key)
@@ -302,5 +312,5 @@ async def test_unsupported_forms_release_once_without_cost_output_or_circuit_tri
     notifier = AsyncMock()
     assert not await evaluate("pdf_tools", notifier)
     notifier.alert.assert_not_awaited()
-    assert not delivery.files and delivery.errors == [(1, oid, "pdf_tools_form")]
+    assert not delivery.files and delivery.errors == [(1, oid, key)]
     assert not list(tmp_path.glob("[0-9]*/*/*"))

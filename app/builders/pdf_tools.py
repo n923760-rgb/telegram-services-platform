@@ -50,6 +50,10 @@ def build(
             # silently dropping field values or implying preserved signatures.
             if has_interactive_content(reader):
                 raise PdfToolError("pdf_tools_form")
+            # add_page does not preserve the catalog's optional-content defaults.
+            # Copying a page can expose a layer that the source displays as hidden.
+            if reader.trailer["/Root"].get("/OCProperties") is not None:
+                raise PdfToolError("pdf_tools_layers")
             readers.append(reader)
         writer = PdfWriter()
         if operation == "merge":

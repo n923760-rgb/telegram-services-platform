@@ -106,6 +106,7 @@ jobs:
           from app.services.pdf_to_word.service import PdfToWord
           from app.services.base import ServiceError
           from tests.pdf_form_fixtures import form_pdf
+          from tests.pdf_layer_fixtures import layered_pdf
           from app.services.pdf_tables_excel.service import PdfTablesExcel
           from app.providers.storage import LocalStorage, OwnedStorage
           from types import SimpleNamespace
@@ -210,6 +211,22 @@ jobs:
                           else:
                               raise AssertionError('unsupported interactive PDF accepted by page operation')
                   print('Non-root worker: PDF tools reject form declarations and orphan widgets in merge/extract/rotate PASS with network disabled')
+                  for kind in ('off', 'on', 'empty', 'indirect'):
+                      for operation in ('merge', 'extract', 'rotate'):
+                          data = layered_pdf(kind, later=True)
+                          files = [image_document_for_forms, data] if operation == 'merge' else [data]
+                          args = {'operation': operation}
+                          if operation != 'merge':
+                              args['pages'] = '1'
+                          if operation == 'rotate':
+                              args['rotation'] = '90'
+                          try:
+                              pdf_tools(files, **args)
+                          except PdfToolError as error:
+                              assert error.key == 'pdf_tools_layers'
+                          else:
+                              raise AssertionError('optional layer visibility would be lost during page copying')
+                  print('Non-root worker: PDF optional layer declarations reject before page copying in all operations PASS with network disabled')
                   source_images = [picture(), picture(240, 120, color='blue'), picture(color='green')]
                   keys = [storage.save(f'{index}.png', data, 'image/png').key for index, data in enumerate(source_images)]
                   ordered_service = ImagesToPdf()
