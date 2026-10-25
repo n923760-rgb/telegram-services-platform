@@ -13,6 +13,7 @@ def extract(source, method):
     from pypdf import PdfReader
 
     from app.files.pdf_content import has_image_content
+    from app.files.pdf_layers import has_layer_declaration
     from app.files.pdf_text import extract_page_text
     from app.providers.tables.base import Extraction
     from app.services.base import ServiceError
@@ -27,6 +28,8 @@ def extract(source, method):
             raise ServiceError("file_invalid")
         if not isinstance(count, int) or not 1 <= count <= 5 or not 1 <= len(reader.pages) <= 5:
             raise ServiceError("pdf_tables_limit")
+        if has_layer_declaration(reader):
+            raise ServiceError("pdf_tables_layers")
         text_size = 0
         for page in reader.pages:
             if has_image_content(page, reader):

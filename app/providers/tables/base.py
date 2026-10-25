@@ -54,4 +54,6 @@ class Extraction(StrictModel):
 
 class TableExtractor(ABC):
     @abstractmethod
-    async def extract(self, data: bytes, method: Literal["lattice", "stream"]) -> Extraction: ...
+    async def extract(self, data: bytes, method: Literal["lattice", "stream"]) -> Extraction:
+        """Reject declared optional layers before extracting source text tables."""
+        ...

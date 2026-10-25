@@ -107,6 +107,8 @@ jobs:
           from app.services.base import ServiceError
           from tests.pdf_form_fixtures import form_pdf
           from tests.pdf_layer_fixtures import layered_pdf
+          from tests.pdf_extraction_layer_fixtures import layered_text_pdf, layered_table_pdf
+          from app.providers.documents.base import DocumentError
           from app.services.pdf_tables_excel.service import PdfTablesExcel
           from app.providers.storage import LocalStorage, OwnedStorage
           from types import SimpleNamespace
@@ -227,6 +229,28 @@ jobs:
                           else:
                               raise AssertionError('optional layer visibility would be lost during page copying')
                   print('Non-root worker: PDF optional layer declarations reject before page copying in all operations PASS with network disabled')
+                  for kind in ('off', 'on', 'empty', 'indirect'):
+                      layered_source = storage.save(f'layered-text-{kind}.pdf', layered_text_pdf(kind, later=True), 'application/pdf')
+                      layer_ai = SimpleNamespace(extract=AsyncMock(side_effect=AssertionError('layer content must not reach AI')))
+                      layer_word = PdfToWord()
+                      layer_word.runtime = SimpleNamespace(storage=storage, ai=layer_ai)
+                      before = storage.storage.usage(1)[1]
+                      try:
+                          await layer_word.run({'pdf': layered_source.key})
+                      except ServiceError as error:
+                          assert error.key == 'pdf_word_layers'
+                      else:
+                          raise AssertionError('layered PDF accepted by Word conversion')
+                      layer_ai.extract.assert_not_awaited()
+                      assert storage.storage.usage(1)[1] == before
+                      for method in ('lattice', 'stream'):
+                          try:
+                              await CamelotTables().extract(layered_table_pdf(kind, later=True), method)
+                          except DocumentError as error:
+                              assert error.key == 'pdf_tables_layers'
+                          else:
+                              raise AssertionError('layered PDF accepted by table extraction')
+                  print('Non-root worker: PDF layer declarations reject before Word AI and both table extraction methods PASS with network disabled')
                   source_images = [picture(), picture(240, 120, color='blue'), picture(color='green')]
                   keys = [storage.save(f'{index}.png', data, 'image/png').key for index, data in enumerate(source_images)]
                   ordered_service = ImagesToPdf()
