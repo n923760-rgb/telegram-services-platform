@@ -2,6 +2,11 @@
 # Fresh synthetic DB, normal budget gateway, no production setting/ledger mutations.
 set -Eeuo pipefail
 umask 077
+acceptance_native_only=false
+if [ "${1:-}" = --native-only ]; then
+  acceptance_native_only=true
+  shift
+fi
 cd "$(dirname "$0")/.."
 test "$(git branch --show-current)" = main
 test -z "$(git status --porcelain)"
@@ -34,7 +39,21 @@ acceptance_sql() {
   docker compose exec -T postgres sh -c \
     'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1 -c "$1"' sh "$1" </dev/null
 }
-test "$(acceptance_sql "SELECT value->>'value' FROM settings WHERE key='PROVIDER_PAUSED';")" = true
+if [ "$acceptance_native_only" = true ]; then
+  docker compose run --rm --no-deps -T \
+    -e ACCEPTANCE_CASES="$acceptance_cases" "${acceptance_mounts[@]}" worker python - <<'PY'
+import json
+import os
+from app.ops.service_acceptance import ASSETS, cases, native_cases
+native_cases(cases(ASSETS), json.loads(os.environ['ACCEPTANCE_CASES']))
+print('NATIVE_SELECTION=validated_no_ai')
+PY
+fi
+acceptance_pause_before=$(acceptance_sql "SELECT value->>'value' FROM settings WHERE key='PROVIDER_PAUSED';")
+if [ "$acceptance_native_only" != true ] && [ "$acceptance_pause_before" != true ]; then
+  echo 'STOP: live-provider acceptance requires PROVIDER_PAUSED=true. For explicitly selected non-AI cases use --native-only.' >&2
+  exit 1
+fi
 acceptance_id=$(python3 -c 'import secrets; print(secrets.token_hex(6))')
 acceptance_db="svc_${acceptance_id}_acceptance_test"
 acceptance_backup=$(mktemp -d /home/aidev/service-acceptance-XXXXXXXX)
@@ -51,6 +70,7 @@ acceptance_rc=0
 docker compose run --rm --no-deps -T \
   -e ACCEPTANCE_DATABASE="$acceptance_db" -e ACCEPTANCE_RUN="$acceptance_id" \
   -e ACCEPTANCE_CASES="$acceptance_cases" \
+  -e ACCEPTANCE_NATIVE_ONLY="$acceptance_native_only" \
   "${acceptance_mounts[@]}" \
   worker python - <<'PY' || acceptance_rc=$?
 import os
@@ -79,14 +99,20 @@ os.environ.update({
     'MAX_JOB_COST_SAR': '.75',
 })
 config.cache_clear()
-from app.ops.service_acceptance import ASSETS, cases, isolated, main, selected_cases
+if os.environ['ACCEPTANCE_NATIVE_ONLY'] == 'true':
+    os.environ['AI_ENABLED'] = 'false'
+    config.cache_clear()
+from app.ops.service_acceptance import ASSETS, cases, isolated, main, selected_cases, native_cases
 isolated()  # Refuse wrong targets before migrations or seeding.
 selection = json.loads(os.environ['ACCEPTANCE_CASES'])
-selected_cases(cases(ASSETS), selection or None)
+native_only = os.environ['ACCEPTANCE_NATIVE_ONLY'] == 'true'
+(native_cases if native_only else selected_cases)(cases(ASSETS), selection or None)
 from alembic import command
 from alembic.config import Config
 command.upgrade(Config('alembic.ini'), 'head')
 sys.argv = ['service_acceptance', '--execute']
+if native_only:
+    sys.argv.append('--native-only')
 for name in selection:
     sys.argv.extend(['--case', name])
 raise SystemExit(main())
@@ -111,6 +137,6 @@ with ZipFile(root / 'service-acceptance-results.zip', 'w', ZIP_DEFLATED) as arch
             archive.write(path, path.relative_to(root))
 print('RESULT_ZIP:', root / 'service-acceptance-results.zip')
 PY
-test "$(acceptance_sql "SELECT value->>'value' FROM settings WHERE key='PROVIDER_PAUSED';")" = true
-echo "PRODUCTION_PROVIDER_PAUSED=true"
+test "$(acceptance_sql "SELECT value->>'value' FROM settings WHERE key='PROVIDER_PAUSED';")" = "$acceptance_pause_before"
+echo "PRODUCTION_PROVIDER_PAUSED=${acceptance_pause_before:-unset} (unchanged)"
 exit "$acceptance_rc"

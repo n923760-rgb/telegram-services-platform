@@ -1,3 +1,24 @@
+## Native-only acceptance without production pause — 2026-10-25
+
+- BASELINE: main b9fb494. Operator-reported rollout completed: API/bot/worker
+  healthy, monitor running; CSV 4/PDF tables 7/OCR 6 match. Backup path reported
+  /home/aidev/telegram-deploy-RUzCnKVK. This is operator evidence, not a remote
+  session executed here. The subsequent native test stopped before DB creation
+  because the wrapper requires PROVIDER_PAUSED=true while production is false.
+- CHANGE: Explicit --native-only mode requires a nonempty valid selection of
+  cases whose registered plugins need no AI. Validate before test DB creation and
+  again before migrations. Disable AI only inside the isolated worker and refuse
+  outbound calls in its acceptance adapter. Production pause is read/snapshotted,
+  never changed, and checked unchanged afterward. Live-provider mode retains its
+  pause requirement and now prints the reason instead of silently exiting.
+- VALIDATION: Unit coverage for requested seven cases, invalid/default/mixed AI
+  selections, a hard provider-call refusal and pre-DB rejection. Extend real DB
+  capture/no-cost case to native-only mode. Hosted checks required before merge;
+  source mounts update the existing worker for acceptance only, not production.
+- BOUNDARY: No service contract/version, price/gate, provider budgets, schema or
+  production container/config change. Keep existing fresh DB/storage/report and
+  wallet guards. User-authorized isolated testing remains the operational scope.
+
 ## Integrated service readiness rollout — 2026-10-25
 
 - AUTHORIZATION: Owner now approves merging the pending drafts and deploying to

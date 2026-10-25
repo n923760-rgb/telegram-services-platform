@@ -39,8 +39,9 @@ def configure(tmp_path, monkeypatch):
     return cfg.storage_root / "results"
 
 
+@pytest.mark.parametrize("native_only", [False, True])
 async def test_direct_acceptance_native_outputs_and_single_capture_without_provider(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, native_only
 ):
     path = configure(tmp_path, monkeypatch)
     call = AsyncMock(side_effect=AssertionError("no network"))
@@ -52,8 +53,9 @@ async def test_direct_acceptance_native_outputs_and_single_capture_without_provi
             Case("direct", "text_to_pdf", {"text": "Invoice 00123", "mode": "direct"}, ("00123",))
         ],
     )
-    assert await acceptance.execute(["direct"]) == 0
+    assert await acceptance.execute(["direct"], native_only=native_only) == 0
     result = json.loads((path / "report.json").read_text())
+    assert result["native_only"] is native_only
     assert result["status"] == "PASS" and result["passed"] == 1 and result["provider_calls"] == 0
     assert result["active_orders"] == result["wallet_reserved_halala"] == 0
     assert result["selected_cases"] == ["direct"]

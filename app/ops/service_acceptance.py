@@ -101,6 +101,11 @@ class AcceptanceProvider(OpenAICompatible):
         return await super().call(*args)
 
 
+class NativeAcceptanceProvider(AcceptanceProvider):
+    async def call(self, *args):
+        raise ServiceError("acceptance_native_provider_forbidden")
+
+
 def pptx_token_diagnostics(content, source):
     """Observe only counts/fixed field kinds in isolated acceptance, never literal values.
 
@@ -192,6 +197,15 @@ def selected_cases(templates, names=None):
     if not names or len(set(names)) != len(names) or set(names) - {c.name for c in templates}:
         raise ServiceError("acceptance_case_invalid")
     return [case for case in templates if case.name in names]
+
+
+def native_cases(templates, names):
+    if not names:
+        raise ServiceError("acceptance_case_invalid")
+    chosen = selected_cases(templates, names)
+    if any(registry.types[case.slug].needs_ai(case.inputs) for case in chosen):
+        raise ServiceError("acceptance_native_requires_no_ai")
+    return chosen
 
 
 def pixel_signature(image):
@@ -577,17 +591,17 @@ async def run_case(case, adapter, backend, output):
         }
 
 
-async def execute(case_names=None):
+async def execute(case_names=None, *, native_only=False):
     root = isolated()
+    templates = (native_cases if native_only else selected_cases)(cases(ASSETS), case_names)
     output = root / "results"
     if output.exists():
         raise ServiceError("acceptance_fresh_run_required")
-    adapter = AcceptanceProvider()
+    adapter = NativeAcceptanceProvider() if native_only else AcceptanceProvider()
     adapter.rates()
     async with sessions() as db:
         if any([await db.scalar(select(func.count(cls.id))) for cls in (User, Order, CostHold)]):
             raise ServiceError("acceptance_fresh_database_required")
-    templates = selected_cases(cases(ASSETS), case_names)
     output.mkdir(parents=True)
     async with sessions.begin() as db:
         await registry.sync(db)
@@ -611,6 +625,7 @@ async def execute(case_names=None):
     }
     report = {
         "status": "RUNNING",
+        "native_only": native_only,
         "cases": [],
         "selected_cases": [case.name for case in templates],
         "services": len({case.slug for case in templates}),
@@ -687,10 +702,13 @@ async def execute(case_names=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--native-only", action="store_true")
     parser.add_argument("--case", action="append", dest="case_names")
     args = parser.parse_args()
     try:
-        values = selected_cases(cases(ASSETS), args.case_names)
+        values = (native_cases if args.native_only else selected_cases)(
+            cases(ASSETS), args.case_names
+        )
     except ServiceError as error:
         print(json.dumps({"status": "BLOCKED", "error": error.key}))
         return 1
@@ -710,7 +728,7 @@ def main():
         )
         return 0
     try:
-        return asyncio.run(execute(args.case_names))
+        return asyncio.run(execute(args.case_names, native_only=args.native_only))
     except ServiceError as error:
         print(json.dumps({"status": "BLOCKED", "error": error.key}))
         return 1
