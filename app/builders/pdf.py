@@ -14,7 +14,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from app.builders.direction import is_rtl
 from app.builders.quality import validate
 from app.builders.schema import Document
-from app.builders.word import DATE_TOKEN, safe_text
+from app.builders.word import INLINE_LTR, safe_text
 
 _FONT_FILES = {
     "DejaVu": (
@@ -46,24 +46,32 @@ def _register_fonts():
     pdfmetrics.registerFont(TTFont("DejaVu-Bold", bold))
 
 
-def _visual(text):
-    # Numeric date tokens have a source-defined order, including Arabic-Indic
-    # digits. A temporary LTR override protects that order during bidi shaping;
-    # get_display consumes the override, so no added controls enter the PDF text.
-    protected = DATE_TOKEN.sub(lambda match: "\u202d" + match[0] + "\u202c", safe_text(text))
-    return get_display(arabic_reshaper.reshape(protected))
+def _reading_rtl(text):
+    # Identifiers do not vote as English prose in an otherwise Arabic paragraph.
+    return is_rtl(INLINE_LTR.sub("", safe_text(text)))
 
 
-def display(text):
-    return escape(_visual(text))
+def _visual(text, *, rtl=None):
+    # Protect complete contacts before dates so a numeric email local part cannot
+    # swap sides with its domain. Shaping consumes these temporary overrides;
+    # no added controls enter the PDF text or change the source document.
+    protected = INLINE_LTR.sub(lambda match: "\u202d" + match[0] + "\u202c", safe_text(text))
+    if rtl is None:
+        rtl = _reading_rtl(text)
+    return get_display(arabic_reshaper.reshape(protected), base_dir="R" if rtl else "L")
+
+
+def display(text, *, rtl=None):
+    return escape(_visual(text, rtl=rtl))
 
 
 def _wrap(text, font, size, width):
     lines = []
     current = ""
+    rtl = _reading_rtl(text)
     for word in safe_text(text).split():
         candidate = (current + " " + word).strip()
-        rendered = _visual(candidate)
+        rendered = _visual(candidate, rtl=rtl)
         if current and pdfmetrics.stringWidth(rendered, font, size) > width:
             lines.append(current)
             current = word
@@ -130,29 +138,33 @@ def build(data: Document, *, include_title: bool = True) -> bytes:
     width = A4[0] - 84
     story = []
     if include_title:
+        rtl = _reading_rtl(data.title)
         for line in _wrap(data.title, "DejaVu-Bold", 18, width):
-            story.append(Paragraph(display(line), title_rtl if is_rtl(line) else title_ltr))
+            story.append(Paragraph(display(line, rtl=rtl), title_rtl if rtl else title_ltr))
         story.append(Spacer(1, 4))
 
     for section in data.sections:
         heading_start = len(story)
         if section.heading:
+            rtl = _reading_rtl(section.heading)
             for line in _wrap(section.heading, "DejaVu-Bold", 14, width):
-                story.append(Paragraph(display(line), heading_rtl if is_rtl(line) else heading_ltr))
+                story.append(Paragraph(display(line, rtl=rtl), heading_rtl if rtl else heading_ltr))
         body_start = len(story)
         for text in section.paragraphs:
             for logical in safe_text(text).splitlines() or [""]:
                 if not logical.strip():
                     story.append(Spacer(1, 18))
                     continue
+                rtl = _reading_rtl(logical)
                 for line in _wrap(logical, "DejaVu", 11, width):
                     story.append(
-                        Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr)
+                        Paragraph(display(line, rtl=rtl), normal_rtl if rtl else normal_ltr)
                     )
             story.append(Spacer(1, 8))
         for bullet in section.bullets:
+            rtl = _reading_rtl(bullet)
             for line in _wrap("• " + bullet, "DejaVu", 11, width):
-                story.append(Paragraph(display(line), normal_rtl if is_rtl(line) else normal_ltr))
+                story.append(Paragraph(display(line, rtl=rtl), normal_rtl if rtl else normal_ltr))
         if section.heading:
             # Keep all heading lines and any source-leading blank space with the first
             # content line, not the entire section. Oversized prefixes can still split.
