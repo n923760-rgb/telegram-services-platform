@@ -75,6 +75,7 @@ def build(table, lines, row_ids, quotes):
             data.column_dimensions[letter].width = min(
                 60, max(data.column_dimensions[letter].width, excel._display_width(quote) + 2)
             )
+    excel.configure_print(data)
     source = book.create_sheet("Source")
     source.sheet_view.showGridLines = False
     source.sheet_view.rightToLeft = excel._reading_rtl(" ".join(lines))
@@ -129,11 +130,7 @@ def build(table, lines, row_ids, quotes):
     source.add_table(native)
     source.print_title_rows = "1:3"
     source.print_area = f"A1:C{source.max_row}"
-    source.page_setup.paperSize = source.PAPERSIZE_A4
-    source.page_setup.orientation = "landscape"
-    source.page_setup.fitToWidth = 1
-    source.page_setup.fitToHeight = 0
-    source.sheet_properties.pageSetUpPr.fitToPage = True
+    excel.configure_print(source)
     result = BytesIO()
     book.save(result)
     return validate(result.getvalue(), "xlsx")
