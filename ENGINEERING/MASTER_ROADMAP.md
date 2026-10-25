@@ -1,3 +1,123 @@
+## Integrated service readiness rollout — 2026-10-25
+
+- AUTHORIZATION: Owner now approves merging the pending drafts and deploying to
+  the server, followed by continued development. Earlier merge-deferred notes
+  below describe historical draft preparation, not the current authorization.
+- BASELINE: main `04357a5`; consolidate reviewed changes from #161 CSV newlines,
+  #162 PDF table forms, #163 OCR paired-output cleanup, #164 service review record,
+  and #165 shared Word/PDF rollback cleanup. Preserve their independent PR evidence.
+- INTEGRATION: Functional edits are disjoint. Combine the appended output-quality
+  sections and prepend all five phase records without dropping source/history.
+  No price, gate, provider, dependency, migration or wallet-policy changes.
+- VALIDATION: Require combined exact-head hosted lint/format, full PostgreSQL/Redis
+  suite, Alembic drift, Compose and network-disabled document-worker checks before
+  merging the release. Per-draft green checks do not substitute for integration.
+- ROLLOUT: Coordinate API/bot/worker and monitor image replacement; protect current
+  settings and database with private backup and retain prior runtime image IDs.
+  Production connection is unavailable here; operator execution and returned
+  health/version evidence remain required. Do not claim deployment from CI alone.
+
+## Shared Word/PDF failure cleanup — 2026-10-25
+
+- BASELINE: Verified main `04357a5`; owner continues development with merge
+  deferred. OCR draft #163 separately passed 3424 hosted tests/37 worker checks.
+- FACT: The shared Word/PDF export helper stops cleanup if one delete fails,
+  leaving later artifacts untouched and masking the original save/cancel error.
+  Four reproducer cases fail on baseline (first/second deletion, save/cancel).
+- CHANGE: Attempt deletion of each saved artifact independently; preserve the
+  original exception. A file whose deletion failed still awaits existing TTL
+  retention; this is not a guarantee of successful deletion during storage failure.
+- SCOPE: Shared helper used by CV, meeting minutes and text-to-Word/PDF. Successful
+  schemas/filenames/order, previews, prepared delivery, provider calls, versions,
+  prices/gates and financial policy remain unchanged. No production deployment,
+  migrations, dependencies, new services or service-specific core branching.
+- LOCAL PASS: 135 output-selection/cleanup/plugin tests, including actual CV,
+  minutes and Word/PDF renders via the installed local Office binary. Three
+  architecture gates and global lint/format/diff pass. Full hosted lifecycle and
+  native-worker checks remain pending; live provider/mobile acceptance is separate.
+- MERGE: Keep this bounded fix as its own draft. Do not combine or merge the other
+  independent CSV/PDF-table/OCR/review drafts without owner authorization.
+
+## Sequential baseline review of 16 services — 2026-10-25
+
+- BASELINE: main `04357a5`; owner requests continued service-by-service development,
+  explicitly deferring merge. Independent draft changes are not folded into main.
+- LOCAL PASS: 426 baseline plugin tests across all 16 public services, with no
+  skips; CV/minutes native cases pass after setting the existing local Office
+  test binary override. Supplementary image/PDF checks pass 154 overlapping cases.
+- EVIDENCE: ENGINEERING/REPORTS/2026-10-25-service-by-service-review.md records each
+  service count, local runtime adjustment, separate draft work and remaining
+  provider/mobile qualification. These checks are not paid-launch authorization.
+- FOLLOW-UP: Existing CSV/PDF-table drafts remain unmerged. A demonstrated OCR
+  partial-output cleanup issue is handled in a separate bounded branch.
+- BOUNDARY: No production, activation, price, provider calls or financial changes.
+
+## OCR paired artifact cleanup — 2026-10-25
+
+- BASELINE: main `04357a5`; owner requests sequential service review/development
+  without merge. Keep this bounded fix as a draft separate from CSV/PDF tables.
+- FACT: Long OCR output saves TXT before Word rendering. A render exception or
+  second artifact save failure leaves the TXT unreferenced by any Result. Two
+  reproducer cases fail on baseline with input plus orphan output present.
+- CHANGE: Finish Word rendering before saving either artifact; on second-save
+  failure/cancellation, remove the first artifact and preserve the original
+  exception. Existing TTL remains the fallback if deletion itself fails.
+- CONTRACT: Input/output schemas, successful filenames/order/text and provider
+  calls do not change, so service version stays 6. Historical prepared delivery,
+  prices/gates, wallets and provider budgets are untouched. No migration/dependency,
+  new service or production action. This is failure-path resource cleanup.
+- LOCAL: Regress build failure, first/second save failure and cancellation with
+  input retained, no orphan output and one mocked AI call; success retains exact
+  TXT and editable Word text. Existing long-text cases stay in the focused run.
+  Hosted full lifecycle/native-worker results and live OCR quality are separate.
+
+## PDF table form-value fidelity boundary — 2026-10-25
+
+- BASELINE: Verified main `04357a5`; CSV draft #161 is independent and its exact
+  head passed 3458 hosted tests/37 native checks. Owner requests service-by-service
+  development with merge deferred. Keep this round separate and draft; no merge.
+- FACT: A valid ruled table with a text field whose /V is 00999 is accepted by
+  both actual Camelot methods. Both omit the field and return the underlying
+  =1+1 cell text. The field has a nonempty appearance; accepting selectable page
+  text alone is not evidence of a complete visible table.
+- CHANGE: Use the existing shared form/widget/signature declaration boundary in
+  the native table preflight before extraction. Propagate its nontransient safe
+  error without stream fallback, AI, continuation or workbook output. Cover empty
+  declarations, indirect/orphan widgets and later pages. Localized intake/errors
+  require a reviewed static text copy, without claiming signature preservation.
+- VERSION: pdf_tables_excel 6 -> 7; extend v6 cached/unprepared upgrade tests.
+  Preserve admin enablement/prices and prepared historical delivery. New input
+  rejection does not count toward the circuit. No migration/dependency/provider,
+  financial policy, production image or production deployment change.
+- LOCAL PASS: 85 native/schema/service/layer regression cases, three architecture
+  gates, global lint/format/diff and native-worker script compilation. Added real
+  DB lifecycle cases require hosted validation for once-only release, no cost or
+  delivery, cleanup and no circuit trip. Native worker adds both-method boundary
+  checks. Full hosted results remain pending; target viewer/Telegram/live-provider
+  qualification remains separate. This is not flattening or a PDF sanitizer.
+
+## CSV quoted source newline fidelity — 2026-10-25
+
+- BASELINE: Verified main `04357a5`; owner requests further development with merge
+  deferred. Keep this round on its own branch/draft PR; do not merge or deploy.
+- FACT: The document-text validator normalizes CRLF/CR to LF before CSV parsing,
+  changing quoted source cell strings in the Source workbook sheet.
+- CHANGE: Validate printable content without replacing CSV input. Parse using
+  newline-preserving StringIO so record separators and embedded quoted separators
+  stay distinct. Preserve literal Source/Data cell values; trim mode removes only
+  selected outer spaces/tabs. Count CRLF/CR/LF as logical line separators for the
+  existing 11-line cell bound; reject multiline headers in every newline style.
+- VERSION: csv_review 3 -> 4. Extend old-version cached/unprepared cases to v3,
+  preserving admin gates, both prices, source history and prepared delivery.
+  No provider, wallet policy, migration, dependency or production change.
+- LOCAL: Test all 9 record/cell separator combinations in preserve/trim modes,
+  XLSX reopen fidelity, quoted punctuation, IDs, formula-like literal text,
+  logical-line limits and invalid controls. Full hosted PostgreSQL/Redis and
+  native-worker results remain separate from local checks; no merge authorized.
+- BOUNDARY: No viewer layout certification or raw CSV-file attachment support is
+  added. Scope is pasted CSV parsed cell fidelity. Existing whitespace choices,
+  record order, numeric interpretation and formula protection remain unchanged.
+
 ## Text PDF numeric contact fidelity — 2026-10-25
 
 - BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests

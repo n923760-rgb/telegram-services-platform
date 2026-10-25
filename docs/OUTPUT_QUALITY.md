@@ -121,3 +121,22 @@ cells, dates and duplicate rows without interpreting them as formulas. Pending v
 orders are cancelled and their reservation released after registry synchronization to version 2;
 administrator-owned enablement and price remain intact. Already prepared deliveries retain
 the existing cached-delivery path.
+
+## CSV source newline preservation
+
+Quoted pasted-CSV fields retain their exact CRLF, CR or LF separators in Source
+and Data cells. CSV record separators are parsed independently. Trim mode removes
+only outer spaces/tabs; it does not rewrite embedded line endings. The existing
+11-line cell bound counts all three newline conventions; multiline headers and
+invalid controls still reject. XLSX reopen checks establish cell-value fidelity,
+not target Excel/mobile multiline rendering or arbitrary row-height acceptance.
+
+## PDF table fields and signatures
+
+Table extraction rejects declared forms/signatures and page widgets, including
+empty declarations, orphan/indirect widgets and later pages, before invoking the
+native extractor or AI labels. Both extraction methods can otherwise accept a
+table while omitting a visible field value. Export a static text-based copy from
+the original application and verify visible values before upload. This service
+does not flatten PDFs or validate/preserve signature authenticity. Plain-table
+extraction and historical prepared-file delivery keep their existing paths.

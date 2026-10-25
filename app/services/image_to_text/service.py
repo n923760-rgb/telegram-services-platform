@@ -82,9 +82,6 @@ class ImageToText(BaseService):
         text = extracted.text.strip()
         artifacts = []
         if len(text) > 3500:
-            artifacts.append(
-                self.runtime.storage.save("result.txt", text.encode("utf-8"), "text/plain")
-            )
             paragraphs = []
             remaining = text
             while remaining:
@@ -101,13 +98,23 @@ class ImageToText(BaseService):
                 title=tr("ocr_document_title"),
                 sections=[Section(paragraphs=[paragraph]) for paragraph in paragraphs],
             )
-            artifacts.append(
-                self.runtime.storage.save(
+            # Finish rendering before saving either output. A failed render must
+            # not leave a text export that no Result references for delivery.
+            content = build(document)
+            artifact = self.runtime.storage.save("result.txt", text.encode("utf-8"), "text/plain")
+            try:
+                editable = self.runtime.storage.save(
                     "result.docx",
-                    build(document),
+                    content,
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 )
-            )
+            except BaseException:
+                try:
+                    self.runtime.storage.delete(artifact.key)
+                except Exception:
+                    pass  # Existing TTL handles deletion failure; retain the original error.
+                raise
+            artifacts.extend([artifact, editable])
         return Result(text=text, artifacts=artifacts)
 
 
