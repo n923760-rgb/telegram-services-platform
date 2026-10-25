@@ -8,7 +8,7 @@ from app.services.csv_review.schema import Inputs
 
 
 class CsvReview(BaseService):
-    version = "3"
+    version = "4"
     slug = "csv_review"
     menu_order = 10
     category = "data"

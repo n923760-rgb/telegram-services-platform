@@ -1,3 +1,25 @@
+## CSV quoted source newline fidelity — 2026-10-25
+
+- BASELINE: Verified main `04357a5`; owner requests further development with merge
+  deferred. Keep this round on its own branch/draft PR; do not merge or deploy.
+- FACT: The document-text validator normalizes CRLF/CR to LF before CSV parsing,
+  changing quoted source cell strings in the Source workbook sheet.
+- CHANGE: Validate printable content without replacing CSV input. Parse using
+  newline-preserving StringIO so record separators and embedded quoted separators
+  stay distinct. Preserve literal Source/Data cell values; trim mode removes only
+  selected outer spaces/tabs. Count CRLF/CR/LF as logical line separators for the
+  existing 11-line cell bound; reject multiline headers in every newline style.
+- VERSION: csv_review 3 -> 4. Extend old-version cached/unprepared cases to v3,
+  preserving admin gates, both prices, source history and prepared delivery.
+  No provider, wallet policy, migration, dependency or production change.
+- LOCAL: Test all 9 record/cell separator combinations in preserve/trim modes,
+  XLSX reopen fidelity, quoted punctuation, IDs, formula-like literal text,
+  logical-line limits and invalid controls. Full hosted PostgreSQL/Redis and
+  native-worker results remain separate from local checks; no merge authorized.
+- BOUNDARY: No viewer layout certification or raw CSV-file attachment support is
+  added. Scope is pasted CSV parsed cell fidelity. Existing whitespace choices,
+  record order, numeric interpretation and formula protection remain unchanged.
+
 ## Text PDF numeric contact fidelity — 2026-10-25
 
 - BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests
