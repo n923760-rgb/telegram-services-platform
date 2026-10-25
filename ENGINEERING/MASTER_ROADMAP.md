@@ -1,3 +1,24 @@
+## Shared Word/PDF failure cleanup — 2026-10-25
+
+- BASELINE: Verified main `04357a5`; owner continues development with merge
+  deferred. OCR draft #163 separately passed 3424 hosted tests/37 worker checks.
+- FACT: The shared Word/PDF export helper stops cleanup if one delete fails,
+  leaving later artifacts untouched and masking the original save/cancel error.
+  Four reproducer cases fail on baseline (first/second deletion, save/cancel).
+- CHANGE: Attempt deletion of each saved artifact independently; preserve the
+  original exception. A file whose deletion failed still awaits existing TTL
+  retention; this is not a guarantee of successful deletion during storage failure.
+- SCOPE: Shared helper used by CV, meeting minutes and text-to-Word/PDF. Successful
+  schemas/filenames/order, previews, prepared delivery, provider calls, versions,
+  prices/gates and financial policy remain unchanged. No production deployment,
+  migrations, dependencies, new services or service-specific core branching.
+- LOCAL PASS: 135 output-selection/cleanup/plugin tests, including actual CV,
+  minutes and Word/PDF renders via the installed local Office binary. Three
+  architecture gates and global lint/format/diff pass. Full hosted lifecycle and
+  native-worker checks remain pending; live provider/mobile acceptance is separate.
+- MERGE: Keep this bounded fix as its own draft. Do not combine or merge the other
+  independent CSV/PDF-table/OCR/review drafts without owner authorization.
+
 ## Text PDF numeric contact fidelity — 2026-10-25
 
 - BASELINE: Verified live main `b5862fd` after #159, no open PRs. Owner requests

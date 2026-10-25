@@ -103,3 +103,44 @@ async def test_preview_save_failure_removes_all_selected_files(
     with pytest.raises(ServiceError, match="storage_quota"):
         await word_pdf_result(runtime, None, preview="Ready", output_format=output_format)
     assert not list(tmp_path.glob("[0-9]*/*/*"))
+
+
+@pytest.mark.parametrize("cancelled", [False, True])
+@pytest.mark.parametrize("failed_delete", [0, 1])
+async def test_cleanup_attempts_every_saved_file_and_preserves_original_failure(
+    tmp_path, monkeypatch, cancelled, failed_delete
+):
+    import asyncio
+
+    store = OwnedStorage(LocalStorage(tmp_path), 1)
+    original = asyncio.CancelledError() if cancelled else ServiceError("storage_quota")
+    save, delete = store.save, store.delete
+    saved, attempted = [], []
+
+    def fail_preview(name, *args):
+        if name == "preview.png":
+            raise original
+        artifact = save(name, *args)
+        saved.append(artifact)
+        return artifact
+
+    def flaky_delete(key):
+        attempted.append(key)
+        if key == saved[failed_delete].key:
+            raise OSError("synthetic cleanup failure")
+        delete(key)
+
+    monkeypatch.setattr(store, "save", fail_preview)
+    monkeypatch.setattr(store, "delete", flaky_delete)
+    runtime = SimpleNamespace(
+        storage=store,
+        renderer=SimpleNamespace(word_pdf=AsyncMock(return_value=WordFiles(b"docx", b"pdf"))),
+        previews=SimpleNamespace(
+            first_page=AsyncMock(return_value=SimpleNamespace(png=b"png", pages=1))
+        ),
+    )
+    with pytest.raises(type(original)) as caught:
+        await word_pdf_result(runtime, None, preview="Ready", output_format="both")
+    assert caught.value is original
+    assert attempted == [a.key for a in saved]
+    assert store.storage.usage(1)[1] == 1  # Only the failed deletion awaits existing TTL cleanup.
