@@ -1,3 +1,20 @@
+## Provider-free isolated acceptance while production remains active
+
+Use `bash scripts/service-acceptance.sh --native-only csv tables_direct images_pdf pdf_extract pdf_rotate pdf_merge word_pdf_direct`
+for explicitly selected non-AI cases. The wrapper validates the actual registered
+input policy before creating a test database; omitted, duplicate, unknown or
+AI-requiring selections fail. The isolated worker also revalidates before
+migrations, sets AI_ENABLED=false only in its own process and uses an acceptance
+adapter that refuses outbound provider calls. Production settings are never
+updated, and the production pause value must match its pre-run snapshot afterward.
+
+Normal live-provider acceptance still requires production PROVIDER_PAUSED=true;
+its failure now prints an explicit explanation. This new native option does not
+waive live-provider isolation, budgets, fresh test DB/storage, readable mount,
+source provenance, wallet accounting or manual output-review requirements.
+Existing production images can run the mounted acceptance-only code; no production
+container rebuild/restart is needed for this wrapper change.
+
 # Operations
 
 For formal Arabic rewriting qualification, inspect the actual revision even if the

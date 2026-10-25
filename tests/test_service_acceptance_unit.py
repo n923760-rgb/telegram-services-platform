@@ -345,3 +345,49 @@ async def test_diagnostic_category_metadata_cannot_copy_raw_errors(monkeypatch, 
             ],
         }
     ]
+
+
+NATIVE_CASES = [
+    "csv",
+    "tables_direct",
+    "images_pdf",
+    "pdf_extract",
+    "pdf_rotate",
+    "pdf_merge",
+    "word_pdf_direct",
+]
+
+
+def test_native_selection_accepts_requested_provider_free_cases_only():
+    chosen = acceptance.native_cases(cases(acceptance.ASSETS), NATIVE_CASES)
+    assert {case.name for case in chosen} == set(NATIVE_CASES)
+
+
+@pytest.mark.parametrize(
+    "names",
+    [None, [], ["unknown"], ["csv", "csv"], ["csv", "summary"], ["tables_labels"], ["cv_en"]],
+)
+def test_native_selection_rejects_default_invalid_and_ai_cases(names):
+    with pytest.raises(ServiceError):
+        acceptance.native_cases(cases(acceptance.ASSETS), names)
+
+
+async def test_native_provider_never_reaches_parent_network_call(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    network = AsyncMock(side_effect=AssertionError("must not call provider"))
+    monkeypatch.setattr(acceptance.AcceptanceProvider, "call", network)
+    adapter = acceptance.NativeAcceptanceProvider()
+    with pytest.raises(ServiceError, match="acceptance_native_provider_forbidden"):
+        await adapter.call("unexpected")
+    network.assert_not_awaited()
+    assert adapter.calls == 0
+
+
+async def test_native_ai_selection_rejects_before_database_or_output_creation(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(acceptance, "isolated", lambda: tmp_path)
+    with pytest.raises(ServiceError, match="acceptance_native_requires_no_ai"):
+        await acceptance.execute(["summary"], native_only=True)
+    assert not list(tmp_path.iterdir())
