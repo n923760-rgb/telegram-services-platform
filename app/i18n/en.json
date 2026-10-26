@@ -634,5 +634,9 @@
   "card_subtitle": "Enter a title or short description, or skip.",
   "card_links": "Send 1 to 6 links, one per line: Button label | full HTTPS URL\nExample: WhatsApp | https://wa.me/966500000000\nUse links you are authorized to publish; we do not open or verify them.",
   "card_preview": "PDF card with clickable links. Open in a PDF reader that supports links.",
-  "card_pdf_note": "Tap a button to open its link"
+  "card_pdf_note": "Tap a button to open its link",
+  "card_language_review": "Card language",
+  "card_person_review": "Name or business",
+  "card_subtitle_review": "Title or description",
+  "card_links_review": "Buttons and links"
 }
