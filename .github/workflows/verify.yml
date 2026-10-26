@@ -8,8 +8,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    # Slow Office package setup plus the full suite/native checks can exceed 20 minutes.
-    timeout-minutes: 30
+    # Slow Office mirrors plus the full suite/native checks exceeded 30 minutes.
+    timeout-minutes: 45
     env:
       APP_ENV: test
       CI_INFRA_PROJECT: tsp-ci-${{ github.run_id }}-${{ github.run_attempt }}
