@@ -348,9 +348,19 @@ def cases(assets):
             for lang in ("ar", "en")
         ],
     ]
+    result.append(
+        Case(
+            "business_card",
+            "interactive_card",
+            {"language": "en", "name": "Demo 00123", "links": "Website | https://example.invalid/"},
+            ("00123",),
+            exact_pdf_pages=1,
+        )
+    )
     # Exact customer deliverables for these bounded synthetic fixtures. This is
     # acceptance metadata, not production service dispatch or payment policy.
     deliverables = {
+        "business_card": ("business-card.pdf",),
         "csv": ("review.xlsx",),
         "enhance": ("enhanced.png", "comparison.png", "received.png"),
         "ocr_en": ("response.txt",),
