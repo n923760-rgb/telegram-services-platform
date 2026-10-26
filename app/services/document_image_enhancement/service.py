@@ -71,7 +71,11 @@ class DocumentImageEnhancement(BaseService):
                 artifacts.append(self.runtime.storage.save(filename, data, kind))
         except BaseException:
             for artifact in artifacts:
-                self.runtime.storage.delete(artifact.key)
+                try:
+                    self.runtime.storage.delete(artifact.key)
+                except Exception:
+                    # Continue rollback and retain the original failure; TTL is fallback.
+                    pass
             raise
         return Result(
             artifacts=artifacts,

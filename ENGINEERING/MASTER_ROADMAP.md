@@ -1,3 +1,17 @@
+## Portfolio audit and commercial expansion — 2026-10-26
+
+- Owner requests all 16 services reviewed in one round and useful commercial
+  services including Saudi invoicing. Baseline main 27e5a7a.
+- Combined local service baseline: 426 PASS; all sixteen included, no skips.
+  Record limits and actual operator artifacts in REPORTS/2026-10-26-portfolio-audit.md.
+- Fix image-enhancement rollback to attempt remaining deletions and retain original
+  save/cancellation after a cleanup failure; add regression tests, no version change.
+- Specify commercial document queue and genuine Saudi invoice system requirements
+  in docs/COMMERCIAL_SERVICES.md using official ZATCA sources. Specification only:
+  no new plugin, tax compliance claim, activation or production configuration change.
+- Require full exact-head hosted checks before merge. Live 29-case semantic/visual
+  acceptance and target Office/mobile qualification remain separate outstanding gates.
+
 ## Compact review sheet printing — 2026-10-26
 
 - FACT: Uploaded native acceptance bundle at f7551c4 passes seven cases with no
