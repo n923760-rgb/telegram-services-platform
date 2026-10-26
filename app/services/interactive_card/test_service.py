@@ -46,6 +46,8 @@ async def test_native_pdf_has_exact_click_targets_and_no_active_content(tmp_path
     [
         {"links": "JavaScript | javascript:alert(1)"},
         {"links": "HTTP | http://example.invalid"},
+        {"links": "Incomplete | https:example.invalid"},
+        {"links": "Backslash | https://example.invalid/\\path"},
         {"links": "File | file:///tmp/test"},
         {"links": "Auth | https://user:password@example.invalid"},
         {"links": "Broken"},

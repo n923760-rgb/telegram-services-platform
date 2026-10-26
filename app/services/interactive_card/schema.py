@@ -34,6 +34,8 @@ class Inputs(StrictModel):
             DocumentInputs.printable_text(label)
             if not separator or not 1 <= len(label) <= 48 or not 1 <= len(url) <= 300:
                 raise ValueError("invalid link")
+            if not url.startswith("https://") or "\\" in url:
+                raise ValueError("full HTTPS URL required")
             parsed = TypeAdapter(HttpUrl).validate_python(url)
             if parsed.scheme != "https" or parsed.username or parsed.password:
                 raise ValueError("HTTPS without credentials required")
