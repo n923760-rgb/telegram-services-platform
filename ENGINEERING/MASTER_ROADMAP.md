@@ -1,3 +1,16 @@
+## Static QR generation — 2026-10-26
+
+- BASELINE: main e8c97d6; owner continues approved service expansion.
+- IMPLEMENTED: qr_codes v1, one to 24 exact UTF-8 payloads in vector PDF sheets,
+  Arabic/English labels, default disabled, no AI/dependency or core branching.
+- PASS: 193 focused checks, independent QR read-back through four-page batches,
+  all-page Arabic visual review, three architecture gates and lint/format/diff.
+- Add isolated acceptance case, DB capture/release/re-execution regression and
+  non-root network-disabled worker read-back. Full hosted checks still required;
+  production activation, real mobile/print scans and provider quality separate.
+- Evidence and remaining boundaries: REPORTS/2026-10-26-qr-sheets.md.
+  Next bounded slices remain barcode decoding and menu/service-list documents.
+
 ## Interactive card and architecture review — 2026-10-26
 
 - Owner authorizes building new services in the bot and researching GitHub/AI models.

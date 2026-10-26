@@ -116,7 +116,7 @@ def test_legacy_minimum_pdf_contract_is_retained_for_variable_layouts():
 
 def test_plan_covers_new_contracts_without_extra_ai_cases():
     plan = {case.name: case for case in cases(ASSETS)}
-    assert len(plan) == 30
+    assert len(plan) == 31
     assert plan["pptx"].inputs["slide_count"] == "3" and plan["pptx"].pptx_slides == 3
     assert plan["pptx"].tokens == ("00123", "125.50")
     assert plan["images_pdf"].inputs["page_order"] == "٢، ١"

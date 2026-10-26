@@ -638,5 +638,12 @@
   "card_language_review": "Card language",
   "card_person_review": "Name or business",
   "card_subtitle_review": "Title or description",
-  "card_links_review": "Buttons and links"
+  "card_links_review": "Buttons and links",
+  "qr_name": "Create QR codes",
+  "qr_description": "Create one to 24 static QR codes in a printable PDF. Exact content; no link hosting or validation.",
+  "qr_language": "Choose the label language.",
+  "qr_entries": "Send 1 to 24 lines: Label|content\nExample: Website|https://example.com\nEverything after the FIRST | is encoded exactly, including spaces. No blank lines. Up to 40 label characters and 240 UTF-8 bytes per code. Links are not opened or verified. No retail GTIN registration or Saudi invoice QR certification.",
+  "qr_preview": "Printable PDF with static QR codes. Test scans before printing or publishing.",
+  "qr_language_review": "Label language",
+  "qr_entries_review": "QR labels and exact content"
 }

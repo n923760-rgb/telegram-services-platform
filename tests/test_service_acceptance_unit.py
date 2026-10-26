@@ -18,7 +18,7 @@ def database():
 
 def test_exact_portfolio_and_modes_use_valid_synthetic_inputs():
     values = cases(acceptance.ASSETS)
-    assert len(values) == 30 and len({case.slug for case in values}) == 17
+    assert len(values) == 31 and len({case.slug for case in values}) == 18
     assert {c.inputs["language"] for c in values if c.slug == "cv_formatting"} == {
         "ar",
         "en",
