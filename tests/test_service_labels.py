@@ -41,16 +41,20 @@ async def test_admin_pages_show_same_customer_labels_and_keep_draft(owner):
             b.text for line in app.transport.messages[-1].reply_markup.inline_keyboard for b in line
         ]
         assert labels[:2] == ["إدارة الخدمات", "أسعار الخدمات"]
-        for page in range(3):
+        seen = set()
+        for page in range(4):
             await app.callback(f"admin:readiness:{page}")
             message = app.transport.messages[-1]
-            assert tr("catalog_page", page=page + 1, pages=3) in message.text
+            assert tr("catalog_page", page=page + 1, pages=4) in message.text
             async with sessions() as db:
                 for line in message.reply_markup.inline_keyboard:
                     for button in line:
                         if button.callback_data.startswith("admin:inspect:"):
                             row = await db.get(Service, button.callback_data.split(":")[-1])
                             assert button.text == row.name_ar
+                            assert row.slug not in seen
+                            seen.add(row.slug)
+        assert "qr_codes" in seen
         await app.callback("admin:inspect:text_editing")
         assert "تحرير النصوص" in app.transport.messages[-1].text
         assert tr("catalog_text") in app.transport.messages[-1].text

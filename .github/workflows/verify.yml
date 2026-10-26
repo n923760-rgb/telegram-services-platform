@@ -535,6 +535,12 @@ jobs:
           assert len(card_reader.pages) == 1
           assert card_reader.pages[0]['/Annots'][0].get_object()['/A']['/URI'] == 'https://wa.me/966500000000'
           print('Non-root worker: Arabic interactive contact PDF and exact HTTPS annotation PASS with network disabled')
+          from tests.qr_codes_fixtures import decode_all, inputs as qr_inputs
+          from app.services.qr_codes.schema import Inputs as QrInputs
+          from app.builders.qr_codes import build as qr_build
+          qr_values = QrInputs.parse(qr_inputs(language='ar', entries='الموقع|https://example.invalid/?id=00123'))
+          assert decode_all(qr_build(qr_values), 1) == ['https://example.invalid/?id=00123']
+          print('Non-root worker: vector QR exact read-back PASS with network disabled')
           PY
       - name: Remove disposable CI resources
         if: always()

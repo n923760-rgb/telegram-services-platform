@@ -29,7 +29,7 @@ def by_slug(report):
 
 def test_empty_run_lists_entire_portfolio_as_not_run(plan):
     report = service_readiness(plan, [])
-    assert len(report["services"]) == 17
+    assert len(report["services"]) == 18
     assert report["launch_status"] == "NOT_ASSESSED"
     assert all(row["automated_status"] == "NOT_RUN" for row in report["services"])
     assert sum(len(row["not_run_cases"]) for row in report["services"]) == len(plan)

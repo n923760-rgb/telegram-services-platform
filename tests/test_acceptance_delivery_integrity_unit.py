@@ -87,10 +87,10 @@ async def test_word_pdf_pair_cannot_pass_with_only_one_valid_document(tmp_path, 
     assert delivery.sent == 0 and not (tmp_path / "out").exists()
 
 
-def test_all_30_cases_declare_exact_deliverables_for_all_17_services():
+def test_all_31_cases_declare_exact_deliverables_for_all_18_services():
     plan = {case.name: case for case in cases(ASSETS)}
     assert all(case.expected_files for case in plan.values())
-    assert len(plan) == 30 and len({case.slug for case in plan.values()}) == 17
+    assert len(plan) == 31 and len({case.slug for case in plan.values()}) == 18
 
 
 @pytest.mark.parametrize("order", ["correct", "reverse", "duplicate", "blank"])

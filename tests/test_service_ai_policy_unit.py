@@ -17,6 +17,7 @@ from tests.minutes_fixtures import inputs as minutes_inputs
 FILE = "1/" + "a" * 32 + "/source.pdf"
 IMAGE = "1/" + "b" * 32 + "/source.png"
 CASES = [
+    ("qr_codes", {"language": "en", "entries": "Item|00123"}, False),
     (
         "interactive_card",
         {"language": "en", "name": "Demo", "links": "Web | https://example.invalid/"},
@@ -62,14 +63,14 @@ def test_public_service_ai_policy_is_explicit_and_pure(slug, inputs, expected):
 
 def test_policy_cases_cover_exactly_the_customer_portfolio_not_private_services():
     assert {case[0] for case in CASES} == set(customer_slugs())
-    assert len(customer_slugs()) == 17
+    assert len(customer_slugs()) == 18
 
 
 def test_declared_policies_cover_real_initial_request_decisions_without_invoking_plugins(
     monkeypatch,
 ):
     policies = {slug: ai_policy(registry.types[slug]) for slug in customer_slugs()}
-    assert Counter(policies.values()) == {"required": 9, "conditional": 4, "none": 4}
+    assert Counter(policies.values()) == {"required": 9, "conditional": 4, "none": 5}
     for slug, _inputs, expected in CASES:
         if policies[slug] != "conditional":
             assert expected == (policies[slug] == "required")

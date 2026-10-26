@@ -357,10 +357,20 @@ def cases(assets):
             exact_pdf_pages=1,
         )
     )
+    result.append(
+        Case(
+            "qr_sheet",
+            "qr_codes",
+            {"language": "en", "entries": "Item 00123|https://example.invalid/?id=00123"},
+            ("00123",),
+            exact_pdf_pages=1,
+        )
+    )
     # Exact customer deliverables for these bounded synthetic fixtures. This is
     # acceptance metadata, not production service dispatch or payment policy.
     deliverables = {
         "business_card": ("business-card.pdf",),
+        "qr_sheet": ("qr-codes.pdf",),
         "csv": ("review.xlsx",),
         "enhance": ("enhanced.png", "comparison.png", "received.png"),
         "ocr_en": ("response.txt",),
