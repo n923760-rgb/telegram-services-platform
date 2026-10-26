@@ -1,3 +1,14 @@
+## Compact review sheet printing — 2026-10-26
+
+- FACT: Uploaded native acceptance bundle at f7551c4 passes seven cases with no
+  provider usage. Visual review confirms complete bilingual Word/PDF and native
+  PDF operations. CSV Columns and PDF-table Review split across horizontal pages.
+- CHANGE: Bound audit-only column widths and recompute wrapped row heights before
+  print setup. Preserve native font size and all data/source sheets and cell types.
+- VALIDATION: English/Arabic layout checks plus actual LibreOffice print rendering;
+  require exact-head full hosted checks before merge. No service version, price,
+  schema, provider, wallet or production configuration change.
+
 ## Native acceptance isolation mode — 2026-10-26
 
 - FACT: Operator updated to 0e919ef; selection preflight passed, then isolated()

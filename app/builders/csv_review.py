@@ -207,6 +207,8 @@ def build(headers, rows, *, trim, language, similarity=False):
     book["Data"].merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(data_columns))
     book["Data"]["A2"].alignment = copy(book["Data"]["A1"].alignment)
     book["Data"].row_dimensions[2].height = 75
+    for name in ("Review", "Columns", *(["Similarities"] if similarity else [])):
+        excel.configure_review_print(book[name])
     content = BytesIO()
     book.save(content)
     book.close()
