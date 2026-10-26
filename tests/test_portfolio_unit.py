@@ -16,7 +16,7 @@ def database():
 
 def test_customer_catalog_excludes_private_and_replaced_plugins():
     slugs = service_portfolio.customer_slugs()
-    assert len(slugs) == 16 and "echo" not in slugs and "local_ocr" not in slugs
+    assert len(slugs) == 17 and "echo" not in slugs and "local_ocr" not in slugs
     assert slugs == sorted(slugs)
 
 

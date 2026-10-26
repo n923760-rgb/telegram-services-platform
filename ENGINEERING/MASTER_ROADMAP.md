@@ -1,3 +1,18 @@
+## Interactive card and architecture review — 2026-10-26
+
+- Owner authorizes building new services in the bot and researching GitHub/AI models.
+  Baseline main 678904b. Preserve plugin/provider/builder boundaries and core policy.
+- Implement interactive_card v1: Arabic/English PDF with 1–6 explicit HTTPS buttons,
+  default disabled, no provider/network calls or new dependencies. Generic intake,
+  execution, pricing and wallet delivery remain authoritative.
+- Add exact-target, validation and Arabic/six-link tests, DB capture/failure release,
+  isolated acceptance case and actual non-root network-disabled worker qualification.
+- Record architecture findings, pending taxonomy/service batches and upstream license,
+  model-weight and runtime qualification boundaries in
+  REPORTS/2026-10-26-structure-and-components.md. Do not claim model adoption.
+- Require full exact-head hosted checks before merge. No production rollout or
+  activation; real Telegram/mobile link behavior remains an operator acceptance gate.
+
 ## Portfolio audit and commercial expansion — 2026-10-26
 
 - Owner requests all 16 services reviewed in one round and useful commercial

@@ -42,7 +42,7 @@ async def test_read_only_inventory_does_not_expose_orders_or_change_prices(ready
         (await db.get(Service, "csv_review")).enabled = True
     oid = await submit(1, "csv_review", inputs(), 777, "inventory")
     report, _ = await service_portfolio.inspect()
-    assert report["status"] == "ready" and report["customer_services"] == 16
+    assert report["status"] == "ready" and report["customer_services"] == 17
     assert "echo" not in str(report) and "local_ocr" not in str(report)
     assert str(oid) not in str(report) and "orders" not in report
     assert (
@@ -57,12 +57,12 @@ async def test_read_only_inventory_does_not_expose_orders_or_change_prices(ready
 
 async def test_all_public_services_enable_with_individual_audit_and_convergent_retry(ready):
     report = await service_portfolio.enable_all()
-    assert report["status"] == "enabled" and len(report["newly_enabled"]) == 16
+    assert report["status"] == "enabled" and len(report["newly_enabled"]) == 17
     repeated = await service_portfolio.enable_all()
     assert repeated["status"] == "enabled" and repeated["newly_enabled"] == []
     async with sessions() as db:
         audits = list(await db.scalars(select(ServiceActivationChange)))
-        assert len(audits) == 16 and all(row.actor_id == 7 and row.new_enabled for row in audits)
+        assert len(audits) == 17 and all(row.actor_id == 7 and row.new_enabled for row in audits)
         for slug in service_portfolio.customer_slugs():
             row = await db.get(Service, slug)
             assert (row.enabled, row.price_halala, row.price_stars) == (True, 777, 37)

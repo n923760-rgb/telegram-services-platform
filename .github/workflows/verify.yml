@@ -8,8 +8,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    # Slow Office package setup plus the full suite/native checks can exceed 20 minutes.
-    timeout-minutes: 30
+    # Slow Office mirrors plus the full suite/native checks exceeded 30 minutes.
+    timeout-minutes: 45
     env:
       APP_ENV: test
       CI_INFRA_PROJECT: tsp-ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -526,6 +526,15 @@ jobs:
           print('Non-root worker: Arabic/English lexical CSV candidates, numeric exclusions and literal source retention PASS with network disabled')
           print('Non-root worker: automatic document illumination, colored stamp and mixed numeric OCR fixture PASS with network disabled')
           print('Non-root worker: unified mixed-language OCR and automatic Arabic/English ruled/unruled table extraction PASS with network disabled')
+          from app.builders.interactive_card import build as contact_card
+          from app.services.interactive_card.schema import Inputs as ContactCardInputs
+          from pypdf import PdfReader as CardReader
+          from io import BytesIO as CardBytes
+          card = contact_card(ContactCardInputs(language='ar', name='محمد عبدالله', links='واتساب | https://wa.me/966500000000'))
+          card_reader = CardReader(CardBytes(card))
+          assert len(card_reader.pages) == 1
+          assert card_reader.pages[0]['/Annots'][0].get_object()['/A']['/URI'] == 'https://wa.me/966500000000'
+          print('Non-root worker: Arabic interactive contact PDF and exact HTTPS annotation PASS with network disabled')
           PY
       - name: Remove disposable CI resources
         if: always()
