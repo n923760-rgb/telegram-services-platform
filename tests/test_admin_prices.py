@@ -263,7 +263,7 @@ async def test_configuration_panel_refresh_preserves_prices_flags_draft_and_ledg
         )
         await app.callback("admin:readiness:99999")
         assert app.transport.messages[-1].text == (
-            tr("admin_readiness_intro") + "\n\n" + tr("catalog_page", page=3, pages=3)
+            tr("admin_readiness_intro") + "\n\n" + tr("catalog_page", page=4, pages=4)
         )
         assert all(
             button.callback_data != "admin:inspect:local_ocr"
