@@ -5,9 +5,10 @@ from pypdf import PdfReader
 from sqlalchemy import func, select
 
 from app.core.db import sessions
-from app.core.models import CostUsage, Ledger, Order
+from app.core.models import CostUsage, Job, Ledger, Order
 from app.orders.engine import submit
 from app.providers.storage import LocalStorage
+from app.services.base import ServiceError
 from app.wallet.ledger import balance
 from app.workers.runner import execute_job
 from tests.qr_codes_fixtures import inputs
@@ -17,7 +18,8 @@ from tests.test_real_services import Delivery
 
 
 @pytest.mark.parametrize("failure", [False, True])
-async def test_qr_capture_once_or_release_without_ai(tmp_path, monkeypatch, failure):
+@pytest.mark.parametrize("entries", ["Item|00123", "https://example.com/?id=00123"])
+async def test_qr_capture_once_or_release_without_ai(tmp_path, monkeypatch, failure, entries):
     from app.services.qr_codes import service
 
     price = await prepare(tmp_path, monkeypatch, "qr_codes")
@@ -28,7 +30,7 @@ async def test_qr_capture_once_or_release_without_ai(tmp_path, monkeypatch, fail
 
         monkeypatch.setattr(service, "build", broken)
     delivery = Delivery(LocalStorage(tmp_path))
-    oid = await submit(1, "qr_codes", inputs(), price, "qr-order")
+    oid = await submit(1, "qr_codes", inputs(entries=entries), price, "qr-order")
     jid = str(await job_for(oid))
     await execute_job({"delivery": delivery}, jid)
     await execute_job({"delivery": delivery}, jid)
@@ -43,3 +45,15 @@ async def test_qr_capture_once_or_release_without_ai(tmp_path, monkeypatch, fail
     if not failure:
         assert len(delivery.files) == 1
         assert len(PdfReader(BytesIO(delivery.files[0][1])).pages) == 1
+
+
+async def test_invalid_qr_does_not_reserve_credit_or_create_work(tmp_path, monkeypatch):
+    price = await prepare(tmp_path, monkeypatch, "qr_codes")
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(1, "qr_codes", inputs(entries="Name|"), price, "invalid-qr")
+    async with sessions() as db:
+        assert (await balance(db, 1)).reserved == 0
+        assert (await balance(db, 1)).available == 1000
+        assert await db.scalar(select(func.count(Order.id))) == 0
+        assert await db.scalar(select(func.count(Job.id))) == 0
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "reserve")) == 0

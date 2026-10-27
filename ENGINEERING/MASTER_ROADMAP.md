@@ -1,3 +1,19 @@
+## QR intake and single-code presentation — 2026-10-27
+
+- BASELINE: main 3f860b9. Operator reports ROLLOUT_OK and public Mini App HTTP 200.
+  The returned v1 PDF independently decodes the synthetic URL with id=00123 intact.
+- FIX: qr_codes v2 accepts bare literal content with localized automatic labels;
+  retain named label|content rows, exact UTF-8 bytes, limits and no AI/network calls.
+  Center/enlarge the single-code PDF; preserve the six-code batch grid.
+- FIX: Mini App maps input_invalid to input correction, clears consent after a
+  definitive confirmation rejection and permits editing. Ambiguous failures retain
+  the same token/retry operation; no change to reservation or receipt authority.
+- PASS: 73 focused local checks, three architecture gates, lint/format/diff,
+  Arabic/English PDF visual inspection and independent QR read-back.
+- Added real DB capture/release/re-execution and invalid-input/no-reservation
+  regressions; hosted full CI required before merge. No production change here.
+  Existing v1 drafts must be reopened after the v2 contract is deployed.
+
 ## Static QR generation — 2026-10-26
 
 - BASELINE: main e8c97d6; owner continues approved service expansion.

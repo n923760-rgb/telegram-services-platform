@@ -24,6 +24,11 @@ def decode_all(content, count):
                 bitmap.close()
                 page.close()
             offset = index % 6
+            if count == 1:
+                decoded, points, _ = cv2.QRCodeDetectorAruco().detectAndDecode(image)
+                assert points is not None, index
+                result.append(decoded)
+                continue
             center, top = CENTERS[offset % 2], TOPS[offset // 2]
             x, y = round((center - QR_SIZE / 2 - 8) * 3), round((PAGE_HEIGHT - top - 8) * 3)
             crop = image[y : y + (QR_SIZE + 16) * 3, x : x + (QR_SIZE + 16) * 3]

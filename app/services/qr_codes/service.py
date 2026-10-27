@@ -9,7 +9,7 @@ from app.services.qr_codes.schema import Inputs
 
 class QrCodes(BaseService):
     slug = "qr_codes"
-    version = "1"
+    version = "2"
     category = "professional"
     menu_order = 40
     name_ar = tr("qr_name")
