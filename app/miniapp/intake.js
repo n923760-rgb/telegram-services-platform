@@ -418,8 +418,13 @@ window.MiniAppIntake = function ({ tg, exit, orders }) {
         if (response.status < 500) retry = null;
         if (confirming && response.status === 409) {
           const detail = (await response.json()).detail;
+          // A definitive rejection permits correction; uncertain failures retain
+          // the original confirmation operation for receipt recovery.
+          confirmAttempted = false;
+          agreed = false;
           error =
             {
+              input_invalid: "invalid",
               insufficient: "funds",
               concurrent_limit: "concurrent",
               provider_config: "paused",

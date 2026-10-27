@@ -56,17 +56,39 @@ def test_maximum_batch_all_symbols_read_back_in_source_order():
     assert decode_all(content, 24) == payloads
 
 
+@pytest.mark.parametrize("language", ["ar", "en"])
+@pytest.mark.parametrize("payload", ["https://example.com/?id=00123", "00123", " مرحبًا ١٢٣ "])
+def test_bare_content_gets_localized_label_and_preserves_exact_payload(language, payload):
+    values = Inputs.parse(inputs(language=language, entries=payload))
+    label, actual = values.rows()[0]
+    assert label == ("رمز 1" if language == "ar" else "QR 1")
+    assert actual == payload
+    assert decode_all(build(values), 1) == [payload]
+
+
+def test_mixed_named_and_bare_rows_keep_order_and_literal_content():
+    values = Inputs.parse(inputs(entries="00123\nNamed|A|B\nhttps://example.com/?id=00001"))
+    assert values.rows() == [
+        ("QR 1", "00123"),
+        ("Named", "A|B"),
+        ("QR 3", "https://example.com/?id=00001"),
+    ]
+    assert decode_all(build(values), 3) == ["00123", "A|B", "https://example.com/?id=00001"]
+
+
 @pytest.mark.parametrize(
     "changes",
     [
         {"entries": ""},
-        {"entries": "Missing separator"},
+        {"entries": "   "},
         {"entries": "|data"},
         {"entries": "Label|"},
         {"entries": "Label|data\n"},
         {"entries": "\n".join("L|v" for _ in range(25))},
         {"entries": "L|" + "ع" * 121},
         {"entries": "L|" + "a" * 241},
+        {"entries": "a" * 241},
+        {"entries": "ع" * 121},
         {"entries": "a" * 41 + "|v"},
         {"entries": "L|a\x00b"},
         {"entries": "L|a\rb"},
