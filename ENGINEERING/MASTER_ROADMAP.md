@@ -1,3 +1,44 @@
+## Generic publication persistence foundation — 2026-10-29
+
+- Owner continues the hosted-profile work after the completed PDF card release.
+  Implement the generic publication foundation proposed in HOSTED_PROFILES.md;
+  do not add a profile-specific branch to wallet, orders or worker policy.
+- Migration 0014 and DB-only repository keep durable JSON apart from expiring
+  order files. One completed owner-bound order creates one stable opaque ID.
+  Store numbered immutable revisions and exact content/terms/expiry consent;
+  owner checks, optimistic revision checks and row locks protect mutations.
+- New drafts preserve live content. Old retries cannot restore old content or
+  resurrect suspended/deleted pages. Expiry and owner bans hide public lookup
+  immediately; owner deletion purges revision content while retaining hash receipts.
+- Bounds: 32 KiB JSON, depth eight, twenty revisions, explicitly supplied aware
+  expiry at most 366 days ahead. These are technical limits, not price/hosting
+  terms. Customer eligibility, rendering, public routes, owner UI, renewal and
+  expired-content purge policy remain separate work. No service/price enabled.
+- Local 24 pure bounds checks and three directly executed architecture gates PASS; lint/format/diff PASS. Fifteen
+  real PostgreSQL concurrency/ownership/consent/cleanup cases added; hosted
+  migration, DB tests and alembic check required before merge. No local PostgreSQL
+  server, VPS mutation, network provider call or production migration in this round.
+
+## Card release closure and hosted-profile proposal — 2026-10-29
+
+- Verified remote main remains 5c563f6. Operator reports CARD_DEPLOY_OK followed
+  by CARD_FINAL_CHECK_OK: interactive_card v2 enabled at 1500 halalas of existing
+  test credit, provider available, application health PASS and public HTTP 200.
+  These are operator-reported VPS checks, not local access to production.
+- Independently reviewed uploaded acceptance ZIP: source 5c563f6, three card
+  cases PASS, four actual AI calls, calculated cost 0.005834 SAR (not an invoice),
+  settled holds and matching PDF hashes/URI targets. Rendered native/AR/EN PDFs
+  visually; owner subsequently confirmed mobile button testing.
+- Next discussion distinguishes a hosted profile page from the completed PDF
+  card. Recommend a stable hosted link with future paid revisions, pending defined
+  hosting term and commercial price. No new service is enabled or priced here.
+- Existing short-lived artifact storage is unsuitable for durable public pages.
+  Propose a generic publication/consent/retention foundation before adding routes
+  or altering core orchestration, as required by AGENTS.md. See
+  [hosted-profile proposal](../docs/HOSTED_PROFILES.md).
+- CHECKS: source inspection and documentation link/diff checks only. Public-page
+  implementation, security/DB/provider/mobile qualification and deployment NOT RUN.
+
 ## Social-link intake and AI priorities — 2026-10-28
 
 - Owner authorizes social/contact buttons to follow the customer's business and
