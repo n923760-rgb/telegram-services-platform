@@ -1,3 +1,74 @@
+## Free-form AI card composition and qualification — 2026-10-28
+
+- Owner supersedes the fixed activity/style selection: customers describe any
+  profession, audience and visual preference in a free-form brief. Remove the
+  profession/style menus and their catalog entries from the unmerged v2 contract.
+- AI now composes validated design primitives: arbitrary dark hex accent, header
+  treatment/alignment, one/two button columns, full-width primary action, corner
+  radius and optional frame. No profession branches or named card templates remain.
+  The native renderer owns bounds, font handling, exact names and URI annotations;
+  invalid design does not silently fall back to a native result in smart mode.
+- Reject low-contrast accents, invalid geometry/booleans, missing/duplicate button
+  indices and fabricated taglines. Preserve deterministic WhatsApp generation,
+  six-button limit, default 15 SAR and DB-owned activation/price.
+- PASS: 280 focused local tests, lint/format/diff, architecture gates and six
+  compositional Arabic/maximum-length visual samples. Plans are synthetic and
+  must not be described as real AI output. DB tests add invalid contrast release
+  and metered retry checks; require new hosted exact-head CI.
+- Add real-provider synthetic Arabic aircraft-maintenance and English music-teacher
+  cases, with exact URI-set checks and explicit visual/mobile review. Native-only
+  selection rejects both. Portfolio becomes 33 cases; keep existing 5 SAR/96-call
+  run caps and standard gateway admission. Provider qualification NOT RUN here;
+  no server credentials/session or production changes. See OPERATIONS.md.
+- Suggested later work: owner-supplied logo/photo and a bounded revision workflow;
+  these require separate upload/retention and price/consent design before delivery.
+
+## Activity-specific card layouts — 2026-10-28
+
+- Owner authorizes multiple card designs for legal, retail, food, creative and
+  professional profiles. Extend the existing unmerged v2 contract on PR #174.
+- Implement five native layouts and modern/formal/minimal styles. Retail uses a
+  two-column action grid, creatives a full-width primary action plus grid, legal
+  a double-frame identity and food a colored hero. Arabic grids start at right.
+- Preserve exact source link order in direct mode and exact validated AI order in
+  smart mode. AI receives the explicit activity/style, but cannot override the
+  selected layout or invent action targets. Long labels expand to full-width rows.
+- Expose localized activity/style choices through the existing schema, including
+  clear professional/modern defaults. No new upload, hosted page or invented logo.
+- Earlier head d953906 passed full hosted workflow 40614302668, including DB and
+  worker checks. Require a new exact-head hosted result for this extension.
+- PASS: 201 focused local template/content/URI/hit-area tests, architecture gates and 15 Arabic native
+  previews cover all layouts/styles. Real-provider aesthetics, cost and mobile
+  click acceptance remain pending; activation and live 15 SAR price unchanged.
+
+## Business card design and bounded AI arrangement — 2026-10-28
+
+- Owner requests a 15 SAR premium card and automatic WhatsApp links from phone
+  input. Set the new-service default to 15 SAR; existing DB prices still require
+  the audited admin price workflow and are not overwritten by registry sync.
+- Optional phone accepts documented Saudi mobile forms and explicit international
+  forms, including Arabic digits. Generate HTTPS wa.me targets deterministically,
+  without AI guessing, account verification or network calls. Phone-only cards
+  are supported; deduplicate exact targets and enforce six total buttons.
+- PASS: 164 focused local checks after phone/pricing changes. Financial DB checks
+  now fund enough synthetic credit for 15 SAR; hosted checks remain required.
+- BASELINE: main 89c8246. Owner rejects the v1 card presentation and requests
+  better design and AI inside the service. No hosting/public-card route in this slice.
+- IMPLEMENTED: interactive_card v2, adaptive PDF height, three curated palettes,
+  emphasized primary action and vector affordances on exact HTTPS link annotations.
+  Preserve original name, subtitle, labels and targets. QR shared helpers unchanged.
+- Smart arrangement uses the injected metered AI gateway to select palette, order
+  every button exactly once and extract a short literal phrase from an optional
+  business profile. Reject fabricated taglines, dropped links and duplicate indices.
+  This is constrained content selection, not unrestricted marketing copy generation.
+- Explicit original-order output remains native; acceptance case stays native-only.
+  Preserve DB-owned activation/prices and require a fresh draft for the v2 contract.
+- PASS: 149 focused local checks, architecture gates, lint/format/diff and Arabic
+  one/six-button visual review. Preview plans are synthetic, not real provider output.
+- Added smart capture/release, metered usage and no-regeneration DB regressions;
+  hosted CI pending. Real-provider design quality, cost qualification and mobile
+  clicks remain separate gates. No production deployment or activation here.
+
 ## QR intake and single-code presentation — 2026-10-27
 
 - BASELINE: main 3f860b9. Operator reports ROLLOUT_OK and public Mini App HTTP 200.

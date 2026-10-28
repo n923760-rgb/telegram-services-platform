@@ -80,11 +80,11 @@ def test_multi_page_source_roundtrips_every_line_in_editable_word(plan):
 
 
 def test_long_summary_and_real_cross_language_source_keep_existing_plan_bounds(plan):
-    assert len(plan) == 31 and len({case.slug for case in plan.values()}) == 18
+    assert len(plan) == 33 and len({case.slug for case in plan.values()}) == 18
     summary = SummaryInputs.parse(plan["summary"].inputs)
     assert len(summary.lines()) == 12 and len(summary.text) > 1500 and summary.limit() == 3
     assert "لم تعتمد" in plan["translation_en"].inputs["text"]
     assert "payment has not been approved" in plan["translation_ar"].inputs["text"]
     assert "report contain several error" in plan["editing_proofread"].inputs["text"]
     assert "يا فريق" in plan["editing_rewrite"].inputs["text"]
-    assert sum(bool(case.review_checks) for case in plan.values()) == 6
+    assert sum(bool(case.review_checks) for case in plan.values()) == 8

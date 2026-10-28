@@ -1,3 +1,37 @@
+## Free-form smart business-card qualification
+
+The v2 card accepts any profession through the free-form profile brief. AI returns
+bounded design primitives, not a profession template or executable HTML/CSS. Direct
+mode is a separate provider-free result and cannot qualify smart composition.
+
+After the merged candidate worker is built and pinned, use clean main, the normal
+provider configuration and the existing provider-pause/isolation safeguards below:
+
+```bash
+bash scripts/service-acceptance.sh business_card_smart_ar business_card_smart_en
+```
+
+Do not use `--native-only`: that selection is rejected for these cases. Preserve
+all effective Compose overrides (base, Mini App edge and candidate image release)
+in COMPOSE_FILE; source checkout alone does not update the worker. Never run these
+fixtures against a production customer database. The wrapper requires the existing
+production provider pause to be true and leaves its value unchanged. It uses a
+fresh synthetic test database, normal metered gateway and unchanged total caps
+(5 SAR, 96 calls; per-job controls still apply). Do not bypass these guards.
+
+Both PDFs must pass exact filename/page/source-token/URI-set checks. Retain the
+source commit, pinned worker image, result ZIP, actual provider calls, calculated
+usage and conservative exposure from the report. Calculated cost is not an invoice.
+Native PASS or mocked provider output is not live AI evidence. Schema/contrast
+checks alone do not prove that the visual preferences were followed.
+
+Review the Arabic aircraft-maintenance brief (formal, dark purple, contact-first)
+and English music-teacher brief (warm dark orange, simple header, compact grid).
+Inspect phone readability, spacing, color intent and every button in a mobile PDF
+reader. Verify the exact id=00123 query and generated WhatsApp digits. Record any
+mismatch before enabling the service or changing its existing DB price to 15 SAR
+through the audited admin workflow. No automatic revision or logo upload is included.
+
 ## Provider-free isolated acceptance while production remains active
 
 Use `bash scripts/service-acceptance.sh --native-only csv tables_direct images_pdf pdf_extract pdf_rotate pdf_merge word_pdf_direct`

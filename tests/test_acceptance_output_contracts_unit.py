@@ -114,9 +114,9 @@ def test_legacy_minimum_pdf_contract_is_retained_for_variable_layouts():
     assert inspect_output("cv.pdf", pdf_bytes(3), case)["pages"] == 3
 
 
-def test_plan_covers_new_contracts_without_extra_ai_cases():
+def test_plan_covers_document_contracts_alongside_smart_card_cases():
     plan = {case.name: case for case in cases(ASSETS)}
-    assert len(plan) == 31
+    assert len(plan) == 33
     assert plan["pptx"].inputs["slide_count"] == "3" and plan["pptx"].pptx_slides == 3
     assert plan["pptx"].tokens == ("00123", "125.50")
     assert plan["images_pdf"].inputs["page_order"] == "٢، ١"

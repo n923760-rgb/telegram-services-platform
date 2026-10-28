@@ -20,8 +20,13 @@ CASES = [
     ("qr_codes", {"language": "en", "entries": "Item|00123"}, False),
     (
         "interactive_card",
-        {"language": "en", "name": "Demo", "links": "Web | https://example.invalid/"},
-        False,
+        {
+            "mode": "smart",
+            "language": "en",
+            "name": "Demo",
+            "links": "Web | https://example.invalid/",
+        },
+        True,
     ),
     ("csv_review", csv_inputs(), False),
     ("cv_formatting", cv_inputs(), True),
@@ -70,7 +75,7 @@ def test_declared_policies_cover_real_initial_request_decisions_without_invoking
     monkeypatch,
 ):
     policies = {slug: ai_policy(registry.types[slug]) for slug in customer_slugs()}
-    assert Counter(policies.values()) == {"required": 9, "conditional": 4, "none": 5}
+    assert Counter(policies.values()) == {"required": 9, "conditional": 5, "none": 4}
     for slug, _inputs, expected in CASES:
         if policies[slug] != "conditional":
             assert expected == (policies[slug] == "required")
