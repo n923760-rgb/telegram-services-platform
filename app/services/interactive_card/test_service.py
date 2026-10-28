@@ -9,7 +9,7 @@ from reportlab.pdfbase import pdfmetrics
 from app.builders.interactive_card import build, visual
 from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
-from app.services.interactive_card.schema import Inputs, presentation_schema
+from app.services.interactive_card.schema import Inputs, presentation_schema, whatsapp_url
 from app.services.interactive_card.service import InteractiveCard
 
 
@@ -153,3 +153,51 @@ def test_single_button_card_is_compact_and_batch_retains_non_overlapping_hit_tar
     rectangles = [list(r.get_object()["/Rect"]) for r in page["/Annots"]]
     assert len(rectangles) == 6
     assert all(rectangles[i][1] > rectangles[i + 1][3] for i in range(5))
+
+
+@pytest.mark.parametrize(
+    "phone",
+    [
+        "0501234567",
+        "+966501234567",
+        "00966501234567",
+        "966501234567",
+        "٠٥٠١٢٣٤٥٦٧",
+        "+966 (50) 123-4567",
+    ],
+)
+def test_phone_only_card_generates_exact_whatsapp_target(phone):
+    values = Inputs.parse(inputs(links="", phone=phone, language="ar"))
+    assert values.entries() == [("واتساب", "https://wa.me/966501234567")]
+    page = PdfReader(BytesIO(build(values))).pages[0]
+    assert page["/Annots"][0].get_object()["/A"]["/URI"] == "https://wa.me/966501234567"
+
+
+@pytest.mark.parametrize(
+    "phone",
+    [
+        "501234567",
+        "+00012345678",
+        "+9660501234567",
+        "+966501234567x",
+        "0501234567?text=Hi",
+        "+1234567890123456",
+        "+966501234567\n",
+        "https://example.com",
+    ],
+)
+def test_ambiguous_or_injected_phone_is_rejected(phone):
+    with pytest.raises(ValueError):
+        whatsapp_url(phone)
+
+
+def test_explicit_matching_whatsapp_is_not_duplicated_and_total_buttons_are_bounded():
+    values = Inputs.parse(inputs(phone="0501234567", links="Message|https://wa.me/966501234567"))
+    assert values.entries() == [("Message", "https://wa.me/966501234567")]
+    with pytest.raises(ServiceError):
+        Inputs.parse(
+            inputs(
+                phone="0501234567",
+                links="\n".join(f"Link {i}|https://example.com/{i}" for i in range(6)),
+            )
+        )

@@ -1,5 +1,14 @@
 ## Business card design and bounded AI arrangement — 2026-10-28
 
+- Owner requests a 15 SAR premium card and automatic WhatsApp links from phone
+  input. Set the new-service default to 15 SAR; existing DB prices still require
+  the audited admin price workflow and are not overwritten by registry sync.
+- Optional phone accepts documented Saudi mobile forms and explicit international
+  forms, including Arabic digits. Generate HTTPS wa.me targets deterministically,
+  without AI guessing, account verification or network calls. Phone-only cards
+  are supported; deduplicate exact targets and enforce six total buttons.
+- PASS: 164 focused local checks after phone/pricing changes. Financial DB checks
+  now fund enough synthetic credit for 15 SAR; hosted checks remain required.
 - BASELINE: main 89c8246. Owner rejects the v1 card presentation and requests
   better design and AI inside the service. No hosting/public-card route in this slice.
 - IMPLEMENTED: interactive_card v2, adaptive PDF height, three curated palettes,

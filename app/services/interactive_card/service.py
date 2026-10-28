@@ -19,7 +19,7 @@ class InteractiveCard(BaseService):
     name_ar = tr("card_name")
     name_en = tr("card_name", "en")
     description_ar = tr("card_description")
-    price_sar = Decimal("3.00")
+    price_sar = Decimal("15.00")
     requires_ai = False
     optional_ai = True
     ai_intake_choices = {"mode": ("smart",)}
@@ -47,7 +47,14 @@ class InteractiveCard(BaseService):
                 max_length=60,
                 required=False,
             ),
-            InputField(name="links", prompt_key="card_links", max_length=2400),
+            InputField(
+                name="phone",
+                prompt_key="card_phone",
+                max_length=32,
+                single_line=True,
+                required=False,
+            ),
+            InputField(name="links", prompt_key="card_links", max_length=2400, required=False),
             InputField(name="profile", prompt_key="card_profile", max_length=1000, required=False),
         ]
     )

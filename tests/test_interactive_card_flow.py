@@ -10,7 +10,7 @@ from app.core.models import CostUsage, Ledger, Order
 from app.orders.engine import submit
 from app.providers.storage import LocalStorage
 from app.services.interactive_card.test_service import inputs
-from app.wallet.ledger import balance
+from app.wallet.ledger import apply, balance
 from app.workers.runner import execute_job
 from tests.test_direct_documents import prepare
 from tests.test_foundation import job_for
@@ -22,6 +22,8 @@ async def test_card_capture_once_or_release_without_ai(tmp_path, monkeypatch, fa
     from app.services.interactive_card import service
 
     price = await prepare(tmp_path, monkeypatch, "interactive_card")
+    async with sessions.begin() as db:
+        await apply(db, 1, "credit", 2000, "card-test-extra")
     if failure:
 
         def broken(*args):
@@ -36,7 +38,7 @@ async def test_card_capture_once_or_release_without_ai(tmp_path, monkeypatch, fa
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == ("failed" if failure else "completed")
         funds = await balance(db, 1)
-        assert funds.reserved == 0 and funds.available == (1000 if failure else 1000 - price)
+        assert funds.reserved == 0 and funds.available == (3000 if failure else 3000 - price)
         assert await db.scalar(select(func.count(CostUsage.id))) == 0
         assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == (
             0 if failure else 1
@@ -57,6 +59,8 @@ async def test_smart_card_gateway_capture_or_release_and_no_regeneration(
     _, provider, delivery, ctx, price = await setup(
         "interactive_card", responses, tmp_path, monkeypatch
     )
+    async with sessions.begin() as db:
+        await apply(db, 1, "credit", 2000, "card-test-extra")
     oid = await submit(
         1, "interactive_card", inputs(mode="smart", profile="Design studio"), price, "smart-card"
     )
@@ -67,7 +71,7 @@ async def test_smart_card_gateway_capture_or_release_and_no_regeneration(
         assert (await db.get(Order, oid)).status == ("failed" if invalid else "completed")
         funds = await balance(db, 1)
         assert funds.reserved == 0
-        assert funds.available == (1000 if invalid else 1000 - price)
+        assert funds.available == (3000 if invalid else 3000 - price)
         assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == (
             0 if invalid else 1
         )

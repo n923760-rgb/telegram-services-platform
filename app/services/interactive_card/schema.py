@@ -1,8 +1,10 @@
+import re
 from typing import Literal
 
 from pydantic import Field, HttpUrl, StrictInt, TypeAdapter, ValidationError, model_validator
 
 from app.builders.schema import StrictModel
+from app.core.i18n import tr
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
 
@@ -13,7 +15,8 @@ class Inputs(StrictModel):
     name: str = Field(min_length=1, max_length=48)
     subtitle: str | None = Field(default=None, max_length=60)
     profile: str = Field(default="", max_length=1000)
-    links: str = Field(min_length=1, max_length=2400)
+    links: str = Field(default="", max_length=2400)
+    phone: str = Field(default="", max_length=32)
 
     @model_validator(mode="after")
     def valid_card(self):
@@ -29,8 +32,8 @@ class Inputs(StrictModel):
 
     def entries(self):
         rows = self.links.splitlines()
-        if not 1 <= len(rows) <= 6:
-            raise ValueError("one to six links required")
+        if len(rows) > 6:
+            raise ValueError("at most six links required")
         result = []
         for row in rows:
             label, separator, url = row.partition("|")
@@ -48,6 +51,12 @@ class Inputs(StrictModel):
             ):
                 raise ValueError("invalid URL")
             result.append((label, url))
+        if self.phone:
+            url = whatsapp_url(self.phone)
+            if url not in [target for _, target in result]:
+                result.append((tr("card_whatsapp", self.language), url))
+        if not 1 <= len(result) <= 6:
+            raise ValueError("one to six total buttons required")
         return result
 
     @classmethod
@@ -56,6 +65,27 @@ class Inputs(StrictModel):
             return cls.model_validate(inputs)
         except (ValidationError, ValueError):
             raise ServiceError("input_invalid") from None
+
+
+def whatsapp_url(value):
+    """Normalize explicit international numbers or documented Saudi 05 mobiles."""
+    value = value.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789"))
+    if not re.fullmatch(r"[+0-9 ()-]+", value):
+        raise ValueError("invalid phone characters")
+    number = re.sub(r"[ ()-]", "", value)
+    if re.fullmatch(r"05[0-9]{8}", number):
+        number = "966" + number[1:]
+    elif number.startswith("+"):
+        number = number[1:]
+    elif number.startswith("00"):
+        number = number[2:]
+    elif not re.fullmatch(r"9665[0-9]{8}", number):
+        raise ValueError("include country code")
+    if not re.fullmatch(r"[1-9][0-9]{7,14}", number):
+        raise ValueError("invalid international phone length")
+    if number.startswith("966") and not re.fullmatch(r"9665[0-9]{8}", number):
+        raise ValueError("Saudi mobile must use 05 followed by eight digits")
+    return "https://wa.me/" + number
 
 
 class Presentation(StrictModel):
