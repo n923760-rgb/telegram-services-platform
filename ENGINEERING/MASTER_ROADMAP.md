@@ -1,3 +1,22 @@
+## Business card design and bounded AI arrangement — 2026-10-28
+
+- BASELINE: main 89c8246. Owner rejects the v1 card presentation and requests
+  better design and AI inside the service. No hosting/public-card route in this slice.
+- IMPLEMENTED: interactive_card v2, adaptive PDF height, three curated palettes,
+  emphasized primary action and vector affordances on exact HTTPS link annotations.
+  Preserve original name, subtitle, labels and targets. QR shared helpers unchanged.
+- Smart arrangement uses the injected metered AI gateway to select palette, order
+  every button exactly once and extract a short literal phrase from an optional
+  business profile. Reject fabricated taglines, dropped links and duplicate indices.
+  This is constrained content selection, not unrestricted marketing copy generation.
+- Explicit original-order output remains native; acceptance case stays native-only.
+  Preserve DB-owned activation/prices and require a fresh draft for the v2 contract.
+- PASS: 149 focused local checks, architecture gates, lint/format/diff and Arabic
+  one/six-button visual review. Preview plans are synthetic, not real provider output.
+- Added smart capture/release, metered usage and no-regeneration DB regressions;
+  hosted CI pending. Real-provider design quality, cost qualification and mobile
+  clicks remain separate gates. No production deployment or activation here.
+
 ## QR intake and single-code presentation — 2026-10-27
 
 - BASELINE: main 3f860b9. Operator reports ROLLOUT_OK and public Mini App HTTP 200.

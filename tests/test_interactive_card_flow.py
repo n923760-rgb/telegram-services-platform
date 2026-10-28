@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 
 import pytest
@@ -13,7 +14,7 @@ from app.wallet.ledger import balance
 from app.workers.runner import execute_job
 from tests.test_direct_documents import prepare
 from tests.test_foundation import job_for
-from tests.test_real_services import Delivery
+from tests.test_real_services import Delivery, setup
 
 
 @pytest.mark.parametrize("failure", [False, True])
@@ -43,3 +44,33 @@ async def test_card_capture_once_or_release_without_ai(tmp_path, monkeypatch, fa
     if not failure:
         assert len(delivery.files) == 1
         assert len(PdfReader(BytesIO(delivery.files[0][1])).pages) == 1
+
+
+@pytest.mark.parametrize("invalid", [False, True])
+async def test_smart_card_gateway_capture_or_release_and_no_regeneration(
+    tmp_path, monkeypatch, invalid
+):
+    plan = {"palette": "emerald", "tagline": "Design studio", "order": [0]}
+    if invalid:
+        plan["order"] = [0, 0]
+    responses = [json.dumps(plan)] * (2 if invalid else 1)
+    _, provider, delivery, ctx, price = await setup(
+        "interactive_card", responses, tmp_path, monkeypatch
+    )
+    oid = await submit(
+        1, "interactive_card", inputs(mode="smart", profile="Design studio"), price, "smart-card"
+    )
+    jid = str(await job_for(oid))
+    await execute_job(ctx, jid)
+    await execute_job(ctx, jid)
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("failed" if invalid else "completed")
+        funds = await balance(db, 1)
+        assert funds.reserved == 0
+        assert funds.available == (1000 if invalid else 1000 - price)
+        assert await db.scalar(select(func.count(Ledger.id)).where(Ledger.kind == "capture")) == (
+            0 if invalid else 1
+        )
+        assert await db.scalar(select(func.count(CostUsage.id))) == (2 if invalid else 1)
+    assert provider.calls == (2 if invalid else 1)
+    assert len(delivery.files) == (0 if invalid else 1)

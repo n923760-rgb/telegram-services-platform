@@ -352,7 +352,12 @@ def cases(assets):
         Case(
             "business_card",
             "interactive_card",
-            {"language": "en", "name": "Demo 00123", "links": "Website | https://example.invalid/"},
+            {
+                "mode": "direct",
+                "language": "en",
+                "name": "Demo 00123",
+                "links": "Website | https://example.invalid/",
+            },
             ("00123",),
             exact_pdf_pages=1,
         )

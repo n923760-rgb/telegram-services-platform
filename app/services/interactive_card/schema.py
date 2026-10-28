@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field, HttpUrl, TypeAdapter, ValidationError, model_validator
+from pydantic import Field, HttpUrl, StrictInt, TypeAdapter, ValidationError, model_validator
 
 from app.builders.schema import StrictModel
 from app.services.base import ServiceError
@@ -8,13 +8,17 @@ from app.services.documents import DocumentInputs
 
 
 class Inputs(StrictModel):
+    mode: Literal["direct", "smart"] = "smart"
     language: Literal["ar", "en"]
     name: str = Field(min_length=1, max_length=48)
     subtitle: str | None = Field(default=None, max_length=60)
+    profile: str = Field(default="", max_length=1000)
     links: str = Field(min_length=1, max_length=2400)
 
     @model_validator(mode="after")
     def valid_card(self):
+        if self.profile:
+            DocumentInputs.printable_text(self.profile)
         for value in (self.name, self.subtitle or ""):
             if value:
                 DocumentInputs.printable_text(value)
@@ -52,3 +56,27 @@ class Inputs(StrictModel):
             return cls.model_validate(inputs)
         except (ValidationError, ValueError):
             raise ServiceError("input_invalid") from None
+
+
+class Presentation(StrictModel):
+    palette: Literal["navy", "emerald", "graphite"]
+    tagline: str = Field(default="", max_length=60)
+    order: list[StrictInt] = Field(min_length=1, max_length=6)
+
+
+def presentation_schema(values):
+    count = len(values.entries())
+
+    class GroundedPresentation(Presentation):
+        @model_validator(mode="after")
+        def preserve_source(self):
+            if sorted(self.order) != list(range(count)):
+                raise ValueError("every original link must appear exactly once")
+            if self.tagline and (
+                self.tagline not in values.profile
+                or any(c in self.tagline for c in "\n\r\u2028\u2029")
+            ):
+                raise ValueError("tagline must be an exact single-line source excerpt")
+            return self
+
+    return GroundedPresentation
