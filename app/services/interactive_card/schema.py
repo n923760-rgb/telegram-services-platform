@@ -1,7 +1,15 @@
 import re
 from typing import Literal
 
-from pydantic import Field, HttpUrl, StrictInt, TypeAdapter, ValidationError, model_validator
+from pydantic import (
+    Field,
+    HttpUrl,
+    StrictBool,
+    StrictInt,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 
 from app.builders.schema import StrictModel
 from app.core.i18n import tr
@@ -11,8 +19,6 @@ from app.services.documents import DocumentInputs
 
 class Inputs(StrictModel):
     mode: Literal["direct", "smart"] = "smart"
-    activity: Literal["professional", "legal", "shop", "restaurant", "creative"] = "professional"
-    style: Literal["modern", "classic", "minimal"] = "modern"
     language: Literal["ar", "en"]
     name: str = Field(min_length=1, max_length=48)
     subtitle: str | None = Field(default=None, max_length=60)
@@ -91,7 +97,25 @@ def whatsapp_url(value):
 
 
 class Presentation(StrictModel):
-    palette: Literal["navy", "emerald", "graphite"]
+    accent: str = Field(pattern=r"^#[0-9a-fA-F]{6}$")
+    header: Literal["plain", "panel", "outline"]
+    alignment: Literal["center", "leading"]
+    columns: StrictInt = Field(ge=1, le=2)
+    primary_wide: StrictBool
+    corner_radius: StrictInt = Field(ge=0, le=18)
+    frame: StrictBool
+
+    @model_validator(mode="after")
+    def readable_accent(self):
+        channels = [int(self.accent[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+        linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in channels]
+        luminance = sum(
+            v * weight for v, weight in zip(linear, (0.2126, 0.7152, 0.0722), strict=True)
+        )
+        if 1.05 / (luminance + 0.05) < 4.5:
+            raise ValueError("accent must have at least 4.5:1 contrast against white")
+        return self
+
     tagline: str = Field(default="", max_length=60)
     order: list[StrictInt] = Field(min_length=1, max_length=6)
 

@@ -18,7 +18,7 @@ def database():
 
 def test_exact_portfolio_and_modes_use_valid_synthetic_inputs():
     values = cases(acceptance.ASSETS)
-    assert len(values) == 31 and len({case.slug for case in values}) == 18
+    assert len(values) == 33 and len({case.slug for case in values}) == 18
     assert {c.inputs["language"] for c in values if c.slug == "cv_formatting"} == {
         "ar",
         "en",
@@ -418,3 +418,24 @@ def test_native_mode_retains_isolation_guards(tmp_path, monkeypatch, field, valu
     monkeypatch.setattr(acceptance, "config", lambda: cfg)
     with pytest.raises(ServiceError, match="acceptance_isolation_required"):
         acceptance.isolated(native_only=True)
+
+
+@pytest.mark.parametrize("language", ["ar", "en"])
+def test_smart_card_qualification_cannot_use_native_selection_or_changed_targets(language):
+    from dataclasses import replace
+
+    from app.builders.interactive_card import build
+    from app.services.interactive_card.schema import Inputs, presentation_schema
+    from app.services.interactive_card.test_service import design_plan
+
+    plan = cases(acceptance.ASSETS)
+    case = next(c for c in plan if c.name == "business_card_smart_" + language)
+    with pytest.raises(ServiceError, match="acceptance_native_requires_no_ai"):
+        acceptance.native_cases(plan, [case.name])
+    values = Inputs.parse(case.inputs)
+    design = presentation_schema(values).model_validate(design_plan(order=[2, 0, 1]))
+    data = build(values, design)
+    assert acceptance.inspect_output("business-card.pdf", data, case)["exact_link_targets"] == 3
+    for links in (case.pdf_links[:-1], ("https://example.invalid/changed", *case.pdf_links[1:])):
+        with pytest.raises(ServiceError, match="acceptance_output_invalid"):
+            acceptance.inspect_output("business-card.pdf", data, replace(case, pdf_links=links))

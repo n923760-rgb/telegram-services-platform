@@ -32,6 +32,7 @@ class Case:
     changed_text_files: tuple[str, ...] = ()
     review_checks: tuple[str, ...] = ()
     docx_tables: tuple[tuple[tuple[str, ...], ...], ...] = ()
+    pdf_links: tuple[str, ...] = ()
 
 
 def representative_cases(result):
@@ -371,10 +372,48 @@ def cases(assets):
             exact_pdf_pages=1,
         )
     )
+    for language, brief in (
+        (
+            "ar",
+            "أنا فني صيانة طائرات. أريد تصميمًا رسميًا بالبنفسجي الداكن، ومعلومات التواصل هي الأهم.",
+        ),
+        (
+            "en",
+            "I am a music teacher. Use a warm dark orange accent, a simple header and a compact button grid. Prioritize my lessons link.",
+        ),
+    ):
+        result.append(
+            Case(
+                "business_card_smart_" + language,
+                "interactive_card",
+                {
+                    "mode": "smart",
+                    "language": language,
+                    "name": "Demo 00123",
+                    "profile": brief,
+                    "phone": "0501234567",
+                    "links": "Lessons|https://example.invalid/lessons?id=00123\nContact|https://example.invalid/contact",
+                },
+                ("00123",),
+                exact_pdf_pages=1,
+                pdf_links=(
+                    "https://example.invalid/lessons?id=00123",
+                    "https://example.invalid/contact",
+                    "https://wa.me/966501234567",
+                ),
+                review_checks=(
+                    "Inspect the PDF on mobile: readable header, exact names and every clickable target.",
+                    "Compare color, hierarchy and layout with the free-form brief; record mismatches before activation.",
+                    "Confirm the run records real provider calls and calculated cost; native output is not AI qualification.",
+                ),
+            )
+        )
     # Exact customer deliverables for these bounded synthetic fixtures. This is
     # acceptance metadata, not production service dispatch or payment policy.
     deliverables = {
         "business_card": ("business-card.pdf",),
+        "business_card_smart_ar": ("business-card.pdf",),
+        "business_card_smart_en": ("business-card.pdf",),
         "qr_sheet": ("qr-codes.pdf",),
         "csv": ("review.xlsx",),
         "enhance": ("enhanced.png", "comparison.png", "received.png"),

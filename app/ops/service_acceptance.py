@@ -224,6 +224,13 @@ def inspect_output(name, data, case):
             raise ServiceError("acceptance_output_invalid")
         if case.exact_pdf_pages is not None and len(pdf.pages) != case.exact_pdf_pages:
             raise ServiceError("acceptance_output_invalid")
+        if case.pdf_links:
+            links = [a.get_object() for page in pdf.pages for a in page.get("/Annots", [])]
+            if any(a.get("/A", {}).get("/S") != "/URI" for a in links) or sorted(
+                str(a.get("/A", {}).get("/URI", "")) for a in links
+            ) != sorted(case.pdf_links):
+                raise ServiceError("acceptance_output_invalid")
+            details["exact_link_targets"] = len(links)
         if case.pdf_rotations:
             rotations = tuple(page.rotation for page in pdf.pages)
             if rotations != case.pdf_rotations:

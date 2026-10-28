@@ -1,3 +1,28 @@
+## Free-form AI card composition and qualification — 2026-10-28
+
+- Owner supersedes the fixed activity/style selection: customers describe any
+  profession, audience and visual preference in a free-form brief. Remove the
+  profession/style menus and their catalog entries from the unmerged v2 contract.
+- AI now composes validated design primitives: arbitrary dark hex accent, header
+  treatment/alignment, one/two button columns, full-width primary action, corner
+  radius and optional frame. No profession branches or named card templates remain.
+  The native renderer owns bounds, font handling, exact names and URI annotations;
+  invalid design does not silently fall back to a native result in smart mode.
+- Reject low-contrast accents, invalid geometry/booleans, missing/duplicate button
+  indices and fabricated taglines. Preserve deterministic WhatsApp generation,
+  six-button limit, default 15 SAR and DB-owned activation/price.
+- PASS: 280 focused local tests, lint/format/diff, architecture gates and six
+  compositional Arabic/maximum-length visual samples. Plans are synthetic and
+  must not be described as real AI output. DB tests add invalid contrast release
+  and metered retry checks; require new hosted exact-head CI.
+- Add real-provider synthetic Arabic aircraft-maintenance and English music-teacher
+  cases, with exact URI-set checks and explicit visual/mobile review. Native-only
+  selection rejects both. Portfolio becomes 33 cases; keep existing 5 SAR/96-call
+  run caps and standard gateway admission. Provider qualification NOT RUN here;
+  no server credentials/session or production changes. See OPERATIONS.md.
+- Suggested later work: owner-supplied logo/photo and a bounded revision workflow;
+  these require separate upload/retention and price/consent design before delivery.
+
 ## Activity-specific card layouts — 2026-10-28
 
 - Owner authorizes multiple card designs for legal, retail, food, creative and

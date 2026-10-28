@@ -9,7 +9,7 @@ from app.core.db import sessions
 from app.core.models import CostUsage, Ledger, Order
 from app.orders.engine import submit
 from app.providers.storage import LocalStorage
-from app.services.interactive_card.test_service import inputs
+from app.services.interactive_card.test_service import design_plan, inputs
 from app.wallet.ledger import apply, balance
 from app.workers.runner import execute_job
 from tests.test_direct_documents import prepare
@@ -48,13 +48,15 @@ async def test_card_capture_once_or_release_without_ai(tmp_path, monkeypatch, fa
         assert len(PdfReader(BytesIO(delivery.files[0][1])).pages) == 1
 
 
-@pytest.mark.parametrize("invalid", [False, True])
+@pytest.mark.parametrize("invalid", [None, "order", "contrast"])
 async def test_smart_card_gateway_capture_or_release_and_no_regeneration(
     tmp_path, monkeypatch, invalid
 ):
-    plan = {"palette": "emerald", "tagline": "Design studio", "order": [0]}
-    if invalid:
+    plan = design_plan(accent="#047857", tagline="Design studio", columns=2, header="outline")
+    if invalid == "order":
         plan["order"] = [0, 0]
+    elif invalid == "contrast":
+        plan["accent"] = "#ffffff"
     responses = [json.dumps(plan)] * (2 if invalid else 1)
     _, provider, delivery, ctx, price = await setup(
         "interactive_card", responses, tmp_path, monkeypatch

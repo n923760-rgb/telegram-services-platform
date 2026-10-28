@@ -34,28 +34,6 @@ class InteractiveCard(BaseService):
                 choice_keys=["card_smart", "card_direct"],
             ),
             InputField(
-                name="activity",
-                prompt_key="card_activity",
-                choices=["professional", "legal", "shop", "restaurant", "creative"],
-                choice_keys=[
-                    "card_professional",
-                    "card_legal",
-                    "card_shop",
-                    "card_restaurant",
-                    "card_creative",
-                ],
-                required=False,
-                skip_key="card_default_activity",
-            ),
-            InputField(
-                name="style",
-                prompt_key="card_style",
-                choices=["modern", "classic", "minimal"],
-                choice_keys=["card_modern", "card_classic", "card_minimal"],
-                required=False,
-                skip_key="card_default_style",
-            ),
-            InputField(
                 name="language",
                 prompt_key="card_language",
                 choices=["ar", "en"],
@@ -95,8 +73,6 @@ class InteractiveCard(BaseService):
             source = json.dumps(
                 {
                     "language": values.language,
-                    "activity": values.activity,
-                    "style": values.style,
                     "name": values.name,
                     "subtitle": values.subtitle,
                     "profile": values.profile,
