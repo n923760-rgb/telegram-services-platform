@@ -325,3 +325,33 @@ def test_single_action_remains_full_width_even_when_ai_requests_a_grid():
     page = PdfReader(BytesIO(build(values, design))).pages[0]
     rect = page["/Annots"][0].get_object()["/Rect"]
     assert float(rect[2] - rect[0]) == 336
+
+
+@pytest.mark.parametrize("header", ["plain", "panel", "outline"])
+def test_long_leading_identity_uses_readable_fallback_without_source_loss(header):
+    values = Inputs.parse(inputs(name="W" * 48, subtitle="W" * 60, phone="0501234567"))
+    design = presentation_schema(values).model_validate(
+        design_plan(header=header, alignment="leading", order=[1, 0])
+    )
+    page = PdfReader(BytesIO(build(values, design))).pages[0]
+    assert len(page["/Annots"]) == 2
+    assert [a.get_object()["/A"]["/URI"] for a in page["/Annots"]] == [
+        "https://wa.me/966501234567",
+        "https://example.invalid/?id=00123",
+    ]
+
+
+def test_numeric_name_is_not_duplicated_as_an_identity_initial():
+    page = PdfReader(
+        BytesIO(build(Inputs.parse(inputs(name="00123", links="Website|https://example.invalid/"))))
+    ).pages[0]
+    assert page.extract_text().count("00123") == 1
+
+
+def test_contact_label_wrapping_keeps_fitting_words_intact():
+    from app.builders.interactive_card import card_lines
+    from app.builders.pdf import _register_fonts
+
+    _register_fonts()
+    lines = card_lines("Book a consultation", "DejaVu", 10, 79)
+    assert lines == ["Book a", "consultation"]

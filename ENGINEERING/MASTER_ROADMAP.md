@@ -1,3 +1,25 @@
+## Contact card visual hierarchy — 2026-10-28
+
+- Owner rejects the first live card appearance and requests a cleaner, more
+  professional result. Baseline main a2f8c66; keep the free-form AI design schema,
+  source-grounded text/targets, default 15 SAR and DB activation/price unchanged.
+- Rework only the shared renderer: lighter paper/frame, source-derived letter
+  identity mark (not a generated logo), clipped decorative linework, clearer name
+  hierarchy, quieter secondary buttons and generic vector message/external icons.
+- Respect AI accent/header/alignment/grid/radius decisions within renderer-owned
+  bounds. Prefer whole-word wrapping; expand long action labels to full-width and
+  move the identity mark above unusually long leading text for readability.
+  Keep shared QR wrapping helpers unchanged and preserve exact URI hit areas.
+- PASS: 285 focused local checks, architecture gates, lint/format/diff and four
+  Arabic/English visual samples using synthetic plans and fictitious identities.
+  New regressions cover word integrity, maximum leading identity and numeric-name
+  duplication. Exact-head hosted CI and new mobile visual acceptance pending.
+- Earlier a2f8c66 live evidence: uploaded ZIP independently contains two PASS cards
+  and the correct source commit, four deepseek-flash calls and calculated 0.005207
+  SAR (not invoice verification). Operator reports restored production pause=false.
+  That evidence qualifies the old renderer only; no new provider call, production
+  rollout, service enablement or DB price update in this visual round.
+
 ## Free-form AI card composition and qualification — 2026-10-28
 
 - Owner supersedes the fixed activity/style selection: customers describe any
