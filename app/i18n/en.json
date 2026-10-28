@@ -630,7 +630,7 @@
   "card_arrangement": "How should we design your card?",
   "card_smart": "Design from my brief",
   "card_direct": "Simple card in my button order",
-  "card_profile": "Describe your profession or business, main goal, preferred mood and colors. Example: I am a fitness coach; use calm greens and emphasize contact. Avoid sensitive information. You can skip.",
+  "card_profile": "Describe your business, audience and main goal, then preferred colors or a social account to emphasize. Example: I photograph products for retailers; prioritize my Instagram portfolio. Avoid sensitive information. You can skip.",
   "card_profile_review": "Business and design brief",
   "card_arrangement_review": "Card arrangement",
   "card_whatsapp": "WhatsApp",
@@ -641,7 +641,7 @@
   "card_language": "Choose the card language.",
   "card_person": "Enter your name or business name.",
   "card_subtitle": "Enter a title or short description, or skip.",
-  "card_links": "Optional extra links, one button per line: Label|full HTTPS URL. Example: Website|https://example.com\nSkip if you provided a WhatsApp number. Maximum 6 buttons total, including WhatsApp.",
+  "card_links": "Add your social or website links, one full HTTPS URL per line. Known platforms get automatic button names. For a custom name use Label|URL. Do not enter a username alone. Skip if you supplied WhatsApp. Maximum 6 buttons including WhatsApp; account ownership is not verified.",
   "card_preview": "PDF card with clickable links. Open in a PDF reader that supports links.",
   "card_pdf_note": "Tap a button to open its link",
   "card_language_review": "Card language",
@@ -655,5 +655,14 @@
   "qr_entries": "Send one link or text per line, up to 24 codes. A label is added automatically, or use label|content to name it.\nExample: https://example.com\nNamed example: Website|https://example.com\nContent is encoded literally, including spaces. No empty lines. Maximum 40 label characters and 240 UTF-8 bytes of content per code. Links are not opened or verified. This does not register GTIN product barcodes or certify Saudi invoice QR codes.",
   "qr_preview": "Printable PDF with static QR codes. Test scans before printing or publishing.",
   "qr_language_review": "Label language",
-  "qr_entries_review": "QR labels and exact content"
+  "qr_entries_review": "QR labels and exact content",
+  "card_platform_instagram": "Instagram",
+  "card_platform_x": "X",
+  "card_platform_tiktok": "TikTok",
+  "card_platform_snapchat": "Snapchat",
+  "card_platform_linkedin": "LinkedIn",
+  "card_platform_youtube": "YouTube",
+  "card_platform_facebook": "Facebook",
+  "card_platform_whatsapp": "WhatsApp",
+  "card_platform_link": "Open link"
 }

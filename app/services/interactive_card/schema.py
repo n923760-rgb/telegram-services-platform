@@ -16,6 +16,23 @@ from app.core.i18n import tr
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
 
+SOCIAL_HOSTS = {
+    "instagram": ("instagram.com", "www.instagram.com"),
+    "x": ("x.com", "www.x.com", "twitter.com", "www.twitter.com"),
+    "tiktok": ("tiktok.com", "www.tiktok.com", "vm.tiktok.com", "vt.tiktok.com"),
+    "snapchat": ("snapchat.com", "www.snapchat.com"),
+    "linkedin": ("linkedin.com", "www.linkedin.com"),
+    "youtube": ("youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"),
+    "facebook": ("facebook.com", "www.facebook.com", "m.facebook.com", "fb.com"),
+    "whatsapp": ("wa.me", "api.whatsapp.com", "www.whatsapp.com", "chat.whatsapp.com"),
+}
+
+
+def link_platform(url):
+    """Classify only an exact parsed host; never visit or verify the account."""
+    host = (TypeAdapter(HttpUrl).validate_python(url).host or "").lower().rstrip(".")
+    return next((platform for platform, hosts in SOCIAL_HOSTS.items() if host in hosts), "link")
+
 
 class Inputs(StrictModel):
     mode: Literal["direct", "smart"] = "smart"
@@ -45,9 +62,12 @@ class Inputs(StrictModel):
         result = []
         for row in rows:
             label, separator, url = row.partition("|")
+            if not separator:
+                url = row.strip()
+                label = tr("card_platform_" + link_platform(url), self.language)
             label, url = label.strip(), url.strip()
             DocumentInputs.printable_text(label)
-            if not separator or not 1 <= len(label) <= 48 or not 1 <= len(url) <= 300:
+            if not 1 <= len(label) <= 48 or not 1 <= len(url) <= 300:
                 raise ValueError("invalid link")
             if not url.startswith("https://") or "\\" in url:
                 raise ValueError("full HTTPS URL required")

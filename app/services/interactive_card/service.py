@@ -8,7 +8,7 @@ from app.builders.interactive_card import build
 from app.core.i18n import tr, translations
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
 from app.services.interactive_card.prompt import PRESENT
-from app.services.interactive_card.schema import Inputs, presentation_schema
+from app.services.interactive_card.schema import Inputs, link_platform, presentation_schema
 
 
 class InteractiveCard(BaseService):
@@ -77,8 +77,8 @@ class InteractiveCard(BaseService):
                     "subtitle": values.subtitle,
                     "profile": values.profile,
                     "buttons": [
-                        {"index": i, "label": label}
-                        for i, (label, _) in enumerate(values.entries())
+                        {"index": i, "label": label, "platform": link_platform(url)}
+                        for i, (label, url) in enumerate(values.entries())
                     ],
                 },
                 ensure_ascii=False,

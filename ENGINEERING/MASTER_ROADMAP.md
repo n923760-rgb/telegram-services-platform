@@ -1,3 +1,25 @@
+## Social-link intake and AI priorities — 2026-10-28
+
+- Owner authorizes social/contact buttons to follow the customer's business and
+  design goal. Preserve six total actions and exact targets; do not invent accounts.
+- Accept full HTTPS social URLs as standalone rows, alongside existing Label|URL
+  rows. Localize known platform names; keep explicit customer labels unchanged.
+  Reject username-only input. No URL fetching, account lookup or ownership claim.
+- Match exact parsed hosts for Instagram, X/Twitter, TikTok, Snapchat, LinkedIn,
+  YouTube, Facebook and WhatsApp; lookalike hosts and domain text in path/query
+  stay generic. Pass only platform kinds, indices and labels to the metered AI.
+  Do not send URL targets/handles through that metadata path.
+- Prompt AI to prioritize the supplied actions using profession, audience and the
+  explicit goal, maintaining one coherent accent and every original index. Update
+  existing AR/EN smart acceptance fixtures with public platform homepages (not real
+  customer accounts). Catalog count and run/call/cost limits remain unchanged.
+- PASS: 301 focused local URL/URI/classification/AI-context checks and architecture
+  gates; require exact-head hosted DB/worker checks before merge. Three DB label
+  tests could not initialize locally because PostgreSQL is unavailable.
+- Visual refinement #175 passed 3674 hosted tests and worker qualification, merged
+  as 6bca6b7. This social extension needs its own fresh CI and final live/mobile
+  acceptance. No deployment, price change, provider pause or provider call here.
+
 ## Contact card visual hierarchy — 2026-10-28
 
 - Owner rejects the first live card appearance and requests a cleaner, more

@@ -355,3 +355,99 @@ def test_contact_label_wrapping_keeps_fitting_words_intact():
     _register_fonts()
     lines = card_lines("Book a consultation", "DejaVu", 10, 79)
     assert lines == ["Book a", "consultation"]
+
+
+@pytest.mark.parametrize(
+    "url,platform,label",
+    [
+        ("https://www.instagram.com/demo_00123/", "instagram", "Instagram"),
+        ("https://x.com/demo_00123", "x", "X"),
+        ("https://www.tiktok.com/@demo_00123", "tiktok", "TikTok"),
+        ("https://www.snapchat.com/add/demo_00123", "snapchat", "Snapchat"),
+        ("https://www.linkedin.com/in/demo-00123/", "linkedin", "LinkedIn"),
+        ("https://youtu.be/abc00123?feature=shared", "youtube", "YouTube"),
+        ("https://m.facebook.com/demo.00123", "facebook", "Facebook"),
+        ("https://wa.me/966500000000", "whatsapp", "WhatsApp"),
+        ("https://example.invalid/?id=00123", "link", "Open link"),
+    ],
+)
+def test_bare_social_links_get_names_and_preserve_literal_targets(url, platform, label):
+    from app.services.interactive_card.schema import link_platform
+
+    values = Inputs.parse(inputs(links=url))
+    assert link_platform(url) == platform
+    assert values.entries() == [(label, url)]
+    page = PdfReader(BytesIO(build(values))).pages[0]
+    assert page["/Annots"][0].get_object()["/A"]["/URI"] == url
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://instagram.com.evil.invalid/user",
+        "https://example.invalid/instagram.com/user",
+        "https://evilinstagram.com/",
+        "https://example.invalid/?site=instagram.com",
+        "https://instаgram.com/user",
+    ],
+)
+def test_social_hint_never_matches_a_similar_host_or_url_text(url):
+    from app.services.interactive_card.schema import link_platform
+
+    assert link_platform(url) == "link"
+
+
+def test_localized_bare_social_intake_custom_labels_and_phone_limit():
+    source = inputs(
+        language="ar", links="https://www.instagram.com/demo_00123/", phone="0501234567"
+    )
+    InteractiveCard.input_schema.validate_inputs(source)
+    assert Inputs.parse(source).entries() == [
+        ("إنستغرام", "https://www.instagram.com/demo_00123/"),
+        ("واتساب", "https://wa.me/966501234567"),
+    ]
+    assert (
+        Inputs.parse(inputs(links="أعمالي|https://www.instagram.com/demo_00123/")).entries()[0][0]
+        == "أعمالي"
+    )
+    with pytest.raises(ServiceError):
+        Inputs.parse(
+            inputs(
+                links="\n".join(f"https://example.invalid/{i}" for i in range(6)),
+                phone="0501234567",
+            )
+        )
+    with pytest.raises(ServiceError):
+        Inputs.parse(inputs(links="@demo_00123"))
+
+
+async def test_social_ai_gets_host_hint_without_account_target_and_cannot_replace_it(tmp_path):
+    import json
+
+    source = inputs(
+        mode="smart",
+        links="https://www.instagram.com/demo_00123/",
+        phone="0501234567",
+        profile="I am a photographer. Prioritize my Instagram portfolio.",
+    )
+
+    async def extract(schema, content, prompt):
+        data = json.loads(content)
+        assert data["buttons"] == [
+            {"index": 0, "label": "Instagram", "platform": "instagram"},
+            {"index": 1, "label": "WhatsApp", "platform": "whatsapp"},
+        ]
+        assert "https://" not in content and "demo_00123" not in content
+        return schema.model_validate(design_plan(order=[0, 1]))
+
+    service = InteractiveCard()
+    service.runtime = SimpleNamespace(
+        storage=OwnedStorage(LocalStorage(tmp_path), 1),
+        ai=SimpleNamespace(extract=AsyncMock(side_effect=extract)),
+    )
+    result = await service.run(source)
+    page = PdfReader(BytesIO(service.runtime.storage.read(result.artifacts[0].key))).pages[0]
+    assert [a.get_object()["/A"]["/URI"] for a in page["/Annots"]] == [
+        "https://www.instagram.com/demo_00123/",
+        "https://wa.me/966501234567",
+    ]
