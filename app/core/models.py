@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     Numeric,
@@ -285,3 +286,68 @@ class StarEvent(Base):
             name="star_event_kind",
         ),
     )
+
+
+class Publication(Base):
+    """Durable public-content ownership, separate from expiring order artifacts."""
+
+    __tablename__ = "publications"
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id"), unique=True)
+    state: Mapped[str] = mapped_column(String(16), default="draft", server_default="draft")
+    latest_revision: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    active_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('draft','published','suspended','expired','deleted')",
+            name="publication_state",
+        ),
+        CheckConstraint("latest_revision >= 0", name="publication_latest"),
+        CheckConstraint(
+            "active_revision > 0 AND active_revision <= latest_revision", name="publication_active"
+        ),
+        CheckConstraint(
+            "(state = 'published') = (active_revision IS NOT NULL)", name="publication_visibility"
+        ),
+        ForeignKeyConstraint(
+            ["id", "active_revision"],
+            ["publication_revisions.publication_id", "publication_revisions.number"],
+            name="publication_active_revision_fk",
+            use_alter=True,
+        ),
+    )
+
+
+class PublicationRevision(Base):
+    __tablename__ = "publication_revisions"
+    publication_id: Mapped[UUID] = mapped_column(ForeignKey("publications.id"), primary_key=True)
+    number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    operation_id: Mapped[UUID] = mapped_column(unique=True)
+    base_revision: Mapped[int] = mapped_column(Integer)
+    content: Mapped[dict] = mapped_column(JSON)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (
+        CheckConstraint(
+            "number > 0 AND base_revision = number - 1", name="publication_revision_sequence"
+        ),
+    )
+
+
+class PublicationConsent(Base):
+    """Minimal consent receipt; retains hashes, never a copy of public content."""
+
+    __tablename__ = "publication_consents"
+    operation_id: Mapped[UUID] = mapped_column(primary_key=True)
+    publication_id: Mapped[UUID] = mapped_column(ForeignKey("publications.id"), index=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    revision: Mapped[int] = mapped_column(Integer)
+    previous_active: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    terms_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (CheckConstraint("revision > 0", name="publication_consent_revision"),)
