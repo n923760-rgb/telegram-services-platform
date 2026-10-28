@@ -11,6 +11,7 @@ from sqlalchemy.exc import DBAPIError
 from app.core.db import sessions
 from app.core.models import Order, Publication, PublicationConsent, PublicationRevision, User
 from app.publications import repository as pages
+from app.services.registry import registry
 
 TERMS = "a" * 64
 FIRST = {"name": "محمد", "buttons": [{"url": "https://example.invalid/?id=00123"}]}
@@ -28,7 +29,8 @@ async def seed(owner=1, *, status="completed"):
             idempotency_key=str(uuid4()),
             status=status,
             input_hash="0" * 64,
-            inputs={},
+            input_schema_snapshot=registry.types["echo"].input_schema.model_dump(),
+            inputs={"text": "synthetic publication source"},
         )
         db.add(row)
         await db.flush()
