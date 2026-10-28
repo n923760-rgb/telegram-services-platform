@@ -8,7 +8,7 @@ After the merged candidate worker is built and pinned, use clean main, the norma
 provider configuration and the existing provider-pause/isolation safeguards below:
 
 ```bash
-bash scripts/service-acceptance.sh business_card_smart_ar business_card_smart_en
+bash scripts/service-acceptance.sh business_card business_card_smart_ar business_card_smart_en
 ```
 
 Do not use `--native-only`: that selection is rejected for these cases. Preserve
@@ -19,7 +19,10 @@ production provider pause to be true and leaves its value unchanged. It uses a
 fresh synthetic test database, normal metered gateway and unchanged total caps
 (5 SAR, 96 calls; per-job controls still apply). Do not bypass these guards.
 
-Both PDFs must pass exact filename/page/source-token/URI-set checks. Retain the
+The direct case runs without a provider call; include it with both smart cases so
+the current run covers every card mode. Smart fixtures include Instagram/YouTube
+public homepages to check platform naming without using real customer accounts.
+Both smart PDFs must pass exact filename/page/source-token/URI-set checks. Retain the
 source commit, pinned worker image, result ZIP, actual provider calls, calculated
 usage and conservative exposure from the report. Calculated cost is not an invoice.
 Native PASS or mocked provider output is not live AI evidence. Schema/contrast

@@ -382,6 +382,13 @@ def cases(assets):
             "I am a music teacher. Use a warm dark orange accent, a simple header and a compact button grid. Prioritize my lessons link.",
         ),
     ):
+        social = "https://www.instagram.com/" if language == "ar" else "https://www.youtube.com/"
+        other = (
+            "https://example.invalid/contact"
+            if language == "ar"
+            else "https://example.invalid/lessons?id=00123"
+        )
+        label = "Contact" if language == "ar" else "Lessons"
         result.append(
             Case(
                 "business_card_smart_" + language,
@@ -392,18 +399,19 @@ def cases(assets):
                     "name": "Demo 00123",
                     "profile": brief,
                     "phone": "0501234567",
-                    "links": "Lessons|https://example.invalid/lessons?id=00123\nContact|https://example.invalid/contact",
+                    "links": social + "\n" + label + "|" + other,
                 },
                 ("00123",),
                 exact_pdf_pages=1,
                 pdf_links=(
-                    "https://example.invalid/lessons?id=00123",
-                    "https://example.invalid/contact",
+                    social,
+                    other,
                     "https://wa.me/966501234567",
                 ),
                 review_checks=(
                     "Inspect the PDF on mobile: readable header, exact names and every clickable target.",
                     "Compare color, hierarchy and layout with the free-form brief; record mismatches before activation.",
+                    "Confirm the named social-platform button opens the exact supplied destination; no account ownership claim.",
                     "Confirm the run records real provider calls and calculated cost; native output is not AI qualification.",
                 ),
             )
