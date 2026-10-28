@@ -89,6 +89,8 @@ def test_arabic_and_maximum_six_links_remain_within_page():
 async def test_smart_design_uses_injected_ai_and_preserves_exact_source_targets(tmp_path):
     source = inputs(
         mode="smart",
+        activity="creative",
+        style="minimal",
         profile="Independent design studio",
         links=(
             "Website | https://example.invalid/?id=00123\nContact | https://example.invalid/contact"
@@ -96,6 +98,8 @@ async def test_smart_design_uses_injected_ai_and_preserves_exact_source_targets(
     )
 
     async def extract(schema, content, prompt):
+        assert '"activity": "creative"' in content
+        assert '"style": "minimal"' in content
         assert "Independent design studio" in content
         assert "https://" not in content
         return schema.model_validate(
@@ -201,3 +205,93 @@ def test_explicit_matching_whatsapp_is_not_duplicated_and_total_buttons_are_boun
                 links="\n".join(f"Link {i}|https://example.com/{i}" for i in range(6)),
             )
         )
+
+
+@pytest.mark.parametrize("activity", ["professional", "legal", "shop", "restaurant", "creative"])
+@pytest.mark.parametrize("style", ["modern", "classic", "minimal"])
+@pytest.mark.parametrize("language", ["ar", "en"])
+def test_activity_layouts_preserve_order_targets_and_nonoverlapping_hitboxes(
+    activity, style, language
+):
+    values = Inputs.parse(
+        inputs(
+            activity=activity,
+            style=style,
+            language=language,
+            name="متجر التصميم" if language == "ar" else "Design Studio",
+            subtitle="منتجات وخدمات" if language == "ar" else "Products and services",
+            links="\n".join(f"Link {i}|https://example.invalid/?id=00{i}" for i in range(6)),
+        )
+    )
+    plan = presentation_schema(values).model_validate(
+        {"palette": "navy", "order": [5, 4, 3, 2, 1, 0]}
+    )
+    page = PdfReader(BytesIO(build(values, plan))).pages[0]
+    annotations = [ref.get_object() for ref in page["/Annots"]]
+    assert [a["/A"]["/URI"] for a in annotations] == [
+        f"https://example.invalid/?id=00{i}" for i in range(5, -1, -1)
+    ]
+    rects = [list(a["/Rect"]) for a in annotations]
+    for i, (x1, y1, x2, y2) in enumerate(rects):
+        assert 30 <= x1 < x2 <= 390 and 60 < y1 < y2 < float(page.mediabox.height) - 30
+        for a, b, c, d in rects[i + 1 :]:
+            assert x2 <= a or c <= x1 or y2 <= b or d <= y1
+    if activity in {"shop", "creative"}:
+        assert any(float(r[2] - r[0]) < 200 for r in rects)
+
+
+@pytest.mark.parametrize("activity", ["shop", "creative"])
+def test_long_labels_expand_grid_instead_of_shrinking_below_readable_size(activity):
+    values = Inputs.parse(
+        inputs(
+            activity=activity,
+            name="W" * 48,
+            subtitle="W" * 60,
+            links="\n".join("W" * 48 + f"|https://example.invalid/{i}" for i in range(6)),
+        )
+    )
+    page = PdfReader(BytesIO(build(values))).pages[0]
+    assert all(
+        float(ref.get_object()["/Rect"][2] - ref.get_object()["/Rect"][0]) == 336
+        for ref in page["/Annots"]
+    )
+
+
+@pytest.mark.parametrize("changes", [{"activity": "invented"}, {"style": "remote-css"}])
+def test_unrecognized_design_choices_reject_before_ai(changes):
+    with pytest.raises(ServiceError, match="input_invalid"):
+        InteractiveCard.needs_ai(inputs(**changes))
+
+
+def test_public_intake_accepts_design_choice_and_phone_only_or_default_layout():
+    for options in ({}, {"activity": "restaurant", "style": "classic"}):
+        source = {
+            "mode": "direct",
+            "language": "ar",
+            "name": "مطعم",
+            "phone": "0501234567",
+            **options,
+        }
+        InteractiveCard.input_schema.validate_inputs(source)
+        assert not InteractiveCard.needs_ai(source)
+
+
+@pytest.mark.parametrize("activity,first_column", [("shop", 0), ("creative", 1)])
+def test_grid_order_follows_customer_language(activity, first_column):
+    sources = {
+        lang: Inputs.parse(
+            inputs(
+                language=lang,
+                activity=activity,
+                links="\n".join(f"Link {i}|https://example.invalid/{i}" for i in range(4)),
+            )
+        )
+        for lang in ("ar", "en")
+    }
+    rects = {
+        lang: [
+            a.get_object()["/Rect"] for a in PdfReader(BytesIO(build(source))).pages[0]["/Annots"]
+        ]
+        for lang, source in sources.items()
+    }
+    assert rects["ar"][first_column][0] > rects["en"][first_column][0]

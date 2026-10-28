@@ -11,6 +11,8 @@ from app.services.documents import DocumentInputs
 
 class Inputs(StrictModel):
     mode: Literal["direct", "smart"] = "smart"
+    activity: Literal["professional", "legal", "shop", "restaurant", "creative"] = "professional"
+    style: Literal["modern", "classic", "minimal"] = "modern"
     language: Literal["ar", "en"]
     name: str = Field(min_length=1, max_length=48)
     subtitle: str | None = Field(default=None, max_length=60)

@@ -655,5 +655,19 @@
   "qr_entries": "Send one link or text per line, up to 24 codes. A label is added automatically, or use label|content to name it.\nExample: https://example.com\nNamed example: Website|https://example.com\nContent is encoded literally, including spaces. No empty lines. Maximum 40 label characters and 240 UTF-8 bytes of content per code. Links are not opened or verified. This does not register GTIN product barcodes or certify Saudi invoice QR codes.",
   "qr_preview": "Printable PDF with static QR codes. Test scans before printing or publishing.",
   "qr_language_review": "Label language",
-  "qr_entries_review": "QR labels and exact content"
+  "qr_entries_review": "QR labels and exact content",
+  "card_activity": "Choose the activity to select the card layout.",
+  "card_activity_review": "Activity and layout",
+  "card_professional": "Professional / personal",
+  "card_legal": "Lawyer / consultant",
+  "card_shop": "Store",
+  "card_restaurant": "Restaurant / café",
+  "card_creative": "Designer / photographer",
+  "card_style": "Choose the visual style.",
+  "card_style_review": "Visual style",
+  "card_modern": "Modern",
+  "card_classic": "Formal",
+  "card_minimal": "Minimal",
+  "card_default_activity": "Use professional layout",
+  "card_default_style": "Use modern style"
 }

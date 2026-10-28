@@ -1,3 +1,21 @@
+## Activity-specific card layouts — 2026-10-28
+
+- Owner authorizes multiple card designs for legal, retail, food, creative and
+  professional profiles. Extend the existing unmerged v2 contract on PR #174.
+- Implement five native layouts and modern/formal/minimal styles. Retail uses a
+  two-column action grid, creatives a full-width primary action plus grid, legal
+  a double-frame identity and food a colored hero. Arabic grids start at right.
+- Preserve exact source link order in direct mode and exact validated AI order in
+  smart mode. AI receives the explicit activity/style, but cannot override the
+  selected layout or invent action targets. Long labels expand to full-width rows.
+- Expose localized activity/style choices through the existing schema, including
+  clear professional/modern defaults. No new upload, hosted page or invented logo.
+- Earlier head d953906 passed full hosted workflow 40614302668, including DB and
+  worker checks. Require a new exact-head hosted result for this extension.
+- PASS: 201 focused local template/content/URI/hit-area tests, architecture gates and 15 Arabic native
+  previews cover all layouts/styles. Real-provider aesthetics, cost and mobile
+  click acceptance remain pending; activation and live 15 SAR price unchanged.
+
 ## Business card design and bounded AI arrangement — 2026-10-28
 
 - Owner requests a 15 SAR premium card and automatic WhatsApp links from phone
