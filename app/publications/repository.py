@@ -177,21 +177,61 @@ async def revise(owner_id, publication_id, content, *, expected_revision, operat
         return revision.number
 
 
+async def review(owner_id, publication_id):
+    """Private latest revision for a verified owner, never a public lookup."""
+    async with sessions.begin() as db:
+        row = await owned(db, publication_id, owner_id)
+        await editable(db, row)
+        item = await db.get(PublicationRevision, (row.id, row.latest_revision))
+        if item is None:
+            raise PublicationError("unavailable")
+        return {
+            "revision": item.number,
+            "active_revision": row.active_revision,
+            "expires_at": row.expires_at,
+            "content_hash": item.content_hash,
+            "content": item.content,
+        }
+
+
 @transaction_retry
-async def publish(owner_id, publication_id, *, revision, expected_active, terms_hash, operation_id):
+async def publish(
+    owner_id,
+    publication_id,
+    *,
+    revision,
+    expected_active,
+    terms_hash,
+    operation_id,
+    expected_content_hash=None,
+    expected_expires_at=None,
+):
     number(revision)
     number(expected_active, optional=True)
     operation_id = uuid(operation_id)
+    if expected_expires_at is not None:
+        if not isinstance(expected_expires_at, datetime) or expected_expires_at.utcoffset() is None:
+            raise PublicationError("invalid_input")
+        expected_expires_at = expected_expires_at.astimezone(UTC)
     if (
         revision == 0
         or expected_active == 0
         or type(terms_hash) is not str
         or not re.fullmatch(r"[0-9a-f]{64}", terms_hash)
+        or (
+            expected_content_hash is not None
+            and (
+                type(expected_content_hash) is not str
+                or not re.fullmatch(r"[0-9a-f]{64}", expected_content_hash)
+            )
+        )
     ):
         raise PublicationError("invalid_input")
     async with sessions.begin() as db:
         await operation_lock(db, "consent", operation_id)
         row = await owned(db, publication_id, owner_id)
+        if expected_expires_at is not None and row.expires_at != expected_expires_at:
+            raise PublicationError("revision_changed")
         receipt = await db.get(PublicationConsent, operation_id)
         if receipt:
             if (
@@ -201,7 +241,9 @@ async def publish(owner_id, publication_id, *, revision, expected_active, terms_
                 receipt.previous_active,
                 receipt.terms_hash,
                 receipt.expires_at,
-            ) != (row.id, owner_id, revision, expected_active, terms_hash, row.expires_at):
+            ) != (row.id, owner_id, revision, expected_active, terms_hash, row.expires_at) or (
+                expected_content_hash is not None and receipt.content_hash != expected_content_hash
+            ):
                 raise PublicationError("intent_changed")
             return receipt.operation_id  # Old consent never republishes suspended/deleted content.
         await editable(db, row)
@@ -210,6 +252,8 @@ async def publish(owner_id, publication_id, *, revision, expected_active, terms_
         item = await db.get(PublicationRevision, (row.id, revision))
         if item is None:
             raise PublicationError("unavailable")
+        if expected_content_hash is not None and item.content_hash != expected_content_hash:
+            raise PublicationError("revision_changed")
         db.add(
             PublicationConsent(
                 operation_id=operation_id,

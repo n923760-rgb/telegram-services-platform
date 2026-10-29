@@ -555,6 +555,13 @@ jobs:
               profile_decoded, profile_points, _ = profile_cv2.QRCodeDetectorAruco().detectAndDecode(profile_image)
               assert profile_points is not None and profile_decoded == profile_url
           print('Non-root worker: profile HTML and whole-page QR/share bundle PASS with network disabled')
+          from app.publications import prepared_page as prepared_profile
+          from uuid import UUID as ProfileUUID
+          profile_id = ProfileUUID('5019eea5-7d11-423c-a107-e386a4109904')
+          profile_snapshot = prepared_profile.prepare(profile_source(), profile_plan(), publication_id=profile_id, origin='https://example.invalid')
+          profile_verified = prepared_profile.render(profile_snapshot, publication_id=profile_id, origin='https://example.invalid')
+          assert prepared_profile.hashes(profile_verified) == profile_snapshot['digests']
+          print('Non-root worker: prepared profile exact-byte persistence contract PASS with network disabled')
           PY
       - name: Remove disposable CI resources
         if: always()

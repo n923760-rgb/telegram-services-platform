@@ -1,3 +1,26 @@
+## Prepared profile review and publication binding — 2026-10-29
+
+- Continue the owner's hosted-profile direction from main 7a6068d. Bridge the
+  native renderer and generic durable revisions before exposing customer controls.
+- Derive whole-page URLs from a trusted bare HTTPS origin and stable publication
+  UUID. Persist bounded source/plan/embedding plus exact hashes for HTML, PNG/SVG
+  QR and share-card bytes; never trust stored raw HTML or let AI select the URL.
+- Owner review rebuilds exact bytes. Consent is bound atomically to the reviewed
+  JSON hash, latest revision, expected active revision, expiry and terms. New drafts
+  preserve the live revision; old retries cannot resurrect unavailable content.
+- Any renderer/font/library/translation drift fails closed instead of silently
+  changing a consented design. Compatible versioned rendering or newly reviewed
+  migration is required before public upgrades; this is not yet an availability
+  or durable immutable export-storage solution. Public reads must later be bounded.
+- No new schema migration, live AI call, public route, customer UI, price, service
+  activation or VPS change. Hosting entitlement and commercial terms remain explicit
+  future prerequisites; internal functions rely on verified adapter-supplied identity.
+- PASS LOCALLY: 113 focused pure origin/content/hash/drift and existing renderer/
+  publication bounds tests; lint/format/diff and three architecture gates. Eleven
+  PostgreSQL ownership/race/consent/visibility/replay cases collected but NOT RUN
+  locally (no PostgreSQL server). Exact-head hosted DB/migration/worker checks
+  remain required before merge; no live-provider or browser/mobile acceptance.
+
 ## Profile composition and whole-page QR bundle — 2026-10-29
 
 - Owner adopts an original platform visual signature and free-form AI composition.
