@@ -3,7 +3,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, model_validator
+from pydantic import HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +22,11 @@ class Config(BaseSettings):
     miniapp_bot_username: str = ""
     miniapp_intake_enabled: bool = False
     miniapp_confirm_enabled: bool = False
+    publications_enabled: bool = False
+    publication_origin: str = ""
+    publication_terms_version: str = ""
+    publication_terms_ar: str = ""
+    publication_terms_en: str = ""
     telegram_webhook_secret: SecretStr = SecretStr("")
     stars_enabled: bool = False
     stars_terms_version: str = ""
@@ -118,6 +123,39 @@ class Config(BaseSettings):
         ):
             raise ValueError("administrator IDs must be positive and unique")
         from urllib.parse import urlsplit
+
+        if self.publications_enabled:
+            HttpUrl(self.publication_origin)
+            origin = urlsplit(self.publication_origin)
+            if (
+                not self.miniapp_intake_enabled
+                or not self.bot_token.get_secret_value()
+                or origin.scheme != "https"
+                or not origin.hostname
+                or origin.username is not None
+                or origin.password is not None
+                or self.publication_origin
+                not in {f"https://{origin.netloc}", f"https://{origin.netloc}/"}
+                or len(self.publication_origin) > 220
+                or any(
+                    c.isspace()
+                    or ord(c) < 32
+                    or ord(c) == 127
+                    or 0x202A <= ord(c) <= 0x202E
+                    or 0x2066 <= ord(c) <= 0x2069
+                    for c in self.publication_origin
+                )
+                or "\\" in self.publication_origin
+                or not 1 <= len(self.publication_terms_version) <= 80
+                or not self.publication_terms_version.strip()
+                or any(
+                    not 20 <= len(value) <= 2500 or not value.strip()
+                    for value in (self.publication_terms_ar, self.publication_terms_en)
+                )
+            ):
+                raise ValueError(
+                    "Publication activation requires HTTPS origin, Mini App authentication and explicit bilingual terms"
+                )
 
         if self.miniapp_bot_username:
             import re

@@ -5,11 +5,13 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from redis.asyncio import Redis
 from sqlalchemy import text
 
+from app.api.publications import router as publications_router
 from app.core.db import engine, sessions
 from app.core.settings import config
 from app.miniapp.api import router as miniapp_router
 from app.miniapp.confirmation import router as miniapp_confirmation_router
 from app.miniapp.drafts import router as miniapp_drafts_router
+from app.miniapp.publications import router as publication_review_router
 from app.miniapp.result_review import router as miniapp_result_review_router
 from app.providers.telegram import create_bot
 
@@ -39,6 +41,8 @@ app.include_router(miniapp_router)
 app.include_router(miniapp_confirmation_router)
 app.include_router(miniapp_drafts_router)
 app.include_router(miniapp_result_review_router)
+app.include_router(publication_review_router)
+app.include_router(publications_router)
 
 
 @app.get("/health/live")

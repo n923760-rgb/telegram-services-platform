@@ -26,6 +26,40 @@ MAX_CONTENT_BYTES = 32768
 MAX_REVISIONS = 20
 
 
+def review_gate(state, consents):
+    if state is not None and (
+        type(state) is not str or state not in {"draft", "published", "suspended"}
+    ):
+        raise PublicationError("invalid_input")
+    if consents is not None and (type(consents) is not int or not 0 <= consents < 2**63):
+        raise PublicationError("invalid_input")
+
+
+def consent_terms_hash(terms_hash, state, consents):
+    """Commit the review gate into the existing immutable terms-hash receipt."""
+    if state is None and consents is None:
+        return terms_hash
+    value = {"terms_hash": terms_hash, "expected_state": state, "expected_consents": consents}
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+async def consent_count(db, row):
+    return await db.scalar(
+        select(func.count())
+        .select_from(PublicationConsent)
+        .where(PublicationConsent.publication_id == row.id)
+    )
+
+
+async def check_review_gate(db, row, state, consents):
+    if (state is not None and row.state != state) or (
+        consents is not None and await consent_count(db, row) != consents
+    ):
+        raise PublicationError("revision_changed")
+
+
 class PublicationError(ValueError):
     pass
 
@@ -191,6 +225,8 @@ async def review(owner_id, publication_id):
             "expires_at": row.expires_at,
             "content_hash": item.content_hash,
             "content": item.content,
+            "state": row.state,
+            "consent_count": await consent_count(db, row),
         }
 
 
@@ -205,7 +241,10 @@ async def publish(
     operation_id,
     expected_content_hash=None,
     expected_expires_at=None,
+    expected_state=None,
+    expected_consents=None,
 ):
+    review_gate(expected_state, expected_consents)
     number(revision)
     number(expected_active, optional=True)
     operation_id = uuid(operation_id)
@@ -227,6 +266,7 @@ async def publish(
         )
     ):
         raise PublicationError("invalid_input")
+    terms_hash = consent_terms_hash(terms_hash, expected_state, expected_consents)
     async with sessions.begin() as db:
         await operation_lock(db, "consent", operation_id)
         row = await owned(db, publication_id, owner_id)
@@ -247,6 +287,7 @@ async def publish(
                 raise PublicationError("intent_changed")
             return receipt.operation_id  # Old consent never republishes suspended/deleted content.
         await editable(db, row)
+        await check_review_gate(db, row, expected_state, expected_consents)
         if row.active_revision != expected_active or row.latest_revision != revision:
             raise PublicationError("revision_changed")
         item = await db.get(PublicationRevision, (row.id, revision))
@@ -295,12 +336,16 @@ async def public_content(publication_id):
 
 
 @transaction_retry
-async def suspend(owner_id, publication_id, *, expected_active):
+async def suspend(
+    owner_id, publication_id, *, expected_active, expected_state=None, expected_consents=None
+):
+    review_gate(expected_state, expected_consents)
     number(expected_active, optional=True)
     async with sessions.begin() as db:
         row = await owned(db, publication_id, owner_id)
         if row.state == "deleted":
             raise PublicationError("unavailable")
+        await check_review_gate(db, row, expected_state, expected_consents)
         if row.active_revision != expected_active:
             raise PublicationError("revision_changed")
         row.state, row.active_revision = "suspended", None

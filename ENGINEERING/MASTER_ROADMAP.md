@@ -1,3 +1,32 @@
+## Gated owner publication review and public reading — 2026-10-29
+
+- Continue from main f47e163. Add a default-disabled My pages account flow for
+  existing owner-bound prepared publications; preserve the three main tabs and
+  existing PDF/QR service contracts. No purchase, entitlement, generation or price.
+- Review uses a script-free opaque iframe, separate exact contact-link inspection,
+  explicit public-data notice, configured bilingual terms, timezone-labelled expiry
+  and unchecked publication consent. A distinct confirmation stops public access.
+- Fresh signed Telegram identity and same-origin HTTPS POSTs protect decisions.
+  Bind revision/content/expiry/policy plus state and immutable consent count. This
+  blocks old review reuse after stop/republish cycles; combine that gate into the
+  receipt terms commitment without a schema change. Exact replay never republishes.
+- Owner POSTs return only verified native HTML for opaque srcdoc. Fresh per-response
+  style nonces authorize native CSS under inherited CSP without changing public
+  bytes or script policy. No cookies, preview URLs, form posts or browser storage;
+  renderer failure removes publication approval but retains owner stop capability.
+- Public HTML and three export paths recheck active/expiry/ban state, use no-store,
+  restrictive CSP/no-referrer/noindex and no AI calls. Redis caps public
+  GETs globally; two native rendering slots remain held through HTTP cancellation.
+- PASS LOCALLY: 157 focused pure HTTP/auth/proof/resource/renderer and actual
+  JavaScript controller checks; lint/format/diff and three architecture gates.
+  Nine new real PostgreSQL HTTP journeys collected but NOT RUN locally. An expanded
+  attempt also hit 48 existing tests' shared PostgreSQL setup; defer those to hosted
+  CI rather than weakening fixtures. Full exact-head DB/migration/worker gates remain
+  required. Real Telegram WebView/mobile visual/provider/load/restore checks NOT RUN.
+- PUBLICATIONS_ENABLED remains false. No live activation, Caddy/VPS mutation or
+  provider call; explicit hosting terms/rights and generation integration remain
+  prerequisites. Keep version-compatible/durable immutable assets before activation.
+
 ## Prepared profile review and publication binding — 2026-10-29
 
 - Continue the owner's hosted-profile direction from main 7a6068d. Bridge the
@@ -1185,7 +1214,7 @@
 
 - FACT: Official main 55010c8 includes PPTX contact direction (#106), qualified by 2321 tests and 27 native worker checks before merge. PDF merges previously followed upload order only.
 - CHANGE: PDF tools v3 adds optional file_order for merge only, after uploads. Arabic/Western/Persian digits and existing comma/space syntax express a complete permutation; skip/omitted/null keeps upload order. Entire source files move as units; internal page order is unchanged. AR/EN previews state actual file sequence. Reuse a bounded helper extracted from ImagesToPdf without changing its v3 contract.
-- PASS LOCALLY: 154 focused merge/order/image/rotation/native-service tests, including all 2–5-file permutations and unchanged image-order tests; three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows extend zero-AI capture, invalid admission, cached merge replay and v1/v2 upgrades/admin overrides. Native offline worker adds merged source-image readback. Full exact-head qualification required before merge.
+- PASS LOCALLY: 157 focused merge/order/image/rotation/native-service tests, including all 2–5-file permutations and unchanged image-order tests; three architecture gates, global lint/format/diff and workflow/worker syntax. Hosted flows extend zero-AI capture, invalid admission, cached merge replay and v1/v2 upgrades/admin overrides. Native offline worker adds merged source-image readback. Full exact-head qualification required before merge.
 - SAFETY: Same PDF builder, page/byte limits, forms/signature/encryption rejection, ownership, prices/activation and financial/provider policy. No new dependency, AI call or production action. Prepared old outputs replay; unprepared older work cancels/releases through existing guards. Deployment remains one later batch by owner request.
 - LIMITS: Numbers refer to actual upload sequence, not filenames or inferred page numbering. Reordering does not restore outlines/metadata, repair PDFs or rewrite page content. Live Telegram/mobile acceptance NOT RUN.
 - Evidence: [PDF merge file order](REPORTS/2026-10-19-pdf-merge-file-order.md).

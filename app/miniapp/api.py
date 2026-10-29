@@ -1,5 +1,6 @@
 """Read-only Telegram Mini App foundation; never creates orders or accepts money."""
 
+import secrets
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Response
@@ -28,7 +29,7 @@ ORDER_WINDOW = 8
 CSP = (
     "default-src 'none'; script-src 'self' https://telegram.org; "
     "style-src 'self'; connect-src 'self'; img-src 'self' data:; "
-    "base-uri 'none'; form-action 'none'; object-src 'none'"
+    "base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'self'"
 )
 STATIC_HEADERS = {
     "Cache-Control": "no-store",
@@ -43,6 +44,21 @@ class OverviewRequest(BaseModel):
 
 @router.get("/miniapp")
 async def miniapp_page():
+    if config().publications_enabled:
+        # A per-response style nonce also authorizes the native preview's style
+        # under the inherited srcdoc policy. Script policy stays unchanged.
+        nonce = secrets.token_urlsafe(24)
+        content = (
+            (ASSETS / "index.html")
+            .read_text()
+            .replace("<head>", f'<head><meta name="publication-style-nonce" content="{nonce}">', 1)
+        )
+        policy = CSP.replace("style-src 'self';", f"style-src 'self' 'nonce-{nonce}';")
+        return Response(
+            content,
+            media_type="text/html",
+            headers={**STATIC_HEADERS, "Content-Security-Policy": policy},
+        )
     return FileResponse(
         ASSETS / "index.html",
         media_type="text/html; charset=utf-8",
@@ -73,6 +89,13 @@ async def miniapp_intake_script():
 async def miniapp_result_review_script():
     return FileResponse(
         ASSETS / "result-review.js", media_type="application/javascript", headers=STATIC_HEADERS
+    )
+
+
+@router.get("/miniapp/publications.js")
+async def publications_script():
+    return FileResponse(
+        ASSETS / "publications.js", media_type="application/javascript", headers=STATIC_HEADERS
     )
 
 
@@ -177,6 +200,7 @@ async def overview(payload: OverviewRequest, response: Response):
     output = {
         "language": language,
         "intake_enabled": config().miniapp_intake_enabled,
+        "publications_enabled": config().publications_enabled,
         "confirmation_enabled": config().miniapp_confirm_enabled and not config().stars_enabled,
         "payment_mode": "stars" if stars else "test_credit",
         "bot_url": f"https://t.me/{config().miniapp_bot_username}"

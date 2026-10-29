@@ -19,6 +19,22 @@
   let intakeActive = false;
   let reviewActive = false;
   let reviewSource = null;
+  let pagesActive = false;
+  const pagesUI = window.MiniAppPublications
+    ? window.MiniAppPublications({
+        tg,
+        back: function () {
+          pagesActive = false;
+          pagesUI.clear();
+          render();
+        },
+        denied: function () {
+          clearPrivate();
+          noticeKey = "failure";
+          render();
+        },
+      })
+    : null;
   const reviewUI = window.MiniAppResultReview
     ? window.MiniAppResultReview({
         tg,
@@ -400,6 +416,7 @@
     if (!tg || !tg.BackButton) return;
     if (
       reviewActive ||
+      pagesActive ||
       (tab === "services" && (selectedService || category || query))
     )
       tg.BackButton.show();
@@ -439,6 +456,8 @@
     syncBack();
   }
   function chooseTab(value) {
+    pagesActive = false;
+    if (pagesUI) pagesUI.clear();
     reviewActive = false;
     if (reviewUI) reviewUI.clear();
     intakeActive = false;
@@ -465,6 +484,10 @@
     else focus("service-search");
   }
   function back() {
+    if (pagesActive && pagesUI) {
+      pagesUI.goBack();
+      return;
+    }
     if (reviewActive) {
       reviewActive = false;
       if (reviewUI) reviewUI.clear();
@@ -931,6 +954,19 @@
     }
   }
   function renderAccount() {
+    if (pagesActive && pagesUI) {
+      pagesUI.render(screen, lang);
+      return;
+    }
+    if (data.publications_enabled && pagesUI) {
+      screen.appendChild(
+        button(lang === "ar" ? "صفحاتي" : "My pages", "secondary", () => {
+          pagesActive = true;
+          render();
+          pagesUI.open();
+        }),
+      );
+    }
     const credit = element("section", "card account-credit");
     credit.appendChild(
       heading(
@@ -1019,6 +1055,8 @@
   if (tg && typeof tg.onEvent === "function") tg.onEvent("themeChanged", theme);
   theme();
   function clearPrivate() {
+    pagesActive = false;
+    if (pagesUI) pagesUI.clear();
     overviewGeneration++;
     loading = false;
     data = null;

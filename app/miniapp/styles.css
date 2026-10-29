@@ -884,3 +884,29 @@ h3 {
     --icon-color: #7aafd6;
   }
 }
+/* Owner-only whole-page preview: its iframe has an opaque sandbox origin. */
+.publication-preview {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  background: white;
+}
+.publication-copy {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.publication-review .primary,
+.publication-review .secondary {
+  min-height: 48px;
+}
+.publication-links summary {
+  min-height: 48px;
+  cursor: pointer;
+}
+.publication-links a {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-block: 12px;
+}
