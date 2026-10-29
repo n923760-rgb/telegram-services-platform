@@ -541,6 +541,20 @@ jobs:
           qr_values = QrInputs.parse(qr_inputs(language='ar', entries='الموقع|https://example.invalid/?id=00123'))
           assert decode_all(qr_build(qr_values), 1) == ['https://example.invalid/?id=00123']
           print('Non-root worker: vector QR exact read-back PASS with network disabled')
+          from app.builders.publication_page import bundle as profile_bundle
+          from tests.profile_page_fixtures import profile as profile_source, plan as profile_plan
+          import cv2 as profile_cv2
+          import numpy as profile_np
+          from io import BytesIO as ProfileBytesIO
+          profile_url = 'https://example.invalid/p/00123?id=00123'
+          profile_files = profile_bundle(profile_source(), profile_plan(), public_url=profile_url)
+          assert set(profile_files) == {'profile.html', 'qr.png', 'qr.svg', 'share-card.png'}
+          assert b'<script' not in profile_files['profile.html']
+          for profile_name in ('qr.png', 'share-card.png'):
+              profile_image = profile_np.array(Image.open(ProfileBytesIO(profile_files[profile_name])).convert('RGB'))
+              profile_decoded, profile_points, _ = profile_cv2.QRCodeDetectorAruco().detectAndDecode(profile_image)
+              assert profile_points is not None and profile_decoded == profile_url
+          print('Non-root worker: profile HTML and whole-page QR/share bundle PASS with network disabled')
           PY
       - name: Remove disposable CI resources
         if: always()

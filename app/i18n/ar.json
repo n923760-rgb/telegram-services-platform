@@ -664,5 +664,16 @@
   "card_platform_youtube": "يوتيوب",
   "card_platform_facebook": "فيسبوك",
   "card_platform_whatsapp": "واتساب",
-  "card_platform_link": "فتح الرابط"
+  "card_platform_link": "فتح الرابط",
+  "profile_skip": "انتقل إلى المحتوى",
+  "profile_page": "ملف تعريفي",
+  "profile_share": "مشاركة الصفحة ورمزها",
+  "profile_share_hint": "امسح الرمز لفتح الصفحة كاملة، أو شارك رابطها.",
+  "profile_download_png": "تنزيل PNG",
+  "profile_download_svg": "تنزيل SVG",
+  "profile_footer": "تواصل بطريقتك",
+  "profile_contact_links": "روابط التواصل",
+  "profile_identity": "الهوية",
+  "profile_scan_page": "امسح الرمز لفتح الصفحة",
+  "profile_link": "رابط الصفحة"
 }

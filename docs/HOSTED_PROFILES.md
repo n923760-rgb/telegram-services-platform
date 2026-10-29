@@ -102,3 +102,46 @@ expiry sweep. expire() is internal and not yet scheduled. Expired content cleanu
 minimal audit retention, renewal, uploaded assets, commercial entitlements, owner
 UI, public HTTP route, abuse handling and restored-backup qualification are later
 work; this slice must not be advertised as a hosted customer page service.
+
+## Profile composition and whole-page QR (2026-10-29)
+
+The internal renderer now accepts bounded source identity, role, introduction,
+one to six exact HTTPS actions and up to six source sections. It generates an
+original responsive HTML composition with localized Arabic/English labels,
+RTL/bidi handling, light/dark surfaces, original geometric detail, clear primary
+action, native disclosure for sharing and hash-bound inline CSS under a restrictive
+CSP. All customer strings are escaped; there is no executable model-authored markup,
+remote resource, embedded third-party frame, form submission or client JavaScript.
+
+An injected job-scoped metered AI adapter can choose a validated design plan from
+the customer's free-form profession, audience, goal and taste. Only action labels
+and indices are passed through the action metadata path; source prose may itself
+contain URLs supplied by the customer. The plan cannot rewrite facts or destinations,
+omit/duplicate indices, or inject CSS. No silent native fallback on invalid AI.
+No named profession template menu exists. Pure tests use synthetic AI responses,
+not actual-provider aesthetic/cost qualification.
+
+The builder takes a separate trusted whole-page HTTPS URL. Native ReportLab QR
+matrices are exported as PNG and SVG with four-module quiet zones; PNG sharing
+cards can include the same symbol or omit it. Separate QR assets are always part
+of the bundle, independently of embedding. QR targets are not individual action
+URLs unless the caller explicitly supplies one. The future publication adapter
+must derive the real page URL from configured origin and stable publication ID;
+AI must never select or invent that URL. No hosted-PDF URL is created in this slice.
+
+A bundle contains profile.html, qr.png, qr.svg and share-card.png. The public HTML
+includes QR/download disclosure only when embedding is selected and a URL exists.
+The PNG share card expands for long identities/URLs. None of these rendering calls
+publishes data, creates a route, changes a price, or modifies durable publications.
+
+Qualification: pure literal-content/URL/escaping/CSP/AI-rejection tests and independent
+QR decoding cover standalone PNG and integrated share cards, Arabic URI payloads,
+long destinations, minimum/maximum action counts and dark/light text contrast.
+The hosted worker gate repeats actual QR read-back with its network disabled.
+Browser/mobile visual acceptance and actual-provider composition are still required
+before activation. Local browser preview was blocked by environment capability:
+Chromium could not be downloaded, and cloud preview could not access the local HTTP
+server; file URL access was denied. No alternate cloud-file access was attempted.
+The delivered HTML preview is synthetic and uses a deliberately unpublished .invalid
+page target. Images, customer intake, authenticated preview/publish controls, hosting
+terms, renewal and durable asset delivery remain later integration work.

@@ -1,3 +1,27 @@
+## Profile composition and whole-page QR bundle — 2026-10-29
+
+- Owner adopts an original platform visual signature and free-form AI composition.
+  QR must open the whole page/design; deliver it separately and optionally embed
+  the same symbol. Preserve existing live PDF card and standalone QR services.
+- Implement bounded source/plan contracts, an injected-AI design function, native
+  responsive HTML rendering and PNG/SVG QR plus an optional-QR PNG share card.
+  Keep literal names/content/HTTPS targets; validate all section/action indices and
+  color contrast. No executable AI HTML/CSS or visitor-time provider calls.
+- Arabic/English catalogs, RTL isolation, original geometric detail, dark/light
+  surfaces and a prominent source action support distinct compositions without
+  named profession templates. Native details/links/downloads need no JavaScript.
+- Separate QR export and embedding are independent. The URL is a trusted caller
+  input, not model output; future publication integration must derive the real
+  page URL from configured origin and stable ID. Synthetic previews use .invalid.
+- Local pure bounds/render/AI/CSP/independent QR checks and architecture gates
+  pass; full exact-head hosted tests and added network-disabled worker qualification
+  are required before merge. No local PostgreSQL or Docker server is available.
+- Browser preview NOT RUN: local Chromium download failed; the separate cloud
+  browser could not reach local HTTP and denied file URL access. Native PNG share
+  design inspected; actual-provider design, mobile/browser visual acceptance,
+  public routes, customer intake, publication consent UI and pricing remain pending.
+  No deployment, migration, public hosting or live provider call in this slice.
+
 ## Generic publication persistence foundation — 2026-10-29
 
 - Owner continues the hosted-profile work after the completed PDF card release.
