@@ -1,3 +1,32 @@
+## Gated owner publication review and public reading — 2026-10-29
+
+- Continue from main f47e163. Add a default-disabled My pages account flow for
+  existing owner-bound prepared publications; preserve the three main tabs and
+  existing PDF/QR service contracts. No purchase, entitlement, generation or price.
+- Review uses a script-free opaque iframe, separate exact contact-link inspection,
+  explicit public-data notice, configured bilingual terms, timezone-labelled expiry
+  and unchecked publication consent. A distinct confirmation stops public access.
+- Fresh signed Telegram identity and same-origin HTTPS POSTs protect decisions.
+  Bind revision/content/expiry/policy plus state and immutable consent count. This
+  blocks old review reuse after stop/republish cycles; combine that gate into the
+  receipt terms commitment without a schema change. Exact replay never republishes.
+- Private previews use a path-scoped, 120-second Secure/HttpOnly/SameSite cookie
+  with a distinct purpose, never credentials in query strings. Network-document
+  CSP preserves exact styling without weakening the parent Mini App script policy.
+  Renderer failure removes publication approval but retains owner stop capability.
+- Public HTML and three export paths recheck active/expiry/ban state, use no-store,
+  restrictive CSP/no-referrer/noindex and no AI calls. Redis caps public/preview
+  reads globally; two native rendering slots remain held through HTTP cancellation.
+- PASS LOCALLY: 154 focused pure HTTP/auth/proof/resource/renderer and actual
+  JavaScript controller checks; lint/format/diff and three architecture gates.
+  Nine new real PostgreSQL HTTP journeys collected but NOT RUN locally. An expanded
+  attempt also hit 48 existing tests' shared PostgreSQL setup; defer those to hosted
+  CI rather than weakening fixtures. Full exact-head DB/migration/worker gates remain
+  required. Real Telegram WebView/mobile visual/provider/load/restore checks NOT RUN.
+- PUBLICATIONS_ENABLED remains false. No live activation, Caddy/VPS mutation or
+  provider call; explicit hosting terms/rights and generation integration remain
+  prerequisites. Keep version-compatible/durable immutable assets before activation.
+
 ## Prepared profile review and publication binding — 2026-10-29
 
 - Continue the owner's hosted-profile direction from main 7a6068d. Bridge the

@@ -4,6 +4,7 @@ Callers must authenticate owners and grant a hosting entitlement before creating
 a publication. These functions are not HTTP routes or commercial eligibility.
 """
 
+import asyncio
 import hashlib
 import re
 from datetime import datetime
@@ -17,6 +18,32 @@ from app.publications import repository
 from app.publications.design import Plan, Profile, https_url, plan_schema
 
 FILES = frozenset({"profile.html", "qr.png", "qr.svg", "share-card.png"})
+_render_slots = asyncio.Semaphore(2)
+_renders = set()
+
+
+class RenderBusy(RuntimeError):
+    pass
+
+
+async def render_async(content, *, publication_id, origin):
+    """No render queue; cancellation retains its slot until native work ends."""
+    if _render_slots.locked():
+        raise RenderBusy("render_busy")
+    await _render_slots.acquire()
+    task = asyncio.create_task(
+        asyncio.to_thread(render, content, publication_id=publication_id, origin=origin)
+    )
+    _renders.add(task)
+
+    def finished(done):
+        _renders.discard(done)
+        _render_slots.release()
+        if not done.cancelled():
+            done.exception()
+
+    task.add_done_callback(finished)
+    return await asyncio.shield(task)
 
 
 class PreparedPageError(ValueError):
@@ -123,7 +150,7 @@ async def revise(
 async def review(owner_id, publication_id, *, origin):
     """An authenticated adapter may show these exact bytes and revision metadata."""
     revision = await repository.review(owner_id, publication_id)
-    files = render(revision["content"], publication_id=publication_id, origin=origin)
+    files = await render_async(revision["content"], publication_id=publication_id, origin=origin)
     return {**revision, "files": files}
 
 
@@ -138,6 +165,8 @@ async def approve(
     content_hash,
     terms_hash,
     operation_id,
+    expected_state=None,
+    expected_consents=None,
 ):
     """No receipt is recorded unless the current prepared bytes still match review."""
     if not isinstance(expected_expires_at, datetime) or expected_expires_at.utcoffset() is None:
@@ -152,6 +181,8 @@ async def approve(
         expected_active=expected_active,
         expected_content_hash=content_hash,
         expected_expires_at=expected_expires_at,
+        expected_state=expected_state,
+        expected_consents=expected_consents,
         terms_hash=terms_hash,
         operation_id=operation_id,
     )
@@ -163,6 +194,6 @@ async def public_bundle(publication_id, *, origin):
     if content is None:
         return None
     try:
-        return render(content, publication_id=publication_id, origin=origin)
+        return await render_async(content, publication_id=publication_id, origin=origin)
     except PreparedPageError:
         return None

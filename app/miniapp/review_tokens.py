@@ -13,7 +13,13 @@ class InvalidReviewToken(ValueError):
 
 
 def _signature(user_id, value, purpose):
-    domain = {"draft": b"MiniAppReview-v1", "result": b"MiniAppResult-v1"}[purpose]
+    domain = {
+        "draft": b"MiniAppReview-v1",
+        "result": b"MiniAppResult-v1",
+        "publication": b"MiniAppPublication-v1",
+        "publication_preview": b"MiniAppPublicationPreview-v1",
+        "publication_suspend": b"MiniAppPublicationSuspend-v1",
+    }[purpose]
     secret = hmac.new(
         config().bot_token.get_secret_value().encode(), domain, hashlib.sha256
     ).digest()

@@ -1,6 +1,7 @@
 # Hosted customer profiles: foundation proposal
 
-Status: internal persistence foundation implemented; customer service and public routes not implemented.
+Status: internal persistence/rendering and default-disabled owner/public HTTP implemented;
+purchase/generation integration and public activation remain incomplete.
 Baseline: main 5c563f6970832db94a0ac2c16aaa6b7fb56ed05c, verified 2026-10-29.
 The owner asked which delivery model is preferable. Recommend a hosted public
 link with future revisions at the same URL. Hosting term and pricing remain
@@ -183,3 +184,66 @@ service activation, provider call or VPS rollout is introduced by this bridge.
 Real PostgreSQL tests cover private review, exact consent/replay, race rejection,
 old-live/new-draft separation, wrong owner, bans, suspension, expiry and deletion.
 Pure tests cover origin/identity/content binding, all-export drift and invalid hashes.
+
+## Gated owner review and public reading (2026-10-29)
+
+PUBLICATIONS_ENABLED defaults to false. Enabling requires Mini App intake/authentication,
+a bare operator HTTPS PUBLICATION_ORIGIN and explicit bilingual publication/hosting
+terms with a version. No hosting price, duration entitlement, renewal or automatic
+charge is invented. Existing PDF cards and standalone QR services retain their contracts.
+No endpoint creates a publication, accepts source/AI plans or grants a hosting entitlement.
+The future purchase/generation adapter must verify those rights before using create().
+
+When enabled, the account screen offers My pages rather than another main navigation
+tab. An authenticated owner sees the latest twenty non-deleted pages, their literal
+names and status; older pages are not included in this bounded initial list. Review
+shows the complete prepared page in an opaque iframe sandbox with no script, form,
+same-origin or popup permissions, the exact contact links in a separate testable list,
+the hosting expiry (with timezone), configured terms and explicit public-data notice.
+An unchecked consent control precedes publication. Stopping a live page uses its own
+confirmation and purpose-separated proof. Missing native previews provide no publication
+approval proof; the owner can still stop public access without a working renderer.
+
+Owner POSTs require fresh signed Telegram initData, HTTPS same-origin requests,
+bounded JSON, owner checks and the existing user rate/isolation gate. Review proofs
+bind owner/publication, latest and active revisions, content hash, expiry, policy hash,
+state and count of immutable consent receipts. Recording a decision is independent of
+payment/order confirmation. Ambiguous publication retries retain the same operation
+UUID and proof; definite rejection requires a fresh review. Replies acknowledge a
+recorded decision, not a promise that an old replay restored visibility.
+
+The receipt count plus current state prevents old review reuse after stop/republish
+cycles, even when active_revision returns to NULL. Under the publication row lock,
+new consent checks this gate. The existing receipt terms_hash commits to the supplied
+policy hash and expected state/count when the optional gate is used. Exact operation
+replay checks this combined commitment before returning the immutable receipt and
+never toggles visibility. Existing internal callers without the gate retain their
+contract. No new schema migration is needed for this monotonic evidence.
+
+Private preview HTML is fetched by a separate same-origin network document so its
+hash-bound inline CSS is not blocked by the parent Mini App stylesheet policy. A
+120-second Secure, HttpOnly, SameSite=Strict, host-only cookie is scoped to the exact
+preview path. Its signature has a distinct purpose and binds the reviewed intent;
+the server independently enforces the 120-second lifetime. Owner/ban/expiry/content
+checks repeat on preview reads. No Telegram credential or bearer proof goes in a URL,
+raw HTML JSON field, browser storage or public response. The private document allows
+only same-origin ancestors; public HTML denies framing. Real Telegram WebView cookie,
+iframe and visual behavior is NOT RUN here and remains an activation gate.
+
+Public GET /p/<UUID> serves only the prepared active, unexpired revision for an unbanned
+owner, without Telegram auth or AI calls. PNG/SVG QR and PNG share-card attachment paths
+repeat the same visibility checks. All responses use no-store and no-referrer; public
+HTML retains its exact CSS-hash CSP, forbids scripts and framing, and is initially marked
+noindex/nofollow/noarchive. No content cache bypasses deletion, suspension or expiry.
+Public/preview GETs share a Redis global cap of 120 requests per minute across API
+processes, with fail-closed Redis errors. Native rendering has two slots per process,
+no queue; cancelled HTTP work holds its slot until its shielded native task finishes.
+These are initial resource bounds, not measured load/availability qualification.
+
+Before activation: migrate through 0014; preserve the existing Mini App edge and verify
+HTTPS proxy routing for /p/ and the private preview path; qualify cookie/sandbox behavior
+in real Telegram/mobile browsers; exercise owner stop and cross-tenant denial; retain
+compatible immutable rendering or durable export assets through upgrades; verify backups
+and restore; agree creation/hosting/renewal/revision terms and connect metered generation
+to a completed eligible order. No VPS, Caddy, provider, billing or live service change
+was performed in this implementation round.
