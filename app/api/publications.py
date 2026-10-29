@@ -54,19 +54,17 @@ async def bundle(publication_id):
         raise HTTPException(503, "unavailable", headers=HEADERS) from None
 
 
-def html_response(content, *, private=False):
+def html_response(content):
     match = re.search(rb'<meta http-equiv="Content-Security-Policy" content="([^"]+)">', content)
     if not match:
         raise HTTPException(503, "unavailable", headers=HEADERS)
-    ancestor = "'self'" if private else "'none'"
-    policy = unescape(match[1].decode()) + f"; frame-ancestors {ancestor}"
+    policy = unescape(match[1].decode()) + "; frame-ancestors 'none'"
     return Response(
         content,
         media_type="text/html",
         headers={
             **HEADERS,
             "Content-Security-Policy": policy,
-            "X-Frame-Options": "SAMEORIGIN" if private else "DENY",
         },
     )
 

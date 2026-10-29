@@ -220,28 +220,38 @@ replay checks this combined commitment before returning the immutable receipt an
 never toggles visibility. Existing internal callers without the gate retain their
 contract. No new schema migration is needed for this monotonic evidence.
 
-Private preview HTML is fetched by a separate same-origin network document so its
-hash-bound inline CSS is not blocked by the parent Mini App stylesheet policy. A
-120-second Secure, HttpOnly, SameSite=Strict, host-only cookie is scoped to the exact
-preview path. Its signature has a distinct purpose and binds the reviewed intent;
-the server independently enforces the 120-second lifetime. Owner/ban/expiry/content
-checks repeat on preview reads. No Telegram credential or bearer proof goes in a URL,
-raw HTML JSON field, browser storage or public response. The private document allows
-only same-origin ancestors; public HTML denies framing. Real Telegram WebView cookie,
-iframe and visual behavior is NOT RUN here and remains an activation gate.
+The complete verified native HTML travels only in the authenticated owner POST
+response. The client displays it in opaque sandboxed srcdoc, with no forms, scripts,
+origin access or popups. The Mini App response generates a fresh style-only CSP nonce
+and matching metadata. The private copy adds that nonce to the native style element;
+CSS content and customer text/links stay literal, and the public bundle bytes/digests
+remain unchanged. Both the inherited parent policy and the child's original CSS-hash
+policy permit the native style. Missing nonce/preview disables approval; stopping
+access remains available. Review rechecks owner, ban and revision metadata after
+native work, before returning content or a proof.
+
+This flow needs no preview URL, cookie, browser storage, credential-bearing navigation
+or form submission. Authentication remains fresh signed Telegram initData in bounded
+same-origin HTTPS POSTs; no credential enters the preview HTML or public responses.
+Cookie independence avoids the cross-site ancestor constraints described in the
+[HTTP cookie draft](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html),
+while nonce/hash styling follows [CSP3](https://www.w3.org/TR/CSP3/). This standards
+review is not real-browser qualification. Actual Telegram Web/native WebView, srcdoc,
+nonce, mobile layout and download behavior are NOT RUN here and remain release gates.
 
 Public GET /p/<UUID> serves only the prepared active, unexpired revision for an unbanned
 owner, without Telegram auth or AI calls. PNG/SVG QR and PNG share-card attachment paths
 repeat the same visibility checks. All responses use no-store and no-referrer; public
 HTML retains its exact CSS-hash CSP, forbids scripts and framing, and is initially marked
 noindex/nofollow/noarchive. No content cache bypasses deletion, suspension or expiry.
-Public/preview GETs share a Redis global cap of 120 requests per minute across API
-processes, with fail-closed Redis errors. Native rendering has two slots per process,
+Public GETs share a Redis global cap of 120 requests per minute across API
+processes, with fail-closed Redis errors; private owner POSTs retain the user rate gate.
+Native rendering has two slots per process,
 no queue; cancelled HTTP work holds its slot until its shielded native task finishes.
 These are initial resource bounds, not measured load/availability qualification.
 
 Before activation: migrate through 0014; preserve the existing Mini App edge and verify
-HTTPS proxy routing for /p/ and the private preview path; qualify cookie/sandbox behavior
+HTTPS proxy routing for /p/ and the existing Mini App API; qualify nonce/sandbox behavior
 in real Telegram/mobile browsers; exercise owner stop and cross-tenant denial; retain
 compatible immutable rendering or durable export assets through upgrades; verify backups
 and restore; agree creation/hosting/renewal/revision terms and connect metered generation

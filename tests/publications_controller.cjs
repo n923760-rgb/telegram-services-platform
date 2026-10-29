@@ -41,12 +41,15 @@ async function settle(ui) {
   for (let i = 0; i < 50 && ui.busy; i++) await new Promise(setImmediate);
   assert.equal(ui.busy, false);
 }
-function environment(fetch) {
+function environment(fetch, nonce = "syntheticNonceValue0123456789") {
   const root = new Element("main");
   let denied = 0;
   const context = {
     window: {},
-    document: { createElement: (tag) => new Element(tag) },
+    document: {
+      createElement: (tag) => new Element(tag),
+      querySelector: () => (nonce ? { content: nonce } : null),
+    },
     crypto,
     AbortController,
     setTimeout,
@@ -75,7 +78,7 @@ function environment(fetch) {
 }
 const identity = "b836d3f2-96e3-47bc-9a1c-655cad6963a9";
 const review = {
-  preview_url: `/miniapp/publication-preview/${identity}`,
+  html: "<!doctype html><html><head><style>body{color:#123}</style></head><body>Private preview</body></html>",
   public_url: `https://example.invalid/p/${identity}`,
   terms: {
     en: "Exact test hosting terms",
@@ -123,7 +126,14 @@ async function scenario(status) {
   const frame = all(env.root).find((node) => node.tag === "iframe");
   assert.equal(frame.attrs.sandbox, "");
   assert.equal(frame.attrs.referrerpolicy, "no-referrer");
-  assert.equal(frame.src, review.preview_url);
+  assert.equal(
+    frame.srcdoc,
+    review.html.replace(
+      "<style>",
+      '<style nonce="syntheticNonceValue0123456789">',
+    ),
+  );
+  assert.equal(frame.srcdoc.includes("private-signed-data"), false);
   frame.events.load();
   const check = all(env.root).find((node) => node.id === "publication-consent");
   check.checked = true;
@@ -213,6 +223,33 @@ async function stop() {
     ),
   );
 }
+async function missingNonce() {
+  for (const nonce of [null, 'bad"><script>']) {
+    const env = environment(async (url, options) => {
+      const payload = JSON.parse(options.body);
+      return ok(
+        payload.publication_id
+          ? { review }
+          : {
+              pages: [{ id: identity, reference: "reference", state: "draft" }],
+            },
+      );
+    }, nonce);
+    await env.ui.open();
+    all(env.root)
+      .find((node) => node.textContent === "Review page")
+      .events.click();
+    await settle(env.ui);
+    assert.equal(
+      all(env.root).some((node) => node.tag === "iframe"),
+      false,
+    );
+    assert.equal(
+      all(env.root).find((node) => node.id === "publish-page").disabled,
+      true,
+    );
+  }
+}
 async function stale() {
   let finish;
   const env = environment(
@@ -243,6 +280,7 @@ async function denied() {
   await scenario(503);
   await scenario(409);
   await stop();
+  await missingNonce();
   await stale();
   await denied();
   console.log(

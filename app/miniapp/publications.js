@@ -1,6 +1,10 @@
 "use strict";
 
 window.MiniAppPublications = function ({ tg, back, denied }) {
+  const nonce =
+    document.querySelector('meta[name="publication-style-nonce"]')?.content ||
+    "";
+  const styleNonce = /^[A-Za-z0-9_-]{16,128}$/.test(nonce) ? nonce : null;
   let root,
     lang = "ar",
     rows = [],
@@ -30,7 +34,7 @@ window.MiniAppPublications = function ({ tg, back, denied }) {
       linkHint:
         "المعاينة معزولة للحماية. يمكنك اختبار روابط التواصل من هذه القائمة.",
       missing:
-        "تعذّر عرض المعاينة. حدّث الحالة قبل الموافقة على النشر. يمكنك إيقاف النسخة المنشورة.",
+        "تعذّر عرض المعاينة. أعد فتح التطبيق أو حدّث الحالة قبل الموافقة على النشر. يمكنك إيقاف النسخة المنشورة.",
       terms: "شروط الاستضافة والنشر",
       until: "الاستضافة حتى",
       agree: "راجعت الصفحة وبياناتها والشروط، وأوافق على نشر هذه النسخة للعامة",
@@ -68,7 +72,7 @@ window.MiniAppPublications = function ({ tg, back, denied }) {
       linkHint:
         "The preview is isolated for safety. Test contact links from this list.",
       missing:
-        "Preview unavailable. Refresh before approving publication. You can still stop the published version.",
+        "Preview unavailable. Reopen the app or refresh before approving publication. You can still stop the published version.",
       terms: "Hosting and publication terms",
       until: "Hosting expires",
       agree:
@@ -209,8 +213,11 @@ window.MiniAppPublications = function ({ tg, back, denied }) {
         check.disabled = busy || !!pending || review.active;
         publish.disabled = busy || !!pending || review.active || !agreed;
       });
-      if (review.preview_url) {
-        frame.src = review.preview_url;
+      if (review.html && styleNonce) {
+        frame.srcdoc = review.html.replace(
+          "<style>",
+          `<style nonce="${styleNonce}">`,
+        );
         card.appendChild(frame);
       } else card.appendChild(el("p", t("missing"), "availability"));
       card.append(
@@ -231,7 +238,7 @@ window.MiniAppPublications = function ({ tg, back, denied }) {
         }
         card.appendChild(links);
       }
-      if (review.active && review.preview_url) {
+      if (review.active && review.html) {
         card.appendChild(el("p", t("active"), "pill"));
         const link = el("a", t("open"), "secondary");
         link.href = review.public_url;
@@ -363,14 +370,14 @@ window.MiniAppPublications = function ({ tg, back, denied }) {
         const candidate = result.review || null;
         if (
           candidate &&
-          ((candidate.preview_url !== null &&
-            !/^\/miniapp\/publication-preview\/[a-f0-9-]{36}$/.test(
-              candidate.preview_url,
-            )) ||
+          ((candidate.html !== null &&
+            (typeof candidate.html !== "string" ||
+              candidate.html.length > 1024 * 1024 ||
+              !candidate.html.includes("<style>"))) ||
             !/^https:\/\//.test(candidate.public_url) ||
             !candidate.intent ||
             !candidate.terms ||
-            (candidate.preview_url !== null
+            (candidate.html !== null
               ? typeof candidate.token !== "string"
               : candidate.token !== null))
         )

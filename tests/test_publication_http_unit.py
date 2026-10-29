@@ -2,9 +2,9 @@
 
 import asyncio
 import json
+import re
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from http.cookies import SimpleCookie
 from threading import Event
 from types import SimpleNamespace
 from uuid import uuid4
@@ -124,20 +124,9 @@ async def test_owner_gets_full_sandboxable_page_exact_terms_and_separate_consent
     response = await view(http, identity)
     assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
     review = response.json()["review"]
-    assert "html" not in review and "_preview_cookie" not in response.text
-    cookie = response.headers["set-cookie"]
-    assert (
-        "HttpOnly" in cookie
-        and "Secure" in cookie
-        and "SameSite=strict" in cookie
-        and "Max-Age=120" in cookie
-    )
-    preview = await http.get(review["preview_url"])
-    assert preview.status_code == 200 and "استوديو مدى" in preview.text
-    assert (
-        "init_data" not in preview.text
-        and "frame-ancestors 'self'" in preview.headers["content-security-policy"]
-    )
+    assert "set-cookie" not in response.headers
+    assert review["html"].startswith("<!doctype html>")
+    assert "استوديو مدى" in review["html"] and "init_data" not in review["html"]
     assert review["public_url"] == f"{ORIGIN}/p/{identity.hex}"
     assert review["intent"]["content_hash"] == data["content_hash"]
     assert review["terms"]["notice_ar"] and review["terms"]["en"]
@@ -161,6 +150,7 @@ async def test_owner_gets_full_sandboxable_page_exact_terms_and_separate_consent
         "purpose",
         "state",
         "count",
+        "expired",
     ],
 )
 async def test_review_proof_cannot_be_transferred_or_rewritten(http, source, monkeypatch, change):
@@ -185,6 +175,14 @@ async def test_review_proof_cannot_be_transferred_or_rewritten(http, source, mon
         review["intent"]["state"] = "suspended"
     elif change == "count":
         review["intent"]["consent_count"] = 9
+    elif change == "expired":
+        review["token"] = issue(
+            11,
+            identity.hex,
+            owner.intent_digest(owner.Intent.model_validate_json(json.dumps(review["intent"]))),
+            purpose="publication",
+            now=int(datetime.now(UTC).timestamp()) - 3601,
+        )
     elif change == "accepted":
         extra["accepted"] = False
     else:
@@ -263,26 +261,46 @@ async def test_public_limiter_fails_closed_without_exposing_backend_failure(http
     assert result.status_code == 503 and "private" not in result.text
 
 
-async def test_private_preview_cookie_is_short_lived_page_bound_and_not_a_consent_token(
-    http, source, monkeypatch
+@pytest.mark.parametrize("change", ["ban", "revision"])
+async def test_private_review_rechecks_owner_and_version_after_native_work(
+    http, source, monkeypatch, change
 ):
-    identity = source[0]
+    identity, current, _ = source
+    original = repository.review
+    calls = 0
+
+    async def changing(user, key):
+        nonlocal calls
+        calls += 1
+        if calls > 1:
+            if change == "ban":
+                raise repository.PublicationError("unavailable")
+            current["revision"] = 2
+        return await original(user, key)
+
+    monkeypatch.setattr(repository, "review", changing)
     response = await view(http, identity)
-    review = response.json()["review"]
-    cookies = SimpleCookie(response.headers["set-cookie"])
-    cookie = cookies[owner.PREVIEW_COOKIE].value
-    http.cookies.clear()
-    assert (await http.get(review["preview_url"])).status_code == 404
-    headers = {"Cookie": f"{owner.PREVIEW_COOKIE}={cookie}"}
-    assert (await http.get(owner.preview_path(uuid4()), headers=headers)).status_code == 404
-    assert (
-        await http.get(review["preview_url"], headers={**headers, "Sec-Fetch-Site": "cross-site"})
-    ).status_code == 404
-    forged = {"Cookie": f"{owner.PREVIEW_COOKIE}=11.{review['token']}"}
-    assert (await http.get(review["preview_url"], headers=forged)).status_code == 404
-    stamp = owner.time.time()
-    monkeypatch.setattr(owner.time, "time", lambda: stamp + 121)
-    assert (await http.get(review["preview_url"], headers=headers)).status_code == 404
+    assert response.status_code == 409 and "استوديو" not in response.text
+
+
+async def test_private_preview_style_nonce_is_fresh_and_does_not_relax_scripts(http, monkeypatch):
+    pages = [await http.get("/miniapp") for _ in range(2)]
+    nonces = []
+    for page in pages:
+        nonce = re.search(r'name="publication-style-nonce" content="([A-Za-z0-9_-]+)"', page.text)[
+            1
+        ]
+        nonces.append(nonce)
+        policy = page.headers["content-security-policy"]
+        assert f"'nonce-{nonce}'" in policy
+        assert "script-src 'self' https://telegram.org;" in policy
+        assert "form-action 'none'" in policy and "unsafe-inline" not in policy
+        assert page.headers["cache-control"] == "no-store"
+    assert nonces[0] != nonces[1]
+    monkeypatch.setattr(config(), "publications_enabled", False)
+    disabled = await http.get("/miniapp")
+    assert "publication-style-nonce" not in disabled.text
+    assert "'nonce-" not in disabled.headers["content-security-policy"]
 
 
 @pytest.mark.parametrize("count", [120, 121])
@@ -406,7 +424,7 @@ async def test_renderer_failure_never_offers_publication_but_owner_can_still_sto
     current["content"]["digests"]["profile.html"] = "a" * 64
     response = await view(http, identity)
     review = response.json()["review"]
-    assert review["preview_url"] is None and review["token"] is None
+    assert review["html"] is None and review["token"] is None
     assert review["stop_token"] and "set-cookie" not in response.headers
     stopped = []
 

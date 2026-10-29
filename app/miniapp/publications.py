@@ -3,10 +3,8 @@
 No publication creation, AI generation, hosting entitlement or payment here.
 """
 
-import asyncio
 import hashlib
 import json
-import time
 from datetime import UTC, datetime
 from typing import Literal
 from urllib.parse import urlsplit
@@ -17,7 +15,6 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, ValidationError
 from sqlalchemy import select
 
-from app.api import publications as public_http
 from app.core.db import sessions
 from app.core.i18n import tr
 from app.core.models import Publication, PublicationRevision, User
@@ -32,11 +29,6 @@ HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
 }
-PREVIEW_COOKIE = "__Secure-publication-preview"
-
-
-def preview_path(identity):
-    return f"/miniapp/publication-preview/{identity}"
 
 
 class ViewRequest(BaseModel):
@@ -136,16 +128,21 @@ def page_title(content, fallback):
 
 async def load(owner, identity):
     current = await repository.review(owner, identity)
-    ready = False
+    fields = ("revision", "active_revision", "expires_at", "content_hash", "state", "consent_count")
+    expected = tuple(current[key] for key in fields)
+    html = None
     try:
-        await prepared_page.render_async(
+        files = await prepared_page.render_async(
             current["content"], publication_id=identity, origin=config().publication_origin
         )
-        ready = True
+        html = files["profile.html"].decode()
     except Exception:
         # A broken/busy renderer must not prevent the owner from stopping access.
         # Never offer publication approval without the exact prepared preview.
         pass
+    latest = await repository.review(owner, identity)
+    if tuple(latest[key] for key in fields) != expected:
+        fail(409, "review_changed")
     policy, policy_hash = terms()
     intent = Intent(
         revision=current["revision"],
@@ -158,18 +155,13 @@ async def load(owner, identity):
     )
     proof = intent_digest(intent)
     return {
-        "_preview_cookie": (
-            f"{owner}." + issue(owner, identity.hex, proof, purpose="publication_preview")
-        )
-        if ready
-        else None,
         "review": {
-            "preview_url": preview_path(identity) if ready else None,
-            "links": current["content"]["profile"]["actions"] if ready else [],
+            "html": html,
+            "links": current["content"]["profile"]["actions"] if html else [],
             "public_url": prepared_page.public_url(config().publication_origin, identity),
             "terms": policy,
             "intent": intent.model_dump(mode="json"),
-            "token": issue(owner, identity.hex, proof, purpose="publication") if ready else None,
+            "token": issue(owner, identity.hex, proof, purpose="publication") if html else None,
             "stop_token": issue(owner, identity.hex, proof, purpose="publication_suspend")
             if current["active_revision"] is not None
             else None,
@@ -241,19 +233,7 @@ async def handle(request, *, decision=False):
                 result = await load(owner, payload.publication_id)
             else:
                 result = await listing(owner)
-        cookie = result.pop("_preview_cookie", None)
-        response = JSONResponse(result, headers=HEADERS)
-        if cookie:
-            response.set_cookie(
-                PREVIEW_COOKIE,
-                cookie,
-                max_age=120,
-                path=preview_path(payload.publication_id),
-                secure=True,
-                httponly=True,
-                samesite="strict",
-            )
-        return response
+        return JSONResponse(result, headers=HEADERS)
     except InvalidReviewToken:
         fail(409, "review_changed")
     except ValidationError:
@@ -274,42 +254,3 @@ async def view(request: Request):
 @router.post("/miniapp/api/publication-consent")
 async def consent(request: Request):
     return await handle(request, decision=True)
-
-
-@router.get("/miniapp/publication-preview/{identity}")
-async def preview(request: Request, identity: UUID):
-    try:
-        if (
-            not config().publications_enabled
-            or request.headers.get("sec-fetch-site", "same-origin") != "same-origin"
-        ):
-            fail(404, "unavailable")
-        actor, token = request.cookies.get(PREVIEW_COOKIE, "").split(".", 1)
-        owner = int(actor)
-        repository.identity(owner)
-        key, proof = verify(owner, token, purpose="publication_preview")
-        if key != identity.hex or time.time() - int(token.rsplit(".", 2)[1]) > 120:
-            fail(404, "unavailable")
-        async with asyncio.timeout(20):
-            await public_http.rate_limit()
-            current = await prepared_page.review(
-                owner, identity, origin=config().publication_origin
-            )
-        intent = Intent(
-            revision=current["revision"],
-            expected_active=current["active_revision"],
-            expires_at=current["expires_at"],
-            content_hash=current["content_hash"],
-            terms_hash=terms()[1],
-            state=current["state"],
-            consent_count=current["consent_count"],
-        )
-        if intent_digest(intent) != proof:
-            fail(404, "unavailable")
-        return public_http.html_response(current["files"]["profile.html"], private=True)
-    except HTTPException:
-        raise
-    except ValueError:
-        fail(404, "unavailable")
-    except Exception:
-        fail(503, "input_retry")

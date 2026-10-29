@@ -1,5 +1,6 @@
 """Read-only Telegram Mini App foundation; never creates orders or accepts money."""
 
+import secrets
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Response
@@ -43,6 +44,21 @@ class OverviewRequest(BaseModel):
 
 @router.get("/miniapp")
 async def miniapp_page():
+    if config().publications_enabled:
+        # A per-response style nonce also authorizes the native preview's style
+        # under the inherited srcdoc policy. Script policy stays unchanged.
+        nonce = secrets.token_urlsafe(24)
+        content = (
+            (ASSETS / "index.html")
+            .read_text()
+            .replace("<head>", f'<head><meta name="publication-style-nonce" content="{nonce}">', 1)
+        )
+        policy = CSP.replace("style-src 'self';", f"style-src 'self' 'nonce-{nonce}';")
+        return Response(
+            content,
+            media_type="text/html",
+            headers={**STATIC_HEADERS, "Content-Security-Policy": policy},
+        )
     return FileResponse(
         ASSETS / "index.html",
         media_type="text/html; charset=utf-8",

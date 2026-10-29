@@ -17,7 +17,6 @@ def _signature(user_id, value, purpose):
         "draft": b"MiniAppReview-v1",
         "result": b"MiniAppResult-v1",
         "publication": b"MiniAppPublication-v1",
-        "publication_preview": b"MiniAppPublicationPreview-v1",
         "publication_suspend": b"MiniAppPublicationSuspend-v1",
     }[purpose]
     secret = hmac.new(

@@ -42,16 +42,14 @@ async def page(enabled):
 async def test_end_to_end_exact_private_preview_public_consent_and_idempotent_receipt(page):
     identity, client = page
     review = (await view(client, identity)).json()["review"]
-    preview = await client.get(review["preview_url"])
-    assert preview.status_code == 200
+    preview = review["html"].encode()
     assert (await client.get(f"/p/{identity}")).status_code == 404
     operation = str(uuid4())
     for _ in range(2):
         response = await decision(client, review, operation_id=operation)
         assert response.status_code == 200 and response.json() == {"recorded": True}
     public = await client.get(f"/p/{identity}")
-    assert public.status_code == 200 and public.content == preview.content
-    assert (await client.get(review["preview_url"])).status_code == 404  # Active revision changed.
+    assert public.status_code == 200 and public.content == preview
     refreshed = (await view(client, identity)).json()["review"]
     assert refreshed["active"] is True
     async with sessions() as db:
@@ -75,7 +73,7 @@ async def test_end_to_end_exact_private_preview_public_consent_and_idempotent_re
         "/miniapp/api/publications", headers={"Origin": "https://test"}, json={"init_data": auth()}
     )
     assert result.json()["pages"][0]["changes_pending"] is True
-    assert (await client.get(f"/p/{identity}")).content == preview.content
+    assert (await client.get(f"/p/{identity}")).content == preview
 
 
 async def test_owner_listing_and_review_cannot_cross_tenants_or_bans(page):
@@ -92,7 +90,6 @@ async def test_owner_listing_and_review_cannot_cross_tenants_or_bans(page):
     async with sessions.begin() as db:
         (await db.get(User, 11)).banned = True
     assert (await client.get(f"/p/{identity}")).status_code == 404
-    assert (await client.get(review["preview_url"])).status_code == 404
     assert (await view(client, identity)).status_code == 409
 
 
@@ -119,7 +116,6 @@ async def test_stale_http_intent_cannot_create_a_consent_receipt(page, monkeypat
             config(), "publication_terms_en", "Changed test hosting terms after private review."
         )
     assert (await decision(client, review)).status_code == 409
-    assert (await client.get(review["preview_url"])).status_code == 404
     async with sessions() as db:
         assert await db.scalar(select(func.count()).select_from(PublicationConsent)) == 0
 
