@@ -145,3 +145,41 @@ server; file URL access was denied. No alternate cloud-file access was attempted
 The delivered HTML preview is synthetic and uses a deliberately unpublished .invalid
 page target. Images, customer intake, authenticated preview/publish controls, hosting
 terms, renewal and durable asset delivery remain later integration work.
+
+## Prepared review binding (2026-10-29)
+
+The internal prepared_page coordinator now joins the renderer to durable revisions.
+It derives the whole-page /p/<opaque UUID> URL from a caller-supplied operator HTTPS
+origin, never a request Host header, customer field or AI result. Only a bare origin
+(optional final slash) is accepted. The coordinator does not create publications:
+future authenticated adapters must separately check a completed eligible order and
+an explicitly agreed hosting entitlement before calling repository.create().
+
+A revision stores a bounded profile-page-v1 JSON envelope: literal profile, validated
+design plan, embedding choice, publication identity/destination and SHA-256 digests
+of all four exports. It contains no trusted raw HTML, storage keys or AI credentials.
+Owner review loads the latest revision and rebuilds the bundle, requiring exact byte
+agreement with all digests. Approve rechecks those bytes and passes the reviewed
+content hash to the repository's locked consent transaction. A newer draft, changed
+active revision, wrong hash or changed expiry/terms intent cannot silently publish.
+Exact consent replay retains the existing repository's no-resurrection behavior.
+No AI runs during draft persistence, owner review, consent or public bundle lookup;
+AI composition still belongs to the original job-scoped, budgeted generation step.
+
+Rendering is deliberately fail-closed: changed renderer, translations, fonts or image
+libraries can make a saved envelope unavailable, rather than display different bytes
+under an old consent. Public lookup returns no bundle in that case. This is a safety
+contract, not a hosting-availability solution. Before public activation, upgrades must
+retain compatible versioned rendering or migrate through fresh owner review; durable
+immutable export storage and restored-backup qualification remain required decisions.
+Public reads currently rebuild the bounded bundle; HTTP adapters will need bounded
+request rates and a private cache that rechecks visibility/expiry/ban on every access.
+
+The generic repository additionally supports a private owner-only latest-revision
+read and optional expected_content_hash/expected_expires_at for atomic consent.
+The prepared-page coordinator requires both review bindings. Existing callers keep
+their contract. No schema migration, public HTTP route, customer UI, renewal, price,
+service activation, provider call or VPS rollout is introduced by this bridge.
+Real PostgreSQL tests cover private review, exact consent/replay, race rejection,
+old-live/new-draft separation, wrong owner, bans, suspension, expiry and deletion.
+Pure tests cover origin/identity/content binding, all-export drift and invalid hashes.
