@@ -664,5 +664,16 @@
   "card_platform_youtube": "YouTube",
   "card_platform_facebook": "Facebook",
   "card_platform_whatsapp": "WhatsApp",
-  "card_platform_link": "Open link"
+  "card_platform_link": "Open link",
+  "profile_skip": "Skip to content",
+  "profile_page": "PUBLIC PROFILE",
+  "profile_share": "Share this page",
+  "profile_share_hint": "Scan to open the whole page, or share its link.",
+  "profile_download_png": "Download PNG",
+  "profile_download_svg": "Download SVG",
+  "profile_footer": "Connect your way",
+  "profile_contact_links": "Contact links",
+  "profile_identity": "IDENTITY",
+  "profile_scan_page": "Scan to open the page",
+  "profile_link": "Page link"
 }
