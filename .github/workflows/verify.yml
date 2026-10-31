@@ -43,6 +43,8 @@ jobs:
           uv run ruff format --diff .
           uv run ruff format --check .
       - run: uv run alembic upgrade head
+      - name: Qualify completion handoff and refund recovery without unbounded waits
+        run: timeout 120 uv run pytest -vv tests/test_order_completions.py
       - run: uv run pytest -q
       - run: uv run alembic check
       - name: Validate Compose with example configuration

@@ -2,6 +2,10 @@
 
 Status: internal persistence/rendering and default-disabled owner/public HTTP implemented;
 purchase/generation integration and public activation remain incomplete.
+
+The independent [completed-order handoff](COMPLETION_HANDOFF.md) now provides a
+bounded atomic data transfer before ordinary result expiry. No page plugin,
+handler, dispatcher or hosting entitlement is connected to it yet.
 Baseline: main 5c563f6970832db94a0ac2c16aaa6b7fb56ed05c, verified 2026-10-29.
 The owner asked which delivery model is preferable. Recommend a hosted public
 link with future revisions at the same URL. Hosting term and pricing remain

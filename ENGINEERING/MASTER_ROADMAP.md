@@ -1,3 +1,29 @@
+## Generic completed-order handoff — 2026-10-31
+
+- Continue from main a0153ed. Independent generic refactor required before a page
+  plugin: ordinary order results/files expire, so a durable draft projection cannot
+  rely on later file access or repeated AI. No named service branch in core policy.
+- Add bounded data-only Result.completion and migration 0015. Stage one immutable
+  owner/order/kind/hash-bound payload atomically with capture/completion. Exact
+  staging replay cannot change content, extend deadline or restore scrubbed data.
+- Internal DB-only consumption locks customer/order/handoff, checks owner/ban,
+  completed status/kind/hash/deadline, and commits handler writes and applied marker
+  together. Concurrent replay runs the handler once; failure rolls back everything.
+  Stars require the currently accepted paid charge at the confirmed amount; refund
+  processing/uncertainty blocks consumption even while the order remains completed.
+  No automatic retry around the trusted callback, network call or public consent.
+- Pending payload retention uses the existing FILE_TTL_HOURS as a fixed processing
+  deadline, not hosting entitlement. A bounded minute sweep scrubs expired/refunded
+  pending content; ordinary file cleanup remains unchanged. Minimal hashes remain.
+- No registered service emits the capability, and no handler/dispatcher is installed.
+  The future page adapter still needs schema/version, eligible purchase and explicit
+  hosting terms, a DB-only publication projection and recovery/revocation policy.
+  Publication remains a separate owner decision. No price, enablement or VPS change.
+- PASS LOCALLY: focused pure completion/provider contract checks, architecture gates,
+  lint/format/diff. Fifteen PostgreSQL lifecycle/concurrency/atomicity/recovery checks
+  added; local DB unavailable. Full exact-head hosted tests/migration checks required.
+  Actual-provider design, Telegram/mobile rendering and deployment NOT RUN.
+
 ## Gated owner publication review and public reading — 2026-10-29
 
 - Continue from main f47e163. Add a default-disabled My pages account flow for

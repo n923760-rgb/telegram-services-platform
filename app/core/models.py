@@ -137,6 +137,29 @@ class Order(Base):
     )
 
 
+class OrderCompletion(Base):
+    __tablename__ = "order_completions"
+    order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id"), primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16), server_default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    __table_args__ = (
+        CheckConstraint("state IN ('pending','applied','discarded')", name="completion_state"),
+        CheckConstraint("(state = 'pending') = (payload IS NOT NULL)", name="completion_content"),
+        CheckConstraint("expires_at > created_at", name="completion_expiry"),
+        Index(
+            "ix_order_completions_pending",
+            "expires_at",
+            "order_id",
+            postgresql_where=text("state = 'pending'"),
+        ),
+    )
+
+
 class Ledger(Base):
     __tablename__ = "wallet_ledger"
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

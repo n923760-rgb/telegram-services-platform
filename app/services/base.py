@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.services.completion import Completion
+
 
 class InputField(BaseModel):
     name: str
@@ -166,6 +168,7 @@ class Result(BaseModel):
     needs_confirmation: bool = False
     continuation: dict = {}
     cost_sar: Decimal = Decimal("0")
+    completion: Completion | None = None
 
     @model_validator(mode="after")
     def valid_result(self):

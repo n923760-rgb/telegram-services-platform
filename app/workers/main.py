@@ -9,6 +9,7 @@ from app.files.retention import cleanup, cleanup_terminal_files
 from app.ops.activation import settle_activations
 from app.ops.notifier import Notifier
 from app.ops.reports import daily_report, flush_reports
+from app.orders.completions import purge as purge_completions
 from app.payments.recovery import refunds
 from app.payments.stars import expire_invoices
 from app.providers.delivery import TelegramDelivery
@@ -44,6 +45,7 @@ class WorkerSettings:
         cron(deliver_confirmations, second={5, 25, 45}),
         cron(cleanup_terminal_files, second={0, 20, 40}, run_at_startup=True),
         cron(cleanup, minute={0, 15, 30, 45}),
+        cron(purge_completions, minute=set(range(60)), second=35, run_at_startup=True),
         cron(deliver_failures, second={10, 30, 50}),
         cron(flush_reports, minute=set(range(60)), second=15),
         cron(daily_report, hour=config().report_hour, minute=config().report_minute),
