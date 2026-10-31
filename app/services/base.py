@@ -223,6 +223,8 @@ WORKER_REQUIREMENTS = frozenset(
 
 
 class BaseService:
+    # Optional server-owned terms; adapters must bind the reviewed quote at submit.
+    purchase_contract: dict | None = None
     worker_requirements: tuple[str, ...] = ()
     optional_worker_requirements: tuple[str, ...] = ()
     version = "1"

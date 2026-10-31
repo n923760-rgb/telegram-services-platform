@@ -43,6 +43,8 @@ jobs:
           uv run ruff format --diff .
           uv run ruff format --check .
       - run: uv run alembic upgrade head
+      - name: Qualify immutable purchase terms and shared confirmation
+        run: timeout 240 uv run pytest -vv tests/test_purchase_contracts.py tests/test_miniapp_confirmation_flow.py
       - name: Qualify completion handoff and private publication projection
         run: timeout 180 uv run pytest -vv tests/test_order_completions.py tests/test_profile_fulfillment.py tests/test_publications.py tests/test_prepared_page.py
       - run: uv run pytest -q

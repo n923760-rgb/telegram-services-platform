@@ -7,8 +7,11 @@ from app.payments.stars import terms_hash
 
 
 def new_draft(service, *, inputs=None, index=0):
+    from app.orders.contracts import make_quote
+    from app.services.registry import registry
+
     cfg = config()
-    return {
+    data = {
         "slug": service.slug,
         "name_ar": service.name_ar,
         "name_en": service.name_en,
@@ -24,3 +27,7 @@ def new_draft(service, *, inputs=None, index=0):
         "terms_hash": terms_hash() if cfg.stars_enabled else None,
         "terms": {"ar": cfg.stars_terms_ar, "en": cfg.stars_terms_en},
     }
+    quote = make_quote(service, registry.types.get(service.slug), stars=cfg.stars_enabled)
+    if quote is not None:
+        data["purchase_quote"] = quote
+    return data

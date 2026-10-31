@@ -27,7 +27,6 @@ REVISION_NAMESPACE = UUID("c9ece29b-785b-45e4-9e88-68a511077235")
 class HostingEntitlement(BaseModel):
     """Trusted adapter result from persistent, owner-confirmed hosting rights.
 
-    The production issuer/resolver and checkout evidence do not exist yet.
     Never construct this from customer/AI fields or a generic completed order.
     """
 
@@ -66,7 +65,82 @@ class HostingEntitlement(BaseModel):
                 order.terms_hash,
             )
             and self.expires_at > datetime.now(UTC)
+            and (
+                getattr(order, "purchase_terms_hash", None) is None
+                or self.hosting_terms_hash == order.purchase_terms_hash
+            )
         )
+
+
+async def resolve_purchased_entitlement(db, order):
+    """DB-only resolver for an immutable, explicitly confirmed six-month offer.
+
+    Called under completion consumer locks/payment checks, never from an HTTP
+    body. Calendar dates/terms are the original purchase evidence, not refreshed
+    from current settings. The page ID comes from the trusted producer's immutable
+    prepared handoff, never an AI plan or a newly generated ID during retry.
+    """
+    import json
+    from datetime import timedelta
+
+    from app.orders.contracts import Quote, add_months, snapshot
+    from app.publications.offering import CONTRACT
+
+    value, digest = snapshot(order.purchase_terms_snapshot)
+    if value is None or digest != order.purchase_terms_hash or order.status != "completed":
+        raise ServiceError("not_allowed")
+    quote = Quote.model_validate_json(json.dumps(value))
+    if (
+        quote.contract.kind != KIND
+        or quote.contract.version != CONTRACT["version"]
+        or quote.contract.months != CONTRACT["months"]
+        or (
+            quote.service,
+            quote.service_version,
+            quote.payment_mode,
+            quote.price_halala,
+            quote.price_stars,
+        )
+        != (
+            order.service_slug,
+            order.service_version,
+            order.payment_mode,
+            order.price_halala,
+            order.price_stars,
+        )
+        or not quote.starts_at <= order.created_at < quote.valid_until
+        or quote.valid_until != quote.starts_at + timedelta(hours=1)
+        or quote.expires_at != add_months(quote.starts_at, quote.contract.months)
+    ):
+        raise ServiceError("not_allowed")
+    row = await db.get(OrderCompletion, order.id)
+    if not row or row.owner_id != order.user_id or row.kind != KIND or row.state != "pending":
+        raise ServiceError("not_allowed")
+    if Completion(kind=KIND, payload=row.payload).digest() != row.content_hash:
+        raise ServiceError("not_allowed")
+    prepared = prepared_page.Snapshot.model_validate(row.payload)
+    return HostingEntitlement(
+        owner_id=order.user_id,
+        order_id=order.id,
+        publication_id=repository.uuid(prepared.publication_id),
+        service_slug=order.service_slug,
+        service_version=order.service_version,
+        payment_mode=order.payment_mode,
+        price_halala=order.price_halala,
+        price_stars=order.price_stars,
+        purchase_terms_hash=order.terms_hash,
+        hosting_terms_hash=digest,
+        expires_at=quote.expires_at,
+    )
+
+
+async def transfer_purchased(owner_id, order_id, *, origin):
+    return await transfer(
+        owner_id,
+        order_id,
+        origin=origin,
+        resolve_entitlement=resolve_purchased_entitlement,
+    )
 
 
 async def generate(ai, profile, brief, *, publication_id, origin, embedded_qr=True):

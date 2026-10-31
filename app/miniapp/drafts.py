@@ -176,6 +176,9 @@ async def service_for(db, user_id, slug, data=None):
             stars and data.get("stars_price") != service.price_stars
         ):
             fail(409, "price_changed")
+        from app.orders.contracts import validate
+
+        validate(data.get("purchase_quote"), service, plugin, stars=stars)
     return service, ai_available
 
 
