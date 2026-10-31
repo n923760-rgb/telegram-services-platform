@@ -255,6 +255,7 @@ async def test_miniapp_shows_exact_offer_and_bot_http_race_record_one_agreement(
 ):
     await fund_shared(confirm_shared)
     view = await mini_prepare(confirm_shared)
+    await confirm_shared[1]("/start request_echo")
     data = await confirm_shared[3].get_data()
     value = data["purchase_quote"]
     assert CONTRACT["ar"] in view["review"]["ar"] and "29.00" in view["review"]["ar"]
@@ -277,6 +278,7 @@ async def test_policy_change_after_display_rejects_in_both_channels(
 ):
     await fund_shared(confirm_shared)
     view = await mini_prepare(confirm_shared)
+    await confirm_shared[1]("/start request_echo")
     data = await confirm_shared[3].get_data()
     monkeypatch.setattr(registry.types["echo"], "purchase_contract", {**CONTRACT, "months": 12})
     if channel == "miniapp":
