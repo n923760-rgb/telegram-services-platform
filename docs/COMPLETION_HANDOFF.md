@@ -62,6 +62,10 @@ they cannot erase the separate pending payload before its fixed deadline. Outage
 past that deadline require explicit recovery, never silent AI regeneration/extension.
 No dispatcher or production handler is installed in this round.
 
+The later internal [profile transfer adapter](HOSTED_PROFILES.md#private-profile-transfer-2026-10-31)
+can consume a prepared profile capability using a mandatory trusted entitlement
+resolver. It is not registered with any dispatcher or customer purchase flow.
+
 ## Hosted-page adapter still required
 
 Before a future page plugin is enabled, add a reviewed handler and recoverable
