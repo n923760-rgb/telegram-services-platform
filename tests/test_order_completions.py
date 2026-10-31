@@ -176,8 +176,6 @@ async def test_unaccepted_stars_receipt_cannot_authorize_completion(stars):
     from app.orders.state import transition
 
     order_id = await prepare()
-    now = datetime.now(UTC)
-    value = output().completion
     async with sessions.begin() as db:
         order = await lock_order(db, order_id)
         transition(order, "queued")
