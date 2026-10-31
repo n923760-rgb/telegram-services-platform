@@ -18,6 +18,8 @@ from app.services.registry import registry
 from app.wallet.ledger import balance
 from app.workers.runner import execute_job
 from tests.test_foundation import Delivery, fund, job_for
+from tests.test_stars import pay, prepare
+from tests.test_stars import stars as stars
 
 
 def output():
@@ -94,6 +96,38 @@ async def test_ordinary_service_completion_does_not_create_handoff():
         assert (await db.get(Order, order_id)).status == "completed"
         assert (await balance(db, 1)).available == 900
         assert await db.scalar(select(func.count()).select_from(OrderCompletion)) == 0
+
+
+@pytest.mark.parametrize(
+    "state", ["paid", "refund_pending", "refunding", "refund_uncertain", "refunded", "unaccepted"]
+)
+async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, stars, state):
+    from app.core.models import Ledger, StarCharge
+
+    order_id = await prepare()
+    await pay(order_id)
+    run = AsyncMock(return_value=output())
+    monkeypatch.setattr(registry, "get", lambda *args: SimpleNamespace(run=run))
+    await execute_job({"delivery": Delivery()}, str(await job_for(order_id)))
+    async with sessions.begin() as db:
+        charge = await db.get(StarCharge, "charge")
+        if state == "unaccepted":
+            charge.accepted = False
+        else:
+            charge.state = state
+        assert (await db.get(Order, order_id)).status == "completed"
+    handler = AsyncMock()
+    if state == "paid":
+        assert await completions.consume(order_id, 1, "example_v1", handler)
+        assert handler.await_count == 1
+    else:
+        with pytest.raises(ServiceError, match="payment_invalid"):
+            await completions.consume(order_id, 1, "example_v1", handler)
+        handler.assert_not_awaited()
+        async with sessions() as db:
+            assert (await db.get(OrderCompletion, order_id)).state == "pending"
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(Ledger)) == 0
 
 
 async def test_handoff_and_capture_roll_back_together(monkeypatch):

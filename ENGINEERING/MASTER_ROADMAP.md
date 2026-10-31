@@ -9,6 +9,8 @@
 - Internal DB-only consumption locks customer/order/handoff, checks owner/ban,
   completed status/kind/hash/deadline, and commits handler writes and applied marker
   together. Concurrent replay runs the handler once; failure rolls back everything.
+  Stars require the currently accepted paid charge at the confirmed amount; refund
+  processing/uncertainty blocks consumption even while the order remains completed.
   No automatic retry around the trusted callback, network call or public consent.
 - Pending payload retention uses the existing FILE_TTL_HOURS as a fixed processing
   deadline, not hosting entitlement. A bounded minute sweep scrubs expired/refunded
@@ -18,7 +20,7 @@
   hosting terms, a DB-only publication projection and recovery/revocation policy.
   Publication remains a separate owner decision. No price, enablement or VPS change.
 - PASS LOCALLY: focused pure completion/provider contract checks, architecture gates,
-  lint/format/diff. Nine PostgreSQL lifecycle/concurrency/atomicity/recovery checks
+  lint/format/diff. Fifteen PostgreSQL lifecycle/concurrency/atomicity/recovery checks
   added; local DB unavailable. Full exact-head hosted tests/migration checks required.
   Actual-provider design, Telegram/mobile rendering and deployment NOT RUN.
 

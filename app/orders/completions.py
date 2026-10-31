@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 
 from app.core.db import sessions
-from app.core.models import Order, OrderCompletion, User
+from app.core.models import Order, OrderCompletion, StarCharge, User
 from app.core.settings import config
 from app.orders.locking import lock_order
 from app.services.base import Result, ServiceError
@@ -68,6 +68,18 @@ async def consume(order_id, owner_id, kind, handler):
         user = await db.get(User, owner_id)
         if user.banned or order.status != "completed":
             raise ServiceError("not_allowed")
+        if order.payment_mode == "stars":
+            paid = await db.scalar(
+                select(StarCharge.charge_id).where(
+                    StarCharge.order_id == order.id,
+                    StarCharge.user_id == owner_id,
+                    StarCharge.accepted.is_(True),
+                    StarCharge.state == "paid",
+                    StarCharge.amount == order.price_stars,
+                )
+            )
+            if not paid:
+                raise ServiceError("payment_invalid")
         row = await db.scalar(
             select(OrderCompletion).where(OrderCompletion.order_id == order_id).with_for_update()
         )

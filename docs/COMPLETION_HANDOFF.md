@@ -50,6 +50,10 @@ writes. Concurrent or later exact consumers return false without calling it agai
 Handler failure rolls everything back and preserves the original pending payload.
 A refunded, banned, expired or wrong-owner order cannot be consumed. Applied
 replay still checks current owner/ban/completed state before acknowledging it.
+Stars orders also require their accepted owner/order-bound charge to remain paid
+at the confirmed Stars amount. Pending, in-flight, uncertain or confirmed refunds
+block consumption even before the order's status catches up. These reads and refund
+writers serialize on the existing customer lock; they do not request a new charge.
 
 A bounded minute worker sweep scrubs at most 100 expired or no-longer-completed
 pending rows, rechecking under the same lock order. Locked customers are skipped
