@@ -1,3 +1,27 @@
+## Administrative hosted-profile pilot — 2026-10-31
+
+- Continue from verified main 9cb30d3. Register a disabled, administrator-only page
+  plugin using the existing schema-driven chat/Mini App intake and job runner.
+  No bot/core/worker branches or customer portfolio/activation changes.
+- Collect literal name, free-form profession, introduction, optional sections,
+  supplied links/phone, free design brief and independent QR embedding choice.
+  Normalize documented Saudi/international WhatsApp numbers; classify social hosts
+  literally. AI chooses bounded composition and hierarchy, never destinations or
+  invented credentials. No profession-template menu or unmetered provider path.
+- Bind the approved six-month contract and 29 SAR reference test-credit price.
+  Persist owner-bound HTML, QR PNG/SVG and share-card files plus the exact prepared
+  completion using existing capture/retention. Delivery retry reuses the persisted
+  result/identity, not AI. Failed input/provider/runtime gates release test credit.
+- Synthetic DB integration exercises the actual plugin, metered gateway with
+  native generation, cleanup, trusted private transfer and separate publication
+  consent. Explicitly call transfer in qualification: no automatic dispatcher is
+  installed yet. Customer ordering remains blocked even if its DB flag is enabled.
+- Local pure source/QR/registry/policy checks PASS; exact-head hosted PostgreSQL,
+  full suite, migration/Compose and worker checks required before merge. Actual
+  provider design, Telegram mobile, dispatcher recovery/diagnostics, post-application
+  refunds, immutable export upgrades and backup/restore remain activation gates.
+  No live provider request, VPS update or customer enablement in this slice.
+
 ## Immutable six-month purchase terms — 2026-10-31
 
 - Continue from main e5b42a7. The owner approved a 29 SAR reference creation offer
