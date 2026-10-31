@@ -120,6 +120,7 @@ async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, 
     refund_task = None
     provider = None
     if state == "refunding":
+
         class BlockingProvider:
             def __init__(self):
                 self.started = asyncio.Event()
@@ -134,12 +135,14 @@ async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, 
         refund_task = asyncio.create_task(refunds({"stars": provider}))
         await provider.started.wait()
     elif state == "refund_uncertain":
+
         class UncertainProvider:
             async def refund(self, user_id, charge_id):
                 return False
 
         await refunds({"stars": UncertainProvider()})
     elif state == "refunded":
+
         class SuccessfulProvider:
             async def refund(self, user_id, charge_id):
                 return True
