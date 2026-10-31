@@ -209,7 +209,6 @@ async def test_unaccepted_stars_receipt_cannot_authorize_completion(stars):
         assert await db.scalar(select(func.count()).select_from(Ledger)) == 0
 
 
-
 async def test_handoff_and_capture_roll_back_together(monkeypatch):
     order_id = await pending()
     from app.orders import engine
