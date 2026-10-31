@@ -6,6 +6,7 @@ Never render upload keys or bulk customer text. This is an input summary, not a
 validated output preview: generation and final admission have not happened yet.
 """
 
+import json
 import unicodedata
 
 from app.core.i18n import CATALOGS, tr
@@ -83,6 +84,26 @@ def confirmation_text(data, lang):
         if data.get("payment_mode") == "stars"
         else tr("confirm_price", lang, amount=sar(data["price"]))
     )
+    if data.get("purchase_quote") is not None:
+        from app.orders.contracts import SERVICE_TIMEZONE, Quote
+
+        quote = Quote.model_validate_json(json.dumps(data["purchase_quote"]))
+        start = quote.starts_at.astimezone(SERVICE_TIMEZONE).isoformat(timespec="minutes")
+        end = quote.expires_at.astimezone(SERVICE_TIMEZONE).isoformat(timespec="minutes")
+        if lang == "ar":
+            start, end = "\u2066" + start + "\u2069", "\u2066" + end + "\u2069"
+        payment += "\n\n" + tr(
+            "purchase_contract_review",
+            lang,
+            months=quote.contract.months,
+            start=start,
+            end=end,
+            terms=getattr(quote.contract, lang if lang in {"ar", "en"} else "ar"),
+        )
+        if _units(title + "\n\n" + payment) > 3900:
+            from app.services.base import ServiceError
+
+            raise ServiceError("service_changed")
     # Terms may occupy 2500 UTF-16 units. Keep the original full terms and price;
     # only the optional summary shrinks to fit Telegram's message limit.
     budget = min(1000, max(0, 3900 - _units(title + "\n\n" + payment) - 2))

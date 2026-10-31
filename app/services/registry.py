@@ -62,6 +62,9 @@ class Registry:
                 ):
                     raise ValueError("invalid service AI metadata")
                 validate_ai_intake_choices(cls)
+                from app.orders.contracts import declaration
+
+                declaration(cls)
                 required, optional = cls.worker_requirements, cls.optional_worker_requirements
                 if (
                     type(required) is not tuple

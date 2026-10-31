@@ -112,6 +112,10 @@ class Order(Base):
     service_version: Mapped[str] = mapped_column(String(32), default="1", server_default="1")
     input_schema_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     input_hash: Mapped[str] = mapped_column(String(64))
+    purchase_terms_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    purchase_terms_snapshot: Mapped[dict | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
     inputs: Mapped[dict] = mapped_column(JSON)
     result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     files_deleted: Mapped[bool] = mapped_column(
@@ -129,6 +133,10 @@ class Order(Base):
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     __table_args__ = (
         UniqueConstraint("user_id", "idempotency_key"),
+        CheckConstraint(
+            "(purchase_terms_hash IS NULL) = (purchase_terms_snapshot IS NULL)",
+            name="order_purchase_terms_pair",
+        ),
         CheckConstraint("price_halala > 0"),
         CheckConstraint(
             "(payment_mode='test_credit' AND price_stars IS NULL AND terms_version IS NULL AND terms_hash IS NULL AND terms_snapshot IS NULL) OR (payment_mode='stars' AND price_stars IS NOT NULL AND price_stars BETWEEN 1 AND 1000000 AND terms_version IS NOT NULL AND terms_hash IS NOT NULL AND terms_snapshot IS NOT NULL)",

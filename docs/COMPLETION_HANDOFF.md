@@ -66,10 +66,15 @@ The later internal [profile transfer adapter](HOSTED_PROFILES.md#private-profile
 can consume a prepared profile capability using a mandatory trusted entitlement
 resolver. It is not registered with any dispatcher or customer purchase flow.
 
+The later [six-month purchase contract](HOSTED_PROFILES.md#approved-six-month-purchase-contract-2026-10-31)
+adds optional generic reviewed order evidence and a concrete DB-only resolver.
+`transfer_purchased` uses those immutable dates and terms instead of an arbitrary
+caller-created right. No customer plugin or dispatcher is registered yet.
+
 ## Hosted-page adapter still required
 
 Before a future page plugin is enabled, add a reviewed handler and recoverable
-dispatcher with schema/version and completed eligible order checks. Persist an
+dispatcher with schema/version and completed eligible order checks. Use the
 explicit agreed hosting entitlement, price/terms snapshot and expiry contract;
 an arbitrary completed order or completion row is insufficient. Prepare the
 source/plan once using the job-scoped metered gateway, then project a private draft

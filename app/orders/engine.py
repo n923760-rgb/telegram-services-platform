@@ -56,6 +56,7 @@ async def submit(
     expected_stars: int | None = None,
     terms_version: str | None = None,
     expected_terms_hash: str | None = None,
+    purchase_quote: dict | None = None,
 ):
     from app.core.settings import config
 
@@ -74,6 +75,9 @@ async def submit(
     if mode == "test_credit" and (terms_version is not None or expected_terms_hash is not None):
         raise ServiceError("payment_changed")
     digest = input_digest(inputs)
+    from app.orders import contracts
+
+    purchase_snapshot, purchase_hash = contracts.snapshot(purchase_quote)
     async with sessions.begin() as db:
         user = await db.scalar(select(User).where(User.id == user_id).with_for_update())
         if user is None or user.banned:
@@ -93,6 +97,8 @@ async def submit(
                 or previous.price_stars != expected_stars
                 or previous.terms_version != terms_version
                 or previous.terms_hash != expected_terms_hash
+                or previous.purchase_terms_hash != purchase_hash
+                or previous.purchase_terms_snapshot != purchase_snapshot
                 or (expected_version is not None and previous.service_version != expected_version)
             ):
                 raise ServiceError("invalid_request")
@@ -113,6 +119,9 @@ async def submit(
         ):
             raise ServiceError("service_changed")
         InputSchema.model_validate(service.input_schema).validate_inputs(inputs)
+        purchase_snapshot, purchase_hash = contracts.validate(
+            purchase_snapshot, service, registry.types[slug], stars=mode == "stars"
+        )
         from app.ops.costs import check_admission
         from app.ops.settings import provider_paused, setting
 
@@ -143,6 +152,8 @@ async def submit(
             price_halala=expected_price,
             inputs=inputs,
             input_hash=digest,
+            purchase_terms_hash=purchase_hash,
+            purchase_terms_snapshot=purchase_snapshot,
             input_schema_snapshot=service.input_schema,
             service_version=service.version,
             idempotency_key=key,

@@ -5,7 +5,56 @@ purchase/generation integration and public activation remain incomplete.
 
 The independent [completed-order handoff](COMPLETION_HANDOFF.md) now provides a
 bounded atomic data transfer before ordinary result expiry. No page plugin,
-dispatcher or production hosting entitlement resolver is connected to it yet.
+or dispatcher is connected to it yet. Reviewed purchase evidence and a concrete
+resolver are implemented below; customer profile intake remains unregistered.
+
+## Approved six-month purchase contract (2026-10-31)
+
+The owner approved a reference creation price of 29 SAR and then shortened the
+hosting period to **six calendar months**, superseding the earlier twelve-month
+discussion. Renewal duration/price remain unapproved; no automatic renewal or
+charge exists. `app.publications.offering` declares the versioned bilingual offer
+and 2900-halalas reference price without altering any existing service price or
+enabling a new catalog entry. SAR balances remain administrator-issued test credit;
+native Stars checkout uses its independently configured integer Stars price, with
+no SAR/Stars conversion or change to historic ledger entries.
+
+A generic optional `BaseService.purchase_contract` declaration lets the shared
+chat/Mini App draft show exact terms and dates alongside the actual DB-owned price.
+Quotes use six Riyadh calendar months with end-of-month/leap-day clamping, not a
+fixed 180-day approximation. The quoted start/end are fixed when the draft opens,
+displayed in Riyadh (+03:00) before confirmation and never refreshed silently.
+Quote admission expires after one hour, matching initial draft retention; an
+expired/changed offer requires reopening and reviewing a new draft. Dates can
+therefore start shortly before the actual confirmation: the explicit displayed
+period, not a later click or first-publication date, governs the agreed expiry.
+
+Migration 0016 adds immutable `Order.purchase_terms_snapshot` and its hash, separate
+from existing Stars payment terms. Confirmation checks current service/version,
+price, payment mode, declared terms, calendar dates and quote validity under the
+normal customer/order admission locks before any reserve or invoice record. Both
+chat and Mini App pass the same reviewed quote. An exact existing purchase replay
+returns its original receipt even if that offer has since expired/changed; a new
+payload under the same key cannot replace it, extend expiry or charge again.
+The database rejects replacing or retrofitting purchase evidence, including on
+old orders without it. Ordinary input/result/file cleanup retains this minimal
+server-authored agreement, not the customer's profile text or contact content.
+
+`fulfillment.transfer_purchased` now uses `resolve_purchased_entitlement` to derive
+rights from that immutable confirmed order evidence and the trusted producer's
+prepared handoff. It checks the stored hash, original price/version/payment,
+creation within the accepted quote window, approved six-month policy and exact
+calendar expiry. Payment/ban/owner checks and atomic draft projection remain in
+the generic consumer. An arbitrary completed order with no purchase evidence
+cannot gain hosting. This path creates a private draft only, never publication
+consent. Existing orders and services without a declared contract keep their
+previous behavior and cannot be retroactively assigned hosting rights.
+
+No hosted-profile plugin, new catalog entry, automatic dispatcher, provider call,
+live migration, price override or commercial activation is introduced in this
+round. Service intake/registration, dispatch/recovery, refund-after-projection
+revocation, actual provider/mobile acceptance and backup/restore still precede
+activation. The generic terms mechanism alone does not complete those journeys.
 
 ## Private profile transfer (2026-10-31)
 
@@ -26,7 +75,9 @@ transaction. Failure leaves the original pending payload available for retry.
 
 A mandatory trusted DB-only `resolve_entitlement(db, locked_order)` must read
 durable owner-confirmed hosting rights and may allocate them in that transaction.
-There is **no production resolver or issuer yet**. The strict HostingEntitlement
+The original private-transfer slice had no purchase resolver. The concrete
+`transfer_purchased` path above now reads immutable confirmed purchase evidence.
+For any other injected resolver, the strict HostingEntitlement
 model is an adapter contract, not evidence that an entitlement exists. Never build
 it from customer/AI fields or infer it from an arbitrary completed order. It binds
 owner, order, opaque preassigned page ID, service/version, exact payment/price and
@@ -47,8 +98,9 @@ separately before any publication; this path never calls publish or records cons
 
 No new migration, registered service, menu, customer generation endpoint, automatic
 dispatcher, price, hosting term, provider request or live deployment is introduced.
-Before activation: implement the authoritative reviewed hosting purchase/right
-issuer and resolver, a recoverable dispatcher and pending diagnostics, refund-after-
+The later six-month contract slice above supplies immutable purchase evidence and
+a concrete resolver. Before activation: add customer plugin/intake, a recoverable
+dispatcher and pending diagnostics, refund-after-
 application policy, customer intake, real provider/mobile acceptance, versioned
 immutable exports and backup/restore. The adapter is deliberately uninstalled until
 those rights and lifecycle gates exist.

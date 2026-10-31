@@ -33,7 +33,7 @@ class ConfirmRequest(BaseModel):
 
 def receipt(order):
     status = order.status if order.status in ALLOWED else "unknown"
-    return {
+    result = {
         "reference": str(order.id)[:8],
         "status": order.status,
         "status_ar": tr("status_" + status, "ar"),
@@ -41,6 +41,9 @@ def receipt(order):
         "price_sar": sar(order.price_halala),
         "payment_mode": "test_credit",
     }
+    if order.purchase_terms_snapshot is not None:
+        result["purchase_terms"] = order.purchase_terms_snapshot
+    return result
 
 
 async def clear_accepted(state, key):
@@ -89,7 +92,13 @@ async def confirm_request(state, user_id, payload):
     async with sessions() as db:
         await service_for(db, user_id, data["slug"], data)
     order_id = await submit(
-        user_id, data["slug"], data["inputs"], data["price"], data["key"], data["version"]
+        user_id,
+        data["slug"],
+        data["inputs"],
+        data["price"],
+        data["key"],
+        data["version"],
+        purchase_quote=data.get("purchase_quote"),
     )
     async with sessions() as db:
         order = await db.get(Order, order_id)

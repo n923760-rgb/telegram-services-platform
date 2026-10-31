@@ -676,5 +676,6 @@
   "profile_identity": "IDENTITY",
   "profile_scan_page": "Scan to open the page",
   "profile_link": "Page link",
-  "publication_notice": "Everything in the preview, including contact details and links, becomes public on publication and may be shared and copied. Opening the preview does not publish it or authorize any renewal."
+  "publication_notice": "Everything in the preview, including contact details and links, becomes public on publication and may be shared and copied. Opening the preview does not publish it or authorize any renewal.",
+  "purchase_contract_review": "Service period: {months} calendar months\nPeriod starts: {start}\nPeriod ends: {end}\n{terms}"
 }

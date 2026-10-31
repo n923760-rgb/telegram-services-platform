@@ -1,3 +1,26 @@
+## Immutable six-month purchase terms — 2026-10-31
+
+- Continue from main e5b42a7. The owner approved a 29 SAR reference creation offer
+  with six calendar months on the existing VPS, replacing the proposed year.
+  SAR remains administrator-issued test credit; native Stars prices are independent.
+- Add optional generic server-declared purchase contracts to shared chat/Mini App
+  review and confirmation. Show exact Riyadh start/end and full bilingual terms.
+  Start is fixed when the draft opens; the quote is valid for one hour. Reject
+  missing, expired or changed contracts before reservation/invoice creation.
+- Migration 0016 retains immutable terms/hash on the order, separately from Stars
+  payment terms and ordinary input/file retention. Exact purchase replay preserves
+  its original evidence, with no new charge or silently refreshed hosting period.
+- A concrete DB-only profile resolver reads this evidence and the trusted prepared
+  handoff under existing payment/owner locks. Transfer creates only a private draft
+  with the original six-month expiry; publication needs independent owner consent.
+- Renewal requires a new offer and consent; its price is undecided. No automatic
+  renewal charge, catalog registration, live price/enablement or VPS change here.
+- Local pure contract/review checks and architecture/lint checks qualify this slice;
+  financial concurrency, immutable SQL evidence, shared chat/HTTP confirmation,
+  Stars rejection and cleanup-to-private-transfer cases require exact-head hosted
+  PostgreSQL CI. Customer intake, recoverable dispatch, post-application refunds,
+  real provider/mobile and backup/restore remain activation gates.
+
 ## Metered prepared profile to private draft transfer — 2026-10-31
 
 - Continue from main a56a3c3. Join the job-scoped design/prepared snapshot with

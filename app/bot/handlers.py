@@ -425,6 +425,7 @@ def create_router():
                 expected_stars=data.get("stars_price"),
                 terms_version=data.get("terms_version"),
                 expected_terms_hash=data.get("terms_hash"),
+                purchase_quote=data.get("purchase_quote"),
             )
             if data.get("payment_mode") == "stars":
                 from app.bot.payments import invoice
