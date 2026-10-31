@@ -2,7 +2,6 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
-from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select, text
@@ -100,10 +99,11 @@ async def test_ordinary_service_completion_does_not_create_handoff():
 
 
 @pytest.mark.parametrize(
-    "state", ["paid", "refund_pending", "refunding", "refund_uncertain", "refunded", "unaccepted"]
+    "state", ["paid", "refund_pending", "refunding", "refund_uncertain", "refunded"]
 )
 async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, stars, state):
     from app.core.models import Ledger, StarCharge
+    from app.payments.recovery import refunds
     from app.payments.stars import request_refund
 
     order_id = await prepare()
@@ -111,48 +111,101 @@ async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, 
     run = AsyncMock(return_value=output())
     monkeypatch.setattr(registry, "get", lambda *args: SimpleNamespace(run=run))
     await execute_job({"delivery": Delivery()}, str(await job_for(order_id)))
-    async with sessions.begin() as db:
-        order = await lock_order(db, order_id)
-        charge = await db.get(StarCharge, "charge")
-        if state != "paid":
+
+    if state != "paid":
+        async with sessions.begin() as db:
+            charge = await db.get(StarCharge, "charge")
             await request_refund(db, charge)
-            await db.flush()
-        if state in {"refunding", "refund_uncertain", "refunded"}:
-            charge.state = "refunding"
-            charge.lease_token = uuid4()
-            charge.lease_until = datetime.now(UTC) + timedelta(minutes=5)
-            await db.flush()
-        if state in {"refund_uncertain", "refunded"}:
-            charge.state = state
-            charge.lease_token = charge.lease_until = None
-        if state == "unaccepted":
-            # A separate unaccepted receipt must not substitute for the accepted
-            # charge now being refunded. Never rewrite an immutable receipt.
-            db.add(
-                StarCharge(
-                    charge_id="extra-unaccepted",
-                    order_id=order_id,
-                    user_id=1,
-                    amount=20,
-                    accepted=False,
-                    payload=charge.payload,
-                    state="paid",
-                )
-            )
-        assert order.status == "completed"
+
+    refund_task = None
+    provider = None
+    if state == "refunding":
+        class BlockingProvider:
+            def __init__(self):
+                self.started = asyncio.Event()
+                self.release = asyncio.Event()
+
+            async def refund(self, user_id, charge_id):
+                self.started.set()
+                await self.release.wait()
+                return False
+
+        provider = BlockingProvider()
+        refund_task = asyncio.create_task(refunds({"stars": provider}))
+        await provider.started.wait()
+    elif state == "refund_uncertain":
+        class UncertainProvider:
+            async def refund(self, user_id, charge_id):
+                return False
+
+        await refunds({"stars": UncertainProvider()})
+    elif state == "refunded":
+        class SuccessfulProvider:
+            async def refund(self, user_id, charge_id):
+                return True
+
+        await refunds({"stars": SuccessfulProvider()})
+
     handler = AsyncMock()
     if state == "paid":
         assert await completions.consume(order_id, 1, "example_v1", handler)
         assert handler.await_count == 1
+    elif state == "refunded":
+        with pytest.raises(ServiceError, match="not_allowed"):
+            await completions.consume(order_id, 1, "example_v1", handler)
+        handler.assert_not_awaited()
     else:
         with pytest.raises(ServiceError, match="payment_invalid"):
             await completions.consume(order_id, 1, "example_v1", handler)
         handler.assert_not_awaited()
         async with sessions() as db:
             assert (await db.get(OrderCompletion, order_id)).state == "pending"
+
+    if refund_task:
+        provider.release.set()
+        await refund_task
+        async with sessions() as db:
+            assert (await db.get(StarCharge, "charge")).state == "refund_uncertain"
+
     async with sessions() as db:
         assert await db.scalar(select(func.count()).select_from(Ledger)) == 0
 
+
+async def test_unaccepted_stars_receipt_cannot_authorize_completion(stars):
+    from app.core.models import Ledger, StarCharge
+    from app.orders.state import transition
+
+    order_id = await prepare()
+    now = datetime.now(UTC)
+    value = output().completion
+    async with sessions.begin() as db:
+        order = await lock_order(db, order_id)
+        transition(order, "queued")
+        transition(order, "processing")
+        transition(order, "delivering")
+        order.result = output().model_dump(mode="json")
+        await completions.stage_locked(db, order)
+        transition(order, "completed")
+        db.add(
+            StarCharge(
+                charge_id="unaccepted",
+                order_id=order_id,
+                user_id=1,
+                amount=20,
+                accepted=False,
+                payload="unaccepted-receipt",
+                state="paid",
+            )
+        )
+        assert order.status == "completed"
+
+    handler = AsyncMock()
+    with pytest.raises(ServiceError, match="payment_invalid"):
+        await completions.consume(order_id, 1, "example_v1", handler)
+    handler.assert_not_awaited()
+    async with sessions() as db:
+        assert (await db.get(OrderCompletion, order_id)).state == "pending"
+        assert await db.scalar(select(func.count()).select_from(Ledger)) == 0
 
 async def test_handoff_and_capture_roll_back_together(monkeypatch):
     order_id = await pending()
