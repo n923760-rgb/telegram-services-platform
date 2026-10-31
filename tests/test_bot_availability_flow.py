@@ -39,7 +39,10 @@ async def test_required_ai_selection_does_not_overwrite_draft_or_reserve(
     saved = await state.get_data()
     for slug in required:
         await callback("service:" + slug)
-        assert transport.messages[-1].text == tr("service_ai_unavailable", lang)
+        # Private tools reject the customer's role before revealing provider
+        # availability. Keep every registered required-AI tool in this sweep.
+        expected = "service_ai_unavailable" if registry.can_request(slug) else "unavailable"
+        assert transport.messages[-1].text == tr(expected, lang)
         assert await state.get_data() == saved and await state.get_state() == "collect"
     async with sessions() as db:
         assert await db.scalar(select(func.count(Order.id))) == 0

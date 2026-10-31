@@ -677,5 +677,19 @@
   "profile_scan_page": "Scan to open the page",
   "profile_link": "Page link",
   "publication_notice": "Everything in the preview, including contact details and links, becomes public on publication and may be shared and copied. Opening the preview does not publish it or authorize any renewal.",
-  "purchase_contract_review": "Service period: {months} calendar months\nPeriod starts: {start}\nPeriod ends: {end}\n{terms}"
+  "purchase_contract_review": "Service period: {months} calendar months\nPeriod starts: {start}\nPeriod ends: {end}\n{terms}",
+  "hosted_profile_name": "Profile page — administrative pilot",
+  "hosted_profile_description": "AI-designed profile page with contact buttons and whole-page QR. Administrative qualification only for now.",
+  "hosted_profile_language": "Choose the page language.",
+  "hosted_profile_person": "Enter your name or business name exactly as it should appear.",
+  "hosted_profile_role": "Describe your profession or business freely. There is no profession-template menu.",
+  "hosted_profile_intro": "Write an accurate introduction. We will not add qualifications or promises that you did not supply.",
+  "hosted_profile_phone": "Optional WhatsApp number: Saudi 05 mobile or international number including country code. We create its link automatically.",
+  "hosted_profile_links": "Optional contact/website links: one full HTTPS URL per line, or button label | URL. Maximum six total buttons including WhatsApp. Never include passwords.",
+  "hosted_profile_sections": "Optional sections: section title | body on each line, up to six sections. Include only information intended for public display.",
+  "hosted_profile_brief": "Describe your audience, visual style, colors and most important contact button. AI composes the page for your brief and profession while preserving supplied facts and exact links.",
+  "hosted_profile_qr": "Embed the QR in the design? Separate QR files are included in both options. It points to the whole page and is unavailable to visitors until you approve publication.",
+  "hosted_profile_qr_embedded": "Embed in design + separate files",
+  "hosted_profile_qr_separate": "Separate files only",
+  "hosted_profile_pilot_preview": "Unpublished administrative test draft with preview files and whole-page QR. Transfer to My pages, independent preview and publication consent are required before visitors can access it. Automatic transfer is currently disabled."
 }

@@ -1,12 +1,52 @@
 # Hosted customer profiles: foundation proposal
 
-Status: internal persistence/rendering and default-disabled owner/public HTTP implemented;
-purchase/generation integration and public activation remain incomplete.
+Status: internal persistence/rendering, default-disabled owner/public HTTP and an
+administrator-only purchase/generation pilot are implemented. Automatic transfer
+and customer activation remain incomplete.
 
 The independent [completed-order handoff](COMPLETION_HANDOFF.md) now provides a
-bounded atomic data transfer before ordinary result expiry. No page plugin,
-or dispatcher is connected to it yet. Reviewed purchase evidence and a concrete
-resolver are implemented below; customer profile intake remains unregistered.
+bounded atomic data transfer before ordinary result expiry. The private pilot
+emits that capability; no automatic dispatcher is connected yet. Reviewed purchase
+evidence and a concrete resolver are implemented below. Customer ordering is blocked.
+
+## Administrative qualification pilot (2026-10-31)
+
+`hosted_profile` v1 is registered with `admin_only=True`, `enabled_by_default=False`
+and mandatory AI. It is excluded from the customer portfolio and cannot be bought
+by a non-administrator even if its database enabled flag is set. No live flag,
+existing service price or provider configuration is changed by registration.
+The catalog label and result explicitly identify the administrative, unpublished
+pilot. It is not a customer launch or a new paid hosting promise.
+
+Its normal schema-driven intake collects name, free-form profession/business,
+literal introduction, optional sections, exact HTTPS contact links, an optional
+WhatsApp number, visual brief and QR embedding choice. A raw social URL gets a
+localized label only from its exact parsed host; arbitrary hosts remain generic.
+Saudi 05 and explicit international numbers use the existing documented WhatsApp
+normalizer. No endpoint is visited, no account ownership is asserted and AI never
+guesses handles, changes destinations or invents source facts. The design gateway
+receives source labels/indices, profession/content and the free-form brief; URLs
+are applied literally by native rendering. There is no profession-template menu.
+
+The plugin binds the reviewed six-month purchase contract through the existing
+chat/Mini App order flow. Its production runtime receives the job-scoped metered AI
+gateway, including bounded validation/quality review. It returns four owner-bound
+draft files (HTML, QR PNG/SVG and share PNG) plus the exact prepared completion.
+Separate QR files always exist; embedding is independent and the destination is
+the complete future hosted page. It returns 404 publicly until independent owner
+publication consent. A downloaded HTML preview is a separate private file and does
+not publish server content or establish consent.
+
+The existing runner persists results before delivery, stages the completion with
+capture, and retains the prepared content independently of ordinary file cleanup.
+Delivery retries reuse the same page identity/design/result, with no second AI
+generation. Synthetic qualification explicitly calls `transfer_purchased` to make
+a private draft, then reviews/consents separately. This manual internal test does
+not implement an automatic dispatcher or its crash recovery. Until that recovery,
+diagnostics, post-application refund/revocation policy, actual provider/mobile and
+backup/restore acceptance are complete, keep the service private and disabled.
+No actual provider request, Telegram delivery, server deploy or customer purchase
+was performed to qualify this code change.
 
 ## Approved six-month purchase contract (2026-10-31)
 

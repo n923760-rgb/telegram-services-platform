@@ -69,7 +69,9 @@ resolver. It is not registered with any dispatcher or customer purchase flow.
 The later [six-month purchase contract](HOSTED_PROFILES.md#approved-six-month-purchase-contract-2026-10-31)
 adds optional generic reviewed order evidence and a concrete DB-only resolver.
 `transfer_purchased` uses those immutable dates and terms instead of an arbitrary
-caller-created right. No customer plugin or dispatcher is registered yet.
+caller-created right. The later administrator-only `hosted_profile` pilot emits
+the prepared handoff through the normal runner. No customer activation or automatic
+dispatcher is installed; qualification invokes transfer explicitly.
 
 ## Hosted-page adapter still required
 
