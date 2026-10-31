@@ -18,7 +18,7 @@
   hosting terms, a DB-only publication projection and recovery/revocation policy.
   Publication remains a separate owner decision. No price, enablement or VPS change.
 - PASS LOCALLY: focused pure completion/provider contract checks, architecture gates,
-  lint/format/diff. Eight PostgreSQL lifecycle/concurrency/atomicity/recovery checks
+  lint/format/diff. Nine PostgreSQL lifecycle/concurrency/atomicity/recovery checks
   added; local DB unavailable. Full exact-head hosted tests/migration checks required.
   Actual-provider design, Telegram/mobile rendering and deployment NOT RUN.
 

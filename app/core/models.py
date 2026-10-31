@@ -151,6 +151,12 @@ class OrderCompletion(Base):
         CheckConstraint("state IN ('pending','applied','discarded')", name="completion_state"),
         CheckConstraint("(state = 'pending') = (payload IS NOT NULL)", name="completion_content"),
         CheckConstraint("expires_at > created_at", name="completion_expiry"),
+        Index(
+            "ix_order_completions_pending",
+            "expires_at",
+            "order_id",
+            postgresql_where=text("state = 'pending'"),
+        ),
     )
 
 

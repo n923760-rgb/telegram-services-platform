@@ -42,6 +42,7 @@ async def completed(monkeypatch):
 
 async def test_worker_handoff_survives_result_retention_and_is_consumed_once(monkeypatch):
     order_id, run = await completed(monkeypatch)
+    await completions.purge()  # Fresh pending data must survive an ordinary sweep.
     await execute_job({"delivery": Delivery()}, str(await job_for(order_id)))
     async with sessions.begin() as db:
         order = await db.get(Order, order_id)
@@ -84,6 +85,15 @@ async def test_delivery_retry_reuses_generation_and_only_completes_one_handoff(m
         assert (await db.get(Order, order_id)).status == "completed"
         assert await db.scalar(select(func.count()).select_from(OrderCompletion)) == 1
     assert run.await_count == 1 and delivery.send.await_count == 2
+
+
+async def test_ordinary_service_completion_does_not_create_handoff():
+    order_id = await pending()
+    await execute_job({"delivery": Delivery()}, str(await job_for(order_id)))
+    async with sessions() as db:
+        assert (await db.get(Order, order_id)).status == "completed"
+        assert (await balance(db, 1)).available == 900
+        assert await db.scalar(select(func.count()).select_from(OrderCompletion)) == 0
 
 
 async def test_handoff_and_capture_roll_back_together(monkeypatch):

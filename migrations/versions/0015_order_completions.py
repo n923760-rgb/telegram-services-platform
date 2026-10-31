@@ -30,6 +30,12 @@ def upgrade():
     )
     op.create_index("ix_order_completions_owner_id", "order_completions", ["owner_id"])
     op.create_index("ix_order_completions_expires_at", "order_completions", ["expires_at"])
+    op.create_index(
+        "ix_order_completions_pending",
+        "order_completions",
+        ["expires_at", "order_id"],
+        postgresql_where=sa.text("state = 'pending'"),
+    )
     op.execute("""CREATE FUNCTION protect_order_completion() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
       IF NEW.order_id IS DISTINCT FROM OLD.order_id
         OR NEW.owner_id IS DISTINCT FROM OLD.owner_id
