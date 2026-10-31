@@ -2,6 +2,7 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import func, select, text
@@ -103,6 +104,7 @@ async def test_ordinary_service_completion_does_not_create_handoff():
 )
 async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, stars, state):
     from app.core.models import Ledger, StarCharge
+    from app.payments.stars import request_refund
 
     order_id = await prepare()
     await pay(order_id)
@@ -110,12 +112,34 @@ async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, 
     monkeypatch.setattr(registry, "get", lambda *args: SimpleNamespace(run=run))
     await execute_job({"delivery": Delivery()}, str(await job_for(order_id)))
     async with sessions.begin() as db:
+        order = await lock_order(db, order_id)
         charge = await db.get(StarCharge, "charge")
-        if state == "unaccepted":
-            charge.accepted = False
-        else:
+        if state != "paid":
+            await request_refund(db, charge)
+            await db.flush()
+        if state in {"refunding", "refund_uncertain", "refunded"}:
+            charge.state = "refunding"
+            charge.lease_token = uuid4()
+            charge.lease_until = datetime.now(UTC) + timedelta(minutes=5)
+            await db.flush()
+        if state in {"refund_uncertain", "refunded"}:
             charge.state = state
-        assert (await db.get(Order, order_id)).status == "completed"
+            charge.lease_token = charge.lease_until = None
+        if state == "unaccepted":
+            # A separate unaccepted receipt must not substitute for the accepted
+            # charge now being refunded. Never rewrite an immutable receipt.
+            db.add(
+                StarCharge(
+                    charge_id="extra-unaccepted",
+                    order_id=order_id,
+                    user_id=1,
+                    amount=20,
+                    accepted=False,
+                    payload=charge.payload,
+                    state="paid",
+                )
+            )
+        assert order.status == "completed"
     handler = AsyncMock()
     if state == "paid":
         assert await completions.consume(order_id, 1, "example_v1", handler)
