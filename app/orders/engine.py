@@ -187,6 +187,9 @@ async def fail_locked(db, order, key="service_failed", cancelled=False):
 
 
 async def complete_locked(db, order):
+    from app.orders.completions import stage_locked
+
+    await stage_locked(db, order)
     await capture_order(db, order)
     transition(order, "completed")
 
