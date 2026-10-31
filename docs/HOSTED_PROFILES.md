@@ -5,7 +5,53 @@ purchase/generation integration and public activation remain incomplete.
 
 The independent [completed-order handoff](COMPLETION_HANDOFF.md) now provides a
 bounded atomic data transfer before ordinary result expiry. No page plugin,
-handler, dispatcher or hosting entitlement is connected to it yet.
+dispatcher or production hosting entitlement resolver is connected to it yet.
+
+## Private profile transfer (2026-10-31)
+
+The internal `app.publications.fulfillment` adapter joins job-scoped design to a
+private durable page. `generate` validates source, trusted page identity/origin and
+QR embedding before a metered design request, then prepares the existing native
+four-file snapshot as a bounded `profile_page_v1` completion capability. The
+injected AI gateway must be the original job-scoped metered gateway. Tests inject
+synthetic responses: no actual-provider design or billing qualification is claimed.
+
+`transfer` privately reads an owner-bound completed handoff and verifies every
+native export hash outside the DB transaction, with the existing render capacity
+guard. No AI is called during transfer, retry, owner review, consent or public read.
+The generic consumer then rechecks owner, ban, completed/payment eligibility and
+immutable handoff hash under locks. A refund/ban during native work rejects the
+projection. All DB handler writes and the applied/scrubbed handoff marker share one
+transaction. Failure leaves the original pending payload available for retry.
+
+A mandatory trusted DB-only `resolve_entitlement(db, locked_order)` must read
+durable owner-confirmed hosting rights and may allocate them in that transaction.
+There is **no production resolver or issuer yet**. The strict HostingEntitlement
+model is an adapter contract, not evidence that an entitlement exists. Never build
+it from customer/AI fields or infer it from an arbitrary completed order. It binds
+owner, order, opaque preassigned page ID, service/version, exact payment/price and
+purchase terms, a recorded hosting terms hash and explicit aware expiry. The
+resolver owns retention/verification of the original reviewed hosting evidence;
+this adapter does not manufacture a terms agreement or hosting duration. The
+thirty-day expiry in synthetic tests is a fixture, not a commercial offer.
+
+DB-only `create_in_transaction` and `revise_in_transaction` primitives preserve
+the public repository wrappers and allow the private draft plus first immutable
+revision to commit with the completion receipt without nested sessions. Allocation
+locks customer/order before publication. A deterministic internal revision operation
+binds the source order; a mismatched preallocated identity/expiry cannot replace an
+existing allocation. Initial projection requires revision zero, preserving any
+existing live/newer content. Replay acknowledges the already applied handoff and
+cannot recreate a deleted or stopped page. The owner must still review and consent
+separately before any publication; this path never calls publish or records consent.
+
+No new migration, registered service, menu, customer generation endpoint, automatic
+dispatcher, price, hosting term, provider request or live deployment is introduced.
+Before activation: implement the authoritative reviewed hosting purchase/right
+issuer and resolver, a recoverable dispatcher and pending diagnostics, refund-after-
+application policy, customer intake, real provider/mobile acceptance, versioned
+immutable exports and backup/restore. The adapter is deliberately uninstalled until
+those rights and lifecycle gates exist.
 Baseline: main 5c563f6970832db94a0ac2c16aaa6b7fb56ed05c, verified 2026-10-29.
 The owner asked which delivery model is preferable. Recommend a hosted public
 link with future revisions at the same URL. Hosting term and pricing remain

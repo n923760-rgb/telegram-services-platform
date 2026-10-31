@@ -1,3 +1,29 @@
+## Metered prepared profile to private draft transfer — 2026-10-31
+
+- Continue from main a56a3c3. Join the job-scoped design/prepared snapshot with
+  generic completion consumption and a private publication, without adding a
+  service-specific branch to orders/workers or enabling a customer purchase.
+- Validate destination/source/embedding before AI, then retain the literal source,
+  validated design and exact four-file hashes in the bounded completion capability.
+  Transfer re-renders exact native bytes outside the DB transaction, never AI.
+- Require a trusted DB-only resolver backed by explicit reviewed hosting rights;
+  no production issuer/resolver or default entitlement exists. Match owner/order,
+  preallocated page, service/version, payment/price/terms and aware expiry. A model
+  instance is not proof of a commercial right; arbitrary completed orders reject.
+- Add DB-only create/revise primitives while retaining repository wrappers. Private
+  allocation/revision and applied handoff marker commit together; failures roll
+  back all DB writes and preserve prepared data. Recheck owner/ban/refund after
+  native work. Concurrent/replayed transfer cannot duplicate or resurrect a page.
+- Keep publication consent independent. No automatic publish, migration, service,
+  menu, dispatcher, price/hosting duration, live provider call or VPS change.
+  Authoritative hosting checkout/rights, recovery/diagnostics, revocation policy,
+  immutable exports, real provider/mobile and backup/restore remain release gates.
+- Local pure generation/strict-right and prepared/repository contract checks pass;
+  PostgreSQL tests cover private projection, exact retry, concurrency, rollback,
+  entitlement mismatch, export drift and preflight owner/refund races. Local DB is
+  unavailable; require bounded focused and full exact-head hosted checks before
+  merge. No real-provider aesthetic, browser/Telegram or production qualification.
+
 ## Generic completed-order handoff — 2026-10-31
 
 - Continue from main a0153ed. Independent generic refactor required before a page

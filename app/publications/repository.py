@@ -14,7 +14,6 @@ from sqlalchemy import delete, func, select, text, update
 
 from app.core.db import sessions
 from app.core.models import (
-    Order,
     Publication,
     PublicationConsent,
     PublicationRevision,
@@ -143,72 +142,100 @@ async def editable(db, row):
 
 @transaction_retry
 async def create(owner_id, order_id, *, expires_at):
+    async with sessions.begin() as db:
+        return await create_in_transaction(db, owner_id, order_id, expires_at=expires_at)
+
+
+@transaction_retry
+async def revise(owner_id, publication_id, content, *, expected_revision, operation_id):
+    async with sessions.begin() as db:
+        return await revise_in_transaction(
+            db,
+            owner_id,
+            publication_id,
+            content,
+            expected_revision=expected_revision,
+            operation_id=operation_id,
+        )
+
+
+async def create_in_transaction(db, owner_id, order_id, *, expires_at, publication_id=None):
+    """DB-only; locks customer/order before publication allocation. No entitlement grant."""
     identity(owner_id)
     order_id = uuid(order_id)
     if not isinstance(expires_at, datetime) or expires_at.utcoffset() is None:
         raise PublicationError("invalid_input")
     expires_at = expires_at.astimezone(UTC)
-    async with sessions.begin() as db:
-        await db.execute(
-            text("SELECT pg_advisory_xact_lock(hashtextextended(:key,0))"),
-            {"key": f"publication-order:{order_id}"},
-        )
-        order = await db.get(Order, order_id)
-        user = await db.get(User, owner_id)
-        if order is None or order.user_id != owner_id or user is None or user.banned:
-            raise PublicationError("unavailable")
-        if order.status != "completed":
-            raise PublicationError("order_not_completed")
-        previous = await db.scalar(select(Publication).where(Publication.order_id == order_id))
-        if previous:
-            if previous.owner_id != owner_id or previous.expires_at != expires_at:
-                raise PublicationError("intent_changed")
-            return previous.id  # Never resurrect or extend on replay.
-        current = await now(db)
-        if not current < expires_at <= current + timedelta(days=366):
-            raise PublicationError("invalid_expiry")
-        row = Publication(owner_id=owner_id, order_id=order_id, expires_at=expires_at)
-        db.add(row)
-        await db.flush()
-        return row.id
+    publication_id = uuid(publication_id) if publication_id is not None else None
+    from app.orders.locking import lock_order
+
+    order = await lock_order(db, order_id)
+    await db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:key,0))"),
+        {"key": f"publication-order:{order_id}"},
+    )
+    user = await db.get(User, owner_id)
+    if order is None or order.user_id != owner_id or user is None or user.banned:
+        raise PublicationError("unavailable")
+    if order.status != "completed":
+        raise PublicationError("order_not_completed")
+    previous = await db.scalar(select(Publication).where(Publication.order_id == order_id))
+    if previous:
+        if (
+            previous.owner_id != owner_id
+            or previous.expires_at != expires_at
+            or (publication_id is not None and previous.id != publication_id)
+        ):
+            raise PublicationError("intent_changed")
+        return previous.id  # Never resurrect or extend on replay.
+    current = await now(db)
+    if not current < expires_at <= current + timedelta(days=366):
+        raise PublicationError("invalid_expiry")
+    row = Publication(owner_id=owner_id, order_id=order_id, expires_at=expires_at)
+    if publication_id is not None:
+        row.id = publication_id
+    db.add(row)
+    await db.flush()
+    return row.id
 
 
-@transaction_retry
-async def revise(owner_id, publication_id, content, *, expected_revision, operation_id):
+async def revise_in_transaction(
+    db, owner_id, publication_id, content, *, expected_revision, operation_id
+):
+    """DB-only immutable draft write; no rendering, provider or independent commit."""
     number(expected_revision)
     operation_id = uuid(operation_id)
     content, digest = content_snapshot(content)
-    async with sessions.begin() as db:
-        await operation_lock(db, "revision", operation_id)
-        row = await owned(db, publication_id, owner_id)
-        await editable(db, row)
-        previous = await db.scalar(
-            select(PublicationRevision).where(PublicationRevision.operation_id == operation_id)
-        )
-        if previous:
-            if (previous.publication_id, previous.base_revision, previous.content_hash) != (
-                row.id,
-                expected_revision,
-                digest,
-            ):
-                raise PublicationError("intent_changed")
-            return previous.number  # Never replace the latest revision on replay.
-        if row.latest_revision != expected_revision:
-            raise PublicationError("revision_changed")
-        if row.latest_revision >= MAX_REVISIONS:
-            raise PublicationError("revision_limit")
-        revision = PublicationRevision(
-            publication_id=row.id,
-            number=expected_revision + 1,
-            operation_id=operation_id,
-            base_revision=expected_revision,
-            content=content,
-            content_hash=digest,
-        )
-        db.add(revision)
-        row.latest_revision = revision.number
-        await db.flush()
-        return revision.number
+    await operation_lock(db, "revision", operation_id)
+    row = await owned(db, publication_id, owner_id)
+    await editable(db, row)
+    previous = await db.scalar(
+        select(PublicationRevision).where(PublicationRevision.operation_id == operation_id)
+    )
+    if previous:
+        if (previous.publication_id, previous.base_revision, previous.content_hash) != (
+            row.id,
+            expected_revision,
+            digest,
+        ):
+            raise PublicationError("intent_changed")
+        return previous.number  # Never replace the latest revision on replay.
+    if row.latest_revision != expected_revision:
+        raise PublicationError("revision_changed")
+    if row.latest_revision >= MAX_REVISIONS:
+        raise PublicationError("revision_limit")
+    revision = PublicationRevision(
+        publication_id=row.id,
+        number=expected_revision + 1,
+        operation_id=operation_id,
+        base_revision=expected_revision,
+        content=content,
+        content_hash=digest,
+    )
+    db.add(revision)
+    row.latest_revision = revision.number
+    await db.flush()
+    return revision.number
 
 
 async def review(owner_id, publication_id):
