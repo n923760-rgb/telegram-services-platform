@@ -133,7 +133,12 @@ async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, 
 
         provider = BlockingProvider()
         refund_task = asyncio.create_task(refunds({"stars": provider}))
-        await provider.started.wait()
+        try:
+            await asyncio.wait_for(provider.started.wait(), timeout=15)
+        except BaseException:
+            refund_task.cancel()
+            await asyncio.gather(refund_task, return_exceptions=True)
+            raise
     elif state == "refund_uncertain":
 
         class UncertainProvider:
@@ -150,23 +155,27 @@ async def test_stars_handoff_requires_current_accepted_paid_charge(monkeypatch, 
         await refunds({"stars": SuccessfulProvider()})
 
     handler = AsyncMock()
-    if state == "paid":
-        assert await completions.consume(order_id, 1, "example_v1", handler)
-        assert handler.await_count == 1
-    elif state == "refunded":
-        with pytest.raises(ServiceError, match="not_allowed"):
-            await completions.consume(order_id, 1, "example_v1", handler)
-        handler.assert_not_awaited()
-    else:
-        with pytest.raises(ServiceError, match="payment_invalid"):
-            await completions.consume(order_id, 1, "example_v1", handler)
-        handler.assert_not_awaited()
-        async with sessions() as db:
-            assert (await db.get(OrderCompletion, order_id)).state == "pending"
+    try:
+        async with asyncio.timeout(15):
+            if state == "paid":
+                assert await completions.consume(order_id, 1, "example_v1", handler)
+                assert handler.await_count == 1
+            elif state == "refunded":
+                with pytest.raises(ServiceError, match="not_allowed"):
+                    await completions.consume(order_id, 1, "example_v1", handler)
+                handler.assert_not_awaited()
+            else:
+                with pytest.raises(ServiceError, match="payment_invalid"):
+                    await completions.consume(order_id, 1, "example_v1", handler)
+                handler.assert_not_awaited()
+                async with sessions() as db:
+                    assert (await db.get(OrderCompletion, order_id)).state == "pending"
+    finally:
+        if refund_task:
+            provider.release.set()
+            await asyncio.wait_for(refund_task, timeout=15)
 
     if refund_task:
-        provider.release.set()
-        await refund_task
         async with sessions() as db:
             assert (await db.get(StarCharge, "charge")).state == "refund_uncertain"
 
