@@ -1,3 +1,21 @@
+## Administrative private-profile dispatch — 2026-11-01
+
+- Continue from main 0e91f4a. Add a minute/startup scan of pending prepared profile
+  handoffs, limited to ten per run and current administrators with immutable
+  purchase evidence. Require the existing publication configuration gate.
+- Reuse purchased transfer and its atomic owner/payment/hash checks. No AI,
+  charging, publication consent or public visibility change. Pending DB evidence
+  survives worker interruption; duplicate/concurrent consumption cannot recreate
+  an applied page. Failures retain evidence until its original processing expiry.
+- Use an in-memory keyset cursor only for fairness, never as a durable receipt.
+  Wrap at the end; failed rows do not starve later work during continuous operation.
+  Restart may repeat native verification, never AI or a committed projection.
+  Log only order IDs and fixed failure text; last-run counters are ephemeral.
+- Keep the service administrator-only and disabled by default. No customer launch,
+  live migration, price change or VPS deployment. Durable retry diagnostics/backoff,
+  post-projection revocation, actual provider/mobile and restore qualification remain
+  release gates. Add focused interruption/replay/private-only tests before full CI.
+
 ## Administrative hosted-profile pilot — 2026-10-31
 
 - Continue from verified main 9cb30d3. Register a disabled, administrator-only page

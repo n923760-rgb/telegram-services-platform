@@ -43,6 +43,8 @@ jobs:
           uv run ruff format --diff .
           uv run ruff format --check .
       - run: uv run alembic upgrade head
+      - name: Qualify administrative profile dispatch recovery
+        run: timeout 180 uv run pytest -vv tests/test_profile_dispatch.py tests/test_profile_dispatch_unit.py
       - name: Qualify administrative hosted profile pilot
         run: timeout 180 uv run pytest -vv app/services/hosted_profile/test_service.py tests/test_hosted_profile_flow.py tests/test_service_labels.py tests/test_bot_availability_flow.py
       - name: Qualify immutable purchase terms and shared confirmation
