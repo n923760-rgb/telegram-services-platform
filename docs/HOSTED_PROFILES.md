@@ -1,5 +1,25 @@
 # Hosted customer profiles: foundation proposal
 
+## Administrative automatic transfer (2026-11-01)
+
+The worker now scans pending prepared profile handoffs at startup and once per
+minute, at most ten per run. It is gated by PUBLICATIONS_ENABLED and current
+administrator membership, and only selects completed, unexpired, owner-matching,
+non-banned orders with purchase evidence. `transfer_purchased` rechecks payment,
+hashes, eligibility and dates under the existing consumption locks. It creates
+only a private draft; separate owner publication consent remains mandatory.
+
+The pending database row is the recoverable queue. A process interrupted before
+application leaves it pending; application and receipt commit atomically. Repeated
+or concurrent scans may repeat native verification but never AI or charging, and
+cannot duplicate a committed page. Failures are deferred until a later scan, without
+extending the original processing deadline. Existing expiry cleanup still applies.
+An in-memory keyset cursor prevents bad oldest rows from starving later work while
+the worker runs; it wraps and may reset after restart. This is not a durable retry
+schedule. Fixed-message logs contain only order IDs; last-run counters are ephemeral.
+Durable diagnostics/backoff and post-application refund policy remain launch gates.
+The following earlier milestones describe their original manual qualification.
+
 Status: internal persistence/rendering, default-disabled owner/public HTTP and an
 administrator-only purchase/generation pilot are implemented. Automatic transfer
 and customer activation remain incomplete.

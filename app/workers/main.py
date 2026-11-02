@@ -17,6 +17,7 @@ from app.providers.notifier import TelegramAdminChannel
 from app.providers.runtime import storage
 from app.providers.stars import TelegramStars
 from app.providers.telegram import create_bot
+from app.publications.dispatch import dispatch_profiles
 from app.services.registry import registry
 from app.workers.runner import deliver_confirmations, deliver_failures, dispatch, execute_job
 
@@ -46,6 +47,7 @@ class WorkerSettings:
         cron(cleanup_terminal_files, second={0, 20, 40}, run_at_startup=True),
         cron(cleanup, minute={0, 15, 30, 45}),
         cron(purge_completions, minute=set(range(60)), second=35, run_at_startup=True),
+        cron(dispatch_profiles, minute=set(range(60)), second=8, run_at_startup=True),
         cron(deliver_failures, second={10, 30, 50}),
         cron(flush_reports, minute=set(range(60)), second=15),
         cron(daily_report, hour=config().report_hour, minute=config().report_minute),
