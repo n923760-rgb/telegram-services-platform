@@ -186,7 +186,7 @@ async def test_upgrade_preserves_legacy_single_file_cache_and_admin_price(
     async with sessions.begin() as db:
         await registry.sync(db)
         service = await db.get(Service, "text_editing")
-        assert service.version == "2" and service.enabled
+        assert service.version == "3" and service.enabled
         assert (service.price_halala, service.price_stars) == (777, 25)
 
     async def forbidden(*args):
@@ -240,3 +240,40 @@ async def test_changed_contact_after_repair_releases_credit(tmp_path, monkeypatc
         funds = await balance(db, 1)
         assert (funds.available, funds.reserved) == (1000, 0)
     assert provider.calls == 2 and not delivery.results and not delivery.files
+
+
+@pytest.mark.parametrize("repair", [False, True])
+async def test_swapped_values_repair_or_release_without_delivering_invalid_output(
+    tmp_path, monkeypatch, repair
+):
+    source = "please sends order 00123 for 125.50 SAR"
+    good = "Please send order 00123 for 125.50 SAR"
+    swapped = "Please send order 125.50 for 00123 SAR"
+
+    def plan(text):
+        return json.dumps({"segments": [{"id": 1, "text": text}]})
+
+    _, provider, delivery, ctx, price = await setup(
+        "text_editing",
+        [plan(swapped), plan(good if repair else swapped), "unused"],
+        tmp_path,
+        monkeypatch,
+    )
+    oid = await submit(
+        1, "text_editing", {"text": source, "mode": "proofread"}, price, "swapped-values"
+    )
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    async with sessions() as db:
+        assert (await db.get(Order, oid)).status == ("completed" if repair else "failed")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if repair else 1000, 0)
+    assert provider.calls == 2 and provider.responses == ["unused"]
+    if repair:
+        assert len(delivery.results) == 1 and delivery.results[0].text == good
+        assert dict(delivery.files)["revision.txt"].decode() == good
+        assert source in dict(delivery.files)["changes.txt"].decode()
+    else:
+        assert not delivery.results and not delivery.files
+    assert not list(tmp_path.glob("[0-9]*/*/*"))

@@ -9,7 +9,7 @@ from app.services.text_editing.schema import Inputs, render, revision_schema
 
 
 class TextEditing(BaseService):
-    version = "2"
+    version = "3"
     slug = "text_editing"
     menu_order = 20
     category = "text"
