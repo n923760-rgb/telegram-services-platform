@@ -200,3 +200,40 @@ def test_intake_only_requests_tone_for_rewriting():
         )
     with pytest.raises(ServiceError):
         TextEditing.input_schema.validate_inputs({"text": "source", "mode": "rewrite"})
+
+
+@pytest.mark.parametrize("mode", ["proofread", "rewrite"])
+@pytest.mark.parametrize(
+    "source,edited",
+    [
+        ("Order 00123 has amount 125.50 SAR.", "Order 125.50 has amount 00123 SAR."),
+        ("الطلب ٠٠١٢٣ بمبلغ ١٢٥٫٥٠ ريال", "الطلب ١٢٥٫٥٠ بمبلغ ٠٠١٢٣ ريال"),
+        (
+            "To a@example.invalid, copy b@example.invalid",
+            "To b@example.invalid, copy a@example.invalid",
+        ),
+        (
+            "Contact a@example.invalid for order 00123",
+            "Order 00123: contact a@example.invalid",
+        ),
+        (
+            "Source https://example.invalid/a?x=1 then https://example.invalid/b?x=2",
+            "Source https://example.invalid/b?x=2 then https://example.invalid/a?x=1",
+        ),
+    ],
+)
+def test_protected_values_cannot_be_reordered_within_a_source_line(mode, source, edited):
+    schema = revision_schema(Inputs.parse({"text": source, "mode": mode}))
+    with pytest.raises(ValidationError, match="in order"):
+        schema.model_validate({"segments": [{"id": 1, "text": edited}]})
+
+
+def test_repeated_values_and_numeric_contacts_allow_ordinary_prose_corrections():
+    source = "please sends 00123 to a1@example.invalid then 00123 via https://example.invalid/2?q=3"
+    revised = "Please send 00123 to a1@example.invalid then 00123 via https://example.invalid/2?q=3"
+    values = Inputs.parse({"text": source, "mode": "proofread"})
+    schema = revision_schema(values)
+    assert (
+        render(values, schema.model_validate({"segments": [{"id": 1, "text": revised}]})) == revised
+    )
+    assert "example.invalid" not in json.dumps(schema.model_json_schema())

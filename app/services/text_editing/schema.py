@@ -1,6 +1,5 @@
 import json
 import re
-from collections import Counter
 from typing import Annotated, Literal
 
 from pydantic import Field, StrictInt, StringConstraints, ValidationError, model_validator
@@ -60,12 +59,15 @@ class Revision(StrictModel):
 CONTACT_TOKEN = re.compile(
     r"https?://[^\s<>]+|www\.[^\s<>]+|[\w.+-]+@[\w.-]+\.[\w-]+", re.IGNORECASE
 )
+PROTECTED_TOKEN = re.compile(
+    f"(?:{CONTACT_TOKEN.pattern})|(?:{NUMERIC_TOKEN.pattern})", re.IGNORECASE
+)
 
 
 def revision_schema(values):
-    expected = {i: Counter(NUMERIC_TOKEN.findall(line)) for i, line in enumerate(values.lines(), 1)}
-
-    contacts = {i: Counter(CONTACT_TOKEN.findall(line)) for i, line in enumerate(values.lines(), 1)}
+    # Contacts must match before their embedded numbers. A single ordered sequence
+    # also rejects moving a number across a contact while keeping both sublists intact.
+    expected = {i: PROTECTED_TOKEN.findall(line) for i, line in enumerate(values.lines(), 1)}
 
     class SourceRevision(Revision):
         @model_validator(mode="after")
@@ -77,10 +79,10 @@ def revision_schema(values):
                 DocumentInputs.printable_text(segment.text)
                 if "\n" in segment.text or "\r" in segment.text:
                     raise ValueError("one edited line per source ID")
-                if Counter(NUMERIC_TOKEN.findall(segment.text)) != expected[segment.id]:
-                    raise ValueError("preserve source numeric tokens per line verbatim")
-                if Counter(CONTACT_TOKEN.findall(segment.text)) != contacts[segment.id]:
-                    raise ValueError("preserve source contact tokens per line verbatim")
+                if PROTECTED_TOKEN.findall(segment.text) != expected[segment.id]:
+                    raise ValueError(
+                        "preserve source numeric/contact tokens per line in order verbatim"
+                    )
             if len(render(values, self)) > 24000:
                 raise ValueError("editing output limit")
             return self

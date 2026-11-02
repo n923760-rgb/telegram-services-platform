@@ -1,3 +1,14 @@
+## Text editing protected-token order — 2026-11-02
+
+- FACT: reproduced same-line numeric/contact swaps accepted by the baseline schema.
+- CHANGE: text editing v3 preserves a combined ordered sequence of numeric/contact
+  tokens per source line, with one existing repair allowance and no price changes.
+- PASS locally: 106 focused DB-independent tests, repository lint/format/diff checks.
+- NOT RUN locally: PostgreSQL lifecycle/full suite, live provider/client and deployment.
+- Require hosted regression evidence and real editing acceptance before qualification;
+  summary follows editing in the owner's sequential service review.
+- Evidence: [protected-token order report](REPORTS/2026-11-02-editing-protected-order.md).
+
 ## Administrative private-profile dispatch — 2026-11-01
 
 - Continue from main 0e91f4a. Add a minute/startup scan of pending prepared profile
