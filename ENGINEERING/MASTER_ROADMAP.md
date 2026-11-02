@@ -1,3 +1,13 @@
+## Acceptance effective-worker source — 2026-11-02
+
+- FACT: the existing acceptance ZIP records checkout HEAD, not worker-image source.
+- CHANGE: compare effective application/migration/build-declaration file hashes in
+  preflight and actual execution; preserve manifest/verification evidence with results.
+- PASS locally: 19 focused manifest/wrapper tests, lint/format/shell syntax/diff checks.
+- Require real built-worker CI and deployment source checks before live editing
+  qualification. Installed dependency/native/provider/mobile evidence remains separate.
+- Evidence: [acceptance source report](REPORTS/2026-11-02-acceptance-worker-source.md).
+
 ## Text editing protected-token order — 2026-11-02
 
 - FACT: reproduced same-line numeric/contact swaps accepted by the baseline schema.

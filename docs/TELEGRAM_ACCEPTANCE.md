@@ -23,6 +23,35 @@ them with `/enable SERVICE_SLUG` on this test installation.
 
 ## Customer journeys
 
+### Sequential editing qualification and worker source
+
+Qualify text editing before moving to summary. Use the existing isolated runner on
+the reviewed installation with `editing_proofread editing_rewrite`, retaining its
+current production-provider pause requirement. The wrapper never pauses/resumes
+production automatically. A staging installation avoids interrupting live work.
+
+The runner now compares effective worker files with a clean checkout manifest
+before creating the acceptance database and again inside the actual execution
+container before migrations or provider calls. A mismatch stops the run; inspect
+the selected Compose worker image and rebuild it through the deployment procedure.
+Do not bypass the check or mount all current application files over an old image.
+
+Retain `source-commit.txt`, `source-manifest.json` and `source-verification.json`
+from the results ZIP. They bind the effective application/migration source and
+dependency/build declaration files to the checkout. They do not prove installed
+dependency versions, system libraries, deployment health or professional quality.
+Earlier ZIPs containing only `source-commit.txt` identify the checkout, not the
+source of the worker image; artifact hashes alone do not close that gap.
+
+Review both returned `revision.txt` and `changes.txt` against each original. Check
+actual corrections, formal Arabic register, names, negations, uncertainty, amounts,
+leading zeros, recipient/copy addresses and deadlines. Editing v3 retains protected
+numeric/contact order; a reordered but otherwise faithful clause may require the
+existing repair. This literal check cannot prove semantic fidelity by itself.
+Inspect delivery and opening on the target Telegram/mobile client. Record actual
+provider calls/cost assumptions and final reserved credit. Mark editing qualified
+only after these checks, not from a passing mocked CI run.
+
 First send `/start` from the test customer. From the administrator account, use
 `/addbalance TEST_USER_ID 50` to issue test credit, then record `/balance TEST_USER_ID`.
 The placeholder is the dedicated customer's numeric Telegram ID. This is test credit.

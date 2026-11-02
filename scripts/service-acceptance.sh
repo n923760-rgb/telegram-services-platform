@@ -13,20 +13,21 @@ test -z "$(git status --porcelain)"
 acceptance_mounts=(
   -v "$PWD/app/ops/service_acceptance.py:/opt/app/app/ops/service_acceptance.py:ro"
   -v "$PWD/app/ops/acceptance_cases.py:/opt/app/app/ops/acceptance_cases.py:ro"
+  -v "$PWD/app/ops/acceptance_source.py:/opt/app/app/ops/acceptance_source.py:ro"
 )
 # Git checkouts made under umask 077 may be unreadable by the worker UID.
 # Probe the exact read-only mounts before creating an acceptance DB or backup.
 if ! docker compose run --rm --no-deps -T "${acceptance_mounts[@]}" worker python -c '
 from pathlib import Path
 try:
-    for name in ("service_acceptance.py", "acceptance_cases.py"):
+    for name in ("service_acceptance.py", "acceptance_cases.py", "acceptance_source.py"):
         with (Path("/opt/app/app/ops") / name).open("rb") as source:
             source.read(1)
 except OSError:
     raise SystemExit(1)
 ' </dev/null; then
   echo 'STOP: worker cannot read acceptance mounts, or its preflight could not start.' >&2
-  echo 'Check Docker output and run: chmod 0644 app/ops/service_acceptance.py app/ops/acceptance_cases.py' >&2
+  echo 'Check Docker output and run: chmod 0644 app/ops/service_acceptance.py app/ops/acceptance_cases.py app/ops/acceptance_source.py' >&2
   exit 1
 fi
 acceptance_cases=$(python3 - "$@" <<'PY'
@@ -54,14 +55,34 @@ if [ "$acceptance_native_only" != true ] && [ "$acceptance_pause_before" != true
   echo 'STOP: live-provider acceptance requires PROVIDER_PAUSED=true. For explicitly selected non-AI cases use --native-only.' >&2
   exit 1
 fi
+acceptance_source_tmp=$(mktemp -d)
+acceptance_source_cleanup() {
+  rm -f "$acceptance_source_tmp/manifest.json" "$acceptance_source_tmp/verified.json"
+  rmdir "$acceptance_source_tmp"
+}
+trap acceptance_source_cleanup EXIT
+python3 app/ops/acceptance_source.py create > "$acceptance_source_tmp/manifest.json"
+# Only source paths/hashes are exposed; no environment or configuration values.
+chmod 0644 "$acceptance_source_tmp/manifest.json"
+acceptance_mounts+=(
+  -v "$acceptance_source_tmp/manifest.json:/opt/acceptance-source.json:ro"
+)
+if ! docker compose run --rm --no-deps -T "${acceptance_mounts[@]}" \
+  worker python -m app.ops.acceptance_source verify /opt/acceptance-source.json \
+  </dev/null > "$acceptance_source_tmp/verified.json"; then
+  echo 'STOP: worker source differs from the checkout, or verification could not start. Rebuild/inspect the selected worker image before acceptance.' >&2
+  exit 1
+fi
 acceptance_id=$(python3 -c 'import secrets; print(secrets.token_hex(6))')
 acceptance_db="svc_${acceptance_id}_acceptance_test"
 acceptance_backup=$(mktemp -d /home/aidev/service-acceptance-XXXXXXXX)
 printf '%s\n' "$acceptance_db" > "$acceptance_backup/database-name.txt"
 git rev-parse HEAD > "$acceptance_backup/source-commit.txt"
+cp "$acceptance_source_tmp/manifest.json" "$acceptance_backup/source-manifest.json"
+cp "$acceptance_source_tmp/verified.json" "$acceptance_backup/source-verification.json"
 echo "BACKUP: $acceptance_backup"
 echo "TEST_DATABASE: $acceptance_db"
-trap 'acceptance_exit=$?; echo "ACCEPTANCE_EXIT=$acceptance_exit BACKUP=$acceptance_backup DATABASE=$acceptance_db"' EXIT
+trap 'acceptance_exit=$?; acceptance_source_cleanup; echo "ACCEPTANCE_EXIT=$acceptance_exit BACKUP=$acceptance_backup DATABASE=$acceptance_db"' EXIT
 
 docker compose exec -T postgres sh -c \
   'PGPASSWORD="$POSTGRES_PASSWORD" exec createdb -U "$POSTGRES_USER" --maintenance-db="$POSTGRES_DB" "$1"' sh "$acceptance_db" </dev/null
@@ -78,6 +99,10 @@ import json
 import re
 import sys
 from pathlib import Path
+from app.ops.acceptance_source import verify
+
+# Recheck this actual execution container, before importing application/DB/provider code.
+verify(Path.cwd(), json.loads(Path('/opt/acceptance-source.json').read_text()))
 from sqlalchemy.engine import make_url
 from app.core.settings import config
 
@@ -130,8 +155,9 @@ from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 root = Path(sys.argv[1])
 with ZipFile(root / 'service-acceptance-results.zip', 'w', ZIP_DEFLATED) as archive:
-    # Checkout provenance, not proof of which source built the worker image.
     archive.write(root / 'source-commit.txt', 'source-commit.txt')
+    archive.write(root / 'source-manifest.json', 'source-manifest.json')
+    archive.write(root / 'source-verification.json', 'source-verification.json')
     for path in sorted((root / 'results').rglob('*')):
         if path.is_file():
             archive.write(path, path.relative_to(root))
