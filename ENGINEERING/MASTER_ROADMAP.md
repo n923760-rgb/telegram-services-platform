@@ -1,3 +1,13 @@
+## Acceptance effective-worker source — 2026-11-02
+
+- FACT: the existing acceptance ZIP records checkout HEAD, not worker-image source.
+- CHANGE: compare effective application/migration/build-declaration file hashes in
+  preflight and actual execution; preserve manifest/verification evidence with results.
+- PASS locally: 19 focused manifest/wrapper tests, lint/format/shell syntax/diff checks.
+- Require real built-worker CI and deployment source checks before live editing
+  qualification. Installed dependency/native/provider/mobile evidence remains separate.
+- Evidence: [acceptance source report](REPORTS/2026-11-02-acceptance-worker-source.md).
+
 ## Administrative private-profile dispatch — 2026-11-01
 
 - Continue from main 0e91f4a. Add a minute/startup scan of pending prepared profile

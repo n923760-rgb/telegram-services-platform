@@ -42,6 +42,8 @@ jobs:
         run: |
           uv run ruff format --diff .
           uv run ruff format --check .
+      - name: Qualify acceptance source and wrapper preflight
+        run: timeout 60 uv run pytest -vv tests/test_acceptance_source_unit.py tests/test_acceptance_wrapper_unit.py
       - run: uv run alembic upgrade head
       - name: Qualify administrative profile dispatch recovery
         run: timeout 180 uv run pytest -vv tests/test_profile_dispatch.py tests/test_profile_dispatch_unit.py
@@ -61,7 +63,10 @@ jobs:
         env:
           CI_PYTHON_IMAGE: ${{ steps.images.outputs.python_image }}
         run: |
+          uv run python app/ops/acceptance_source.py create > "$RUNNER_TEMP/acceptance-source.json"
+          chmod 0644 "$RUNNER_TEMP/acceptance-source.json"
           docker build --pull=false --build-arg "PYTHON_IMAGE=$CI_PYTHON_IMAGE" --target document-worker -t services-document-worker .
+          docker run --rm --network none -v "$RUNNER_TEMP/acceptance-source.json:/opt/acceptance-source.json:ro" --entrypoint python services-document-worker -m app.ops.acceptance_source verify /opt/acceptance-source.json
           docker run --rm -i --network none --entrypoint python services-document-worker - <<'PY'
           import asyncio
           import os
