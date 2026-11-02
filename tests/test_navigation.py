@@ -86,9 +86,11 @@ async def test_miniapp_start_and_help_use_current_payment_mode(flow, monkeypatch
     monkeypatch.setattr(config(), "miniapp_intake_enabled", True)
     monkeypatch.setattr(config(), "stars_enabled", stars)
     await message("/start")
-    welcome, entry = transport.sent_methods[-2:]
+    welcome = transport.sent_methods[-1]
     assert welcome.text == tr("miniapp_stars_welcome" if stars else "miniapp_welcome", lang)
-    assert [len(row) for row in welcome.reply_markup.keyboard] == [2, 2]
+    assert welcome.reply_markup.remove_keyboard
+    entry = transport.reply_markup_edits[-1]
+    assert entry.message_id == transport.messages[-1].message_id
     assert entry.reply_markup.inline_keyboard[0][0].web_app.url == config().miniapp_url
     await message("/help")
     assert transport.sent_methods[-1].text == tr(

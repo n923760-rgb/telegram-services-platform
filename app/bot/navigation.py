@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from sqlalchemy import select
 
 from app.bot.availability import ai_admission_available
@@ -43,6 +43,25 @@ def create_router():
     async def home(message, state, user_id, lang):
         await register(user_id)
         await leave_support(state)
+        if miniapp_services_enabled():
+            # Remove the old persistent keyboard before presenting one app entry.
+            # Telegram cannot remove a reply keyboard and attach inline controls
+            # in the same message; remove it once, then edit that same message.
+            welcome = tr(
+                "miniapp_stars_welcome" if config().stars_enabled else "miniapp_welcome", lang
+            )
+            entry = await message.answer(welcome, reply_markup=ReplyKeyboardRemove())
+            items = await section_controls(state, lang)
+            items = [item for item in items if item[1] != "menu:home"]
+            items.extend([(tr("support", lang), "menu:support"), (tr("help", lang), "menu:help")])
+            if user_id in config().admin_ids:
+                items.append((tr("admin_panel", lang), "admin:home"))
+            await message.bot.edit_message_reply_markup(
+                chat_id=entry.chat.id,
+                message_id=entry.message_id,
+                reply_markup=miniapp_launch(lang, items),
+            )
+            return
         await message.answer(
             tr(
                 ("miniapp_stars_welcome" if config().stars_enabled else "miniapp_welcome")
@@ -52,10 +71,6 @@ def create_router():
             ),
             reply_markup=home_keyboard(lang, admin=user_id in config().admin_ids),
         )
-        if miniapp_services_enabled():
-            await message.answer(
-                tr("miniapp_services_entry", lang), reply_markup=miniapp_launch(lang)
-            )
         if (await state.get_data()).get("key"):
             await message.answer(
                 tr("draft_saved", lang),
@@ -74,7 +89,7 @@ def create_router():
 
     async def show_services(message, state, lang, *, user_id, category=None, page=0):
         await leave_support(state)
-        if category is None and miniapp_services_enabled():
+        if miniapp_services_enabled():
             await message.answer(
                 tr("miniapp_services_entry", lang),
                 reply_markup=miniapp_launch(lang, await section_controls(state, lang)),

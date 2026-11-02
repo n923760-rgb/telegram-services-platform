@@ -9,7 +9,15 @@ from sqlalchemy import func, select
 from app.bot.availability import declared_ai_choices, mandatory_ai_unavailable, mixed_ai_unavailable
 from app.bot.draft_edit import abort_edit, accepted_draft, advance, begin_edit, next_index
 from app.bot.order_review import confirmation_text, field_label
-from app.bot.ui import buttons, home_keyboard, leave_support, menu
+from app.bot.ui import (
+    buttons,
+    home_keyboard,
+    leave_support,
+    menu,
+    miniapp_launch,
+    miniapp_services_enabled,
+    section_controls,
+)
 from app.core.db import sessions
 from app.core.display import order_reference
 from app.core.i18n import tr
@@ -137,6 +145,12 @@ def create_router():
     @router.callback_query(F.data.startswith("service:"))
     async def choose(callback: CallbackQuery, state: FSMContext, lang: str = "ar"):
         await callback.answer()
+        if miniapp_services_enabled():
+            await callback.message.answer(
+                tr("miniapp_services_entry", lang),
+                reply_markup=miniapp_launch(lang, await section_controls(state, lang)),
+            )
+            return
         await choose_service(
             callback.message, state, callback.from_user.id, callback.data.split(":", 1)[1], lang
         )

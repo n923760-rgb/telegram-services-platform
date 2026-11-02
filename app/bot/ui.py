@@ -7,6 +7,7 @@ from aiogram.types import (
     KeyboardButton,
     Message,
     ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
     WebAppInfo,
 )
 
@@ -82,6 +83,8 @@ def menu_label(key, lang):
 
 
 def home_keyboard(lang="ar", *, admin=False):
+    if miniapp_services_enabled():
+        return ReplyKeyboardRemove()
     items = home_items()
     rows = [
         [KeyboardButton(text=menu_label(key, lang)) for key in items[i : i + 2]]
