@@ -45,6 +45,8 @@ jobs:
       - name: Qualify acceptance source and wrapper preflight
         run: timeout 60 uv run pytest -vv tests/test_acceptance_source_unit.py tests/test_acceptance_wrapper_unit.py
       - run: uv run alembic upgrade head
+      - name: Qualify text editing protected values and recovery
+        run: timeout 180 uv run pytest -vv app/services/text_editing/test_service.py tests/test_editing_token_order_unit.py tests/test_text_editing_flow.py tests/test_text_professional_quality_unit.py tests/test_text_changes_unit.py
       - name: Qualify administrative profile dispatch recovery
         run: timeout 180 uv run pytest -vv tests/test_profile_dispatch.py tests/test_profile_dispatch_unit.py
       - name: Qualify administrative hosted profile pilot

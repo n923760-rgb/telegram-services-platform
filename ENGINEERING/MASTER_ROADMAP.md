@@ -8,6 +8,17 @@
   qualification. Installed dependency/native/provider/mobile evidence remains separate.
 - Evidence: [acceptance source report](REPORTS/2026-11-02-acceptance-worker-source.md).
 
+## Text editing protected-token order — 2026-11-02
+
+- FACT: reproduced same-line numeric/contact swaps accepted by the baseline schema.
+- CHANGE: text editing v3 preserves a combined ordered sequence of numeric/contact
+  tokens per source line, with one existing repair allowance and no price changes.
+- PASS locally: 106 focused DB-independent tests, repository lint/format/diff checks.
+- NOT RUN locally: PostgreSQL lifecycle/full suite, live provider/client and deployment.
+- Require hosted regression evidence and real editing acceptance before qualification;
+  summary follows editing in the owner's sequential service review.
+- Evidence: [protected-token order report](REPORTS/2026-11-02-editing-protected-order.md).
+
 ## Administrative private-profile dispatch — 2026-11-01
 
 - Continue from main 0e91f4a. Add a minute/startup scan of pending prepared profile
@@ -2420,6 +2431,19 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
   opening/edit/save/reopen still must confirm the fix; no repaired-output claim is made.
 - NOT RUN: Final hosted checks and post-fix native Excel/provider qualification.
 - Evidence: [filter interoperability report](REPORTS/2026-10-09-excel-filter-ownership.md).
+
+## Chat/app consolidation and sequential qualification — 2026-11-02
+
+- FACT: source-bound owner archive on main `a46fc6f` reports 11 native cases PASS
+  across nine services; all 12 artifact hashes verified. No provider or mobile quality
+  qualification is implied.
+- CHANGE: one app-led welcome, removal of persistent legacy keyboards, compatible
+  redirects for old service/category buttons, saved-draft recovery and admin access.
+- PASS locally: 145 selected DB-independent tests, whole-repository lint/format.
+- NEXT: qualify text editing first with actual provider outputs and source review;
+  then summary, translation and remaining services in the recorded order.
+- NOT RUN locally: full PostgreSQL suite, live Telegram/provider and deployment.
+- Evidence and sequence: [navigation and qualification report](REPORTS/2026-11-02-chat-app-navigation.md).
 
 ## Architecture and state owners
 

@@ -53,3 +53,15 @@ describes the checkout; effective mounted files are the actual verified executio
 - NOT RUN locally: Docker build/run, PostgreSQL acceptance and actual provider calls.
   Hosted CI must check the real built worker before merge and the selected deployment
   must pass this check before the next actual editing acceptance run.
+
+## Integration follow-up — 2026-11-03
+
+- PASS hosted: standalone head `045b134` completed its full workflow, including the
+  new source check against the built document-worker image.
+- Main now includes merged navigation #186 and text editing #187 at `5931fa6`.
+  Resolve only the overlapping roadmap entries while preserving both phase records;
+  workflow changes combine without conflicts.
+- PASS locally on combined source: 273 selected navigation, editing, acceptance,
+  source/wrapper and architecture checks; repository lint/format and shell syntax.
+- Require a fresh hosted workflow on this integrated head before merging #188.
+  Actual VPS/provider/client qualification remains NOT RUN here.
