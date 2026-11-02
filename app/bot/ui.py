@@ -15,7 +15,7 @@ from app.core.i18n import tr
 from app.core.settings import config
 
 HOME_ITEMS = ("services", "orders", "balance", "support", "language", "help")
-APP_HOME_ITEMS = ("services", "orders", "support", "help")
+APP_HOME_ITEMS = ("support", "help")
 
 
 def miniapp_services_enabled():
@@ -75,6 +75,8 @@ def buttons(items, columns=1, *, separate_last=False):
 
 
 def menu(lang="ar"):
+    if miniapp_services_enabled():
+        return miniapp_launch(lang, [(tr(key, lang), f"menu:{key}") for key in APP_HOME_ITEMS])
     return buttons([(menu_label(key, lang), f"menu:{key}") for key in home_items()], columns=2)
 
 

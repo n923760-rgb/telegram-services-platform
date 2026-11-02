@@ -17,6 +17,9 @@ welcome message, remove the previous persistent reply keyboard and attach an
 authenticated inline Open app button to that same message. Support and Help remain;
 saved bot drafts have Resume and administrators retain their authorized panel entry.
 Shared keyboard resets also remove old controls instead of restoring duplicates.
+The shared inline recovery menu uses the same authenticated Open app entry with
+Support/Help. Cancelling a draft, a missing Resume target, a service failure or an
+unknown message no longer reintroduces legacy Services/My orders controls.
 
 Old category/service callbacks route to the app, without querying the legacy catalog
 or replacing an existing draft. Explicit request links, follow-up journeys and Resume
@@ -55,6 +58,10 @@ partial native success into launch readiness.
   bot information and Mini App entry tests, three architecture gates and text
   editing/translation/summary service tests. No DB fixture was used in this selection.
 - PASS: whole-repository ruff lint/format and git diff whitespace check.
+- PASS after recovery-menu follow-up: 58 targeted local navigation/information,
+  authenticated-entry and architecture checks. Includes Arabic/English unknown
+  input, empty cancellation and saved-draft cancellation returning directly to
+  the app without legacy menu controls.
 - NOT RUN locally: PostgreSQL integration journeys, migration checks and full suite;
   PostgreSQL/Redis/Docker executables are unavailable in this workspace. An initial
   DB-fixture invocation failed for missing disposable DB, not a successful DB test.
