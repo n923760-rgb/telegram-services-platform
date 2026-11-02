@@ -21,14 +21,18 @@ def test_compact_home_requires_configured_intake_and_preserves_admin(
     monkeypatch.setattr(config(), "stars_enabled", False)
     expected = APP_HOME_ITEMS if url and intake else HOME_ITEMS
     keyboard = home_keyboard(lang, admin=True)
-    assert [b.text for row in keyboard.keyboard[:-1] for b in row] == [
-        tr(k, lang) for k in expected
-    ]
-    assert keyboard.keyboard[-1][0].text == tr("admin_panel", lang)
-    assert all(b.web_app is None for row in keyboard.keyboard for b in row)
-    assert [b.callback_data for row in menu(lang).inline_keyboard for b in row] == [
-        f"menu:{k}" for k in expected
-    ]
+    if url and intake:
+        assert keyboard.remove_keyboard
+    else:
+        assert [b.text for row in keyboard.keyboard[:-1] for b in row] == [
+            tr(k, lang) for k in expected
+        ]
+        assert keyboard.keyboard[-1][0].text == tr("admin_panel", lang)
+        assert all(b.web_app is None for row in keyboard.keyboard for b in row)
+    controls = [b for row in menu(lang).inline_keyboard for b in row]
+    if url and intake:
+        assert controls[0].web_app.url == url
+    assert [b.callback_data for b in controls if b.callback_data] == [f"menu:{k}" for k in expected]
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])

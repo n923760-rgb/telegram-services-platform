@@ -2422,6 +2422,19 @@ Reconciled with live GitHub on 2026-10-08. This roadmap is not a production rele
 - NOT RUN: Final hosted checks and post-fix native Excel/provider qualification.
 - Evidence: [filter interoperability report](REPORTS/2026-10-09-excel-filter-ownership.md).
 
+## Chat/app consolidation and sequential qualification — 2026-11-02
+
+- FACT: source-bound owner archive on main `a46fc6f` reports 11 native cases PASS
+  across nine services; all 12 artifact hashes verified. No provider or mobile quality
+  qualification is implied.
+- CHANGE: one app-led welcome, removal of persistent legacy keyboards, compatible
+  redirects for old service/category buttons, saved-draft recovery and admin access.
+- PASS locally: 145 selected DB-independent tests, whole-repository lint/format.
+- NEXT: qualify text editing first with actual provider outputs and source review;
+  then summary, translation and remaining services in the recorded order.
+- NOT RUN locally: full PostgreSQL suite, live Telegram/provider and deployment.
+- Evidence and sequence: [navigation and qualification report](REPORTS/2026-11-02-chat-app-navigation.md).
+
 ## Architecture and state owners
 
 Use registry-driven plugins and generic bot intake. Purchases belong to orders, execution
