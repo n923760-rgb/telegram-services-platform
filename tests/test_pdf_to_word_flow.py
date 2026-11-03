@@ -89,7 +89,7 @@ async def test_missing_context_refusal_repairs_or_releases_once_with_settled_cos
     calls = 3 if recover else 2
     async with sessions() as db:
         order = await db.get(Order, oid)
-        assert order.service_version == "8"
+        assert order.service_version == "9"
         assert order.status == ("completed" if recover else "failed")
         assert order.error_key == (None if recover else "provider_invalid")
         funds = await balance(db, 1)
@@ -198,7 +198,7 @@ async def test_pdf_form_rejection_has_no_provider_cost_releases_and_cleans_files
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
-@pytest.mark.parametrize("old_version", ["2", "3", "4", "5", "6", "7"])
+@pytest.mark.parametrize("old_version", ["2", "3", "4", "5", "6", "7", "8"])
 async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_work(
     tmp_path, monkeypatch, old_version
 ):
@@ -214,7 +214,7 @@ async def test_pdf_word_upgrade_keeps_admin_settings_and_releases_old_pending_wo
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "pdf_to_word")
-        assert row.version == "8" and row.price_halala == 777 and row.enabled
+        assert row.version == "9" and row.price_halala == 777 and row.enabled
         assert row.price_stars == 143
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))

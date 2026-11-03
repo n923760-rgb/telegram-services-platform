@@ -11,13 +11,13 @@ from app.files.pdf_forms import has_form_declaration, has_widget
 from app.files.pdf_layers import has_layer_declaration
 from app.files.pdf_text import extract_page_text
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
-from app.services.pdf_to_word.layout import opening_title
+from app.services.pdf_to_word.layout import include_conversion_title, opening_title
 from app.services.pdf_to_word.prompt import PDF_TO_WORD
 from app.services.pdf_to_word.schema import Inputs, source_plan_schema
 
 
 class PdfToWord(BaseService):
-    version = "8"
+    version = "9"
     slug = "pdf_to_word"
     menu_order = 20
     category = "pdf"
@@ -81,7 +81,10 @@ class PdfToWord(BaseService):
             plan = schema.model_validate(plan.model_dump(mode="json"))
         except (ValidationError, ValueError):
             raise ServiceError("provider_invalid") from None
-        content = word.build(opening_title(plan.document, source_text))
+        content = word.build(
+            opening_title(plan.document, source_text),
+            include_title=include_conversion_title(plan.document, source_text),
+        )
         artifact = self.runtime.storage.save(
             "result.docx",
             content,
