@@ -1,3 +1,12 @@
+## Smart PDF source references — 2026-11-03
+
+- OPERATOR-REPORTED: direct PDF PASS; smart PDF rejects source tokens twice on
+  `9ad78b9`, with no active test orders or reserved customer credit.
+- CHANGE: PDF v8 adopts the established protected-value reference protocol;
+  preserve literal/count validation, one repair, direct output and continuations.
+- NOT RUN: actual-provider qualification of this fix and deployment.
+- Evidence: [PDF qualification report](REPORTS/2026-11-03-pdf-protected-values.md).
+
 ## Acceptance effective-worker source — 2026-11-02
 
 - FACT: the existing acceptance ZIP records checkout HEAD, not worker-image source.
