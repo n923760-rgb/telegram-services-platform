@@ -28,3 +28,9 @@ Keep production-provider recovery separate: only restore the previous false stat
 after checking the failed run's accounting/holds and current production exposure.
 The unqualified PDF candidate is not deployed. Preserve the failed archive at
 `/home/aidev/service-acceptance-K3qqvjdz/service-acceptance-results.zip` for review.
+
+The first hosted full suite found 14 stale PDF v7 expectations in direct-order,
+navigation and registry-upgrade tests (4086 passed). Update only current-version
+expectations to v8, retain historical Office versions, and include PDF v7 queued
+and prepared-delivery upgrade cases. Full hosted validation must pass before merge.
+These corrections change tests/documentation only; effective worker source is unchanged.
