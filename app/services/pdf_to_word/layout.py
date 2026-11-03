@@ -45,3 +45,34 @@ def opening_title(document: WordDocument, source: str) -> WordDocument:
             # A heading-only document still needs its nonempty body contract.
             return document
     return document
+
+
+def include_conversion_title(document: WordDocument, source: str) -> bool:
+    """Hide a header-derived cover title only for an otherwise untitled table.
+
+    Keep all reviewed cells and preserve ambiguous sources, protected literals,
+    explicit breaks, captions and any surrounding prose. Never mutate the plan.
+    """
+    title = " ".join(document.title.split())
+    if document.layout != "standard" or NUMERIC_TOKEN.search(title) or CONTACT_TOKEN.search(title):
+        return True
+    tables = []
+    for section in document.sections:
+        if (
+            section.title
+            or section.subtitle
+            or section.heading
+            or section.paragraphs
+            or section.bullets
+            or section.blocks
+            or section.page_break_before
+        ):
+            return True
+        tables.extend(section.tables)
+    if len(tables) != 1 or tables[0].caption:
+        return True
+    headers = " ".join(" ".join(column.split()) for column in tables[0].columns)
+    if title != headers:
+        return True
+    table_text = " ".join([*tables[0].columns, *(cell for row in tables[0].rows for cell in row)])
+    return " ".join(source.split()) != " ".join(table_text.split())

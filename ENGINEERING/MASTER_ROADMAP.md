@@ -1,3 +1,12 @@
+## PDF-to-Word table header title — 2026-11-03
+
+- FACT: v8 live English table preserves cells but adds a header-derived cover title.
+- CHANGE: v9 narrowly suppresses that redundant title after validation/review;
+  preserve actual/ambiguous titles, literal values and editable cells.
+- PASS locally: 45 focused tests and repository lint/format.
+- PENDING: full hosted CI, rebuilt-worker source verification and v9 live review.
+- Evidence: [header title report](REPORTS/2026-11-03-pdf-word-header-title.md).
+
 ## Smart PDF source references — 2026-11-03
 
 - OPERATOR-REPORTED: direct PDF PASS; smart PDF rejects source tokens twice on
