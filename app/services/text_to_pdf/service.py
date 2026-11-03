@@ -5,13 +5,14 @@ from pydantic import ValidationError
 from app.builders import pdf
 from app.core.i18n import tr
 from app.services.base import BaseService, InputField, InputSchema, Result, ServiceError
-from app.services.document_fidelity import source_document_schema
+from app.services.document_fidelity import CONTACT_TOKEN, source_document_schema
+from app.services.protected_values import ProtectedValues
 from app.services.text_to_pdf.prompt import PDF
 from app.services.text_to_pdf.schema import Inputs, PdfPlan
 
 
 class TextToPdf(BaseService):
-    version = "7"
+    version = "8"
     slug = "text_to_pdf"
     worker_requirements = ("pdf_font",)
     menu_order = 20
@@ -54,8 +55,9 @@ class TextToPdf(BaseService):
 
     async def run(self, inputs):
         values = Inputs.parse(inputs)
+        protected = ProtectedValues(values.text, CONTACT_TOKEN)
         continuation = inputs.get("__continuation")
-        schema = source_document_schema(PdfPlan, values.text)
+        schema = source_document_schema(PdfPlan, values.text, protected=protected)
         if values.mode != "direct" and not continuation and self.runtime.ai is None:
             raise ServiceError("provider_config")
         try:
@@ -64,7 +66,9 @@ class TextToPdf(BaseService):
                 if values.mode == "direct"
                 else schema.model_validate(continuation)
                 if continuation
-                else await self.runtime.ai.extract(schema, values.text, PDF)
+                else await self.runtime.ai.extract(
+                    schema, protected.request(), PDF + protected.instruction()
+                )
             )
             if values.mode != "direct":
                 plan = schema.model_validate(plan.model_dump(mode="json"))
