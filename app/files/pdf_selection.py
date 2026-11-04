@@ -4,7 +4,11 @@ import re
 
 
 def page_selection(value: str) -> list[int]:
-    if not isinstance(value, str) or not 1 <= len(value) <= 200:
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= 200
+        or any(character in value for character in "\r\n\v\f\x1c\x1d\x1e\x85\u2028\u2029")
+    ):
         raise ValueError("invalid PDF page selection")
     pages = []
     for item in value.replace("،", ",").split(","):
