@@ -87,4 +87,17 @@ def test_long_summary_and_real_cross_language_source_keep_existing_plan_bounds(p
     assert "payment has not been approved" in plan["translation_ar"].inputs["text"]
     assert "report contain several error" in plan["editing_proofread"].inputs["text"]
     assert "يا فريق" in plan["editing_rewrite"].inputs["text"]
-    assert sum(bool(case.review_checks) for case in plan.values()) == 8
+    assert sum(bool(case.review_checks) for case in plan.values()) == 9
+
+
+def test_arabic_minutes_use_arabic_source_and_keep_semantic_review_explicit(plan):
+    case = plan["minutes_ar"]
+    assert case.inputs["language"] == "ar"
+    notes = case.inputs["notes"]
+    assert len(notes.splitlines()) == 6
+    assert "لم تعتمد" in notes and "دون اعتماد الموعد" in notes
+    assert "يجب على سامي" in notes and "دون تحديد مسؤول" in notes
+    assert all(token in notes for token in case.tokens)
+    assert len(case.review_checks) == 4
+    assert case.expected_files == ("minutes.docx", "minutes.pdf")
+    assert plan["minutes_en"].inputs["notes"].startswith("Discussed")
