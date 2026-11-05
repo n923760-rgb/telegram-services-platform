@@ -87,7 +87,7 @@ def test_long_summary_and_real_cross_language_source_keep_existing_plan_bounds(p
     assert "payment has not been approved" in plan["translation_ar"].inputs["text"]
     assert "report contain several error" in plan["editing_proofread"].inputs["text"]
     assert "يا فريق" in plan["editing_rewrite"].inputs["text"]
-    assert sum(bool(case.review_checks) for case in plan.values()) == 9
+    assert sum(bool(case.review_checks) for case in plan.values()) == 10
 
 
 def test_arabic_minutes_use_arabic_source_and_keep_semantic_review_explicit(plan):
@@ -101,3 +101,20 @@ def test_arabic_minutes_use_arabic_source_and_keep_semantic_review_explicit(plan
     assert len(case.review_checks) == 4
     assert case.expected_files == ("minutes.docx", "minutes.pdf")
     assert plan["minutes_en"].inputs["notes"].startswith("Discussed")
+
+
+def test_arabic_deck_qualifies_longer_source_and_separate_decision_states(plan):
+    from app.services.text_to_pptx.schema import Inputs, source_language
+
+    case = plan["pptx"]
+    values = Inputs.parse(case.inputs)
+    assert values.slide_count == case.pptx_slides == 7
+    assert 1200 < len(values.text) < 12000
+    assert source_language(values.text) == "Arabic"
+    assert len(values.text.split("\n\n")) == 7
+    assert "لم تعتمد اللجنة الدفع" in values.text
+    assert "موعد مقترح لا التزام مؤكد" in values.text
+    assert "سامي مسؤول" in values.text and "اقترح خالد" in values.text
+    assert all(token in values.text for token in case.tokens)
+    assert len(case.review_checks) == 5
+    assert case.expected_files == ("result.pptx",)
