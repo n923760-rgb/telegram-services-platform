@@ -189,6 +189,7 @@ def representative_cases(result):
                     "12",
                     "28",
                     "demo@example.invalid",
+                    "لم تعتمد اللجنة حجز الأصناف أو السماح بتسليمها",
                 ),
                 review_checks=(
                     "Inspect all seven slides in native presentation rendering: Arabic reading order, readable text, no clipping or overlap.",

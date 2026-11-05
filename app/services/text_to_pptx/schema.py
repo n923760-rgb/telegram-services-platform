@@ -10,6 +10,7 @@ from app.builders.schema import Deck, Slide, StrictModel
 from app.services.base import ServiceError
 from app.services.documents import DocumentInputs
 from app.services.text_editing.schema import CONTACT_TOKEN
+from app.services.text_to_pptx.restrictions import missing_restriction
 from app.services.translation import NUMERIC_TOKEN
 
 
@@ -46,6 +47,7 @@ class DeckPlan(StrictModel):
         "pptx_source_tokens": "pptx_source_tokens",
         "pptx_slide_count": "pptx_slide_count",
         "pptx_source_language": "pptx_source_language",
+        "pptx_source_restriction": "pptx_source_restriction",
     }
     ambiguous: bool = False
     missing_information: bool = Field(
@@ -173,6 +175,11 @@ def source_plan_schema(source, slide_count=None, *, protected=None):
                 if slide.table is not None:
                     parts.extend(slide.table.columns)
                     parts.extend(cell for row in slide.table.rows for cell in row)
+            if missing_restriction(source, parts):
+                raise PydanticCustomError(
+                    "pptx_source_restriction",
+                    "retain the required literal source restrictions in visible slide content",
+                )
             arabic, latin, _ = _script_counts("\n".join(parts))
             if (language == "English" and arabic > latin) or (
                 language == "Arabic" and latin > arabic

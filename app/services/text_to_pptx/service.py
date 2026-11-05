@@ -8,11 +8,12 @@ from app.services.base import BaseService, InputField, InputSchema, Result, Serv
 from app.services.protected_values import ProtectedValues
 from app.services.text_editing.schema import CONTACT_TOKEN
 from app.services.text_to_pptx.prompt import DECK, REFERENCE_CONTEXT, SLIDE_COUNT
+from app.services.text_to_pptx.restrictions import restriction_instruction
 from app.services.text_to_pptx.schema import Inputs, source_language, source_plan_schema
 
 
 class TextToPptx(BaseService):
-    version = "7"
+    version = "8"
     slug = "text_to_pptx"
     menu_order = 40
     category = "documents"
@@ -54,7 +55,7 @@ class TextToPptx(BaseService):
         else:
             if self.runtime.ai is None:
                 raise ServiceError("provider_config")
-            prompt = DECK + protected.instruction()
+            prompt = DECK + protected.instruction() + restriction_instruction(values.text)
             language = source_language(values.text)
             if language:
                 prompt += f"\nKeep the source prose in {language}. Do not translate it."
