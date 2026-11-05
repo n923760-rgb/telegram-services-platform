@@ -117,8 +117,18 @@ def test_legacy_minimum_pdf_contract_is_retained_for_variable_layouts():
 def test_plan_covers_document_contracts_alongside_smart_card_cases():
     plan = {case.name: case for case in cases(ASSETS)}
     assert len(plan) == 33
-    assert plan["pptx"].inputs["slide_count"] == "3" and plan["pptx"].pptx_slides == 3
-    assert plan["pptx"].tokens == ("00123", "125.50")
+    assert plan["pptx"].inputs["slide_count"] == "7" and plan["pptx"].pptx_slides == 7
+    assert plan["pptx"].tokens == (
+        "00123",
+        "125.50",
+        "00017",
+        "2026-11-20",
+        "2026-11-18",
+        "40",
+        "12",
+        "28",
+        "demo@example.invalid",
+    )
     assert plan["images_pdf"].inputs["page_order"] == "٢، ١"
     assert plan["images_pdf"].exact_pdf_pages == 2
     assert plan["pdf_rotate"].pdf_rotations == (90,)

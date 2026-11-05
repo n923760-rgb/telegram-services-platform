@@ -2553,3 +2553,9 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: Live minutes_ar and minutes_en passed on fb4f9ad, but both used English notes; Arabic headings alone did not qualify Arabic source handling.
 - CHANGE: Strengthen existing minutes_ar with six Arabic notes covering explicit negation, pending status, a proposed date, an approved pending decision, an assigned task and an unassigned discussion. Preserve case count and provider budget.
 - Evidence and remaining qualification: [report](REPORTS/2026-11-05-arabic-minutes-acceptance.md).
+
+## Arabic PowerPoint acceptance — 2026-11-05
+
+- FACT: Prior live PowerPoint acceptance used a three-line English source and produced three sparse slides; Arabic long-content quality was NOT ASSESSED.
+- CHANGE: Strengthen the existing pptx case with seven Arabic topic paragraphs and seven requested slides, preserving exact identifiers, monetary precision, dates, inventory counts and contact. Keep case count, service version and budgets unchanged.
+- Evidence and manual qualification: [report](REPORTS/2026-11-05-arabic-pptx-acceptance.md).

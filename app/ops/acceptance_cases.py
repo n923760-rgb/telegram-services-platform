@@ -125,6 +125,17 @@ def representative_cases(result):
             "نوقش تحسين نموذج المتابعة دون تحديد مسؤول أو موعد للتنفيذ.",
         ]
     )
+    arabic_deck = "\n\n".join(
+        [
+            "مراجعة جاهزية التشغيل: يناقش الفريق حالة الطلبات وتسليم المستندات وجودة رسائل المتابعة. الهدف عرض الوضع الفعلي دون تقديم وعود غير معتمدة، وتوضيح ما تقرر وما بقي اقتراحا وما يتطلب إجراء لاحقا.",
+            "حالة الدفع: الطلب 00123 بقيمة 125.50 ريال ما زال قيد المراجعة بسبب نقص الإيصال. لم تعتمد اللجنة الدفع ولم ترفض الطلب نهائيا. لا يجوز وصف طلب المستند الناقص بأنه موافقة، ولا يبدأ التنفيذ قبل موافقة مكتوبة.",
+            "موعد التسليم: اقترح خالد التسليم في 2026-11-20، لكن اللجنة لم تعتمد هذا الموعد. يجب توضيح أنه موعد مقترح لا التزام مؤكد، ولا يملك فريق الدعم تأكيده للعميل قبل اكتمال المراجعة.",
+            "حالة المخزون: المتاح في المستودع 40 قطعة، منها 12 قطعة جاهزة للفحص و28 قطعة تنتظر المراجعة. هذه الأعداد تصف حالة المخزون وقت الاجتماع فقط؛ لم تعتمد اللجنة حجز الأصناف أو السماح بتسليمها.",
+            "المهمة التالية: سامي مسؤول عن إرسال التقرير 00017 والإيصال الناقص إلى demo@example.invalid قبل 2026-11-18. بعد استلام المستندات يراجعها فريق المالية، ثم يصدر قرار الاعتماد. إرسال التقرير وحده لا يعني الموافقة على الدفع.",
+            "القرار المعتمد: اتفقت اللجنة على إبقاء الطلب معلقا حتى استكمال المستندات، وعلى أن تميز رسائل المتابعة بين قيد المراجعة ومرفوض ومعتمد. تحفظ الملاحظات في السجل ويطابق الموظف الرسالة مع آخر قرار مسجل قبل إرسالها.",
+            "الاقتراحات والحدود: نوقش تبسيط نموذج المتابعة لتقليل تكرار إدخال البيانات، لكنه اقتراح لم يعتمد. لم توافق اللجنة على شراء برنامج أو زيادة الميزانية أو تعيين موظفين. لا تضاف توصيات أو مؤشرات أداء أو نتائج غير واردة في هذه الملاحظات.",
+        ]
+    )
     strengthened = []
     for case in result:
         override = overrides.get(case.name)
@@ -161,6 +172,30 @@ def representative_cases(result):
                     "Keep payment unapproved and the request pending, not permanently rejected.",
                     "Do not promote Khalid's proposed delivery date to an approved deadline or make him the task owner.",
                     "The explicit action belongs to Sami with deadline 2026-11-18; do not invent metadata for the final discussion note.",
+                ),
+            )
+        if case.name == "pptx":
+            case = replace(
+                case,
+                inputs={"text": arabic_deck, "slide_count": "7"},
+                pptx_slides=7,
+                tokens=(
+                    "00123",
+                    "125.50",
+                    "00017",
+                    "2026-11-20",
+                    "2026-11-18",
+                    "40",
+                    "12",
+                    "28",
+                    "demo@example.invalid",
+                ),
+                review_checks=(
+                    "Inspect all seven slides in native presentation rendering: Arabic reading order, readable text, no clipping or overlap.",
+                    "Retain unapproved payment, pending request and the provisional delivery date; do not turn proposals into commitments.",
+                    "Keep inventory counts tied to their original states without inventing reservation, delivery permission or new metrics.",
+                    "Keep Sami's report, email and deadline distinct from Khalid's delivery proposal; preserve identifiers and monetary precision.",
+                    "Use concise source-grounded slides without repetitive filler; retain the approved decision and unapproved process/budget proposals.",
                 ),
             )
         strengthened.append(case)
