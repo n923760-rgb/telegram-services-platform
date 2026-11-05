@@ -1,3 +1,11 @@
+## PowerPoint source restriction retention — 2026-11-05
+
+- FACT: Live v7 run service-acceptance-uE2Bk94W passed automation/review but omitted the unapproved inventory reservation/delivery restriction. Visual/manual review did not approve content completeness.
+- CHANGE: v8 adds bounded literal retention of selected nonnumeric restriction sentences in numeric paragraphs, including visible continuation validation. Keep one repair and existing semantic review. Prefer prose when a table cannot carry its restriction.
+- PASS locally: 145 unit/service/acceptance checks and repository lint/format; 36 database-backed flow tests collected, NOT RUN locally (no PostgreSQL/Docker).
+- PENDING: hosted full CI, rebuilt-worker source verification and actual-provider visual acceptance. No production deployment.
+- Evidence: [restriction report](REPORTS/2026-11-05-pptx-source-restrictions.md).
+
 ## PDF-to-Word table header title — 2026-11-03
 
 - FACT: v8 live English table preserves cells but adds a header-derived cover title.

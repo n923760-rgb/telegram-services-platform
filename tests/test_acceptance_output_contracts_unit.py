@@ -128,6 +128,7 @@ def test_plan_covers_document_contracts_alongside_smart_card_cases():
         "12",
         "28",
         "demo@example.invalid",
+        "لم تعتمد اللجنة حجز الأصناف أو السماح بتسليمها",
     )
     assert plan["images_pdf"].inputs["page_order"] == "٢، ١"
     assert plan["images_pdf"].exact_pdf_pages == 2

@@ -49,7 +49,7 @@ async def test_contextual_numeric_reuse_still_requires_semantic_review_and_singl
     calls = 2 if accepted else 4
     async with sessions() as db:
         order = await db.get(Order, oid)
-        assert order.service_version == "7"
+        assert order.service_version == "8"
         assert order.status == ("completed" if accepted else "failed")
         assert order.error_key == (None if accepted else "provider_invalid")
         funds = await balance(db, 1)
@@ -352,7 +352,7 @@ async def test_prepared_file_replays_after_upgrade_with_admin_prices_preserved(
     async with sessions.begin() as db:
         await registry.sync(db)
         row = await db.get(Service, "text_to_pptx")
-        assert row.version == "7" and row.enabled
+        assert row.version == "8" and row.enabled
         assert (row.price_halala, row.price_stars) == (777, 25)
 
     async def forbidden(*args):
@@ -368,7 +368,7 @@ async def test_prepared_file_replays_after_upgrade_with_admin_prices_preserved(
     assert provider.calls == 1 and len(Presentation(BytesIO(delivery.files[0][1])).slides) == 1
 
 
-@pytest.mark.parametrize("old_version", ["1", "3", "4", "5", "6"])
+@pytest.mark.parametrize("old_version", ["1", "3", "4", "5", "6", "7"])
 async def test_pptx_version_upgrade_keeps_admin_settings_and_releases_old_pending_job(
     tmp_path, monkeypatch, old_version
 ):
@@ -382,7 +382,7 @@ async def test_pptx_version_upgrade_keeps_admin_settings_and_releases_old_pendin
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "text_to_pptx")
-        assert row.version == "7" and row.price_halala == 777 and row.enabled
+        assert row.version == "8" and row.price_halala == 777 and row.enabled
     await execute_job(ctx, str(await job_for(oid)))
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
@@ -462,3 +462,59 @@ async def test_pptx_source_bound_approval_reuses_plan_without_provider(tmp_path,
         assert (await db.get(Order, oid)).status == "completed"
         assert (await balance(db, 1)).reserved == 0
     assert provider.calls == 1 and len(delivery.files) == 1
+
+
+@pytest.mark.parametrize("repair", [False, True])
+async def test_missing_numeric_record_restriction_repairs_once_or_releases(
+    tmp_path, monkeypatch, repair
+):
+    from tests.test_pptx_restrictions_unit import AR, table_plan
+
+    bad = json.dumps(table_plan())
+    fixed = {
+        "deck": {
+            "slides": [
+                {
+                    "title": "حالة المخزون",
+                    "bullets": [
+                        "المتاح 40 قطعة، منها 12 جاهزة و28 تنتظر المراجعة",
+                        "لم تعتمد اللجنة حجز الأصناف أو السماح بتسليمها",
+                    ],
+                }
+            ]
+        }
+    }
+    responses = [bad, json.dumps(fixed), '{"accepted":true,"issues":[]}'] if repair else [bad, bad]
+    store, provider, delivery, ctx, price = await setup(
+        "text_to_pptx", responses, tmp_path, monkeypatch
+    )
+    ctx["runtime_factory"] = lambda jid, uid: SimpleNamespace(
+        ai=AI(provider, jid, uid, quality_review=True), storage=OwnedStorage(store, uid)
+    )
+    oid = await submit(1, "text_to_pptx", {"text": AR, "slide_count": "1"}, price, "restriction")
+    jid = await job_for(oid)
+    await execute_job(ctx, str(jid))
+    await execute_job(ctx, str(jid))
+    calls = 3 if repair else 2
+    async with sessions() as db:
+        order = await db.get(Order, oid)
+        assert order.status == ("completed" if repair else "failed")
+        assert order.error_key == (None if repair else "provider_invalid")
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000 - price if repair else 1000, 0)
+        assert list(await db.scalars(select(CostHold.status))) == ["settled"] * calls
+        for kind, count in (("capture", int(repair)), ("release", int(not repair))):
+            assert (
+                await db.scalar(
+                    select(func.count(Ledger.id)).where(Ledger.order_id == oid, Ledger.kind == kind)
+                )
+                == count
+            )
+    assert provider.calls == calls and len(delivery.files) == int(repair)
+    if repair:
+        native = Presentation(BytesIO(delivery.files[0][1]))
+        assert any(
+            "لم تعتمد اللجنة حجز الأصناف" in s.text
+            for s in native.slides[0].shapes
+            if s.has_text_frame
+        )
