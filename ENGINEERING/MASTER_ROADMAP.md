@@ -2547,3 +2547,9 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - LIMIT: These stricter gates verify package completeness and synthetic native content, not semantic meaning, original document layout, image placement/visibility or mobile appearance. No live-provider call, server access/deployment or all-service professional readiness claim. Requalify the latest built worker with the existing isolated acceptance runner and review saved outputs.
 
 - SYNC 2026-10-21: Includes synchronized #122 quality review and main c9df79b draft UX. Merge after #122; require new combined-source hosted verification. Original acceptance scope/case count/cost caps remain unchanged.
+
+## Arabic meeting minutes acceptance — 2026-11-05
+
+- FACT: Live minutes_ar and minutes_en passed on fb4f9ad, but both used English notes; Arabic headings alone did not qualify Arabic source handling.
+- CHANGE: Strengthen existing minutes_ar with six Arabic notes covering explicit negation, pending status, a proposed date, an approved pending decision, an assigned task and an unassigned discussion. Preserve case count and provider budget.
+- Evidence and remaining qualification: [report](REPORTS/2026-11-05-arabic-minutes-acceptance.md).

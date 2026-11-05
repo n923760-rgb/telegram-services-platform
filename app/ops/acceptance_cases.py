@@ -115,6 +115,16 @@ def representative_cases(result):
             ),
         },
     }
+    arabic_minutes = "\n".join(
+        [
+            "ناقش الفريق الطلب 00123 بمبلغ 125.50 SAR.",
+            "لم تعتمد اللجنة دفع المبلغ ولم ترفض الطلب نهائيا.",
+            "اقترح خالد التسليم في 2026-11-20 دون اعتماد الموعد.",
+            "قررت اللجنة إبقاء الطلب معلقا حتى استكمال المستندات.",
+            "يجب على سامي إرسال التقرير 00017 إلى demo@example.invalid قبل 2026-11-18.",
+            "نوقش تحسين نموذج المتابعة دون تحديد مسؤول أو موعد للتنفيذ.",
+        ]
+    )
     strengthened = []
     for case in result:
         override = overrides.get(case.name)
@@ -134,6 +144,25 @@ def representative_cases(result):
                     pdf_pages=2,
                     tokens=tuple(f"SEC-{n:02d}" for n in range(1, 13)) + ("00123", "125.50"),
                 )
+        if case.name == "minutes_ar":
+            case = replace(
+                case,
+                inputs=case.inputs | {"notes": arabic_minutes},
+                tokens=(
+                    "00123",
+                    "125.50",
+                    "00017",
+                    "2026-11-20",
+                    "2026-11-18",
+                    "demo@example.invalid",
+                ),
+                review_checks=(
+                    "Inspect actual Arabic notes in Word and PDF; retain all source units and leading zeros.",
+                    "Keep payment unapproved and the request pending, not permanently rejected.",
+                    "Do not promote Khalid's proposed delivery date to an approved deadline or make him the task owner.",
+                    "The explicit action belongs to Sami with deadline 2026-11-18; do not invent metadata for the final discussion note.",
+                ),
+            )
         strengthened.append(case)
     return strengthened
 
