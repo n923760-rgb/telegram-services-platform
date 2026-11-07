@@ -46,7 +46,7 @@ async def chat(monkeypatch):
 @pytest.mark.parametrize("lang", ["ar", "en"])
 @pytest.mark.parametrize("stars", [False, True])
 @pytest.mark.parametrize("admin", [False, True])
-async def test_app_home_is_one_message_removes_old_keyboard_and_preserves_draft(
+async def test_app_home_keeps_basic_keyboard_and_preserves_draft(
     chat, monkeypatch, lang, stars, admin
 ):
     dp, transport, message, _, state = chat
@@ -60,14 +60,24 @@ async def test_app_home_is_one_message_removes_old_keyboard_and_preserves_draft(
     assert len(transport.sent_methods) == 1
     welcome = transport.sent_methods[0]
     assert welcome.text == tr("miniapp_stars_welcome" if stars else "miniapp_welcome", lang)
-    assert welcome.reply_markup.remove_keyboard
+    keyboard = welcome.reply_markup
+    assert keyboard.is_persistent and keyboard.resize_keyboard
+    labels = [b.text for row in keyboard.keyboard for b in row]
+    expected = [
+        tr("payments" if k == "balance" and stars else k, lang)
+        for k in ("orders", "balance", "support", "help")
+    ]
+    if admin:
+        expected.append(tr("admin_panel", lang))
+    assert labels == expected
+    assert all(b.web_app is None for row in keyboard.keyboard for b in row)
     edit = transport.reply_markup_edits[0]
     assert edit.message_id == transport.messages[0].message_id
     controls = edit.reply_markup
     assert controls.inline_keyboard[0][0].web_app.url == config().miniapp_url
     assert button_by_prefix(controls, "draft:resume")
-    assert bool(button_by_prefix(controls, "admin:home")) is admin
-    assert button_by_prefix(controls, "menu:support")
+    assert not button_by_prefix(controls, "admin:home")
+    assert not button_by_prefix(controls, "menu:support")
     assert not button_by_prefix(controls, "menu:services")
     assert not button_by_prefix(controls, "menu:orders")
     assert await state.get_data() == saved

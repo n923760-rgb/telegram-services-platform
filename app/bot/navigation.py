@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 
 from app.bot.availability import ai_admission_available
@@ -44,18 +44,14 @@ def create_router():
         await register(user_id)
         await leave_support(state)
         if miniapp_services_enabled():
-            # Remove the old persistent keyboard before presenting one app entry.
-            # Telegram cannot remove a reply keyboard and attach inline controls
-            # in the same message; remove it once, then edit that same message.
             welcome = tr(
                 "miniapp_stars_welcome" if config().stars_enabled else "miniapp_welcome", lang
             )
-            entry = await message.answer(welcome, reply_markup=ReplyKeyboardRemove())
+            entry = await message.answer(
+                welcome, reply_markup=home_keyboard(lang, admin=user_id in config().admin_ids)
+            )
             items = await section_controls(state, lang)
             items = [item for item in items if item[1] != "menu:home"]
-            items.extend([(tr("support", lang), "menu:support"), (tr("help", lang), "menu:help")])
-            if user_id in config().admin_ids:
-                items.append((tr("admin_panel", lang), "admin:home"))
             await message.bot.edit_message_reply_markup(
                 chat_id=entry.chat.id,
                 message_id=entry.message_id,
