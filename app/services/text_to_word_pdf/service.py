@@ -11,7 +11,7 @@ from app.services.text_to_word_pdf.schema import Inputs, refined_document, revis
 
 
 class TextToWordPdf(BaseService):
-    version = "4"
+    version = "5"
     slug = "text_to_word_pdf"
     worker_requirements = ("office_export",)
     menu_order = 30
@@ -42,6 +42,12 @@ class TextToWordPdf(BaseService):
                 choice_keys=["word_pdf_direct", "word_pdf_smart"],
             ),
             InputField(name="text", prompt_key="word_pdf_text"),
+            InputField(
+                name="formatting_notes",
+                prompt_key="word_pdf_formatting_notes",
+                required=False,
+                max_length=1000,
+            ),
             InputField(
                 name="title",
                 prompt_key="word_pdf_title",

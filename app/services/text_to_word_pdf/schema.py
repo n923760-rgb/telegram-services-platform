@@ -2,7 +2,7 @@ import json
 from collections import Counter
 from typing import Literal
 
-from pydantic import Field, StrictInt, model_validator
+from pydantic import Field, StrictInt, field_validator, model_validator
 
 from app.builders.schema import StrictModel
 from app.builders.word_schema import WordDesign, WordDocument
@@ -12,11 +12,20 @@ from app.services.translation import NUMERIC_TOKEN
 
 
 class Inputs(DocumentInputs):
+    formatting_notes: str | None = Field(default=None, min_length=1, max_length=1000)
+
+    @field_validator("formatting_notes")
+    @classmethod
+    def safe_notes(cls, value):
+        return cls.printable_text(value) if value is not None else value
+
     mode: Literal["direct", "smart"] = "smart"
     output_format: Literal["word", "pdf", "both"] = "both"
 
     @model_validator(mode="after")
     def explicit_title(self):
+        if self.mode == "direct" and self.formatting_notes is not None:
+            raise ValueError("formatting notes require smart mode")
         if self.mode == "direct" and self.text.count("\n") >= 10000:
             raise ValueError("too many document lines")
         if self.mode == "smart" and (
@@ -34,6 +43,7 @@ class Inputs(DocumentInputs):
         return json.dumps(
             {
                 "title": self.title,
+                "formatting_notes": self.formatting_notes,
                 "segments": [{"id": i, "text": line} for i, line in enumerate(self.lines(), 1)],
             },
             ensure_ascii=False,
@@ -89,6 +99,15 @@ def revision_schema(values):
                     raise ValueError(
                         "retain numeric/contact tokens within their original source ID"
                     )
+            notes = values.formatting_notes
+            if notes and notes not in values.text:
+                visible = [
+                    self.title,
+                    *[s.heading for s in self.sections],
+                    *[s.text for s in segments],
+                ]
+                if any(notes in text for text in visible):
+                    raise ValueError("formatting notes must not become document content")
             if sum(len(item.text) for item in segments) > 18000:
                 raise ValueError("smart document output limit")
             return self
@@ -97,14 +116,25 @@ def revision_schema(values):
 
 
 def refined_document(revision):
-    return WordDocument(
-        title=revision.title,
-        design=revision.design,
-        sections=[
-            {
-                "heading": section.heading,
-                "blocks": [{"text": item.text, "kind": item.kind} for item in section.segments],
-            }
-            for section in revision.sections
-        ],
-    )
+    # Source IDs stay complete in validation/review. A literal first-line title
+    # is represented once by the document title, never dropped from the output.
+    sections = []
+    first = True
+    total = sum(len(section.segments) for section in revision.sections)
+    for section in revision.sections:
+        blocks = []
+        heading = section.heading
+        for item in section.segments:
+            if first and total > 1 and item.text == revision.title:
+                first = False
+                continue
+            first = False
+            blocks.append({"text": item.text, "kind": item.kind})
+        if blocks:
+            if (
+                heading.strip().rstrip(":：").strip()
+                == blocks[0]["text"].strip().rstrip(":：").strip()
+            ):
+                heading = ""
+            sections.append({"heading": heading, "blocks": blocks})
+    return WordDocument(title=revision.title, design=revision.design, sections=sections)

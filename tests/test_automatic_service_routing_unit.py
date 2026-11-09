@@ -28,7 +28,11 @@ def database():
     [
         (TextToOffice, {"target": "word"}, ["target", "text"]),
         (TextToPdf, {}, ["text"]),
-        (TextToWordPdf, {"output_format": "both"}, ["output_format", "text", "title"]),
+        (
+            TextToWordPdf,
+            {"output_format": "both"},
+            ["output_format", "text", "formatting_notes", "title"],
+        ),
     ],
 )
 def test_new_intake_routes_without_customer_engine_choices_and_never_mutates_source(

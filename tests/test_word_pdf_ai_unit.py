@@ -119,3 +119,71 @@ async def test_injected_response_revalidated_before_render_or_write():
     with pytest.raises(ServiceError, match="provider_invalid"):
         await service.run(inputs())
     renderer.word_pdf.assert_not_called()
+
+
+@pytest.mark.parametrize("label", ["المطلوب", "Required"])
+def test_duplicate_labels_render_once_without_losing_source(label):
+    from app.services.text_to_word_pdf.schema import Revision
+
+    plan = Revision.model_validate(
+        {
+            "title": "Request report",
+            "design": {"theme": "modern", "density": "comfortable"},
+            "sections": [
+                {
+                    "heading": label,
+                    "segments": [
+                        {"id": 1, "text": "Request report", "kind": "lead"},
+                        {"id": 2, "text": label + ":", "kind": "lead"},
+                        {"id": 3, "text": "Order 00123 remains unapproved.", "kind": "paragraph"},
+                    ],
+                }
+            ],
+        }
+    )
+    document = refined_document(plan)
+    assert document.title == "Request report"
+    assert document.sections[0].heading == ""
+    assert [b.text for b in document.sections[0].blocks] == [
+        label + ":",
+        "Order 00123 remains unapproved.",
+    ]
+
+
+def test_formatting_notes_are_separate_from_source_ids():
+    import json
+
+    values = Inputs.parse({"text": "Order 00123", "formatting_notes": "Use compact spacing"})
+    source = json.loads(values.source())
+    assert source["formatting_notes"] == "Use compact spacing"
+    assert source["segments"] == [{"id": 1, "text": "Order 00123"}]
+    # Never guess that content is an instruction and delete it.
+    literal = Inputs.parse({"text": "Use compact spacing"})
+    assert literal.lines() == ["Use compact spacing"]
+
+
+@pytest.mark.parametrize("notes", ["x" * 1001, "\x00"])
+def test_unsafe_formatting_notes_rejected(notes):
+    with pytest.raises(ServiceError, match="input_invalid"):
+        Inputs.parse({"text": "Source", "formatting_notes": notes})
+
+
+def test_single_title_source_still_has_a_renderable_block():
+    from app.services.text_to_word_pdf.schema import Revision
+
+    plan = Revision.model_validate(
+        {
+            "title": "Title",
+            "design": {"theme": "modern", "density": "comfortable"},
+            "sections": [{"heading": "", "segments": [{"id": 1, "text": "Title"}]}],
+        }
+    )
+    assert refined_document(plan).sections[0].blocks[0].text == "Title"
+
+
+def test_copied_formatting_notes_rejected_but_source_text_preserved():
+    source = inputs() | {"formatting_notes": "Use generous whitespace"}
+    data = revision(source)
+    data["sections"][0]["heading"] = source["formatting_notes"]
+    with pytest.raises(ValidationError, match="formatting notes must not"):
+        revision_schema(Inputs.parse(source)).model_validate(data)

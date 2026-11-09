@@ -194,9 +194,9 @@ def test_nested_transitive_conditions_remain_queued_until_parent_is_answered():
 async def test_optional_title_can_be_cleared_without_recollecting_other_fields(intake, lang):
     handlers, state, message, callback = intake
     original = await confirmed(state)
-    callback.data = "editfield:draft:3"
+    callback.data = "editfield:draft:4"
     await handlers["edit_field"](callback, state, lang)
-    callback.data = f"skip:{(await state.get_data())['key']}:3"
+    callback.data = f"skip:{(await state.get_data())['key']}:4"
     await handlers["skip_field"](callback, state, lang)
     assert await state.get_state() == "confirm"
     assert (await state.get_data())["inputs"] == {
