@@ -213,6 +213,8 @@ async def test_optional_title_rejects_multiline_then_skips_without_losing_body(f
     text = "بدون تعديل النص\nنص 00123\n\nEnglish 125.50"
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "choice:"))
     await message(text)
+    if slug == "text_to_word_pdf":
+        await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
     markup = transport.messages[-1].reply_markup
     skip = button_by_prefix(markup, "skip:")
     assert any(b.text == tr("skip_field", lang) for row in markup.inline_keyboard for b in row)
@@ -287,6 +289,7 @@ async def test_document_format_choice_is_retained_through_purchase(
     assert transport.messages[-1].text.endswith(tr("word_pdf_text", lang))
     await message("Keep text unchanged\nSource 00123")
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
+    await callback(button_by_prefix(transport.messages[-1].reply_markup, "skip:"))
     assert await state.get_state() == "confirm"
     await callback(button_by_prefix(transport.messages[-1].reply_markup, "confirm:"))
     async with sessions() as db:
@@ -295,7 +298,7 @@ async def test_document_format_choice_is_retained_through_purchase(
             "output_format": output_format,
             "text": "Keep text unchanged\nSource 00123",
         }
-        assert order.service_version == "4"
+        assert order.service_version == "5"
         assert (await balance(db, 1)).reserved == order.price_halala
 
 

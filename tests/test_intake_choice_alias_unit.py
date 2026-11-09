@@ -100,6 +100,9 @@ async def test_mode_has_one_preserve_button_and_both_choices_advance(intake, lan
     assert any(b.callback_data == "skip:draft:3" for b in controls(message))
     callback.data = "skip:draft:3"
     await handlers["skip_field"](callback, state, lang)
+    assert message.answer.call_args.args[0].endswith(tr("word_pdf_title", lang))
+    callback.data = "skip:draft:4"
+    await handlers["skip_field"](callback, state, lang)
     assert await state.get_state() == "confirm"
     assert "title" not in (await state.get_data())["inputs"]
 

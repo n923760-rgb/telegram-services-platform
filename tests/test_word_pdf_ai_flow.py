@@ -157,7 +157,7 @@ async def test_smart_source_limit_rejects_before_order_or_hold(tmp_path, monkeyp
     assert provider.calls == 0
 
 
-@pytest.mark.parametrize("old_version", ["1", "2"])
+@pytest.mark.parametrize("old_version", ["1", "2", "3", "4"])
 async def test_upgrade_retains_admin_price_gate_and_releases_old_unprepared_order(
     tmp_path, monkeypatch, old_version
 ):
@@ -173,7 +173,7 @@ async def test_upgrade_retains_admin_price_gate_and_releases_old_unprepared_orde
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "text_to_word_pdf")
-        assert row.version == "4" and row.price_halala == 777 and row.enabled
+        assert row.version == "5" and row.price_halala == 777 and row.enabled
     await execute_job({"delivery": delivery}, str(await job_for(oid)))
     async with sessions() as db:
         assert (await db.get(Order, oid)).status == "cancelled"
