@@ -6,3 +6,9 @@
 - PASS locally: 31 unit tests; lint, format and whitespace checks.
 - NOT RUN locally: PostgreSQL-backed journeys, hosted CI, rebuilt-worker/provider acceptance and final mobile rendering.
 - No deployment or edits to uploaded customer files.
+
+## CI follow-up
+
+- FACT: full hosted run 42556968381 passed 4115 tests and failed 23 intake expectations after introducing formatting_notes before title. No deployment.
+- FIX: update title edit/recovery indices and exercise skipping both optional fields before confirmation; update expected v5 purchase contract.
+- PASS locally: 102 automatic routing, draft editing, choice, confirmation/recovery and document unit tests. PostgreSQL navigation journeys still require hosted CI.

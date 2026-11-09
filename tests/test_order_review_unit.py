@@ -31,13 +31,13 @@ async def test_real_confirmation_shows_selected_inputs_without_admission(
     monkeypatch.setattr("app.bot.handlers.submit", submit)
     inputs = {"output_format": "both", "mode": "smart", "text": "PRIVATE body 00123"}
     await state.update_data(
-        index=3,
+        index=4,
         inputs=inputs,
         payment_mode=payment,
         stars_price=7,
         terms={"ar": "الشروط كاملة", "en": "Complete terms"},
     )
-    callback.data = "skip:draft:3"
+    callback.data = "skip:draft:4"
     await handlers["skip_field"](callback, state, lang)
     text = message.answer.call_args.args[0]
     assert tr("document_output_both", lang) in text
@@ -164,8 +164,8 @@ def test_all_customer_service_review_labels_are_present_in_both_catalogs():
 async def test_failed_confirmation_send_recovers_same_summary_and_purchase_key(intake, lang):
     handlers, state, message, callback = intake
     inputs = {"output_format": "pdf", "mode": "direct", "text": "Original 00123"}
-    await state.update_data(index=3, inputs=inputs)
-    callback.data = "skip:draft:3"
+    await state.update_data(index=4, inputs=inputs)
+    callback.data = "skip:draft:4"
     message.answer.side_effect = RuntimeError("temporary delivery failure")
     with pytest.raises(RuntimeError, match="temporary delivery failure"):
         await handlers["skip_field"](callback, state, lang)
