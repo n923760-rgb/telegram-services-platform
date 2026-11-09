@@ -9,3 +9,5 @@
 - HOSTED FAIL: run 42559243582 completed with 4130 passed and two stale OCR-version assertions in admin refresh and follow-up intake tests. Updated their expected v7 values; preserve all pricing/flags/draft/ledger assertions.
 - INTEGRATION: prepare the corrected OCR tree on main c9097d8 after Word/PDF v5 merge, so the next hosted run verifies both changes together.
 - PASS LOCALLY: reran 39 OCR output/cleanup/source-evidence tests and lint/format. DB-backed admin refresh, follow-up suite and complete CI remain pending; PostgreSQL is unavailable locally.
+
+- HOSTED FAIL: run 42611724619 passed 4136 tests but failed four OCR-upgrade parameters. The local v7 expectation and v6 upgrade parameter in test_ocr_translation_flow.py were omitted from the published tree; include that file and verify the complete staged tree matches the remote tree before re-running CI. No production action.
