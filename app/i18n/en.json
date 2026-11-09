@@ -212,6 +212,8 @@
   "word_pdf_name": "Create a Word or PDF document",
   "word_pdf_description": "Choose Word, PDF or both; preserve the text as written or improve wording, organization and design.",
   "word_pdf_text": "Send the document content once. We automatically organize and improve the wording while preserving meaning and numbers. Up to 9,000 characters, 80 nonempty lines and 4,000 characters per line. You already selected the output format.",
+  "word_pdf_formatting_notes": "Optional formatting notes, such as style or density, up to 1,000 characters, or tap Skip. Keep them out of document content; these notes are not included in the file.",
+  "word_pdf_formatting_notes_review": "Formatting notes",
   "word_pdf_title": "Send an optional document title (one line, up to 200 characters), or tap Skip.",
   "word_pdf_preview": "The document is ready. Text was preserved without rewriting. Review pages before use.",
   "document_render_busy": "The document processor is busy; this request will be retried automatically.",
