@@ -138,7 +138,7 @@ async def test_ocr_without_translation_has_one_call_and_keeps_original_numbers(
     assert provider.calls == 1 and delivery.results[0].text == SOURCE
 
 
-@pytest.mark.parametrize("old_version", ["2", "3", "4", "5"])
+@pytest.mark.parametrize("old_version", ["2", "3", "4", "5", "6"])
 async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
     tmp_path, monkeypatch, old_version
 ):
@@ -153,7 +153,7 @@ async def test_ocr_version_upgrade_retains_admin_settings_and_releases_old_work(
         await registry.sync(db)
     async with sessions() as db:
         row = await db.get(Service, "image_to_text")
-        assert row.version == "6" and row.price_halala == 777 and row.enabled
+        assert row.version == "7" and row.price_halala == 777 and row.enabled
         assert row.price_stars == 25
     await execute_job(ctx, str(await job_for(oid)))
     async with sessions() as db:
