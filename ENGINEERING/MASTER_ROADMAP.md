@@ -2567,3 +2567,9 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: Prior live PowerPoint acceptance used a three-line English source and produced three sparse slides; Arabic long-content quality was NOT ASSESSED.
 - CHANGE: Strengthen the existing pptx case with seven Arabic topic paragraphs and seven requested slides, preserving exact identifiers, monetary precision, dates, inventory counts and contact. Keep case count, service version and budgets unchanged.
 - Evidence and manual qualification: [report](REPORTS/2026-11-05-arabic-pptx-acceptance.md).
+
+## Arabic Word/PDF v5 acceptance — 2026-11-09
+
+- FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
+- CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
+- Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).

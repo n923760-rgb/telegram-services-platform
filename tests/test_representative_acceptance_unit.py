@@ -87,7 +87,7 @@ def test_long_summary_and_real_cross_language_source_keep_existing_plan_bounds(p
     assert "payment has not been approved" in plan["translation_ar"].inputs["text"]
     assert "report contain several error" in plan["editing_proofread"].inputs["text"]
     assert "يا فريق" in plan["editing_rewrite"].inputs["text"]
-    assert sum(bool(case.review_checks) for case in plan.values()) == 10
+    assert sum(bool(case.review_checks) for case in plan.values()) == 11
 
 
 def test_arabic_minutes_use_arabic_source_and_keep_semantic_review_explicit(plan):
@@ -118,3 +118,47 @@ def test_arabic_deck_qualifies_longer_source_and_separate_decision_states(plan):
     assert all(token in values.text for token in case.tokens)
     assert len(case.review_checks) == 5
     assert case.expected_files == ("result.pptx",)
+
+
+def test_smart_bundle_uses_separate_notes_and_arabic_duplicate_regression(plan):
+    case = plan["word_pdf_smart"]
+    values = BundleInputs.parse(case.inputs)
+    assert values.mode == "smart" and values.output_format == "both"
+    assert values.lines()[0] == values.title == "محضر متابعة الطلب"
+    assert values.lines().count("المطلوب") == 1
+    assert values.formatting_notes not in values.text
+    assert all(token in values.text for token in case.tokens)
+    assert case.docx_text_counts == (
+        (values.title, 1),
+        ("المطلوب", 1),
+        (values.formatting_notes, 0),
+    )
+    assert len(case.review_checks) == 6
+    assert "formatting_notes" not in plan["word_pdf_direct"].inputs
+
+
+@pytest.mark.parametrize("mutation", [None, "title", "label", "notes", "missing_label"])
+def test_smart_bundle_rejects_duplicate_labels_and_leaked_notes(plan, mutation):
+    case = plan["word_pdf_smart"]
+    doc = Document()
+    for line in case.inputs["text"].splitlines():
+        if mutation != "missing_label" or line != "المطلوب":
+            doc.add_paragraph(line)
+    if mutation in {"title", "label", "notes"}:
+        doc.add_paragraph(
+            {
+                "title": case.inputs["title"],
+                "label": "المطلوب:",
+                "notes": case.inputs["formatting_notes"],
+            }[mutation]
+        )
+    output = BytesIO()
+    doc.save(output)
+    if mutation is None:
+        assert (
+            inspect_output("result.docx", output.getvalue(), case)["document_text_counts_checked"]
+            == 3
+        )
+    else:
+        with pytest.raises(ServiceError, match="acceptance_document_text_count"):
+            inspect_output("result.docx", output.getvalue(), case)

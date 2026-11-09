@@ -1,0 +1,9 @@
+# Arabic Word/PDF v5 acceptance
+
+- FACT: isolated baseline run service-acceptance-tGAnoU5Z passed direct and smart modes on main c9097d8 with worker e6a134e5. Two provider calls, calculated usage 0.003334 SAR; no active orders/reserved credit and all test holds settled. Operator subsequently reported production provider pause false.
+- PASS REVIEW: rendered both DOCX and PDF pairs; the direct mixed-language fixture spans two pages and smart English fixture one page, without visible clipping or overlap. This does not exercise Arabic title duplication or separate formatting notes.
+- CHANGE: replace the existing smart fixture with nine Arabic source lines, an explicit repeated first-line title and separate formatting notes. Require exact source identifiers, amount, dates, inventory values and contact in each output. Preserve 33 cases, existing call/cost bounds, direct multi-page fixture and runtime service version.
+- CHANGE: opt-in DOCX literal occurrence checks reject duplicated/missing title or source label and copied full formatting notes, recording the number of checks in artifact diagnostics. Default cases remain unaffected.
+- LIMIT: literal checks do not detect paraphrased instructions or establish semantic correctness. PDF Arabic extraction differs from visible reading order, so exact Arabic label counts apply to editable Word only; every rendered PDF page and both documents still require the six explicit manual review checks.
+- PASS LOCALLY: 162 unit checks across representative cases, output/delivery contracts, acceptance safety/source/wrapper and Word/PDF validation; three architecture checks invoked directly; lint, format and diff checks. PostgreSQL-backed/full hosted CI and real-provider execution of this stronger fixture remain pending.
+- NOT DEPLOYED: neither this acceptance change nor Word/PDF v5 has been deployed to production in this round.

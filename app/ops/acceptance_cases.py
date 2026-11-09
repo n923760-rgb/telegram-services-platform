@@ -33,6 +33,7 @@ class Case:
     review_checks: tuple[str, ...] = ()
     docx_tables: tuple[tuple[tuple[str, ...], ...], ...] = ()
     pdf_links: tuple[str, ...] = ()
+    docx_text_counts: tuple[tuple[str, int], ...] = ()
 
 
 def representative_cases(result):
@@ -77,6 +78,20 @@ def representative_cases(result):
         "وجود الأصناف لا يعني الموافقة على التسليم، ولا يجوز تحويل الموعد المقترح إلى وعد مؤكد."
         for number in range(1, 13)
     )
+    arabic_document = "\n".join(
+        [
+            "محضر متابعة الطلب",
+            "الطلب 00123 بمبلغ 125.50 SAR لم تعتمد اللجنة دفعه ولم ترفضه نهائيا.",
+            "التقرير 00017 مطلوب لاستكمال المراجعة، ويبقى الطلب معلقا حتى استلامه.",
+            "اقترح خالد التسليم في 2026-11-20 دون اعتماد الموعد أو تقديم التزام للعميل.",
+            "المتاح 40 قطعة، منها 12 قطعة جاهزة للفحص و28 قطعة قيد المراجعة.",
+            "لم تعتمد اللجنة حجز الأصناف أو السماح بتسليمها.",
+            "المطلوب",
+            "يجب على سامي إرسال التقرير إلى demo@example.invalid قبل 2026-11-18.",
+            "نوقش تبسيط نموذج المتابعة دون اعتماد تغيير أو زيادة الميزانية.",
+        ]
+    )
+    formatting_notes = "نسّق بعناوين واضحة وفقرات قصيرة، ولا تعرض تعليمات التنسيق في المستند."
     overrides = {
         "editing_proofread": {
             "text": proofreading,
@@ -155,6 +170,40 @@ def representative_cases(result):
                     pdf_pages=2,
                     tokens=tuple(f"SEC-{n:02d}" for n in range(1, 13)) + ("00123", "125.50"),
                 )
+        if case.name == "word_pdf_smart":
+            case = replace(
+                case,
+                inputs=case.inputs
+                | {
+                    "text": arabic_document,
+                    "title": "محضر متابعة الطلب",
+                    "formatting_notes": formatting_notes,
+                },
+                tokens=(
+                    "00123",
+                    "125.50",
+                    "00017",
+                    "2026-11-20",
+                    "2026-11-18",
+                    "40",
+                    "12",
+                    "28",
+                    "demo@example.invalid",
+                ),
+                docx_text_counts=(
+                    ("محضر متابعة الطلب", 1),
+                    ("المطلوب", 1),
+                    (formatting_notes, 0),
+                ),
+                review_checks=(
+                    "Inspect Word and every PDF page: title and source label appear once; Arabic reading order is correct without clipping or overlap.",
+                    "Formatting notes guide layout only; no instruction text or paraphrase belongs in document content.",
+                    "Preserve all source units, leading zeros and monetary precision; do not omit the final discussion note.",
+                    "Keep payment unapproved and the request pending; Khalid's delivery proposal is not a commitment.",
+                    "Keep inventory states distinct and preserve the lack of reservation or delivery authorization.",
+                    "Sami owns the report action with deadline 2026-11-18; do not assign him Khalid's proposal date.",
+                ),
+            )
         if case.name == "minutes_ar":
             case = replace(
                 case,

@@ -268,6 +268,11 @@ def inspect_output(name, data, case):
             [p.text for p in doc.paragraphs]
             + [c.text for t in doc.tables for r in t.rows for c in r.cells]
         )
+        for literal, expected_count in case.docx_text_counts:
+            if text.count(literal) != expected_count:
+                raise ServiceError("acceptance_document_text_count")
+        if case.docx_text_counts:
+            details["document_text_counts_checked"] = len(case.docx_text_counts)
     elif suffix == ".xlsx":
         book = load_workbook(BytesIO(data), data_only=False)
         if not set(case.required_sheets).issubset(book.sheetnames):
