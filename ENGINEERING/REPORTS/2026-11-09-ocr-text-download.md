@@ -11,3 +11,9 @@
 - PASS LOCALLY: reran 39 OCR output/cleanup/source-evidence tests and lint/format. DB-backed admin refresh, follow-up suite and complete CI remain pending; PostgreSQL is unavailable locally.
 
 - HOSTED FAIL: run 42611724619 passed 4136 tests but failed four OCR-upgrade parameters. The local v7 expectation and v6 upgrade parameter in test_ocr_translation_flow.py were omitted from the published tree; include that file and verify the complete staged tree matches the remote tree before re-running CI. No production action.
+
+- HOSTED PASS: corrected head 71be866 passed full workflow 42634046569, including PostgreSQL tests and document-worker build/native checks.
+- ACCEPTANCE FIX: short OCR now returns result.txt in addition to chat, so both existing synthetic OCR cases must require both files. Add stubbed service-through-acceptance delivery tests for literal UTF-8 equality and rejection of the missing download. These prove export/package behavior, not image recognition.
+- PENDING: hosted verification of this acceptance follow-up on main cb0dd9e and real-provider/visible-currency comparison; production OCR remains v6.
+
+- PASS LOCALLY for acceptance follow-up: 109 OCR/output/delivery checks, repository lint/format and diff checks.
