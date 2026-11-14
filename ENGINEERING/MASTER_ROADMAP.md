@@ -1,3 +1,19 @@
+## Existing-service launch preparation — 2026-11-14
+
+- FACT: main `1d0abfc` has successful hosted verification; current registry contains
+  18 customer services and 33 acceptance cases. Runtime enablement is UNKNOWN here.
+- FIX: complete PR #191's raw PDF page-selection rejection before whitespace
+  normalization; twelve lifecycle regressions protect pre-reservation behavior.
+- PASS locally: 92 focused PDF checks (plus 15 subtests), 498 selected operational,
+  payment/recovery and service regressions, lint/format, migrated test DB drift;
+  10 isolated native cases across eight services, zero provider calls or reservations.
+- FIRST COHORT: PDF tools, images-to-PDF, CSV review and QR. Direct card/Word/PDF/
+  table modes follow after target-app review. AI modes need real provider evidence.
+- BLOCKED: installation/access details and real source-bound Telegram, payment,
+  native Office/mobile and server acceptance. Full worker build/local suite was
+  limited by native dependencies and Cloud disk; no production launch claim.
+- Evidence and per-service decisions: [launch review](REPORTS/2026-11-14-launch-readiness.md).
+
 ## PowerPoint source restriction retention — 2026-11-05
 
 - FACT: Live v7 run service-acceptance-uE2Bk94W passed automation/review but omitted the unapproved inventory reservation/delivery restriction. Visual/manual review did not approve content completeness.
