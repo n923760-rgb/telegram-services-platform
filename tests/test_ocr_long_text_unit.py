@@ -62,7 +62,8 @@ async def test_thresholds_and_unbroken_text_keep_existing_artifact_and_chunk_lim
     source = "x" * size
     files = await output(tmp_path, source)
     if size <= 3500:
-        assert not files
+        assert set(files) == {"result.txt"}
+        assert files["result.txt"].decode("utf-8") == source
         return
     assert set(files) == {"result.txt", "result.docx"}
     assert files["result.txt"].decode() == source
@@ -79,3 +80,11 @@ async def test_whitespace_spanning_whole_chunks_is_not_discarded(tmp_path, separ
     paragraphs = Document(BytesIO(files["result.docx"])).paragraphs[1:]
     assert "".join(p.text for p in paragraphs) == files["result.txt"].decode() == source
     assert all(0 < len(p.text) <= 12000 for p in paragraphs)
+
+
+@pytest.mark.parametrize("native", [False, True])
+async def test_short_download_preserves_mixed_text_and_currency_glyphs(tmp_path, native):
+    text = "Plain text\nالطلب 00123 لم يعتمد\n125.50 ﷼ / ر.س / ريال / SAR\nnot approved 00017"
+    files = await output(tmp_path, text, native)
+    assert set(files) == {"result.txt"}
+    assert files["result.txt"].decode("utf-8") == text

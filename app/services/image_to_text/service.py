@@ -19,7 +19,7 @@ from app.services.image_to_text.schema import Extracted, Inputs
 
 
 class ImageToText(BaseService):
-    version = "6"
+    version = "7"
     slug = "image_to_text"
     optional_worker_requirements = ("native_ocr",)
     menu_order = 10
@@ -115,6 +115,11 @@ class ImageToText(BaseService):
                     pass  # Existing TTL handles deletion failure; retain the original error.
                 raise
             artifacts.extend([artifact, editable])
+        else:
+            # The downloadable UTF-8 original is available even for a short result.
+            artifacts.append(
+                self.runtime.storage.save("result.txt", text.encode("utf-8"), "text/plain")
+            )
         return Result(text=text, artifacts=artifacts)
 
 

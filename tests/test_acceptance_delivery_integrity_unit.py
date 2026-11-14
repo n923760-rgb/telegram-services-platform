@@ -175,3 +175,41 @@ def test_materialize_binds_pixel_contract_to_sources_without_altering_input_byte
         inspect_output("images.pdf", image_pdf([data["image"], data["mixed"]]), materialized)
     with pytest.raises(ServiceError, match="acceptance_output_invalid"):
         inspect_output("images.pdf", result, replace(materialized, pdf_image_hashes=()))
+
+
+@pytest.mark.parametrize("name", ["ocr_en", "ocr_mixed"])
+@pytest.mark.parametrize("with_download", [True, False])
+async def test_short_ocr_service_delivers_literal_download_with_chat(tmp_path, name, with_download):
+    from unittest.mock import AsyncMock
+
+    from app.services.image_to_text.schema import Extracted
+    from app.services.image_to_text.service import ImageToText
+
+    case = next(case for case in cases(ASSETS) if case.name == name)
+    backend = LocalStorage(tmp_path / "store")
+    owned = OwnedStorage(backend, OWNER)
+    source = owned.save("source.png", picture(), "image/png")
+    literal = "Plain text\nالطلب 00123\n125.50 ﷼\nPayment has not been approved."
+    provider = SimpleNamespace(
+        extract=AsyncMock(return_value=Extracted(readable=True, confidence=0.99, text=literal))
+    )
+    service = ImageToText()
+    service.runtime = SimpleNamespace(storage=owned, ai=provider)
+    result = await service.run({"images": [source.key]})
+    assert provider.extract.await_count == 1
+    assert result.text == literal
+    assert [a.filename for a in result.artifacts] == ["result.txt"]
+    assert owned.read(result.artifacts[0].key) == literal.encode("utf-8")
+    if not with_download:
+        result.artifacts.clear()
+    delivery = Delivery(tmp_path / "out", backend, case)
+    if with_download:
+        await delivery.send(OWNER, "synthetic", result)
+        assert {f["name"] for f in delivery.files} == {"response.txt", "result.txt"}
+        assert (tmp_path / "out/result.txt").read_bytes() == (
+            tmp_path / "out/response.txt"
+        ).read_bytes()
+    else:
+        with pytest.raises(ServiceError, match="acceptance_output_invalid"):
+            await delivery.send(OWNER, "synthetic", result)
+        assert delivery.sent == 0 and not (tmp_path / "out").exists()
