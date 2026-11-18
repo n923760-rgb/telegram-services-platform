@@ -1,3 +1,10 @@
+## Arabic smart Excel acceptance — 2026-11-19
+
+- FACT: Earlier smart Excel acceptance verified that one identifier occurred somewhere in the workbook. It did not check each value against its source row.
+- CHANGE: Exercise an Arabic workbook with leading-zero identifiers, sortable dates, a date-leading email, a decimal, and distinct zero/blank cells. Check the typed rows in the native Records table and each row's source reference. Retain the existing case and provider limits.
+- PASS locally: 95 workbook, source-binding and acceptance checks. A fixed valid plan passed through the actual Excel builder and acceptance inspector for all three records.
+- PENDING: Isolated provider acceptance of this fixture and visual review in Microsoft Excel.
+
 ## Arabic PowerPoint dates in Microsoft 365 mobile — 2026-11-18
 
 - FACT: Live provider acceptance passed for the seven-slide Arabic deck at `fc2c7bf`. Microsoft 365 on Android displayed the task deadline as `18-11-2026` despite the original `2026-11-18` text.
