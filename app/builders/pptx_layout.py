@@ -12,6 +12,7 @@ from PIL import ImageFont
 
 FONT = "DejaVu Sans"
 BODY_WIDTH = 11.6 * 72
+BULLET_WIDTH = BODY_WIDTH - 24
 BODY_HEIGHT = 4.85 * 72
 FRAME_MARGIN = 0.1 * 72
 
@@ -126,6 +127,6 @@ def plan_slide(item, *, cover_candidate=False):
             raise ValueError("slide table too dense; split records across planned slides")
         return Layout("table", 32, 20, heights, widths)
     for size in (26, 24, 22, 20):
-        if text_height(item.bullets, size, BODY_WIDTH - 24) <= BODY_HEIGHT:
+        if text_height(item.bullets, size, BULLET_WIDTH) <= BODY_HEIGHT:
             return Layout("content", 32, size)
     raise ValueError("slide body too dense; split source content across planned slides")

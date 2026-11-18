@@ -1,3 +1,10 @@
+## Arabic PowerPoint task layout — 2026-11-18
+
+- FACT: Isolated PowerPoint v8 acceptance at `b90d330` passed for the seven-slide Arabic deck. LibreOffice left the recipient introducer at the end of the first line of slide 5, separated from the email and deadline.
+- CHANGE: Keep the introducer, email and deadline together with an editable soft break when both resulting lines fit the existing two-line budget. Add a rendered Impress regression for the task.
+- PASS locally: 256 focused PowerPoint and governance tests on disposable PostgreSQL/Redis, migration and lint/format checks. The seven-slide comparison in LibreOffice changed slide 5 only. The rendered task retained the original recipient, deadline and report number.
+- PENDING: Hosted CI, new isolated provider acceptance and native Microsoft PowerPoint review. Cover and information hierarchy remain follow-up work.
+
 ## PowerPoint source restriction retention — 2026-11-05
 
 - FACT: Live v7 run service-acceptance-uE2Bk94W passed automation/review but omitted the unapproved inventory reservation/delivery restriction. Visual/manual review did not approve content completeness.

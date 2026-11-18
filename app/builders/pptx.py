@@ -7,7 +7,7 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Inches, Pt
 
 from app.builders.direction import has_arabic, is_rtl
-from app.builders.pptx_layout import FONT, plan_slide
+from app.builders.pptx_layout import BULLET_WIDTH, FONT, plan_slide, wrapped_lines
 from app.builders.quality import validate
 from app.builders.schema import Deck
 from app.builders.word import DATE_TOKEN, INLINE_LTR, safe_text
@@ -27,6 +27,34 @@ def _reading_rtl(text):
     # Contacts/dates are identifiers, not English prose. Use the same contact-first
     # matcher as display formatting, including addresses starting with a date.
     return is_rtl(INLINE_LTR.sub("", text))
+
+
+def _wrap_contact_and_date(text, size):
+    if "\n" in text or "\t" in text:
+        return text
+    tokens = list(INLINE_LTR.finditer(text))
+    if len(tokens) != 2:
+        return text
+    contact, deadline = tokens
+    if (
+        "@" not in contact[0]
+        or contact[0].lower().startswith(("http://", "https://", "www."))
+        or not DATE_TOKEN.fullmatch(deadline[0])
+        or len(text[contact.end() : deadline.start()].split()) > 1
+    ):
+        return text
+
+    # Move the word introducing the contact along with the contact and date.
+    # A native soft break keeps the second line part of the same editable bullet.
+    split_at = text[: contact.start()].rstrip().rfind(" ")
+    if split_at <= 0:
+        return text
+    first, continuation = text[:split_at], text[split_at + 1 :]
+    if wrapped_lines(text, size, BULLET_WIDTH) == 2 and all(
+        wrapped_lines(line, size, BULLET_WIDTH) == 1 for line in (first, continuation)
+    ):
+        return first + "\n" + continuation
+    return text
 
 
 def _style_run(run, size, bold, color):
@@ -185,6 +213,8 @@ def build(data: Deck) -> bytes:
             for bullet_index, text in enumerate(item.bullets):
                 paragraph = body.paragraphs[0] if bullet_index == 0 else body.add_paragraph()
                 rtl = _reading_rtl(text)
+                if rtl and not cover:
+                    text = _wrap_contact_and_date(text, layout.body_size)
                 _paragraph(
                     paragraph,
                     text,
