@@ -57,7 +57,7 @@ def _wrap_contact_and_date(text, size):
     return text
 
 
-def _style_run(run, size, bold, color):
+def _style_run(run, size, bold, color, *, ltr_token=False):
     run.font.name = FONT
     run.font.size = Pt(size)
     run.font.bold = bold
@@ -68,21 +68,29 @@ def _style_run(run, size, bold, color):
         element = OxmlElement(tag)
         element.set("typeface", FONT)
         properties.append(element)
+    if ltr_token:
+        direction = OxmlElement("a:rtl")
+        direction.set("val", "0")
+        properties.append(direction)
 
 
 def _paragraph(paragraph, text, rtl, align, size, bold, color, *, bullet=False):
     visible = safe_text(text)
-    # Match complete contacts before dates. Boundary marks surround a free date
-    # or a date-leading email as one LTR token; never insert them inside a contact.
-    # Otherwise an RTL viewer can reorder a numeric email local part and domain.
+    # Give each date or date-leading contact its own LTR run. The Microsoft
+    # mobile preview can reverse a date inside a mixed Arabic run despite LRMs.
+    ltr_runs = set()
     if rtl:
-        visible = INLINE_LTR.sub(
-            lambda match: (
-                "\u200e" + match[0] + "\u200e" if DATE_TOKEN.match(match[0]) else match[0]
-            ),
-            visible,
-        )
-    paragraph.text = visible
+        paragraph.clear()
+        offset = 0
+        for match in INLINE_LTR.finditer(visible):
+            if not DATE_TOKEN.match(match[0]):
+                continue
+            paragraph._p.append_text(visible[offset : match.start()])
+            ltr_runs.add(paragraph._p.add_r("\u200e" + match[0] + "\u200e"))
+            offset = match.end()
+        paragraph._p.append_text(visible[offset:])
+    else:
+        paragraph.text = visible
     paragraph.alignment = align
     properties = paragraph._p.get_or_add_pPr()
     properties.set("rtl", "1" if rtl else "0")
@@ -101,7 +109,7 @@ def _paragraph(paragraph, text, rtl, align, size, bold, color, *, bullet=False):
     paragraph.font.bold = bold
     paragraph.font.color.rgb = color
     for run in paragraph.runs:
-        _style_run(run, size, bold, color)
+        _style_run(run, size, bold, color, ltr_token=run._r in ltr_runs)
 
 
 def _frame(frame):

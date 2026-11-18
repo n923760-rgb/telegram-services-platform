@@ -4,6 +4,7 @@ from io import BytesIO
 
 import pytest
 from pptx import Presentation
+from pptx.oxml.ns import qn
 
 from app.builders.pptx import build
 from app.builders.schema import Deck
@@ -66,6 +67,10 @@ def test_arabic_prose_isolates_complete_date_tokens_without_reformatting(date):
     for name in ("Slide title", "Slide content"):
         shape = next(shape for shape in deck.slides[0].shapes if shape.name == name)
         assert shape.text == "الموعد \u200e" + date + "\u200e"
+        prose, token = shape.text_frame.paragraphs[0].runs
+        assert prose.text == "الموعد "
+        assert token.text == "\u200e" + date + "\u200e"
+        assert token._r.rPr.find(qn("a:rtl")).get("val") == "0"
 
 
 def test_english_dates_and_standalone_contacts_have_no_new_display_controls():

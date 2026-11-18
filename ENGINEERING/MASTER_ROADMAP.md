@@ -1,9 +1,16 @@
+## Arabic PowerPoint dates in Microsoft 365 mobile — 2026-11-18
+
+- FACT: Live provider acceptance passed for the seven-slide Arabic deck at `fc2c7bf`. Microsoft 365 on Android displayed the task deadline as `18-11-2026` despite the original `2026-11-18` text.
+- CHANGE: Keep protected dates and date-leading contacts in separate native DrawingML runs with explicit LTR direction. Keep the Arabic paragraph right-to-left and the original text editable.
+- PASS locally: 196 focused tests, lint and formatting; LibreOffice retained both dates, and native paragraph text matched the original deck. The second screenshot from Microsoft 365 on Android confirms the task deadline `2026-11-18`, email and report number `00017` on slide 5.
+- PENDING: Hosted CI on this follow-up and production release.
+
 ## Arabic PowerPoint task layout — 2026-11-18
 
 - FACT: Isolated PowerPoint v8 acceptance at `b90d330` passed for the seven-slide Arabic deck. LibreOffice left the recipient introducer at the end of the first line of slide 5, separated from the email and deadline.
 - CHANGE: Keep the introducer, email and deadline together with an editable soft break when both resulting lines fit the existing two-line budget. Add a rendered Impress regression for the task.
 - PASS locally: 256 focused PowerPoint and governance tests on disposable PostgreSQL/Redis, migration and lint/format checks. The seven-slide comparison in LibreOffice changed slide 5 only. The rendered task retained the original recipient, deadline and report number.
-- PENDING: Hosted CI, new isolated provider acceptance and native Microsoft PowerPoint review. Cover and information hierarchy remain follow-up work.
+- PASS on `fc2c7bf`: hosted CI and isolated provider acceptance. Microsoft 365 mobile kept the soft break and exposed the date-order issue tracked above. Cover and information hierarchy remain follow-up work.
 
 ## PowerPoint source restriction retention — 2026-11-05
 
