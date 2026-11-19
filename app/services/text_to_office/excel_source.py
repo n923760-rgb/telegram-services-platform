@@ -58,7 +58,11 @@ def value_matches(value, quote, kind, header):
                 return False
             return parsed.year >= 1900 and value == parsed.isoformat()
         return value == quote
-    if IDENTIFIER_HEADER.search(re.sub(r"[\u064b-\u065f\u0670]", "", header).replace("_", " ")):
+    header = re.sub(r"[\u064b-\u065f\u0670]", "", header).replace("_", " ").strip()
+    # The explicit Arabic amount header can use "(number)" as a type hint.
+    # Leave other uses of رقم subject to the identifier guard.
+    amount_hint = kind == "number" and re.fullmatch(r"(?:ال)?مبلغ\s*\(\s*رقم\s*\)", header)
+    if not amount_hint and IDENTIFIER_HEADER.search(header):
         return False
     if isinstance(value, bool):
         return kind == "boolean" and quote.casefold() in (
