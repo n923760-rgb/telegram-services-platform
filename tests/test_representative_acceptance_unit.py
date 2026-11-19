@@ -87,7 +87,8 @@ def test_long_summary_and_real_cross_language_source_keep_existing_plan_bounds(p
     assert "payment has not been approved" in plan["translation_ar"].inputs["text"]
     assert "report contain several error" in plan["editing_proofread"].inputs["text"]
     assert "يا فريق" in plan["editing_rewrite"].inputs["text"]
-    assert sum(bool(case.review_checks) for case in plan.values()) == 11
+    assert plan["excel_smart"].review_checks
+    assert sum(bool(case.review_checks) for case in plan.values()) == 12
 
 
 def test_arabic_minutes_use_arabic_source_and_keep_semantic_review_explicit(plan):
