@@ -146,6 +146,29 @@ async def test_invalid_pdf_tools_input_fails_before_reservation(tmp_path, monkey
         assert (await balance(db, 1)).reserved == 0
 
 
+@pytest.mark.parametrize("separator", ["\v", "\f", "\x1c", "\x1d", "\x1e", "\x85"])
+@pytest.mark.parametrize("operation", ["extract", "rotate"])
+async def test_multiline_pdf_selection_never_creates_order_or_reserves_credit(
+    tmp_path, monkeypatch, separator, operation
+):
+    storage, _, price = await prepare(tmp_path, monkeypatch)
+    file = storage.save(1, "source.pdf", source(), "application/pdf")
+    inputs = {
+        "operation": operation,
+        "files": [file.key],
+        "pages": "1" + separator,
+        **({"rotation": "90"} if operation == "rotate" else {}),
+    }
+    with pytest.raises(ServiceError, match="input_invalid"):
+        await submit(1, "pdf_tools", inputs, price, "multiline-selection")
+    async with sessions() as db:
+        for model in (Order, Job, CostHold, CostUsage):
+            assert await db.scalar(select(func.count(model.id))) == 0
+        assert await db.scalar(select(func.count(Ledger.id))) == 1
+        funds = await balance(db, 1)
+        assert (funds.available, funds.reserved) == (1000, 0)
+
+
 @pytest.mark.parametrize("operation", ["merge", "extract", "rotate"])
 async def test_pdf_tools_delivery_retry_reuses_output_without_rebuilding(
     tmp_path, monkeypatch, operation
