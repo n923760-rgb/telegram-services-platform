@@ -15,6 +15,14 @@ class Inputs(StrictModel):
     pages: str | None = Field(default=None, min_length=1, max_length=200)
     rotation: Literal["90", "180", "270"] | None = None
 
+    @field_validator("pages", mode="before")
+    @classmethod
+    def validate_raw_pages(cls, value):
+        if value is not None:
+            # StrictModel strips boundary whitespace; reject line separators first.
+            page_selection(value)
+        return value
+
     @field_validator("file_order", mode="before")
     @classmethod
     def one_line_order(cls, value):
