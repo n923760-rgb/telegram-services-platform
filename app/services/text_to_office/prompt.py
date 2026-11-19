@@ -34,6 +34,11 @@ Quotes must be contiguous exact excerpts within THAT line. Every numeric/contact
 in a record must appear exactly once across its quotes; do not discard digits embedded in notes.
 Use context_ids only for actual instructions/headers/context lines, never to hide a record.
 Account for every source line exactly once as an ordered record or explicit context.
+When the source gives a delimited header and matching record lines, use the header line
+as context and keep the column order. Preserve each empty field in place using null in
+both the row and its quotes, including an empty final field. Keep evidence quotes as
+strings with the original spelling even for typed cells: a value of 125.5 uses quote
+"125.50" when that is what the source says. Quote a date-leading email as one complete cell.
 Preserve strings exactly as quoted. Numeric conversion accepts literal ASCII decimals without
 leading zero identifiers; no thousand separators, exponent forms, guessing or rounding.
 Date conversion accepts only year-first YYYY-MM-DD or YYYY/MM/DD. Other dates remain text.

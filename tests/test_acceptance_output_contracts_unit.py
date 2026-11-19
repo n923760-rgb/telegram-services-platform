@@ -3,6 +3,7 @@ from io import BytesIO
 import pytest
 from docx import Document
 from openpyxl import Workbook
+from openpyxl.worksheet.table import Table
 from pptx import Presentation
 from pypdf import PdfReader, PdfWriter
 
@@ -107,6 +108,39 @@ def test_required_workbook_sheets_reject_missing_but_allow_optional_sheets(missi
     else:
         with pytest.raises(ServiceError, match="acceptance_output_invalid"):
             inspect_output("review.xlsx", output.getvalue(), case)
+
+
+@pytest.mark.parametrize("mutation", [None, "no_table", "reordered", "text_date", "blank_as_zero"])
+def test_smart_excel_acceptance_checks_exact_native_records(mutation):
+    case = next(case for case in cases(ASSETS) if case.name == "excel_smart")
+    book = Workbook()
+    book.active.title = "Data"
+    book.create_sheet("Source")
+    data = book["Data"]
+    data["A1"] = "سجل الطلبات"
+    for column, label in enumerate(
+        ("المعرف", "العميل", "المبلغ", "التاريخ", "البريد", "المصدر"), 1
+    ):
+        data.cell(3, column, label)
+    for record in case.xlsx_data_rows:
+        data.append(record)
+    if mutation != "no_table":
+        data.add_table(Table(displayName="Records", ref="A3:F6"))
+    if mutation == "reordered":
+        data["A4"].value, data["A5"].value = data["A5"].value, data["A4"].value
+    if mutation == "text_date":
+        data["D4"] = "2026-11-18"
+    if mutation == "blank_as_zero":
+        data["C6"] = 0
+    output = BytesIO()
+    book.save(output)
+    if mutation is None:
+        assert (
+            inspect_output("result.xlsx", output.getvalue(), case)["editable_records_checked"] == 3
+        )
+    else:
+        with pytest.raises(ServiceError, match="acceptance_workbook_records"):
+            inspect_output("result.xlsx", output.getvalue(), case)
 
 
 def test_legacy_minimum_pdf_contract_is_retained_for_variable_layouts():

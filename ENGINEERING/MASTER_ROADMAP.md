@@ -1,3 +1,14 @@
+## Arabic smart Excel acceptance — 2026-11-19
+
+- FACT: Earlier smart Excel acceptance verified that one identifier occurred somewhere in the workbook. It did not check each value against its source row.
+- CHANGE: Exercise an Arabic workbook with leading-zero identifiers, sortable dates, a date-leading email, a decimal, and distinct zero/blank cells. Check the typed rows in the native Records table and each row's source reference. Retain the existing case and provider limits.
+- PASS locally: 95 workbook, source-binding and acceptance checks. A fixed valid plan passed through the actual Excel builder and acceptance inspector for all three records.
+- FAIL on `2ad2b3b`: isolated DeepSeek returned two invalid plans classified only as `constraint`. No workbook was delivered, both provider holds settled, and no active order or wallet reservation remained. The exact rejected constraint was not recorded.
+- FOLLOW-UP: Add content-free Excel rejection categories and clarify delimited headers, missing cells, and verbatim evidence. Preserve the existing validation rules and retry allowance.
+- FAIL on `acb94a7`: both live plans failed with `excel_cell_value`; neither was delivered and no active order or wallet reservation remained.
+- REPRODUCED: the supplied header `المبلغ (رقم)` rejects a valid numeric amount when copied verbatim. Accept its explicit numeric hint while retaining the identifier guard for other headers. This is a local reproduction from the fixture, not a reconstruction of the rejected provider plans.
+- PENDING: Repeat isolated provider acceptance with the new diagnostics, then review the workbook in Microsoft Excel.
+
 ## Arabic PowerPoint dates in Microsoft 365 mobile — 2026-11-18
 
 - FACT: Live provider acceptance passed for the seven-slide Arabic deck at `fc2c7bf`. Microsoft 365 on Android displayed the task deadline as `18-11-2026` despite the original `2026-11-18` text.

@@ -1,6 +1,7 @@
 """Synthetic acceptance data only; no customer uploads or test-suite imports."""
 
 from dataclasses import dataclass, replace
+from datetime import datetime
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
@@ -34,6 +35,7 @@ class Case:
     docx_tables: tuple[tuple[tuple[str, ...], ...], ...] = ()
     pdf_links: tuple[str, ...] = ()
     docx_text_counts: tuple[tuple[str, int], ...] = ()
+    xlsx_data_rows: tuple[tuple[str | int | float | datetime | None, ...], ...] = ()
 
 
 def representative_cases(result):
@@ -421,8 +423,26 @@ def cases(assets):
         Case(
             "excel_smart",
             "text_to_office",
-            {"text": "00123 | Demo | 125.50\n00017 | Example | 0", "target": "excel"},
-            ("00123",),
+            {
+                "text": (
+                    "رقم الطلب (نص) | العميل | المبلغ (رقم) | التاريخ (تاريخ إكسل) | البريد\n"
+                    "00123 | سارة | 125.50 | 2026-11-18 | 2026-10-24@demo.invalid\n"
+                    "00017 | خالد | 0 | 2026-11-20 |\n"
+                    "00019 | ريم |  | 2026-11-21 | reem@demo.invalid"
+                ),
+                "target": "excel",
+            },
+            required_sheets=("Data", "Source"),
+            xlsx_data_rows=(
+                ("00123", "سارة", 125.5, datetime(2026, 11, 18), "2026-10-24@demo.invalid", "L002"),
+                ("00017", "خالد", 0, datetime(2026, 11, 20), None, "L003"),
+                ("00019", "ريم", None, datetime(2026, 11, 21), "reem@demo.invalid", "L004"),
+            ),
+            review_checks=(
+                "Inspect the editable data table in Excel: Arabic order, complete date-leading email, "
+                "decimal display 125.50, preserved leading zeros, correctly sortable dates, and blank distinct from zero.",
+                "Check that each native source reference points to the original record on the Source sheet.",
+            ),
         ),
         *[
             Case(

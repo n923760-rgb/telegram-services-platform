@@ -280,6 +280,19 @@ def inspect_output(name, data, case):
         cells = [cell for sheet in book for row in sheet for cell in row]
         if any(cell.data_type == "f" or cell.hyperlink for cell in cells):
             raise ServiceError("acceptance_output_invalid")
+        if case.xlsx_data_rows:
+            sheet = book["Data"]
+            table = sheet.tables.get("Records")
+            if table is None:
+                raise ServiceError("acceptance_workbook_records")
+            rows = tuple(tuple(cell.value for cell in row) for row in sheet[table.ref][1:])
+            if rows != case.xlsx_data_rows or any(
+                type(actual) is not type(expected)
+                for row, expected_row in zip(rows, case.xlsx_data_rows, strict=True)
+                for actual, expected in zip(row, expected_row, strict=True)
+            ):
+                raise ServiceError("acceptance_workbook_records")
+            details["editable_records_checked"] = len(rows)
         text = "\n".join(str(cell.value) for cell in cells if cell.value is not None)
         details["sheets"] = book.sheetnames
     elif suffix == ".pptx":
