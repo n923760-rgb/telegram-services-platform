@@ -5,9 +5,17 @@ import re
 from collections import Counter
 from datetime import date
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, ClassVar
 
-from pydantic import Field, StrictInt, StringConstraints, model_validator
+from pydantic import (
+    Field,
+    StrictInt,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
+from pydantic_core import PydanticCustomError
 
 from app.builders.schema import StrictModel
 from app.services.documents import DocumentInputs
@@ -75,8 +83,37 @@ def source_excel_schema(values):
     patterns = (NUMERIC_TOKEN, CONTACT_TOKEN)
 
     class SourceExcelPlan(ExcelPlan):
+        diagnostic_categories: ClassVar = {
+            code: code
+            for code in (
+                "excel_table_shape_or_types",
+                "excel_output_limit",
+                "excel_record_order",
+                "excel_source_coverage",
+                "excel_source_labels",
+                "excel_quote_count",
+                "excel_quote_source",
+                "excel_cell_value",
+                "excel_source_tokens",
+            )
+        }
         evidence: list[RowEvidence] = Field(default_factory=list, max_length=200)
         context_ids: list[StrictInt] = Field(default_factory=list, max_length=200)
+
+        @field_validator("table", mode="wrap")
+        @classmethod
+        def diagnose_table(cls, value, handler):
+            try:
+                return handler(value)
+            except ValidationError as error:
+                if any(
+                    item["type"] == "value_error"
+                    for item in error.errors(include_input=False, include_context=False)
+                ):
+                    raise PydanticCustomError(
+                        "excel_table_shape_or_types", "invalid Excel table shape or column types"
+                    ) from None
+                raise
 
         @model_validator(mode="after")
         def source_fidelity(self):
@@ -84,46 +121,63 @@ def source_excel_schema(values):
                 return self
             table = self.table
             if len(table.columns) > 20 or len(table.rows) * len(table.columns) > 1600:
-                raise ValueError("Excel source output limit")
+                raise PydanticCustomError("excel_output_limit", "Excel source output limit")
             ids = [row.source_id for row in self.evidence]
             if len(ids) != len(table.rows) or ids != sorted(set(ids)):
-                raise ValueError("one ordered source line per record")
+                raise PydanticCustomError(
+                    "excel_record_order", "one ordered source line per record"
+                )
             all_ids = ids + self.context_ids
             if len(all_ids) != len(lines) or set(all_ids) != set(lines):
-                raise ValueError("account for every source line exactly once")
+                raise PydanticCustomError(
+                    "excel_source_coverage", "account for every source line exactly once"
+                )
             metadata = "\n".join([table.title, *table.columns])
             DocumentInputs.printable_text(metadata)
             for pattern in patterns:
                 if not Counter(pattern.findall(metadata)) <= Counter(pattern.findall(values.text)):
-                    raise ValueError("no invented numeric/contact labels")
+                    raise PydanticCustomError(
+                        "excel_source_labels", "no invented numeric/contact labels"
+                    )
             for row, evidence in zip(table.rows, self.evidence, strict=True):
                 if len(evidence.quotes) != len(row):
-                    raise ValueError("one quote per cell")
+                    raise PydanticCustomError("excel_quote_count", "one quote per cell")
                 line = lines[evidence.source_id]
                 used = []
                 for i, (cell, quote) in enumerate(zip(row, evidence.quotes, strict=True)):
                     if cell is None:
                         if quote is not None:
-                            raise ValueError("missing cell must have no source quote")
+                            raise PydanticCustomError(
+                                "excel_quote_source", "missing cell must have no source quote"
+                            )
                         continue
                     if quote is None or quote not in line:
-                        raise ValueError("quote must be verbatim within this record's source line")
+                        raise PydanticCustomError(
+                            "excel_quote_source",
+                            "quote must be verbatim in the record's source line",
+                        )
                     DocumentInputs.printable_text(quote)
                     kind = table.column_formats[i].kind if table.column_formats else "number"
                     if kind == "date" and re.search(r"هجري|hijri", values.text, re.IGNORECASE):
-                        raise ValueError("explicit Hijri context must retain date text")
+                        raise PydanticCustomError(
+                            "excel_cell_value", "explicit Hijri context must retain date text"
+                        )
                     if not value_matches(cell, quote, kind, table.columns[i]):
-                        raise ValueError(
-                            "cell must retain its quoted value or an allowed typed conversion"
+                        raise PydanticCustomError(
+                            "excel_cell_value",
+                            "cell must retain its quoted value or an allowed typed conversion",
                         )
                     used.append(quote)
                 for pattern in patterns:
                     if sum(
                         (Counter(pattern.findall(quote)) for quote in used), Counter()
                     ) != Counter(pattern.findall(line)):
-                        raise ValueError("retain every numeric/contact occurrence in the record")
+                        raise PydanticCustomError(
+                            "excel_source_tokens",
+                            "retain every numeric/contact occurrence in the record",
+                        )
             if len(self.model_dump_json()) > 100000:
-                raise ValueError("Excel evidence output limit")
+                raise PydanticCustomError("excel_output_limit", "Excel evidence output limit")
             return self
 
     return SourceExcelPlan

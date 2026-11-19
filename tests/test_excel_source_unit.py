@@ -9,6 +9,7 @@ from openpyxl import load_workbook
 from pydantic import ValidationError
 
 from app.builders.excel_source import build
+from app.providers.ai.validation import validation_categories
 from app.services.base import ServiceError
 from app.services.text_to_office.excel_source import RowEvidence, source_excel_schema, value_matches
 from app.services.text_to_office.schema import ExcelPlan, Inputs
@@ -101,8 +102,31 @@ def test_source_guard_rejects_cross_record_or_invented_data(change):
         data["table"]["title"] = "الطلبات 99999"
     elif change == "rounded":
         row[2] = 125.51
-    with pytest.raises(ValidationError):
-        source_excel_schema(Inputs.parse(inputs())).model_validate(data)
+    expected = {
+        "value": "excel_cell_value",
+        "cross_row": "excel_quote_source",
+        "missing_number": "excel_source_tokens",
+        "missing_quote": "excel_quote_source",
+        "zero_for_null": "excel_quote_source",
+        "duplicate_id": "excel_record_order",
+        "reverse": "excel_record_order",
+        "forgot_context": "excel_source_coverage",
+        "invent_label": "excel_source_labels",
+        "rounded": "excel_cell_value",
+    }
+    schema = source_excel_schema(Inputs.parse(inputs()))
+    with pytest.raises(ValidationError) as error:
+        schema.model_validate(data)
+    assert validation_categories(schema, error.value) == [expected[change]]
+
+
+def test_invalid_nested_table_reports_fixed_category():
+    data = deepcopy(plan())
+    data["table"]["rows"][0][2] = "125.50"
+    schema = source_excel_schema(Inputs.parse(inputs()))
+    with pytest.raises(ValidationError) as error:
+        schema.model_validate(data)
+    assert validation_categories(schema, error.value) == ["excel_table_shape_or_types"]
 
 
 @pytest.mark.parametrize(
