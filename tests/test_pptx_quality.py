@@ -248,6 +248,12 @@ def test_native_cards_keep_arabic_content_editable_and_inside_slide():
         )
         assert len(cards) == len(deck.slides[index].bullets)
         assert [card.text for card in cards] == deck.slides[index].bullets
+        if index == 0:
+            assert cards[0].left > cards[1].left > cards[2].left
+        elif index == 2:
+            assert cards[0].left > cards[1].left
+            assert cards[2].left > cards[3].left
+            assert cards[0].top == cards[1].top
         for card in cards:
             assert 0 <= card.left and 0 <= card.top
             assert card.left + card.width <= prs.slide_width
