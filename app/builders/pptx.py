@@ -228,13 +228,16 @@ def _native_card(slide, text, index, *, x, y, width, height, size, dark):
 
 
 def _render_cards(slide, item, layout):
+    rtl_order = _reading_rtl(item.title)
     for index, value in enumerate(item.bullets):
         if layout.kind == "agenda":
-            x, y, width, height = 0.85 + index * 3.96, 3.55, 3.68, 2.35
+            column = 2 - index if rtl_order else index
+            x, y, width, height = 0.85 + column * 3.96, 3.55, 3.68, 2.35
         elif layout.kind == "steps":
             x, y, width, height = 0.85, 1.85 + index * 1.58, 11.6, 1.36
         else:
-            x = 0.85 + (index % 2) * 5.96
+            column = 1 - index % 2 if rtl_order else index % 2
+            x = 0.85 + column * 5.96
             y = 1.85 + (index // 2) * 1.58
             width, height = 5.64, 1.36
         _native_card(
