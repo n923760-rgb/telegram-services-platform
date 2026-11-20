@@ -214,9 +214,7 @@ async def test_unapproved_payment_proposed_date_and_explicit_action_are_kept_dis
         "أفاد المستودع بتوفر 40 قطعة، ولم يُعتمد حجزها.",
         "نوقشت آلية مختصرة دون اعتمادها.",
     ]
-    values = Inputs.parse(
-        {"language": "ar", "title": "متابعة الطلبات", "notes": "\n".join(notes)}
-    )
+    values = Inputs.parse({"language": "ar", "title": "متابعة الطلبات", "notes": "\n".join(notes)})
     assert values.lines() == notes
     assignments = [
         {"note_id": 1, "category": "discussion"},
