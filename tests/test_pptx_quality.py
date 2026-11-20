@@ -205,7 +205,6 @@ def test_english_table_remains_ltr_and_does_not_execute_xml_or_links():
     assert native.cell(1, 1).text == "<xml>& =SUM(A1)"
 
 
-
 def test_native_cards_keep_arabic_content_editable_and_inside_slide():
     plan = {
         "slides": [
@@ -236,8 +235,7 @@ def test_native_cards_keep_arabic_content_editable_and_inside_slide():
     }
     deck = Deck.model_validate(plan)
     assert [
-        plan_slide(item, cover_candidate=index == 0).kind
-        for index, item in enumerate(deck.slides)
+        plan_slide(item, cover_candidate=index == 0).kind for index, item in enumerate(deck.slides)
     ] == ["agenda", "steps", "grid"]
 
     content = pptx.build(deck)
