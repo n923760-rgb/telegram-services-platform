@@ -203,3 +203,86 @@ def test_english_table_remains_ltr_and_does_not_execute_xml_or_links():
     )
     assert native._tbl.tblPr.get("rtl") == "0"
     assert native.cell(1, 1).text == "<xml>& =SUM(A1)"
+
+
+def test_native_cards_keep_arabic_content_editable_and_inside_slide():
+    plan = {
+        "slides": [
+            {
+                "title": "تطوير خدمة العملاء",
+                "bullets": ["الاستجابة للعملاء", "معالجة المشكلات", "تحسين الجودة"],
+            },
+            {
+                "title": "خطوات الاستجابة",
+                "bullets": [
+                    "استقبال الاستفسارات بوضوح",
+                    "تحديد المشكلة قبل الحل",
+                    "توضيح موعد المتابعة",
+                ],
+            },
+            {
+                "title": "مراجعة الجودة",
+                "bullets": [
+                    "فهم طلب العميل",
+                    "تقديم خطوات عملية مناسبة",
+                    "التأكد من معالجة المشكلة",
+                    "مراجعة الملاحظات المتكررة",
+                    "قياس رضا العملاء",
+                    "تحسين إجراءات التواصل",
+                ],
+            },
+        ]
+    }
+    deck = Deck.model_validate(plan)
+    assert [
+        plan_slide(item, cover_candidate=index == 0).kind for index, item in enumerate(deck.slides)
+    ] == ["agenda", "steps", "grid"]
+
+    content = pptx.build(deck)
+    prs = Presentation(BytesIO(content))
+    assert len(prs.slides) == 3
+    for index, slide in enumerate(prs.slides):
+        cards = sorted(
+            (shape for shape in slide.shapes if shape.name.startswith("Content card ")),
+            key=lambda shape: int(shape.name.rsplit(" ", 1)[-1]),
+        )
+        assert len(cards) == len(deck.slides[index].bullets)
+        assert [card.text for card in cards] == deck.slides[index].bullets
+        if index == 0:
+            assert cards[0].left > cards[1].left > cards[2].left
+        elif index == 2:
+            assert cards[0].left > cards[1].left
+            assert cards[2].left > cards[3].left
+            assert cards[0].top == cards[1].top
+        for card in cards:
+            assert 0 <= card.left and 0 <= card.top
+            assert card.left + card.width <= prs.slide_width
+            assert card.top + card.height <= prs.slide_height
+            assert card.has_text_frame
+            assert all(
+                run.font.size.pt >= 21
+                for paragraph in card.text_frame.paragraphs
+                for run in paragraph.runs
+            )
+    with ZipFile(BytesIO(content)) as package:
+        assert not any(name.startswith("ppt/media/") for name in package.namelist())
+
+
+def test_native_card_layout_falls_back_when_source_has_numbers_or_contacts():
+    plan = Deck.model_validate(
+        {
+            "slides": [
+                {
+                    "title": "مراجعة الطلبات",
+                    "bullets": [
+                        "الطلب 00123",
+                        "تواصل مع customer@example.invalid",
+                        "القيمة 125.50 ريال",
+                    ],
+                }
+            ]
+        }
+    )
+    assert plan_slide(plan.slides[0], cover_candidate=True).kind == "content"
+    result = Presentation(BytesIO(pptx.build(plan)))
+    assert next(shape for shape in result.slides[0].shapes if shape.name == "Slide content")

@@ -111,6 +111,16 @@ def _table_layout(table):
     return widths, heights
 
 
+def _cards_fit(bullets, *, width, size, height):
+    """Only use decorative card layouts when measured source text safely fits."""
+    return all(
+        len(text) <= 65
+        and not re.search(r"\d|@|https?://|www\.", text, flags=re.IGNORECASE)
+        and text_height([text], size, width * 72) <= height * 72
+        for text in bullets
+    )
+
+
 def plan_slide(item, *, cover_candidate=False):
     table = getattr(item, "table", None)
     if cover_candidate and table is None and len(item.bullets) <= 2:
@@ -119,6 +129,14 @@ def plan_slide(item, *, cover_candidate=False):
             and text_height(item.bullets, 24, BODY_WIDTH) <= 1.9 * 72
         ):
             return Layout("cover", 42, 24)
+    if (
+        cover_candidate
+        and table is None
+        and len(item.bullets) == 3
+        and text_height([item.title], 38, BODY_WIDTH, bold=True) <= 1.6 * 72
+        and _cards_fit(item.bullets, width=3.68, size=24, height=2.35)
+    ):
+        return Layout("agenda", 38, 24)
     if text_height([item.title], 32, BODY_WIDTH, bold=True) > 1.3 * 72:
         raise ValueError("slide title too dense; use a concise source-bound title")
     if table is not None:
@@ -126,6 +144,10 @@ def plan_slide(item, *, cover_candidate=False):
         if sum(heights) > BODY_HEIGHT:
             raise ValueError("slide table too dense; split records across planned slides")
         return Layout("table", 32, 20, heights, widths)
+    if len(item.bullets) == 3 and _cards_fit(item.bullets, width=11.6, size=23, height=1.36):
+        return Layout("steps", 32, 23)
+    if len(item.bullets) == 6 and _cards_fit(item.bullets, width=5.64, size=21, height=1.36):
+        return Layout("grid", 32, 21)
     for size in (26, 24, 22, 20):
         if text_height(item.bullets, size, BULLET_WIDTH) <= BODY_HEIGHT:
             return Layout("content", 32, size)

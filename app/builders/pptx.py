@@ -2,6 +2,7 @@ from io import BytesIO
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Inches, Pt
@@ -19,6 +20,9 @@ PAPER = RGBColor(0xF7, 0xFA, 0xF8)
 COVER = RGBColor(0x14, 0x2D, 0x36)
 COVER_TEXT = RGBColor(0xFF, 0xFF, 0xFF)
 COVER_MUTED = RGBColor(0xD6, 0xE5, 0xE0)
+CARD_DARK = RGBColor(0x20, 0x46, 0x50)
+CARD_PAPER = RGBColor(0xFF, 0xFF, 0xFF)
+CARD_ACCENT = RGBColor(0x45, 0xBA, 0x96)
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
 
@@ -183,6 +187,72 @@ def _table(slide, item, layout):
             )
 
 
+def _native_card(slide, text, index, *, x, y, width, height, size, dark):
+    """Editable source text in a bounded native PowerPoint shape."""
+    card = slide.shapes.add_shape(
+        MSO_SHAPE.ROUNDED_RECTANGLE,
+        Inches(x),
+        Inches(y),
+        Inches(width),
+        Inches(height),
+    )
+    card.name = f"Content card {index + 1}"
+    card.fill.solid()
+    card.fill.fore_color.rgb = CARD_DARK if dark else CARD_PAPER
+    card.line.fill.background()
+    _frame(card.text_frame)
+    card.text_frame.margin_left = Inches(0.28)
+    card.text_frame.margin_right = Inches(0.28)
+    card.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    rtl = _reading_rtl(text)
+    _paragraph(
+        card.text_frame.paragraphs[0],
+        text,
+        rtl,
+        PP_ALIGN.CENTER if dark else PP_ALIGN.RIGHT if rtl else PP_ALIGN.LEFT,
+        size,
+        dark,
+        COVER_TEXT if dark else DARK,
+    )
+    accent = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        Inches(x + width - 0.08 if rtl else x + 0.02),
+        Inches(y + 0.23),
+        Inches(0.06),
+        Inches(height - 0.46),
+    )
+    accent.name = f"Card accent {index + 1}"
+    accent.fill.solid()
+    accent.fill.fore_color.rgb = CARD_ACCENT
+    accent.line.fill.background()
+
+
+def _render_cards(slide, item, layout):
+    rtl_order = _reading_rtl(item.title)
+    for index, value in enumerate(item.bullets):
+        if layout.kind == "agenda":
+            column = 2 - index if rtl_order else index
+            x, y, width, height = 0.85 + column * 3.96, 3.55, 3.68, 2.35
+        elif layout.kind == "steps":
+            x, y, width, height = 0.85, 1.85 + index * 1.58, 11.6, 1.36
+        else:
+            column = 1 - index % 2 if rtl_order else index % 2
+            x = 0.85 + column * 5.96
+            y = 1.85 + (index // 2) * 1.58
+            width, height = 5.64, 1.36
+        _native_card(
+            slide,
+            value,
+            index,
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            size=layout.body_size,
+            dark=layout.kind == "agenda",
+        )
+
+
 def build(data: Deck) -> bytes:
     data = Deck.model_validate(data)
     prs = Presentation()
@@ -195,7 +265,7 @@ def build(data: Deck) -> bytes:
     for index, item in enumerate(data.slides):
         slide = prs.slides.add_slide(blank)
         layout = plan_slide(item, cover_candidate=index == 0 and len(data.slides) > 1)
-        cover = layout.kind == "cover"
+        cover = layout.kind in {"cover", "agenda"}
         # Native fills keep every foreground item editable and require no image assets.
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = COVER if cover else PAPER
@@ -214,6 +284,8 @@ def build(data: Deck) -> bytes:
         )
         if item.table is not None:
             _table(slide, item, layout)
+        elif layout.kind in {"agenda", "steps", "grid"}:
+            _render_cards(slide, item, layout)
         else:
             body = _textbox(
                 slide, "Slide content", 0.85, 3.55 if cover else 1.8, 11.6, 1.9 if cover else 4.85
