@@ -253,6 +253,8 @@ async def test_unapproved_payment_proposed_date_and_explicit_action_are_kept_dis
         assert paragraphs.count(f"[{index}] {note}") == 1
     assert len(doc.tables) == 1
     assert [cell.text for cell in doc.tables[0].rows[1].cells] == [
-        "[4]", "سام", "2026-11-30"
+        "[4]",
+        "سام",
+        "2026-11-30",
     ]
     assert not any("2026-12-05" in cell.text for row in doc.tables[0].rows for cell in row.cells)
