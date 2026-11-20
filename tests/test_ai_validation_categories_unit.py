@@ -24,9 +24,7 @@ class Candidate(StrictModel):
 
 def test_known_limits_and_choices_have_actionable_content_free_categories():
     source = "Private source 00123"
-    invalid = json.dumps(
-        {"title": "Too long", "entries": ["a", "b"], "action": "drop", "rank": 0}
-    )
+    invalid = json.dumps({"title": "Too long", "entries": ["a", "b"], "action": "drop", "rank": 0})
     with pytest.raises(ValidationError) as caught:
         Candidate.model_validate_json(invalid)
 
