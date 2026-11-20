@@ -286,3 +286,84 @@ def test_native_card_layout_falls_back_when_source_has_numbers_or_contacts():
     assert plan_slide(plan.slides[0], cover_candidate=True).kind == "content"
     result = Presentation(BytesIO(pptx.build(plan)))
     assert next(shape for shape in result.slides[0].shapes if shape.name == "Slide content")
+
+
+@pytest.mark.parametrize(
+    ("title", "bullets", "expected_kind", "right_to_left"),
+    [
+        ("محاور الخدمة", ["استقبال الاستفسارات", "حل المشكلات"], "duo", True),
+        (
+            "خطوات العمل",
+            ["الاستقبال", "التحليل", "المعالجة", "المتابعة"],
+            "quad",
+            True,
+        ),
+        ("Customer support", ["Receive requests", "Resolve issues"], "duo", False),
+        (
+            "Service plan",
+            ["Intake", "Analysis", "Action", "Follow-up"],
+            "quad",
+            False,
+        ),
+    ],
+)
+def test_native_two_and_four_card_layouts_preserve_source_and_reading_order(
+    title, bullets, expected_kind, right_to_left
+):
+    """New layouts are source-preserving editable shapes, not inferred facts."""
+    deck = Deck.model_validate(
+        {
+            "slides": [
+                {"title": "مقدمة العرض", "bullets": ["عرض مختصر"]},
+                {"title": title, "bullets": bullets},
+            ]
+        }
+    )
+    assert plan_slide(deck.slides[1]).kind == expected_kind
+    prs = Presentation(BytesIO(pptx.build(deck)))
+    assert len(prs.slides) == 2
+    slide = prs.slides[1]
+    cards = sorted(
+        (s for s in slide.shapes if s.name.startswith("Content card ")),
+        key=lambda s: int(s.name.rsplit(" ", 1)[-1]),
+    )
+    assert len(cards) == len(bullets)
+    assert [card.text for card in cards] == bullets
+    assert (cards[0].left > cards[1].left) is right_to_left
+    if expected_kind == "quad":
+        assert cards[0].top == cards[1].top
+        assert cards[2].top == cards[3].top
+        assert cards[2].top > cards[0].top
+    for shape in slide.shapes:
+        assert shape.left >= 0 and shape.top >= 0
+        assert shape.left + shape.width <= prs.slide_width
+        assert shape.top + shape.height <= prs.slide_height
+    for card in cards:
+        assert all(
+            run.font.size.pt >= 22
+            for paragraph in card.text_frame.paragraphs
+            for run in paragraph.runs
+        )
+    cards[0].text = "Updated and editable"
+    buffer = BytesIO()
+    prs.save(buffer)
+    reopened = Presentation(BytesIO(buffer.getvalue()))
+    assert any(
+        s.name == "Content card 1" and s.text == "Updated and editable"
+        for s in reopened.slides[1].shapes
+    )
+
+
+@pytest.mark.parametrize(
+    "bullets",
+    [
+        ["الطلب 00123", "المبلغ 125.50 ريال"],
+        ["الأولى", "الثانية", "التواصل مع demo@example.invalid", "الرابعة"],
+    ],
+)
+def test_two_and_four_card_layouts_fall_back_for_protected_source(bullets):
+    item = Deck.model_validate({"slides": [{"title": "بيانات العملاء", "bullets": bullets}]}).slides[0]
+    assert plan_slide(item).kind == "content"
+    slide = Presentation(BytesIO(pptx.build(Deck(slides=[item])))).slides[0]
+    assert not any(shape.name.startswith("Content card ") for shape in slide.shapes)
+    assert any(shape.name == "Slide content" for shape in slide.shapes)
