@@ -362,7 +362,9 @@ def test_native_two_and_four_card_layouts_preserve_source_and_reading_order(
     ],
 )
 def test_two_and_four_card_layouts_fall_back_for_protected_source(bullets):
-    item = Deck.model_validate({"slides": [{"title": "بيانات العملاء", "bullets": bullets}]}).slides[0]
+    item = Deck.model_validate(
+        {"slides": [{"title": "بيانات العملاء", "bullets": bullets}]}
+    ).slides[0]
     assert plan_slide(item).kind == "content"
     slide = Presentation(BytesIO(pptx.build(Deck(slides=[item])))).slides[0]
     assert not any(shape.name.startswith("Content card ") for shape in slide.shapes)
