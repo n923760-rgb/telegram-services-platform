@@ -206,8 +206,6 @@ async def test_unapproved_payment_proposed_date_and_explicit_action_are_kept_dis
     """Metadata-only classification preserves each source note for later Word rendering."""
     import json
 
-    from app.services.meeting_minutes.prompt import CLASSIFY
-
     notes = [
         "ناقش الفريق الطلب 00123 بقيمة 125.50 SAR، ولم يُعتمد دفعه حتى تقديم المستند.",
         "اقترح المسؤول التسليم في 2026-12-05، ولم تتم الموافقة على هذا الموعد.",
