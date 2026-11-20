@@ -29,6 +29,22 @@ def validation_categories(schema, error):
         "missing": "missing_field",
         "extra_forbidden": "extra_field",
         "value_error": "constraint",
+        # Static, content-free families make one bounded repair more actionable.
+        # Never emit raw Pydantic messages, model paths, input, or dynamic codes.
+        "string_type": "field_type",
+        "list_type": "field_type",
+        "dict_type": "field_type",
+        "model_type": "field_type",
+        "bool_type": "field_type",
+        "int_type": "field_type",
+        "float_type": "field_type",
+        "literal_error": "invalid_choice",
+        "string_too_short": "text_limit",
+        "string_too_long": "text_limit",
+        "too_short": "collection_limit",
+        "too_long": "collection_limit",
+        "greater_than_equal": "numeric_limit",
+        "less_than_equal": "numeric_limit",
     }
     declared = getattr(schema, "diagnostic_categories", {})
     if isinstance(declared, dict):
