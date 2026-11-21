@@ -143,19 +143,26 @@ def _table(slide, item, layout):
     )
     native.name = "Source records"
     table = native.table
+    column_order = range(len(data.columns))
+    if _reading_rtl(" ".join(data.columns)):
+        column_order = column_order[::-1]
+    # Some viewers ignore the table's RTL flag. Serialize columns in visual
+    # order and keep text direction independent for each cell.
+    table._tbl.tblPr.set("rtl", "0")
     # Match the exact widths used by the layout gate. Keep the native table's
     # total width exact after converting point measurements to integer EMUs.
     remaining_width = native.width
-    for index, width in enumerate(layout.column_widths):
-        native_width = remaining_width if index == len(layout.column_widths) - 1 else Pt(width)
+    for index, source_index in enumerate(column_order):
+        width = layout.column_widths[source_index]
+        native_width = remaining_width if index == len(column_order) - 1 else Pt(width)
         table.columns[index].width = native_width
         remaining_width -= native_width
     table.first_row = True
     table.horz_banding = False  # Explicit colors, consistent across Office themes.
-    table._tbl.tblPr.set("rtl", "1" if _reading_rtl(" ".join(data.columns)) else "0")
     for row_index, values in enumerate([data.columns, *data.rows]):
         table.rows[row_index].height = Pt(layout.row_heights[row_index])
-        for column_index, value in enumerate(values):
+        for column_index, source_index in enumerate(column_order):
+            value = values[source_index]
             cell = table.cell(row_index, column_index)
             _frame(cell.text_frame)
             cell.fill.solid()
@@ -233,8 +240,16 @@ def _render_cards(slide, item, layout):
         if layout.kind == "agenda":
             column = 2 - index if rtl_order else index
             x, y, width, height = 0.85 + column * 3.96, 3.55, 3.68, 2.35
+        elif layout.kind == "duo":
+            column = 1 - index if rtl_order else index
+            x, y, width, height = 0.85 + column * 5.96, 2.05, 5.64, 3.35
         elif layout.kind == "steps":
             x, y, width, height = 0.85, 1.85 + index * 1.58, 11.6, 1.36
+        elif layout.kind == "quad":
+            column = 1 - index % 2 if rtl_order else index % 2
+            x = 0.85 + column * 5.96
+            y = 1.85 + (index // 2) * 2.28
+            width, height = 5.64, 1.98
         else:
             column = 1 - index % 2 if rtl_order else index % 2
             x = 0.85 + column * 5.96
@@ -284,7 +299,7 @@ def build(data: Deck) -> bytes:
         )
         if item.table is not None:
             _table(slide, item, layout)
-        elif layout.kind in {"agenda", "steps", "grid"}:
+        elif layout.kind in {"agenda", "duo", "steps", "quad", "grid"}:
             _render_cards(slide, item, layout)
         else:
             body = _textbox(

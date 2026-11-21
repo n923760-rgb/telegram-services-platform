@@ -148,6 +148,7 @@
   "pdf_word_layers": "This PDF contains unsupported optional layers. Export a flattened copy from the original application, verify its appearance, and upload that copy.",
   "pdf_image_content": "This PDF contains images that may carry information this text-only conversion cannot preserve. Send a fully text-based copy to avoid losing image content.",
   "pdf_to_word_preview": "Word document prepared: {title}\nSource pages: {pages}",
+  "pdf_text_marked_arabic": "This PDF encodes Arabic diacritics in a way that can corrupt letters during Word conversion. Use the original editable document or export a new text PDF and verify the copied text.",
   "pdf_text_unreadable": "This PDF includes scanned or non-extractable content. Send a fully text-based copy to avoid losing content.",
   "pdf_text_too_long": "The PDF text exceeds this service's safe limit. Split the file and try again.",
   "orders": "📋 My orders",

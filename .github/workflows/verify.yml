@@ -484,13 +484,15 @@ jobs:
               shape = next(shape for shape in deck.slides[0].shapes if shape.has_table)
               assert sum(layout.row_heights) <= BODY_HEIGHT
               assert sum(column.width for column in shape.table.columns) == shape.width
-              assert shape.table.columns[1].width > shape.table.columns[0].width
-              assert [[cell.text for cell in row.cells] for row in shape.table.rows] == [source['table']['columns'], *source['table']['rows']]
-              shape.table.cell(1, 2).text = '250.75'
+              direction = -1 if language == 'ar' else 1
+              amount_index, id_index = (0, 2) if language == 'ar' else (2, 0)
+              assert shape.table.columns[1].width > shape.table.columns[id_index].width
+              assert [[cell.text for cell in row.cells] for row in shape.table.rows] == [row[::direction] for row in [source['table']['columns'], *source['table']['rows']]]
+              shape.table.cell(1, amount_index).text = '250.75'
               edited = BytesIO()
               deck.save(edited)
               reopened = Presentation(BytesIO(edited.getvalue()))
-              assert next(shape.table for shape in reopened.slides[0].shapes if shape.has_table).cell(1, 2).text == '250.75'
+              assert next(shape.table for shape in reopened.slides[0].shapes if shape.has_table).cell(1, amount_index).text == '250.75'
           print('Non-root worker: Arabic/English uneven PowerPoint table widths retain source records and edit/save/reopen PASS with network disabled')
           for language in ('ar', 'en'):
               values = CsvInputs.parse(csv_inputs(language))

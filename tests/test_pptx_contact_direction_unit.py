@@ -130,7 +130,7 @@ def test_native_titles_and_bullets_keep_text_and_use_correct_direction(cover, te
 def test_native_table_direction_is_per_prose_and_per_cell_with_exact_contacts():
     columns = ["مرجع: help@demo.invalid", "بيان"]
     rows = [
-        ["للتواصل: help@demo.invalid", "راجع www.example.invalid"],
+        ["للتواصل: help@demo.invalid", "Visit www.example.invalid"],
         ["help@demo.invalid", "English record"],
     ]
     deck = Presentation(
@@ -143,9 +143,11 @@ def test_native_table_direction_is_per_prose_and_per_cell_with_exact_contacts():
         )
     )
     table = next(shape.table for shape in deck.slides[0].shapes if shape.has_table)
-    assert table._tbl.tblPr.get("rtl") == "1"
-    assert [[cell.text for cell in row.cells] for row in table.rows] == [columns, *rows]
-    for row, flags in zip(table.rows, [(1, 1), (1, 1), (0, 0)], strict=True):
+    assert table._tbl.tblPr.get("rtl") == "0"
+    assert [[cell.text for cell in row.cells] for row in table.rows] == [
+        row[::-1] for row in [columns, *rows]
+    ]
+    for row, flags in zip(table.rows, [(1, 1), (0, 1), (0, 0)], strict=True):
         assert [cell.text_frame.paragraphs[0]._p.pPr.get("rtl") for cell in row.cells] == list(
             map(str, flags)
         )
