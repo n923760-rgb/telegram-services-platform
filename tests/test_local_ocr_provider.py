@@ -1,10 +1,11 @@
 import asyncio
 import csv
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from PIL import Image, ImageDraw, ImageFont
 
 from app.providers.documents import runner, tesseract
 from app.providers.documents.base import DocumentError
@@ -36,14 +37,23 @@ async def test_actual_native_ocr_reads_printed_fixture_without_translation(langu
     assert 0.7 <= result.confidence <= 1
 
 
+async def test_actual_native_ocr_reads_black_ink_on_transparent_png():
+    source = Image.new("RGBA", (1000, 300), (0, 0, 0, 0))
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 42)
+    text = "Invoice 00123\nTotal 125.50\nDate 2026-10-09"
+    ImageDraw.Draw(source).text((40, 30), text, fill="black", font=font, spacing=22)
+    payload = BytesIO()
+    source.save(payload, "PNG")
+
+    result = await processor().recognize([payload.getvalue()], "en")
+
+    assert result.text == text
+
+
 async def test_actual_native_multi_image_keeps_order_and_rejects_no_text():
     result = await processor().recognize([printed("Invoice 00123"), printed("Invoice 00999")], "en")
     assert result.text == "Invoice 00123\n\nInvoice 00999"
     # A contrast-bearing shape passes image validation but contains no printed text.
-    from io import BytesIO
-
-    from PIL import Image, ImageDraw
-
     shape = Image.new("RGB", (400, 200), "white")
     ImageDraw.Draw(shape).rectangle((20, 20, 90, 180), fill="black")
     buffer = BytesIO()

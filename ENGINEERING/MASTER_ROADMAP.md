@@ -2598,3 +2598,10 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
 - CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
 - Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).
+
+## Transparent document images and OCR — 2026-11-21
+
+- FACT: Shared image validation discarded transparency during RGB conversion. In transparent PNGs with black text, this could turn the entire document black and reject it as unclear.
+- CHANGE: Composite transparent images onto white before checking visible contrast. Reuse that normalization for enhancement, native OCR and JPEG evidence. Keep the received attachment available byte-for-byte through the existing preservation path.
+- PASS LOCALLY: 226 focused tests, including transparent PNG/WebP, partial opacity, fully hidden pixels, enhancement comparisons, Arabic/English/mixed native OCR and exact English numeric text from a transparent scan. Ruff lint/format and diff whitespace checks passed.
+- NOT RUN: Isolated live-provider acceptance and the Telegram/mobile journey for this revision.
