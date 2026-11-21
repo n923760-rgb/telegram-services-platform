@@ -2598,3 +2598,9 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
 - CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
 - Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).
+
+## QR and direct business-card destination acceptance — 2026-11-21
+
+- FACT: The synthetic direct card and QR cases could pass by retaining their visible identifier even when the embedded destination was missing or different.
+- CHANGE: Require the exact clickable URL for the direct card. Decode the single rendered vector QR PDF and compare the complete source URL, including its query. Keep production services and the live case/cost allowance unchanged.
+- PASS LOCALLY: 269 focused tests, Ruff and diff checks. The artifacts from the isolated native workflow satisfy both stricter contracts. Tests reject wrong destinations, a removed PDF link and a PDF without a QR code.
