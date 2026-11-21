@@ -7,6 +7,7 @@ from PIL import Image
 from PIL.ImageDraw import Draw
 
 from app.builders.document_image import build
+from app.files.validation import image, image_pixels
 from app.providers.storage import LocalStorage, OwnedStorage
 from app.services.base import ServiceError
 from app.services.document_image_enhancement.schema import Assessment
@@ -19,6 +20,46 @@ def picture():
     stream = BytesIO()
     image.save(stream, "PNG")
     return stream.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("mode", "format"), [("RGBA", "PNG"), ("LA", "PNG"), ("P", "PNG"), ("RGBA", "WEBP")]
+)
+def test_transparent_documents_keep_visible_ink_on_white(mode, format):
+    source = Image.new("RGBA", (96, 64), (0, 0, 0, 0))
+    draw = Draw(source)
+    draw.rectangle((24, 16, 47, 47), fill=(0, 0, 0, 255))
+    draw.rectangle((48, 16, 71, 47), fill=(0, 0, 0, 128))
+    stream = BytesIO()
+    if mode == "P":
+        source = source.quantize(colors=3)
+    elif mode == "LA":
+        source = source.convert("LA")
+    source.save(stream, format, lossless=True)
+    data = stream.getvalue()
+
+    normalized = image_pixels(data, len(data))
+    assert [normalized.getpixel(point) for point in ((8, 8), (32, 32), (56, 32))] == [
+        (255, 255, 255),
+        (0, 0, 0),
+        (127, 127, 127),
+    ]
+    with Image.open(BytesIO(image(data, len(data)))) as evidence:
+        assert evidence.getpixel((8, 8))[0] >= 250
+        assert evidence.getpixel((32, 32))[0] <= 5
+    _, _, _, comparison = build(data)
+    with Image.open(BytesIO(comparison)) as pair:
+        assert pair.crop((0, 0, 96, 64)).tobytes() == normalized.tobytes()
+
+
+def test_fully_transparent_hidden_pixels_are_not_document_content():
+    source = Image.new("RGBA", (96, 64), (255, 255, 255, 0))
+    Draw(source).rectangle((24, 16, 47, 47), fill=(0, 0, 0, 0))
+    stream = BytesIO()
+    source.save(stream, "PNG")
+
+    with pytest.raises(ServiceError, match="image_unclear"):
+        image_pixels(stream.getvalue(), stream.getbuffer().nbytes)
 
 
 @pytest.mark.parametrize("mode", ["contrast", "grayscale"])

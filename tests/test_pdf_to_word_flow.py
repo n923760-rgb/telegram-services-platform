@@ -252,8 +252,9 @@ async def test_pdf_to_word_delivers_editable_docx_then_captures_once(tmp_path, m
         (pdf_bytes(text=""), "pdf_text_unreadable"),
         (pdf_bytes(drawn_page=True), "pdf_text_unreadable"),
         (pdf_bytes(text="x" * 50001), "pdf_text_too_long"),
+        (pdf_bytes(marked_text="يُ"), "pdf_text_marked_arabic"),
     ],
-    ids=["malformed", "encrypted", "blank", "mixed", "oversized-text"],
+    ids=["malformed", "encrypted", "blank", "mixed", "oversized-text", "marked-arabic"],
 )
 async def test_pdf_rejection_releases_credit_and_notifies_once(tmp_path, monkeypatch, data, key):
     store, provider, delivery, ctx, price = await setup("pdf_to_word", [], tmp_path, monkeypatch)

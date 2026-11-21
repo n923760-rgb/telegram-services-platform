@@ -36,6 +36,7 @@ class Case:
     pdf_links: tuple[str, ...] = ()
     docx_text_counts: tuple[tuple[str, int], ...] = ()
     xlsx_data_rows: tuple[tuple[str | int | float | datetime | None, ...], ...] = ()
+    single_pdf_qr_payload: str | None = None
 
 
 def representative_cases(result):
@@ -483,6 +484,7 @@ def cases(assets):
             for lang in ("ar", "en")
         ],
     ]
+    card_url = "https://example.invalid/"
     result.append(
         Case(
             "business_card",
@@ -491,19 +493,22 @@ def cases(assets):
                 "mode": "direct",
                 "language": "en",
                 "name": "Demo 00123",
-                "links": "Website | https://example.invalid/",
+                "links": f"Website | {card_url}",
             },
             ("00123",),
             exact_pdf_pages=1,
+            pdf_links=(card_url,),
         )
     )
+    qr_url = "https://example.invalid/?id=00123"
     result.append(
         Case(
             "qr_sheet",
             "qr_codes",
-            {"language": "en", "entries": "Item 00123|https://example.invalid/?id=00123"},
+            {"language": "en", "entries": f"Item 00123|{qr_url}"},
             ("00123",),
             exact_pdf_pages=1,
+            single_pdf_qr_payload=qr_url,
         )
     )
     for language, brief in (

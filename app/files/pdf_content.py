@@ -1,9 +1,34 @@
-"""Detect raster drawing instructions without decoding customer image pixels."""
+"""Inspect bounded PDF instructions before text-only conversion."""
 
-from pypdf.generic import ContentStream, StreamObject
+import unicodedata
+
+from pypdf.generic import ContentStream, DictionaryObject, NameObject, StreamObject
+
+from app.services.base import ServiceError
 
 
-def has_image_content(page, reader):
+def _has_marked_arabic(operands, resources):
+    if len(operands) != 2:
+        return False
+    properties = operands[1]
+    if isinstance(properties, NameObject):
+        named = resources.get("/Properties")
+        properties = named.get_object().get(properties) if named is not None else None
+    if properties is not None:
+        properties = properties.get_object()
+    if not isinstance(properties, DictionaryObject):
+        return False
+    actual = properties.get("/ActualText")
+    if actual is not None:
+        actual = actual.get_object()
+    return isinstance(actual, str) and any(
+        unicodedata.category(char).startswith("M")
+        and unicodedata.name(char, "").startswith("ARABIC ")
+        for char in actual
+    )
+
+
+def has_image_content(page, reader, *, reject_marked_arabic=False):
     content = page.get_contents()
     if content is None:
         return False
@@ -22,6 +47,14 @@ def has_image_content(page, reader):
                 raise ValueError("PDF content inspection limit")
             if operator == b"INLINE IMAGE":
                 return True
+            if (
+                reject_marked_arabic
+                and operator == b"BDC"
+                and _has_marked_arabic(operands, resources)
+            ):
+                # pypdf can emit the underlying glyph codes instead of the declared
+                # replacement, corrupting Arabic letters with combining marks.
+                raise ServiceError("pdf_text_marked_arabic")
             if operator != b"Do":
                 continue
             if len(operands) != 1:

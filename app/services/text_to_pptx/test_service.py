@@ -39,7 +39,7 @@ async def test_pptx_service_builds_native_table_with_count_and_preserved_ids(tmp
     prs = Presentation(BytesIO(store.read(result.artifacts[0].key)))
     assert len(prs.slides) == 3 and not result.needs_confirmation
     native = next(s.table for s in prs.slides[2].shapes if s.has_table)
-    assert native.cell(1, 0).text == "00123" and native.cell(1, 2).text == "125.50"
+    assert native.cell(1, 3).text == "00123" and native.cell(1, 1).text == "125.50"
     assert "الجداول القابلة للتعديل: 1" in result.preview
     service.runtime.ai.extract.assert_awaited_once()
 

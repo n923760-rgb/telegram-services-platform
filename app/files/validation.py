@@ -35,7 +35,14 @@ def image_pixels(data: bytes, max_bytes: int, *, max_side: int = 1024) -> Image.
                     raise ServiceError("image_unclear")
                 picture.load()
                 picture = ImageOps.exif_transpose(picture)
-                picture = picture.convert("RGB")
+                if "A" in picture.getbands() or "transparency" in picture.info:
+                    # Resize with alpha before compositing so hidden colors stay invisible.
+                    transparent = picture.convert("RGBA")
+                    transparent.thumbnail((max_side, max_side))
+                    picture = Image.new("RGB", transparent.size, "white")
+                    picture.paste(transparent, mask=transparent.getchannel("A"))
+                else:
+                    picture = picture.convert("RGB")
                 if (
                     max(picture.convert("L").getextrema()) - min(picture.convert("L").getextrema())
                     < 3
