@@ -49,6 +49,11 @@ def extract(source, method):
         raise ServiceError("file_invalid") from None
     # Lazy import: no native SDK/model is loaded in the Telegram/API/job process.
     import camelot
+    import cv2
+
+    # OpenCV's pthread pool is independent of the BLAS/OpenMP environment limits.
+    # Multiple worker stacks can exhaust this child's address-space budget.
+    cv2.setNumThreads(1)
 
     tables = []
     for number in range(1, len(reader.pages) + 1):
