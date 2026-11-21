@@ -104,7 +104,7 @@ async def test_pptx_native_table_delivery_captures_once_after_bounded_repair(
     assert provider.calls == len(responses) and len(delivery.files) == 1
     prs = Presentation(BytesIO(delivery.files[0][1]))
     native = next(s.table for s in prs.slides[2].shapes if s.has_table)
-    assert native.cell(1, 0).text == "00123" and native.cell(1, 2).text == "125.50"
+    assert native.cell(1, 3).text == "00123" and native.cell(1, 1).text == "125.50"
     assert not list(tmp_path.glob("[0-9]*/*/*"))
 
 
