@@ -50,7 +50,7 @@ class PdfToWord(BaseService):
             for index, page in enumerate(reader.pages, 1):
                 if has_widget(page):
                     raise ServiceError("pdf_word_form")
-                if has_image_content(page, reader):
+                if has_image_content(page, reader, reject_marked_arabic=True):
                     raise ServiceError("pdf_image_content")
                 page_text = extract_page_text(page, limit=50000 - text_length)
                 if not page_text:

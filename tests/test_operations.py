@@ -141,6 +141,7 @@ async def test_user_cancellations_do_not_open_circuit():
         "pdf_tables_layers",
         "pdf_tables_form",
         "pdf_image_content",
+        "pdf_text_marked_arabic",
         "pdf_text_unreadable",
         "pdf_text_too_long",
         "pdf_tools_form",

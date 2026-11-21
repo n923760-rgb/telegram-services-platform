@@ -2598,3 +2598,10 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
 - CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
 - Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).
+
+## PDF-to-Word Arabic replacement-text guard — 2026-11-21
+
+- FACT: Reproduced [#207](https://github.com/n923760-rgb/telegram-services-platform/issues/207) on a synthetic Arabic DOCX exported by LibreOffice. Its PDF contains `/ActualText` for Arabic letters with diacritics. The existing pypdf visitor emitted fallbacks such as `عتمد8ي` instead of the original text. Enabling tagged PDF or PDF/UA did not correct that extraction.
+- CHANGE: In PDF-to-Word, stop at the bounded page-content inspection when Arabic diacritics occur in marked replacement text. The localized input rejection prevents provider calls and delivery. Ordinary Arabic or English text without this source marker continues through the existing extractor.
+- PASS LOCALLY: 125 focused checks and 69 PostgreSQL/Redis integration checks, including successful normal conversion, release on rejection and circuit exclusion. Three real LibreOffice exports with this marker were declined before the provider.
+- PENDING: Faithful PDF text-layer reconstruction and target-client acceptance remain tracked in #207.
