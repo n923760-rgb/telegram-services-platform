@@ -2598,3 +2598,10 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
 - CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
 - Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).
+
+## Arabic PowerPoint table column display — 2026-11-21
+
+- FACT: On main `5d1e627`, LibreOffice showed an Arabic stock table from the left despite the native table RTL flag. The first source column appeared at x=68.4 pt and the last at x=625.2 pt.
+- CHANGE: Store RTL table columns in visual order, moving each header, width and corresponding cells together. Native editable tables retain per-cell text direction, row order and the exact source values.
+- PASS LOCALLY: 249 checks, Ruff and diff checks. LibreOffice rendering of the same 12-slide fixture changed only the table slide and moved the first source column to x=625.2 pt. Reopened table cells remain editable.
+- NOT RUN: Microsoft PowerPoint desktop/mobile and live Telegram/provider acceptance.

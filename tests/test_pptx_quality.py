@@ -88,11 +88,10 @@ def test_pptx_native_text_table_source_values_fonts_and_editability():
     native = next(shape.table for shape in prs.slides[2].shapes if shape.has_table)
     table = data.slides[2].table
     assert [[cell.text for cell in row.cells] for row in native.rows] == [
-        table.columns,
-        *table.rows,
+        row[::-1] for row in [table.columns, *table.rows]
     ]
-    assert native._tbl.tblPr.get("rtl") == "1"
-    assert native.cell(2, 3).text == "" and native.cell(2, 2).text == "0"
+    assert native._tbl.tblPr.get("rtl") == "0"
+    assert native.cell(2, 0).text == "" and native.cell(2, 1).text == "0"
     assert all(
         run.font.size.pt >= 20
         for row in native.rows
@@ -100,13 +99,13 @@ def test_pptx_native_text_table_source_values_fonts_and_editability():
         for p in cell.text_frame.paragraphs
         for run in p.runs
     )
-    native.cell(1, 2).text = "250.75"
+    native.cell(1, 1).text = "250.75"
     body.text_frame.paragraphs[0].runs[0].text = "Updated editable text"
     saved = BytesIO()
     prs.save(saved)
     reopened = Presentation(BytesIO(saved.getvalue()))
     assert (
-        next(s.table for s in reopened.slides[2].shapes if s.has_table).cell(1, 2).text == "250.75"
+        next(s.table for s in reopened.slides[2].shapes if s.has_table).cell(1, 1).text == "250.75"
     )
     assert "Updated editable text" in next(
         s.text for s in reopened.slides[1].shapes if s.name == "Slide content"
