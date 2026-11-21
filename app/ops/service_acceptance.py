@@ -214,6 +214,30 @@ def pixel_signature(image):
         return hashlib.sha256(f"{rgb.width}x{rgb.height}:".encode() + rgb.tobytes()).hexdigest()
 
 
+def _check_single_pdf_qr(data, expected):
+    import cv2
+    import numpy as np
+    import pypdfium2 as pdfium
+
+    with pdfium.PdfDocument(data) as document:
+        if len(document) != 1:
+            raise ServiceError("acceptance_output_invalid")
+        page = document[0]
+        try:
+            if not all(0 < dimension <= 1000 for dimension in page.get_size()):
+                raise ServiceError("acceptance_output_invalid")
+            bitmap = page.render(scale=2)
+            try:
+                pixels = np.array(bitmap.to_pil().convert("RGB"))
+            finally:
+                bitmap.close()
+        finally:
+            page.close()
+    decoded, points, _ = cv2.QRCodeDetectorAruco().detectAndDecode(pixels)
+    if points is None or decoded != expected:
+        raise ServiceError("acceptance_output_invalid")
+
+
 def inspect_output(name, data, case):
     suffix = Path(name).suffix.lower()
     text = ""
@@ -252,6 +276,9 @@ def inspect_output(name, data, case):
                 images = list(page.images)
                 if len(images) != 1 or pixel_signature(images[0].image) != expected:
                     raise ServiceError("acceptance_output_invalid")
+        if case.single_pdf_qr_payload is not None:
+            _check_single_pdf_qr(data, case.single_pdf_qr_payload)
+            details["exact_qr_payloads"] = 1
         details["pages"] = len(pdf.pages)
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     elif suffix == ".docx":
