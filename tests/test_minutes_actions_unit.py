@@ -200,3 +200,57 @@ async def test_review_metadata_is_bounded_and_exports_nothing_before_confirmatio
     assert "Sam" in result.preview and "2026-10-12" in result.preview
     assert result.continuation["assignments"][2]["deadline"] == "2026-10-12"
     assert len(result.preview.encode("utf-16-le")) // 2 < 4096
+
+
+async def test_unapproved_payment_proposed_date_and_explicit_action_are_kept_distinct():
+    """Metadata-only classification preserves each source note for later Word rendering."""
+    import json
+
+    notes = [
+        "ناقش الفريق الطلب 00123 بقيمة 125.50 SAR، ولم يُعتمد دفعه حتى تقديم المستند.",
+        "اقترح المسؤول التسليم في 2026-12-05، ولم تتم الموافقة على هذا الموعد.",
+        "قرر الفريق إبقاء الطلب قيد المراجعة.",
+        "يجب على سام إرسال التقرير 00017 قبل 2026-11-30.",
+        "أفاد المستودع بتوفر 40 قطعة، ولم يُعتمد حجزها.",
+        "نوقشت آلية مختصرة دون اعتمادها.",
+    ]
+    values = Inputs.parse({"language": "ar", "title": "متابعة الطلبات", "notes": "\n".join(notes)})
+    assert values.lines() == notes
+    assignments = [
+        {"note_id": 1, "category": "discussion"},
+        {"note_id": 2, "category": "discussion"},
+        {"note_id": 3, "category": "decision"},
+        {"note_id": 4, "category": "action", "assignee": "سام", "deadline": "2026-11-30"},
+        {"note_id": 5, "category": "discussion"},
+        {"note_id": 6, "category": "discussion"},
+    ]
+    expected = classification_schema(notes).model_validate({"assignments": assignments})
+
+    class AI:
+        async def extract(self, schema, serialized, prompt):
+            assert "classification metadata only" in prompt
+            assert "not yet approved" in prompt
+            assert "never turn a proposed/unconfirmed date" in prompt
+            assert json.loads(serialized)["notes"] == [
+                {"id": i, "text": note} for i, note in enumerate(notes, 1)
+            ]
+            return schema.model_validate({"assignments": assignments})
+
+    service = MeetingMinutes()
+    service.runtime = SimpleNamespace(ai=AI(), storage=None, renderer=None)
+    preview = await service.run(values.model_dump())
+    assert preview.needs_confirmation
+    assert not preview.artifacts
+    assert preview.continuation == expected.model_dump(mode="json")
+
+    doc = Document(BytesIO(build(document(values, expected), professional_template=True)))
+    paragraphs = [p.text for p in doc.paragraphs]
+    for index, note in enumerate(notes, 1):
+        assert paragraphs.count(f"[{index}] {note}") == 1
+    assert len(doc.tables) == 1
+    assert [cell.text for cell in doc.tables[0].rows[1].cells] == [
+        "[4]",
+        "سام",
+        "2026-11-30",
+    ]
+    assert not any("2026-12-05" in cell.text for row in doc.tables[0].rows for cell in row.cells)
