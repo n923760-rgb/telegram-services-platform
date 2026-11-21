@@ -144,8 +144,14 @@ def plan_slide(item, *, cover_candidate=False):
         if sum(heights) > BODY_HEIGHT:
             raise ValueError("slide table too dense; split records across planned slides")
         return Layout("table", 32, 20, heights, widths)
+    # Two and four concise source points have their own native card patterns.
+    # Never move literal numbers, dates or contacts into decorative cards.
+    if len(item.bullets) == 2 and _cards_fit(item.bullets, width=5.64, size=24, height=3.35):
+        return Layout("duo", 32, 24)
     if len(item.bullets) == 3 and _cards_fit(item.bullets, width=11.6, size=23, height=1.36):
         return Layout("steps", 32, 23)
+    if len(item.bullets) == 4 and _cards_fit(item.bullets, width=5.64, size=22, height=1.98):
+        return Layout("quad", 32, 22)
     if len(item.bullets) == 6 and _cards_fit(item.bullets, width=5.64, size=21, height=1.36):
         return Layout("grid", 32, 21)
     for size in (26, 24, 22, 20):
