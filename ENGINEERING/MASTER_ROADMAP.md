@@ -2598,3 +2598,9 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
 - CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
 - Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).
+
+## Native PDF-table lattice memory budget — 2026-11-21
+
+- FACT: On the current local Linux worker, two-page Arabic and English ruled-table fixtures failed in the bounded Camelot child. Instrumenting the synthetic run found an OpenCV allocation failure in contour detection under the existing 1 GiB address-space limit. OpenCV reported nine pthreads despite the BLAS/OpenMP settings.
+- CHANGE: Limit OpenCV to one thread in the table-extraction child. Keep the child memory limit, deadlines, extraction options and service contract intact.
+- PASS LOCALLY: 87 targeted tests and Ruff, including real two-page Arabic and English lattice and stream extraction with exact native cell strings.
