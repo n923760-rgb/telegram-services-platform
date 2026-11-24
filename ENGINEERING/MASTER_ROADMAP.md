@@ -2,6 +2,7 @@
 
 - CHANGE: Offer Arabic and English single-column Word/PDF resumes, plus a one-page editable bilingual layout with Arabic on the right and English on the left. Longer bilingual resumes retain the separate-pages option.
 - CHANGE: Edit an owned text-selectable PDF or pasted text through a source-line classification step and the existing source-bound rewrite. Unreadable files stop before provider calls. Oversized split output stops before saving artifacts.
+- CHANGE: Provide career-stage and section-density signals to the model. Keep work or education prominent where appropriate, use a separate section for supplied credentials, and use compact spacing for dense content without dropping records.
 - PENDING: Hosted CI, live provider import qualification, and mobile preview of the redesigned files.
 
 ## Arabic smart Excel acceptance — 2026-11-19

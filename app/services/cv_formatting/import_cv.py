@@ -34,6 +34,7 @@ ImportField = Literal[
     "languages",
     "research",
     "publications",
+    "certifications",
     "additional",
 ]
 
@@ -48,6 +49,7 @@ SECTION_HEADINGS = frozenset(
         "languages",
         "research",
         "publications",
+        "certifications",
         "additional",
     )
     for lang in ("ar", "en")

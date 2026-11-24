@@ -17,14 +17,20 @@ For a supplied summary, rewrite it using its source IDs and return summary=null.
 If no summary was supplied, create one short factual profile of at most two sentences using
 only supplied education, skills or work details, with their exact source_ids. Omit numbers and
 contacts from this synthesis. Avoid inflated adjectives, generic claims and unsupported expertise.
-Choose a professional visual design: modern for a centered strong name block; classic for an
-aligned conservative header; editorial for a restrained smaller section hierarchy. All are
-readable single-column designs with 11pt body text. Choose compact spacing for long content,
-comfortable spacing for shorter content. These named designs are rendered by a trusted builder;
+Use design_signals for content volume and the available evidence. Line counts describe input
+length, not the number of jobs or credentials. Choose modern for a short profile, classic for a
+conservative career history, or editorial for an academic or section-dense profile. Use compact
+spacing for long content or many certificate entries, comfortable spacing for shorter content.
+Apply the same design and section order to both languages. Layout is selected by the user.
+These named designs are rendered by a trusted builder;
 do not return HTML, scripts, images, arbitrary fonts, coordinates, colors or executable content.
 Choose section_order containing every supplied body section exactly once, including the summary.
-Use the requested cv_type: professional prioritizes work, graduate prioritizes education/projects,
-career_change prioritizes transferable skills/projects, academic prioritizes education/research.
+Follow the suggested section order as a starting point. With no work history, prioritize existing
+education, projects or skills. Experienced profiles lead with relevant work. Career changes
+prioritize transferable skills/projects; academic profiles prioritize education/research.
+Use Certifications for actual certifications or licenses where supplied, and place it nearer the
+top when it is a stronger qualification for the stated purpose. Do not infer credential relevance
+from the number of lines alone or add skills to match job descriptions.
 Keep history order as supplied; never guess dates. No empty sections, photos or skill rating bars.
 Use presentation=lead for actual role/employer/degree/project titles, bullet for actual duties,
 achievements or separate skills, and paragraph for dates, contact lines, headline and summary.

@@ -99,6 +99,12 @@ class CvFormatting(BaseService):
                 name="publications", prompt_key="cv_publications", max_length=2000, required=False
             ),
             _create_field(
+                name="certifications",
+                prompt_key="cv_certifications",
+                max_length=2000,
+                required=False,
+            ),
+            _create_field(
                 name="additional", prompt_key="cv_additional", max_length=1500, required=False
             ),
         ]

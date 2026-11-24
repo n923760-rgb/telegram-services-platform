@@ -33,6 +33,7 @@ class CvContent(StrictModel):
     languages: Text | None = Field(default=None, min_length=1, max_length=500)
     research: Text | None = Field(default=None, min_length=1, max_length=2000)
     publications: Text | None = Field(default=None, min_length=1, max_length=2000)
+    certifications: Text | None = Field(default=None, min_length=1, max_length=2000)
     full_name: str = Field(min_length=1, max_length=120)
     contact: Text = Field(min_length=1, max_length=500)
     summary: Text | None = Field(default=None, min_length=1, max_length=1000)
@@ -54,6 +55,7 @@ class CvContent(StrictModel):
         "languages",
         "research",
         "publications",
+        "certifications",
     )
     @classmethod
     def validate_content(cls, value):
@@ -81,6 +83,7 @@ class CvContent(StrictModel):
             self.languages,
             self.research,
             self.publications,
+            self.certifications,
         ]
         if sum(len(value or "") for value in values) > 9000:
             raise ValueError("CV too large")
@@ -102,6 +105,7 @@ class CvContent(StrictModel):
             "professional": (
                 "summary",
                 "experience",
+                "certifications",
                 "education",
                 "projects",
                 "skills",
@@ -114,6 +118,7 @@ class CvContent(StrictModel):
                 "summary",
                 "education",
                 "projects",
+                "certifications",
                 "skills",
                 "experience",
                 "languages",
@@ -126,6 +131,7 @@ class CvContent(StrictModel):
                 "skills",
                 "projects",
                 "experience",
+                "certifications",
                 "education",
                 "languages",
                 "research",
@@ -138,12 +144,15 @@ class CvContent(StrictModel):
                 "research",
                 "publications",
                 "experience",
+                "certifications",
                 "projects",
                 "skills",
                 "languages",
                 "additional",
             ),
         }
+        if self.cv_type == "professional" and not self.experience:
+            return orders["graduate"]
         return orders[self.cv_type]
 
 
@@ -166,12 +175,23 @@ class Inputs(CvContent):
         }
 
     def source(self):
+        segments = self.segments()
         return json.dumps(
             {
                 "full_name": self.full_name,
                 "targets": self.targets(),
                 "cv_type": self.cv_type,
-                "segments": self.segments(),
+                "design_signals": {
+                    "has_work_experience": bool(self.experience),
+                    "section_line_counts": dict(
+                        Counter(item["field"] for item in segments.values())
+                    ),
+                    "suggested_section_order": self.ordered_names(),
+                    "layout": "side_by_side"
+                    if self.language == "bilingual_split"
+                    else "single_column",
+                },
+                "segments": segments,
             },
             ensure_ascii=False,
         )
@@ -203,6 +223,7 @@ SectionName = Literal[
     "languages",
     "research",
     "publications",
+    "certifications",
     "additional",
 ]
 
@@ -227,7 +248,7 @@ class CvBody(StrictModel):
 
 class CvRevision(StrictModel):
     design: WordDesign
-    section_order: list[SectionName] = Field(min_length=1, max_length=9)
+    section_order: list[SectionName] = Field(min_length=1, max_length=10)
     bodies: list[CvBody] = Field(min_length=1, max_length=2)
 
 
@@ -407,6 +428,19 @@ def document(values, revision):
     # Revalidate even injected runtimes; a forged typed/model_copy result cannot bypass fidelity.
     revision = revision_schema(values).model_validate(revision.model_dump())
     source = values.segments()
+    # Keep the strongest evidence near the top, while the model orders the remainder.
+    order = list(revision.section_order)
+    priority = next(
+        (name for name in values.ordered_names() if name != "summary" and name in order), None
+    )
+    front = [name for name in ("summary", priority) if name in order]
+    order = front + [name for name in order if name not in front]
+    dense = (
+        len(source) >= 26
+        or sum(len(s["text"]) for s in source.values()) >= 2000
+        or sum(s["field"] == "certifications" for s in source.values()) >= 6
+    )
+    design = revision.design.model_copy(update={"density": "compact"}) if dense else revision.design
     sections = []
     for index, body in enumerate(revision.bodies):
         edited = {segment.id: segment for segment in body.segments}
@@ -420,7 +454,7 @@ def document(values, revision):
             page_break_before=bool(index),
         )
         sections.append(header)
-        for name in revision.section_order:
+        for name in order:
             segments = [edited[key] for key in source if source[key]["field"] == name]
             if not segments and name == "summary":
                 segments = [
@@ -447,6 +481,6 @@ def document(values, revision):
         sections=sections,
         layout="resume",
         resume_columns=values.language == "bilingual_split",
-        design=revision.design,
+        design=design,
         alignment="auto",
     )

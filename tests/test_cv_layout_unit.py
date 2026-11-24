@@ -58,6 +58,23 @@ def test_long_qualification_does_not_compete_with_section_heading():
     assert qualification.paragraph_format.keep_with_next
 
 
+@pytest.mark.parametrize("experienced", [False, True])
+def test_adaptive_resume_prioritizes_work_or_education_and_retains_credentials(experienced):
+    source = inputs("en")
+    if not experienced:
+        del source["experience"]
+    certificates = [f"Professional credential {i:02}" for i in range(1, 7)]
+    source["certifications"] = "\n".join(certificates)
+    plan = planned(source, theme="editorial", density="comfortable")
+    sections = [section for section in plan.sections if section.heading]
+    assert sections[0].heading == "Professional summary"
+    assert sections[1].heading == ("Work experience" if experienced else "Education")
+    certification = next(s for s in sections if s.heading == "Certifications and licenses")
+    assert [block.text for block in certification.blocks] == certificates
+    assert plan.design.theme == "editorial"
+    assert plan.design.density == "compact"
+
+
 @pytest.mark.parametrize("language", ["ar", "en"])
 async def test_dense_resume_paginates_without_losing_identifiers_or_overflow(language):
     import pdfplumber

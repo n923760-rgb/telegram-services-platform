@@ -295,7 +295,7 @@ def test_one_intake_contains_no_second_language_form(language):
     CvFormatting.input_schema.validate_inputs(source)
     assert CvFormatting.needs_ai(source)
     fields = [f for f in CvFormatting.input_schema.conversation() if active_field(f, source)]
-    assert len(fields) == 15 and not any(f.name.startswith("english") for f in fields)
+    assert len(fields) == 16 and not any(f.name.startswith("english") for f in fields)
     assert not {"source_pdf", "source_text"} & {f.name for f in fields}
     assert next(f for f in fields if f.name == "education").required
     assert not next(f for f in fields if f.name == "experience").required
