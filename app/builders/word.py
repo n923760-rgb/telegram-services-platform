@@ -4,7 +4,7 @@ from functools import lru_cache
 from io import BytesIO
 
 from docx import Document as Word
-from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_DIRECTION
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT, WD_TABLE_DIRECTION
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -385,6 +385,63 @@ def build(
             _resume_design(doc, data.design)
     else:
         _page_number_footer(doc)
+    buffer = BytesIO()
+    doc.save(buffer)
+    return validate(buffer.getvalue(), "docx")
+
+
+def aligned_resume_pdf_source(docx: bytes) -> bytes:
+    """Pair corresponding sections of a builder-owned bilingual resume for PDF export."""
+    doc = Word(BytesIO(docx))
+    columns = [[[]]]
+    for paragraph in doc.paragraphs:
+        if any(br.get(qn("w:type")) == "column" for br in paragraph._p.iter(qn("w:br"))):
+            columns.append([[]])
+            paragraph._p.getparent().remove(paragraph._p)
+            continue
+        if paragraph.style.name == "Heading 1":
+            columns[-1].append([])
+            border = paragraph._p.xpath("./w:pPr/w:pBdr/w:bottom")
+            if border:
+                # Keep the rule aligned even when one heading needs a second line.
+                border[0].tag = qn("w:top")
+        columns[-1][-1].append(paragraph)
+    arabic, english = columns
+    section = doc.sections[0]
+    section._sectPr.find(qn("w:cols")).attrib.clear()
+    section._sectPr.remove(section._sectPr.find(qn("w:bidi")))
+    width = (section.page_width - section.left_margin - section.right_margin) // 2
+
+    table = doc.add_table(rows=0, cols=2)
+    table.autofit = False
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.table_direction = WD_TABLE_DIRECTION.LTR
+    for col in table.columns:
+        col.width = width
+    borders = OxmlElement("w:tblBorders")
+    divider = OxmlElement("w:insideV")
+    for key, value in (("val", "single"), ("sz", "4"), ("color", "CCDCD9")):
+        divider.set(qn("w:" + key), value)
+    borders.append(divider)
+    table._tbl.tblPr.insert_element_before(borders, "w:tblLayout")
+
+    for left, right in zip(english, arabic, strict=True):
+        row = table.add_row()
+        row._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
+        for index, (cell, paragraphs) in enumerate(zip(row.cells, (left, right), strict=True)):
+            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+            margins = OxmlElement("w:tcMar")
+            for name, value in (("left", 215 if index else 0), ("right", 0 if index else 215)):
+                margin = OxmlElement("w:" + name)
+                margin.set(qn("w:w"), str(value))
+                margin.set(qn("w:type"), "dxa")
+                margins.append(margin)
+            cell._tc.get_or_add_tcPr().append(margins)
+            if paragraphs:
+                cell._tc.remove(cell.paragraphs[0]._p)
+                for paragraph in paragraphs:
+                    cell._tc.append(paragraph._p)
+                paragraphs[-1].paragraph_format.keep_with_next = False
     buffer = BytesIO()
     doc.save(buffer)
     return validate(buffer.getvalue(), "docx")

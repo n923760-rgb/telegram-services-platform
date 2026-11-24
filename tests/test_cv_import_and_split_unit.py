@@ -130,3 +130,10 @@ async def test_split_cv_uses_editable_columns_and_one_rendered_page():
         assert "Sam Example" in left and "Sam Example" not in right
         assert all("sample@example.invalid" in text for text in (left, right))
         assert "00017" in left and "00017" in right
+        # The matching section rules must share a baseline despite different text lengths.
+        midpoint = page.width / 2
+        rules = [line for line in page.lines if line["width"] > 50 and line["height"] < 0.1]
+        left_rules = {round(line["top"], 1) for line in rules if line["x1"] < midpoint}
+        right_rules = {round(line["top"], 1) for line in rules if line["x0"] > midpoint}
+        assert len(left_rules) >= 3
+        assert left_rules == right_rules
