@@ -6,6 +6,7 @@ from openpyxl import load_workbook
 from pydantic import ValidationError
 
 from app.builders.pdf_tables import build
+from app.core.i18n import tr
 from app.providers.storage import LocalStorage, OwnedStorage
 from app.providers.tables.base import Extraction
 from app.services.base import ServiceError
@@ -102,7 +103,10 @@ def test_excel_all_cells_literal_rows_references_source_and_review(language, enh
     assert source == extraction()  # No source mutation when applying headings.
 
 
-async def test_review_and_confirmed_export_do_not_reextract_or_reinvoke_ai(tmp_path):
+@pytest.mark.parametrize("matching_headings", [False, True])
+async def test_review_and_confirmed_export_do_not_reextract_or_reinvoke_ai(
+    tmp_path, matching_headings
+):
     storage = OwnedStorage(LocalStorage(tmp_path), 1)
     file = storage.save("source.pdf", b"synthetic", "application/pdf")
     calls = []
@@ -113,7 +117,10 @@ async def test_review_and_confirmed_export_do_not_reextract_or_reinvoke_ai(tmp_p
 
     async def ai_extract(schema, source, prompt):
         assert "Arabic" in prompt and "sample_rows" in source
-        return schema.model_validate(LABELS)
+        proposal = LABELS["tables"][0]
+        return schema.model_validate(
+            {"tables": [proposal | {"columns": ROWS[0]}]} if matching_headings else LABELS
+        )
 
     service = PdfTablesExcel()
     service.runtime = SimpleNamespace(
@@ -124,13 +131,16 @@ async def test_review_and_confirmed_export_do_not_reextract_or_reinvoke_ai(tmp_p
     request = inputs(pdf=file.key, mode="labels", language="ar")
     result = await service.run(request)
     assert result.needs_confirmation and not result.artifacts and len(calls) == 1
+    for lang in ("ar", "en"):
+        hint = tr("pdf_tables_repeated_heading_review", lang)
+        assert (hint in result.preview_localizations[lang]) is matching_headings
     service.runtime.tables = None
     service.runtime.ai = None
     final = await service.run({**request, "__continuation": result.continuation})
     assert final.artifacts[0].filename == "tables.xlsx"
-    assert (
-        load_workbook(BytesIO(storage.read(final.artifacts[0].key)))["Data1"]["A5"].value == "00123"
-    )
+    workbook = load_workbook(BytesIO(storage.read(final.artifacts[0].key)))
+    assert workbook["Data1"]["A5"].value == "00123"
+    assert workbook["Data1"]["D4"].value == workbook["Source1"]["D4"].value == "T1:R1"
     assert len(calls) == 1
     broken = {
         **result.continuation,

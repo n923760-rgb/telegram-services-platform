@@ -130,6 +130,10 @@ class PdfTablesExcel(BaseService):
                 LABELS.format(language={"ar": "Arabic", "en": "English"}[values.language]),
             )
         prepared = Prepared(extraction=extraction, labels=labels)
+        repeated_heading = values.mode == "labels" and any(
+            proposal.columns == extraction.tables[proposal.table_id - 1].rows[0]
+            for proposal in labels.tables
+        )
         reviews = {}
         for lang in ("ar", "en"):
             preview = [tr("pdf_tables_review", lang)]
@@ -160,6 +164,11 @@ class PdfTablesExcel(BaseService):
                 raise ServiceError(
                     "input_invalid" if values.mode == "source" else "provider_invalid"
                 )
+            if repeated_heading:
+                hint = tr("pdf_tables_repeated_heading_review", lang)
+                if len(review) + len(hint) + 1 <= 2800:
+                    preview.insert(1, hint)
+                    review = "\n".join(preview)
             reviews[lang] = review
         return Result(
             preview=reviews[values.language],

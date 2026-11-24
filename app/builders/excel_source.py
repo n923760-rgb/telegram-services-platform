@@ -14,6 +14,7 @@ from app.builders import excel
 from app.builders.direction import is_rtl
 from app.builders.quality import validate
 from app.builders.schema import Table
+from app.builders.word import INLINE_LTR
 from app.core.i18n import tr
 
 
@@ -76,6 +77,20 @@ def build(table, lines, row_ids, quotes):
                 60, max(data.column_dimensions[letter].width, excel._display_width(quote) + 2)
             )
     excel.configure_print(data)
+    source_rows = []
+    for i, line in enumerate(lines, 1):
+        parts = [line[j : j + 240] for j in range(0, len(line), 240)]
+        for j, part in enumerate(parts, 1):
+            # Isolate LTR tokens in the presentation copy only. Keep the
+            # literal text in column C for copying and source verification.
+            visible = (
+                INLINE_LTR.sub(lambda match: "\u2066" + match[0] + "\u2069", part)
+                if excel._reading_rtl(part)
+                else part
+            )
+            source_rows.append((f"L{i:03d}", f"{j}/{len(parts)}", part, visible))
+    mixed = any(raw != visible for _, _, raw, visible in source_rows)
+    last_column = "D" if mixed else "C"
     source = book.create_sheet("Source")
     source.sheet_view.showGridLines = False
     source.sheet_view.rightToLeft = excel._reading_rtl(" ".join(lines))
@@ -85,37 +100,46 @@ def build(table, lines, row_ids, quotes):
         horizontal="right" if source.sheet_view.rightToLeft else "left", vertical="center"
     )
     source.row_dimensions[1].height = 36
-    source.merge_cells("A1:C1")
+    source.merge_cells(f"A1:{last_column}1")
     source.append([])
+    if mixed:
+        source["A2"] = tr("excel_source_display_note", language)
+        source.merge_cells("A2:D2")
+        source["A2"].alignment = Alignment(
+            horizontal="right" if language == "ar" else "left",
+            readingOrder=2 if language == "ar" else 1,
+            wrap_text=True,
+        )
+        source.row_dimensions[2].height = 32
     source.append(
         [
             tr("excel_source_reference", language),
             tr("excel_source_part", language),
             tr("excel_source_text", language),
         ]
+        + ([tr("excel_source_display_text", language)] if mixed else [])
     )
-    for i, line in enumerate(lines, 1):
-        parts = [line[j : j + 240] for j in range(0, len(line), 240)]
-        for j, part in enumerate(parts, 1):
-            source.append([f"L{i:03d}", f"{j}/{len(parts)}", part])
+    for row in source_rows:
+        source.append(row if mixed else row[:3])
     source.column_dimensions["A"].width = 20
     source.column_dimensions["B"].width = 10
     source.column_dimensions["C"].width = 76
+    if mixed:
+        source.column_dimensions["C"].hidden = True
+        source.column_dimensions["D"].width = 76
     for row in source.iter_rows(min_row=3):
         for cell in row:
+            reading_text = row[2].value if cell.column == 4 and cell.row > 3 else cell.value
+            rtl = excel._reading_rtl(str(reading_text))
             cell.data_type = "s"
             cell.number_format = "@"
             cell.font = excel.HEADER_FONT if cell.row == 3 else excel.BODY_FONT
             cell.alignment = Alignment(
-                horizontal="center"
-                if cell.column < 3
-                else "right"
-                if excel._reading_rtl(str(cell.value))
-                else "left",
+                horizontal="center" if cell.column < 3 else "right" if rtl else "left",
                 vertical="center",
                 indent=0 if cell.column < 3 else 1,
                 wrap_text=True,
-                readingOrder=2 if excel._reading_rtl(str(cell.value)) else 1,
+                readingOrder=2 if rtl else 1,
             )
             if cell.row == 3:
                 cell.fill = excel.HEADER_FILL
@@ -125,11 +149,11 @@ def build(table, lines, row_ids, quotes):
             + 6,
         )
     source.freeze_panes = "B4"
-    native = ExcelTable(displayName="SourceLines", ref=f"A3:C{source.max_row}")
+    native = ExcelTable(displayName="SourceLines", ref=f"A3:{last_column}{source.max_row}")
     native.tableStyleInfo = TableStyleInfo(name="TableStyleMedium4", showRowStripes=True)
     source.add_table(native)
     source.print_title_rows = "1:3"
-    source.print_area = f"A1:C{source.max_row}"
+    source.print_area = f"A1:{last_column}{source.max_row}"
     excel.configure_print(source)
     result = BytesIO()
     book.save(result)
