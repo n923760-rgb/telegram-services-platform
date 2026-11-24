@@ -182,7 +182,7 @@ def test_legacy_minimum_pdf_contract_is_retained_for_variable_layouts():
 
 def test_plan_covers_document_contracts_alongside_smart_card_cases():
     plan = {case.name: case for case in cases(ASSETS)}
-    assert len(plan) == 33
+    assert len(plan) == 35
     assert plan["pptx"].inputs["slide_count"] == "7" and plan["pptx"].pptx_slides == 7
     assert plan["pptx"].tokens == (
         "00123",
