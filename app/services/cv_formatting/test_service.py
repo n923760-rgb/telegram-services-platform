@@ -12,7 +12,7 @@ from app.builders.word import build
 from app.providers.documents.base import DocumentError
 from app.providers.documents.rendering import WordFiles
 from app.providers.storage import LocalStorage, OwnedStorage
-from app.services.base import ServiceError
+from app.services.base import ServiceError, active_field
 from app.services.cv_formatting.schema import Inputs, document, revision_schema
 from app.services.cv_formatting.service import CvFormatting
 from tests.cv_fixtures import inputs, planned, revision
@@ -289,13 +289,14 @@ def test_bilingual_cv_uses_one_input_and_complete_language_bodies(kind):
     assert not doc.tables
 
 
-@pytest.mark.parametrize("language", ["ar", "en", "bilingual"])
+@pytest.mark.parametrize("language", ["ar", "en", "bilingual", "bilingual_split"])
 def test_one_intake_contains_no_second_language_form(language):
     source = inputs() | {"language": language}
     CvFormatting.input_schema.validate_inputs(source)
     assert CvFormatting.needs_ai(source)
-    fields = CvFormatting.input_schema.conversation()
-    assert len(fields) == 14 and not any(f.name.startswith("english") for f in fields)
+    fields = [f for f in CvFormatting.input_schema.conversation() if active_field(f, source)]
+    assert len(fields) == 16 and not any(f.name.startswith("english") for f in fields)
+    assert not {"source_pdf", "source_text"} & {f.name for f in fields}
     assert next(f for f in fields if f.name == "education").required
     assert not next(f for f in fields if f.name == "experience").required
 

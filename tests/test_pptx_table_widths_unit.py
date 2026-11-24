@@ -45,12 +45,13 @@ def test_uneven_table_fits_without_shrinking_or_losing_source(language):
     table = shape.table
     assert shape.width == Inches(11.6)
     assert sum(column.width for column in table.columns) == shape.width
+    direction = -1 if language == "ar" else 1
+    source_rows = [source["table"]["columns"], *source["table"]["rows"]]
     assert [column.width.pt for column in table.columns] == pytest.approx(
-        layout.column_widths, abs=0.001
+        layout.column_widths[::direction], abs=0.001
     )
     assert [[cell.text for cell in row.cells] for row in table.rows] == [
-        source["table"]["columns"],
-        *source["table"]["rows"],
+        row[::direction] for row in source_rows
     ]
     assert all(
         run.font.size.pt >= 20
@@ -59,13 +60,14 @@ def test_uneven_table_fits_without_shrinking_or_losing_source(language):
         for paragraph in cell.text_frame.paragraphs
         for run in paragraph.runs
     )
-    table.cell(1, 2).text = "250.75"
+    amount_index, identifier_index = (0, 2) if language == "ar" else (2, 0)
+    table.cell(1, amount_index).text = "250.75"
     saved = BytesIO()
     native.save(saved)
     reopened = Presentation(BytesIO(saved.getvalue()))
     edited = next(shape.table for shape in reopened.slides[0].shapes if shape.has_table)
-    assert edited.cell(1, 2).text == "250.75"
-    assert edited.cell(1, 0).text == "00000"
+    assert edited.cell(1, amount_index).text == "250.75"
+    assert edited.cell(1, identifier_index).text == "00000"
 
 
 @pytest.mark.parametrize("columns", [1, 2, 3, 4])

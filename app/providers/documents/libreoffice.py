@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 from pypdf import PdfReader
 
 from app.builders.quality import validate
-from app.builders.word import build
+from app.builders.word import aligned_resume_pdf_source, build
 from app.builders.word_schema import WordDocument
 from app.providers.documents.base import DocumentError
 from app.providers.documents.execution import run_child, slot
@@ -41,7 +41,12 @@ class LibreOfficeDocuments(DocumentRenderer):
                 professional_template=True,
                 format_dates=True,
             )
-            pdf = await self._convert(docx)
+            pdf_source = (
+                await asyncio.to_thread(aligned_resume_pdf_source, docx)
+                if document.resume_columns
+                else docx
+            )
+            pdf = await self._convert(pdf_source)
             return WordFiles(docx, pdf)
         finally:
             semaphore.release()

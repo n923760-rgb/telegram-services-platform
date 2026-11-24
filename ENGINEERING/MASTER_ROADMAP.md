@@ -1,3 +1,13 @@
+## Resume layouts and existing-CV editing — 2026-11-24
+
+- CHANGE: Offer Arabic and English single-column Word/PDF resumes, plus a one-page editable bilingual layout with Arabic on the right and English on the left. Longer bilingual resumes retain the separate-pages option.
+- CHANGE: Edit an owned text-selectable PDF or pasted text through a source-line classification step and the existing source-bound rewrite. Unreadable files stop before provider calls. Oversized split output stops before saving artifacts.
+- CHANGE: Provide career-stage and section-density signals to the model. Keep work or education prominent where appropriate, use a separate section for supplied credentials, and use compact spacing for dense content without dropping records.
+- PASS: GitHub verification for the adaptive CV draft at `70c4a8f`.
+- CHANGE: Add live-acceptance cases for a bilingual graduate CV and professional editing of an uploaded CV PDF. Check page count, editable deliverables, contact and credential fidelity, with explicit review of wording and mobile layout.
+- PASS: Live DeepSeek acceptance for split bilingual and PDF editing at `49dbff6`. The mobile PDF preview showed the corresponding headings drifting vertically as translations wrapped to different lengths.
+- CHANGE: Align corresponding sections for the split bilingual PDF using a shared row height. Preserve the editable native-column Word export. Keep the existing one-page check.
+
 ## Arabic smart Excel acceptance — 2026-11-19
 
 - FACT: Earlier smart Excel acceptance verified that one identifier occurred somewhere in the workbook. It did not check each value against its source row.
@@ -2598,3 +2608,36 @@ Hosted evidence and CI correction: [report](REPORTS/2026-10-04-compose-ci.md).
 - FACT: baseline Word/PDF v5 passed isolated live acceptance, but smart input was English without formatting notes.
 - CHANGE: strengthen the same smart case with Arabic title/label duplication, separate notes, protected facts and opt-in editable Word occurrence checks. Keep case count and financial bounds unchanged.
 - Evidence, limits and remaining live/manual qualification: [report](REPORTS/2026-11-09-word-pdf-arabic-acceptance.md).
+
+## Transparent document images and OCR — 2026-11-21
+
+- FACT: Shared image validation discarded transparency during RGB conversion. In transparent PNGs with black text, this could turn the entire document black and reject it as unclear.
+- CHANGE: Composite transparent images onto white before checking visible contrast. Reuse that normalization for enhancement, native OCR and JPEG evidence. Keep the received attachment available byte-for-byte through the existing preservation path.
+- PASS LOCALLY: 226 focused tests, including transparent PNG/WebP, partial opacity, fully hidden pixels, enhancement comparisons, Arabic/English/mixed native OCR and exact English numeric text from a transparent scan. Ruff lint/format and diff whitespace checks passed.
+- NOT RUN: Isolated live-provider acceptance and the Telegram/mobile journey for this revision.
+
+## Arabic PowerPoint table column display — 2026-11-21
+
+- FACT: On main `5d1e627`, LibreOffice showed an Arabic stock table from the left despite the native table RTL flag. The first source column appeared at x=68.4 pt and the last at x=625.2 pt.
+- CHANGE: Store RTL table columns in visual order, moving each header, width and corresponding cells together. Native editable tables retain per-cell text direction, row order and the exact source values.
+- PASS LOCALLY: 249 checks, Ruff and diff checks. LibreOffice rendering of the same 12-slide fixture changed only the table slide and moved the first source column to x=625.2 pt. Reopened table cells remain editable.
+- NOT RUN: Microsoft PowerPoint desktop/mobile and live Telegram/provider acceptance.
+
+## PDF-to-Word Arabic replacement-text guard — 2026-11-21
+
+- FACT: Reproduced [#207](https://github.com/n923760-rgb/telegram-services-platform/issues/207) on a synthetic Arabic DOCX exported by LibreOffice. Its PDF contains `/ActualText` for Arabic letters with diacritics. The existing pypdf visitor emitted fallbacks such as `عتمد8ي` instead of the original text. Enabling tagged PDF or PDF/UA did not correct that extraction.
+- CHANGE: In PDF-to-Word, stop at the bounded page-content inspection when Arabic diacritics occur in marked replacement text. The localized input rejection prevents provider calls and delivery. Ordinary Arabic or English text without this source marker continues through the existing extractor.
+- PASS LOCALLY: 125 focused checks and 69 PostgreSQL/Redis integration checks, including successful normal conversion, release on rejection and circuit exclusion. Three real LibreOffice exports with this marker were declined before the provider.
+- PENDING: Faithful PDF text-layer reconstruction and target-client acceptance remain tracked in #207.
+
+## QR and direct business-card destination acceptance — 2026-11-21
+
+- FACT: The synthetic direct card and QR cases could pass by retaining their visible identifier even when the embedded destination was missing or different.
+- CHANGE: Require the exact clickable URL for the direct card. Decode the single rendered vector QR PDF and compare the complete source URL, including its query. Keep production services and the live case/cost allowance unchanged.
+- PASS LOCALLY: 269 focused tests, Ruff and diff checks. The artifacts from the isolated native workflow satisfy both stricter contracts. Tests reject wrong destinations, a removed PDF link and a PDF without a QR code.
+
+## Native PDF-table lattice memory budget — 2026-11-21
+
+- FACT: On the current local Linux worker, two-page Arabic and English ruled-table fixtures failed in the bounded Camelot child. Instrumenting the synthetic run found an OpenCV allocation failure in contour detection under the existing 1 GiB address-space limit. OpenCV reported nine pthreads despite the BLAS/OpenMP settings.
+- CHANGE: Limit OpenCV to one thread in the table-extraction child. Keep the child memory limit, deadlines, extraction options and service contract intact.
+- PASS LOCALLY: 87 targeted tests and Ruff, including real two-page Arabic and English lattice and stream extraction with exact native cell strings.

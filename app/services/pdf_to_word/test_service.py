@@ -16,11 +16,16 @@ from app.services.registry import Registry
 SOURCE = "Invoice 12345 customer Example. Total SAR 250.00. Date 2026-10-07."
 
 
-def pdf_bytes(text=SOURCE, *, encrypted=False, drawn_page=False):
+def pdf_bytes(text=SOURCE, *, encrypted=False, drawn_page=False, marked_text=None):
     output = BytesIO()
     document = canvas.Canvas(output, pageCompression=0)
+    if marked_text is not None:
+        value = marked_text.encode("utf-16-be").hex()
+        document.addLiteral(f"/Span << /ActualText <FEFF{value}> >> BDC")
     if text:
         document.drawString(30, 750, text)
+    if marked_text is not None:
+        document.addLiteral("EMC")
     document.showPage()
     if drawn_page:
         document.rect(30, 30, 100, 100, fill=1)
@@ -72,8 +77,9 @@ async def test_pdf_to_word_builds_editable_docx_from_real_pdf(tmp_path):
         (pdf_bytes(text=""), "pdf_text_unreadable"),
         (pdf_bytes(text="", drawn_page=True), "pdf_text_unreadable"),
         (pdf_bytes(drawn_page=True), "pdf_text_unreadable"),
+        (pdf_bytes(marked_text="يُ"), "pdf_text_marked_arabic"),
     ],
-    ids=["malformed", "encrypted", "blank", "drawn", "mixed"],
+    ids=["malformed", "encrypted", "blank", "drawn", "mixed", "marked-arabic"],
 )
 async def test_unusable_pdf_rejected_before_ai_and_without_output(tmp_path, data, key):
     service, artifact, store, ai = configured_service(tmp_path, data)
@@ -81,6 +87,13 @@ async def test_unusable_pdf_rejected_before_ai_and_without_output(tmp_path, data
         await service.run({"pdf": artifact.key})
     ai.extract.assert_not_awaited()
     assert store.storage.usage(1)[1] == 1
+
+
+async def test_non_arabic_replacement_text_does_not_trigger_diacritic_guard(tmp_path):
+    service, artifact, _, ai = configured_service(tmp_path, pdf_bytes(marked_text=SOURCE))
+    result = await service.run({"pdf": artifact.key})
+    assert result.artifacts[0].filename == "result.docx"
+    ai.extract.assert_awaited_once()
 
 
 async def test_foreign_owner_file_is_rejected_before_ai(tmp_path):

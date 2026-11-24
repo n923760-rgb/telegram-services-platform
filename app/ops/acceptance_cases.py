@@ -36,6 +36,7 @@ class Case:
     pdf_links: tuple[str, ...] = ()
     docx_text_counts: tuple[tuple[str, int], ...] = ()
     xlsx_data_rows: tuple[tuple[str | int | float | datetime | None, ...], ...] = ()
+    single_pdf_qr_payload: str | None = None
 
 
 def representative_cases(result):
@@ -293,6 +294,26 @@ def source_pdf(*, second=False):
     return output.getvalue()
 
 
+def source_cv_pdf():
+    output = BytesIO()
+    pdf = canvas.Canvas(output, pagesize=(600, 800))
+    lines = (
+        "Sam Example",
+        "sam@example.invalid",
+        "Work experience",
+        "Operations assistant at Example Company since 2024.",
+        "I keep meeting notes and update 17 inventory records each week.",
+        "Education",
+        "Business administration diploma, 2023.",
+        "Certifications and licenses",
+        "Inventory Foundations, credential 00017.",
+    )
+    for index, line in enumerate(lines):
+        pdf.drawString(60, 720 - index * 22, line)
+    pdf.save()
+    return output.getvalue()
+
+
 def cases(assets):
     pdf, image, shaded, mixed = (assets[key] for key in ("pdf", "image", "shaded", "mixed"))
     text = "Order 00123\nAmount 125.50 SAR\nThe payment has not been approved."
@@ -329,6 +350,39 @@ def cases(assets):
             )
             for lang in ("ar", "en", "bilingual")
         ],
+        Case(
+            "cv_bilingual_split",
+            "cv_formatting",
+            {
+                "language": "bilingual_split",
+                "full_name": "سامي المثال",
+                "contact": "sam@example.invalid",
+                "education": "دبلوم إدارة أعمال، 2025.",
+                "skills": "Excel وتنظيم السجلات.",
+                "projects": "أعددت جدولًا لتنظيم سجلات المخزون ضمن مشروع التخرج.",
+                "certifications": "أساسيات إدارة المخزون، الشهادة 00017.",
+            },
+            ("sam@example.invalid", "2025", "00017"),
+            exact_pdf_pages=1,
+            docx_text_counts=(("sam@example.invalid", 2), ("00017", 2)),
+            review_checks=(
+                "Review the editable Word and PDF on mobile: Arabic right, English left, no overlap.",
+                "Verify education leads the body for this graduate, the certificate is separate, "
+                "and the graduation project is not described as a paid job.",
+            ),
+        ),
+        Case(
+            "cv_edit_pdf",
+            "cv_formatting",
+            {"mode": "edit_pdf", "language": "en", "source_pdf": assets["pdf_cv"]},
+            ("sam@example.invalid", "2024", "2023", "00017"),
+            docx_text_counts=(("Work experience", 1), ("Certifications and licenses", 1)),
+            review_checks=(
+                "Compare the rewrite with the uploaded PDF. Verify the duties read naturally and "
+                "retain the stated 17 records per week, dates, employer and credential.",
+                "Verify work precedes education, with no invented achievements or seniority.",
+            ),
+        ),
         Case("enhance", "document_image_enhancement", {"image": shaded}),
         Case("ocr_en", "image_to_text", {"images": [image]}, ("00123", "125.50")),
         Case("ocr_mixed", "image_to_text", {"images": [mixed]}, ("00123", "125.50")),
@@ -483,6 +537,7 @@ def cases(assets):
             for lang in ("ar", "en")
         ],
     ]
+    card_url = "https://example.invalid/"
     result.append(
         Case(
             "business_card",
@@ -491,19 +546,22 @@ def cases(assets):
                 "mode": "direct",
                 "language": "en",
                 "name": "Demo 00123",
-                "links": "Website | https://example.invalid/",
+                "links": f"Website | {card_url}",
             },
             ("00123",),
             exact_pdf_pages=1,
+            pdf_links=(card_url,),
         )
     )
+    qr_url = "https://example.invalid/?id=00123"
     result.append(
         Case(
             "qr_sheet",
             "qr_codes",
-            {"language": "en", "entries": "Item 00123|https://example.invalid/?id=00123"},
+            {"language": "en", "entries": f"Item 00123|{qr_url}"},
             ("00123",),
             exact_pdf_pages=1,
+            single_pdf_qr_payload=qr_url,
         )
     )
     for language, brief in (
@@ -575,7 +633,10 @@ def cases(assets):
         "text_pdf_direct": ("result.pdf",),
         "text_pdf_smart": ("result.pdf",),
         "pptx": ("result.pptx",),
-        **{"cv_" + lang: ("cv.docx", "cv.pdf") for lang in ("ar", "en", "bilingual")},
+        **{
+            "cv_" + case: ("cv.docx", "cv.pdf")
+            for case in ("ar", "en", "bilingual", "bilingual_split", "edit_pdf")
+        },
         **{"minutes_" + lang: ("minutes.docx", "minutes.pdf") for lang in ("ar", "en")},
         **{
             "editing_" + mode: ("revision.txt", "changes.txt", "response.txt")

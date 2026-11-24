@@ -27,6 +27,38 @@ def pdf_bytes(count, rotation=0):
     return output.getvalue()
 
 
+def test_direct_card_acceptance_checks_clickable_destination():
+    from app.builders.interactive_card import build
+    from app.services.interactive_card.schema import Inputs
+
+    case = next(case for case in cases(ASSETS) if case.name == "business_card")
+    data = build(Inputs.parse(case.inputs))
+    assert inspect_output("business-card.pdf", data, case)["exact_link_targets"] == 1
+    writer = PdfWriter(clone_from=BytesIO(data))
+    del writer.pages[0]["/Annots"]
+    missing = BytesIO()
+    writer.write(missing)
+    wrong = build(
+        Inputs.parse(case.inputs | {"links": "Website | https://example.invalid/changed"})
+    )
+    for invalid in (missing.getvalue(), wrong):
+        with pytest.raises(ServiceError, match="acceptance_output_invalid"):
+            inspect_output("business-card.pdf", invalid, case)
+
+
+def test_qr_sheet_acceptance_decodes_the_rendered_pdf():
+    from app.builders.qr_codes import build
+    from app.services.qr_codes.schema import Inputs
+
+    case = next(case for case in cases(ASSETS) if case.name == "qr_sheet")
+    data = build(Inputs.parse(case.inputs))
+    assert inspect_output("qr-codes.pdf", data, case)["exact_qr_payloads"] == 1
+    wrong = build(Inputs.parse(case.inputs | {"entries": "Item 00123|https://example.invalid/"}))
+    for invalid in (wrong, source_pdf()):
+        with pytest.raises(ServiceError, match="acceptance_output_invalid"):
+            inspect_output("qr-codes.pdf", invalid, case)
+
+
 @pytest.mark.parametrize("count", [1, 2, 3])
 def test_exact_pdf_page_contract_rejects_extra_as_well_as_missing_pages(count):
     case = Case("exact", "pdf_tools", {}, exact_pdf_pages=2)
@@ -150,7 +182,7 @@ def test_legacy_minimum_pdf_contract_is_retained_for_variable_layouts():
 
 def test_plan_covers_document_contracts_alongside_smart_card_cases():
     plan = {case.name: case for case in cases(ASSETS)}
-    assert len(plan) == 33
+    assert len(plan) == 35
     assert plan["pptx"].inputs["slide_count"] == "7" and plan["pptx"].pptx_slides == 7
     assert plan["pptx"].tokens == (
         "00123",
