@@ -30,6 +30,6 @@ Use presentation=lead for actual role/employer/degree/project titles, bullet for
 achievements or separate skills, and paragraph for dates, contact lines, headline and summary.
 Do not break one source segment into multiple items or combine multiple source IDs.
 For bilingual output, return the complete Arabic body then the complete English body. The caller
-places the second language on a fresh page in the SAME Word/PDF document, not paired paragraphs.
+controls whether the two bodies are on separate pages or in side-by-side columns.
 Do not promise a single page, ATS compatibility, employment, or certification. This is a draft
 requiring review of names, facts, translation and rendered layout before customer use."""

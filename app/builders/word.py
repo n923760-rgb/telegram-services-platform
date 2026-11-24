@@ -5,7 +5,7 @@ from io import BytesIO
 
 from docx import Document as Word
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_DIRECTION
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
@@ -253,6 +253,12 @@ def build(
         # Resolve final margins before sizing any native table.
         section.top_margin = section.bottom_margin = Cm(1.9)
         section.left_margin = section.right_margin = Cm(2.1)
+    if data.resume_columns:
+        columns = section._sectPr.find(qn("w:cols"))
+        columns.set(qn("w:num"), "2")
+        columns.set(qn("w:space"), "430")
+        columns.set(qn("w:sep"), "1")
+        section._sectPr.insert_element_before(OxmlElement("w:bidi"), "w:docGrid")
 
     if professional_template:
         alignment = "auto"
@@ -264,9 +270,17 @@ def build(
                     doc.element.body.remove(paragraph._p)
                     continue
                 if table is None:
-                    following = paragraph._p.getnext()
-                    following.get_or_add_pPr().append(OxmlElement("w:pageBreakBefore"))
-                    doc.element.body.remove(paragraph._p)
+                    if data.resume_columns:
+                        paragraph.clear()
+                        run = paragraph.add_run()
+                        run.font.size = Pt(1)
+                        run.add_break(WD_BREAK.COLUMN)
+                        paragraph.paragraph_format.space_after = Pt(0)
+                        paragraph.paragraph_format.line_spacing = Pt(1)
+                    else:
+                        following = paragraph._p.getnext()
+                        following.get_or_add_pPr().append(OxmlElement("w:pageBreakBefore"))
+                        doc.element.body.remove(paragraph._p)
                     continue
                 previous = paragraph._p.getprevious()
                 if not table.caption and previous is not None and previous.tag == qn("w:tbl"):
@@ -300,7 +314,16 @@ def build(
             heading = _heading(doc, part.heading, 1)
             first = first or heading
         if part.page_break_before:
-            first.paragraph_format.page_break_before = True
+            if data.resume_columns:
+                boundary = doc.add_paragraph()
+                first._p.addprevious(boundary._p)
+                run = boundary.add_run()
+                run.font.size = Pt(1)
+                run.add_break(WD_BREAK.COLUMN)
+                boundary.paragraph_format.space_after = Pt(0)
+                boundary.paragraph_format.line_spacing = Pt(1)
+            else:
+                first.paragraph_format.page_break_before = True
         for paragraph in part.paragraphs:
             _body(doc, paragraph)
         for bullet in part.bullets:
@@ -370,7 +393,7 @@ def build(
 def _resume_design(doc, design):
     """Resume-only hierarchy; retain native text, source order and script direction."""
     compact = design.density == "compact"
-    accent = RGBColor.from_string("243B53" if design.theme != "classic" else "000000")
+    accent = RGBColor.from_string("174C48" if design.theme != "classic" else "273744")
     muted = RGBColor.from_string("404B56")
     sizes = {"Title": 22, "Subtitle": 11.5, "Heading 1": 11, "Heading 2": 11}
     header = True
@@ -387,6 +410,18 @@ def _resume_design(doc, design):
             )
             paragraph.paragraph_format.space_after = Pt(3 if name != "Heading 1" else 5)
             paragraph.paragraph_format.keep_with_next = True
+            if name == "Heading 1":
+                border = OxmlElement("w:pBdr")
+                bottom = OxmlElement("w:bottom")
+                for key, value in (
+                    ("val", "single"),
+                    ("sz", "4"),
+                    ("space", "3"),
+                    ("color", "CCDCD9"),
+                ):
+                    bottom.set(qn("w:" + key), value)
+                border.append(bottom)
+                paragraph._p.get_or_add_pPr().insert_element_before(border, "w:spacing", "w:jc")
             for run in paragraph.runs:
                 run.font.size = Pt(sizes[name])
                 run.font.color.rgb = accent if name == "Heading 1" else DARK

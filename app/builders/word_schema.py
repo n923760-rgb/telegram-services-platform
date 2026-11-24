@@ -54,12 +54,17 @@ class WordDesign(StrictModel):
 
 class WordDocument(Document):
     layout: Literal["standard", "resume"] = "standard"
+    resume_columns: bool = False
     design: WordDesign | None = None
     alignment: Literal["auto", "left", "right"] = "auto"
     sections: list[WordSection] = Field(min_length=1, max_length=100)
 
     @model_validator(mode="after")
     def nonempty(self):
+        if self.resume_columns and (
+            self.layout != "resume" or sum(s.page_break_before for s in self.sections) != 1
+        ):
+            raise ValueError("split resume requires exactly one language boundary")
         if not any(
             s.title or s.subtitle or s.blocks or s.heading or s.paragraphs or s.bullets or s.tables
             for s in self.sections

@@ -1,3 +1,9 @@
+## Resume layouts and existing-CV editing — 2026-11-24
+
+- CHANGE: Offer Arabic and English single-column Word/PDF resumes, plus a one-page editable bilingual layout with Arabic on the right and English on the left. Longer bilingual resumes retain the separate-pages option.
+- CHANGE: Edit an owned text-selectable PDF or pasted text through a source-line classification step and the existing source-bound rewrite. Unreadable files stop before provider calls. Oversized split output stops before saving artifacts.
+- PENDING: Hosted CI, live provider import qualification, and mobile preview of the redesigned files.
+
 ## Arabic smart Excel acceptance — 2026-11-19
 
 - FACT: Earlier smart Excel acceptance verified that one identifier occurred somewhere in the workbook. It did not check each value against its source row.

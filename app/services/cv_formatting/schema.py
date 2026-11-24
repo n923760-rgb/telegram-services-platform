@@ -148,10 +148,13 @@ class CvContent(StrictModel):
 
 
 class Inputs(CvContent):
-    language: Literal["ar", "en", "bilingual"]
+    language: Literal["ar", "en", "bilingual", "bilingual_split"]
+    mode: Literal["create"] = "create"
 
     def targets(self):
-        return ("ar", "en") if self.language == "bilingual" else (self.language,)
+        return (
+            ("ar", "en") if self.language in {"bilingual", "bilingual_split"} else (self.language,)
+        )
 
     def segments(self):
         return {
@@ -177,7 +180,18 @@ class Inputs(CvContent):
     def total_lines(self):
         if len(self.segments()) > 160:
             raise ValueError("CV source segment limit")
+        if self.language == "bilingual_split" and (
+            len(self.segments()) > 22
+            or sum(len(segment["text"]) for segment in self.segments().values()) > 2000
+        ):
+            raise ValueError("split CV source limit")
         return self
+
+
+class ImportedInputs(Inputs):
+    contact: Text | None = Field(default=None, min_length=1, max_length=500)
+    education: Text | None = Field(default=None, min_length=1, max_length=2000)
+    skills: Text | None = Field(default=None, min_length=1, max_length=1500)
 
 
 SectionName = Literal[
@@ -432,6 +446,7 @@ def document(values, revision):
         title=revision.bodies[0].full_name,
         sections=sections,
         layout="resume",
+        resume_columns=values.language == "bilingual_split",
         design=revision.design,
         alignment="auto",
     )
