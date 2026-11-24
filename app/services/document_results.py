@@ -1,5 +1,9 @@
 """Shared delivery preparation for builder-owned Word/PDF pairs."""
 
+from io import BytesIO
+
+from pypdf import PdfReader
+
 from app.core.i18n import translations
 from app.providers.documents.base import DocumentError
 from app.services.base import Result, ServiceError
@@ -14,6 +18,7 @@ async def word_pdf_result(
     include_title=True,
     filename="result",
     output_format=None,
+    single_page_error=None,
 ):
     if output_format is not None and (
         not isinstance(output_format, str) or output_format not in {"word", "pdf", "both"}
@@ -24,6 +29,8 @@ async def word_pdf_result(
         raise ServiceError("document_render_unavailable")
     try:
         files = await runtime.renderer.word_pdf(document, include_title=include_title)
+        if single_page_error and len(PdfReader(BytesIO(files.pdf)).pages) != 1:
+            raise ServiceError(single_page_error)
         visual = (
             await runtime.previews.first_page(files.pdf)
             if getattr(runtime, "previews", None) is not None

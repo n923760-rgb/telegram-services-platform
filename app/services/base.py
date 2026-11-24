@@ -21,7 +21,7 @@ class InputField(BaseModel):
     max_length: int = Field(default=12000, ge=1, le=12000)
     multiple: bool = False
     max_items: int = Field(default=5, ge=1, le=5)
-    when: dict[str, list[str]] = {}
+    when: dict[str, list[str | None]] = {}
     fields: list["InputField"] = []
 
     @model_validator(mode="after")

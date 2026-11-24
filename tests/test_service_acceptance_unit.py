@@ -7,7 +7,7 @@ from PIL import Image
 from pypdf import PdfReader
 
 from app.ops import service_acceptance as acceptance
-from app.ops.acceptance_cases import Case, cases, picture, source_pdf
+from app.ops.acceptance_cases import Case, cases, picture, source_cv_pdf, source_pdf
 from app.services.base import ServiceError
 
 
@@ -18,11 +18,12 @@ def database():
 
 def test_exact_portfolio_and_modes_use_valid_synthetic_inputs():
     values = cases(acceptance.ASSETS)
-    assert len(values) == 33 and len({case.slug for case in values}) == 18
+    assert len(values) == 35 and len({case.slug for case in values}) == 18
     assert {c.inputs["language"] for c in values if c.slug == "cv_formatting"} == {
         "ar",
         "en",
         "bilingual",
+        "bilingual_split",
     }
     assert {c.inputs.get("mode", "smart") for c in values if c.slug == "text_to_pdf"} == {
         "direct",
@@ -30,6 +31,21 @@ def test_exact_portfolio_and_modes_use_valid_synthetic_inputs():
     }
     automatic = {"word_smart", "text_pdf_smart", "word_pdf_smart"}
     assert all("mode" not in c.inputs for c in values if c.name in automatic)
+
+
+def test_uploaded_cv_acceptance_has_extractable_source_and_exact_output_contract():
+    from app.services.cv_formatting.import_cv import pdf_lines
+
+    plan = {case.name: case for case in cases(acceptance.ASSETS)}
+    revision = plan["cv_edit_pdf"]
+    assert revision.inputs["source_pdf"] == acceptance.ASSETS["pdf_cv"]
+    lines = pdf_lines(source_cv_pdf())
+    assert lines[0] == "Sam Example"
+    assert "I keep meeting notes and update 17 inventory records each week." in lines
+    assert "Inventory Foundations, credential 00017." in lines
+    split = plan["cv_bilingual_split"]
+    assert split.exact_pdf_pages == 1
+    assert split.expected_files == revision.expected_files == ("cv.docx", "cv.pdf")
 
 
 def valid_cfg(tmp_path):
