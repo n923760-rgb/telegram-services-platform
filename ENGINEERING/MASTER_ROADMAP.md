@@ -3,13 +3,23 @@
 - FACT: LibreOffice Calc reordered parts of ISO dates and a date-leading email in a mixed Arabic source line for QA #213.
 - CHANGE: Show a reading column with directional isolation for dates and contacts in mixed source text. Keep the original text in column C and retain native row references. The sheet explains how to unhide C for exact copying.
 - PASS locally: The original QA source lines rendered with intact dates and date-leading email in Calc. Reopening XLSX confirmed exact original text in C.
-- PENDING: Verify the reading view in Microsoft Excel desktop and mobile.
+- PASS on mobile: The owner confirmed that the date-leading email and ISO date remained readable in Microsoft Excel and that the workbook opened from Telegram on iPhone. Desktop Excel remains unverified.
 
 ## PDF table heading review — 2026-11-24
 
 - FACT: In QA #213, the proposed headings in `tables_labels` matched the first source row. The Data sheet repeated the header under its column labels, and the Source sheet retained every extracted cell.
 - CHANGE: Explain this exact match in the Arabic and English confirmation when it fits the existing message limit. Point to the existing first-row-as-headings option for files where every table starts with a header. Keep every extracted row in suggested-headings exports.
 - PENDING: Telegram client confirmation and Microsoft Excel checks. Automatic cell reading order did not resolve the separate smart Excel Source rendering issue in LibreOffice.
+
+## Resume layouts and existing-CV editing — 2026-11-24
+
+- CHANGE: Offer Arabic and English single-column Word/PDF resumes, plus a one-page editable bilingual layout with Arabic on the right and English on the left. Longer bilingual resumes retain the separate-pages option.
+- CHANGE: Edit an owned text-selectable PDF or pasted text through a source-line classification step and the existing source-bound rewrite. Unreadable files stop before provider calls. Oversized split output stops before saving artifacts.
+- CHANGE: Provide career-stage and section-density signals to the model. Keep work or education prominent where appropriate, use a separate section for supplied credentials, and use compact spacing for dense content without dropping records.
+- PASS: GitHub verification for the adaptive CV draft at `70c4a8f`.
+- CHANGE: Add live-acceptance cases for a bilingual graduate CV and professional editing of an uploaded CV PDF. Check page count, editable deliverables, contact and credential fidelity, with explicit review of wording and mobile layout.
+- PASS: Live DeepSeek acceptance for split bilingual and PDF editing at `49dbff6`. The mobile PDF preview showed the corresponding headings drifting vertically as translations wrapped to different lengths.
+- CHANGE: Align corresponding sections for the split bilingual PDF using a shared row height. Preserve the editable native-column Word export. Keep the existing one-page check.
 
 ## Arabic smart Excel acceptance — 2026-11-19
 

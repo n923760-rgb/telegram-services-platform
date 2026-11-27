@@ -32,7 +32,7 @@ from app.core.models import (
     User,
 )
 from app.core.settings import config
-from app.ops.acceptance_cases import OWNER, cases, picture, source_pdf
+from app.ops.acceptance_cases import OWNER, cases, picture, source_cv_pdf, source_pdf
 from app.ops.costs import uncertain_call
 from app.orders.engine import confirm_structure, fail_locked, register, submit
 from app.orders.locking import lock_order
@@ -53,7 +53,7 @@ CALLS = 96
 ACTIVE = ("awaiting_payment", "queued", "processing", "waiting_confirmation", "delivering")
 ASSETS = {
     name: f"{OWNER}/" + str(i) * 32 + "/source." + ("pdf" if name.startswith("pdf") else "png")
-    for i, name in enumerate(("pdf", "pdf2", "image", "shaded", "mixed"), 1)
+    for i, name in enumerate(("pdf", "pdf2", "image", "shaded", "mixed", "pdf_cv"), 1)
 }
 
 
@@ -674,6 +674,7 @@ async def execute(case_names=None, *, native_only=False):
     data = {
         "pdf": pdf,
         "pdf2": source_pdf(second=True),
+        "pdf_cv": source_cv_pdf(),
         "image": picture(),
         "shaded": picture(shaded=True),
         "mixed": picture(mixed=True),
