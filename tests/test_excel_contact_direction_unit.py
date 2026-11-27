@@ -76,6 +76,25 @@ def test_source_excel_preserves_reference_and_contact_prefixed_source_direction(
     assert raw["C4"].alignment.horizontal == ("right" if lang == "ar" else "left")
     assert raw["C4"].alignment.readingOrder == (2 if lang == "ar" else 1)
     assert raw["A4"].value == "L001" and raw["A4"].data_type == "s"
+    assert bool(raw.column_dimensions["C"].hidden) is (lang == "ar")
+    assert raw["D4"].value == (
+        "\u2066" + contact + "\u2069 يرجى مراجعة الطلب" if lang == "ar" else None
+    )
+
+
+def test_source_reading_view_isolates_each_token_without_changing_exact_source():
+    line = "00123 | سارة | 125.50 | 2026-11-18 | 2026-10-24@demo.invalid"
+    table = Table(title="طلبات العملاء", columns=["المصدر"], rows=[[line]])
+    book = load_workbook(BytesIO(excel_source.build(table, [line], [1], [[None]])))
+    sheet = book["Source"]
+    assert sheet["C4"].value == line
+    assert sheet["D4"].value == (
+        "00123 | سارة | 125.50 | \u20662026-11-18\u2069 | \u20662026-10-24@demo.invalid\u2069"
+    )
+    assert sheet["D4"].data_type == "s"
+    assert sheet["D4"].alignment.readingOrder == 2
+    assert sheet.tables["SourceLines"].ref == "A3:D4"
+    assert book["Data"]["B4"].value == sheet["A4"].value == "L001"
 
 
 @pytest.mark.parametrize("lang", ["ar", "en"])

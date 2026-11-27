@@ -1,3 +1,16 @@
+## Smart Excel source reading order — 2026-11-24
+
+- FACT: LibreOffice Calc reordered parts of ISO dates and a date-leading email in a mixed Arabic source line for QA #213.
+- CHANGE: Show a reading column with directional isolation for dates and contacts in mixed source text. Keep the original text in column C and retain native row references. The sheet explains how to unhide C for exact copying.
+- PASS locally: The original QA source lines rendered with intact dates and date-leading email in Calc. Reopening XLSX confirmed exact original text in C.
+- PASS on mobile: The owner confirmed that the date-leading email and ISO date remained readable in Microsoft Excel and that the workbook opened from Telegram on iPhone. Desktop Excel remains unverified.
+
+## PDF table heading review — 2026-11-24
+
+- FACT: In QA #213, the proposed headings in `tables_labels` matched the first source row. The Data sheet repeated the header under its column labels, and the Source sheet retained every extracted cell.
+- CHANGE: Explain this exact match in the Arabic and English confirmation when it fits the existing message limit. Point to the existing first-row-as-headings option for files where every table starts with a header. Keep every extracted row in suggested-headings exports.
+- PENDING: Telegram client confirmation and Microsoft Excel checks. Automatic cell reading order did not resolve the separate smart Excel Source rendering issue in LibreOffice.
+
 ## Resume layouts and existing-CV editing — 2026-11-24
 
 - CHANGE: Offer Arabic and English single-column Word/PDF resumes, plus a one-page editable bilingual layout with Arabic on the right and English on the left. Longer bilingual resumes retain the separate-pages option.
